@@ -1,0 +1,47 @@
+{% extends "dashboard.html" %}
+{% block title %}Nuevo Reporte | VANT-SIEM{% endblock %}
+{% block content %}
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card bg-secondary shadow">
+                <div class="card-header text-center text-info fw-bold">
+                    Nuevo Reporte de Incidente
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="nombre_informante" class="form-label">Nombre del Informante</label>
+                            <input type="text" name="nombre_informante" id="nombre_informante" class="form-control" required value="{{ form.nombre_informante.value|default_if_none:'' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="email_informante" class="form-label">Email del Informante</label>
+                            <input type="email" name="email_informante" id="email_informante" class="form-control" required value="{{ form.email_informante.value|default_if_none:'' }}">
+                        </div>
+                        <div class="mb-3">
+                            <label for="area" class="form-label">Área</label>
+                            <select name="area" id="area" class="form-control" required>
+                                {% for area in areas %}
+                                    <option value="{{ area.id }}" {% if form.area.value == area.id|stringformat:"s" %}selected{% endif %}>{{ area.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="descripcion" class="form-label">Descripción</label>
+                            <textarea name="descripcion" id="descripcion" class="form-control" rows="4" required>{{ form.descripcion.value|default_if_none:'' }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="estado_solucion" class="form-label">Estado</label>
+                            <select name="estado_solucion" id="estado_solucion" class="form-control" required>
+                                {% for valor, texto in reporte_estado_choices %}
+                                    <option value="{{ valor }}" {% if form.estado_solucion.value == valor %}selected{% endif %}>{{ texto }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 mt-3">Guardar Reporte</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card bg-secondary">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="text-info mb-0"><i class="fas fa-search me-2"></i>Análisis de Indicador (VirusTotal)</h3>
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-light btn-sm"><i class="fas fa-home me-1"></i>Dashboard</a>
+                </div>
+                <div class="card-body">
+                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+                    <div class="input-group mb-3">
+                        <input id="indicatorInput" type="text" class="form-control" placeholder="URL / hash / dominio">
+                        <button class="btn btn-primary" onclick="runIndicator()"><i class="fas fa-search me-1"></i>Analizar</button>
+                        <button class="btn btn-outline-light" onclick="toggleRaw()"><i class="fas fa-code me-1"></i>Raw JSON</button>
+                        <button class="btn btn-success" onclick="saveLocalVT()"><i class="fas fa-save me-1"></i>Guardar</button>
+                    </div>
+                    <div id="niceResult" class="table-responsive mb-3" style="display:none;"></div>
+                    <pre class="bg-dark text-light p-2 small" id="indicatorResult" style="min-height: 260px; display:none;">Resultado aquí…</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+let lastVT = null; let lastVTStatus = 200; let lastVTType = 'domain';
+function j(v){return JSON.stringify(v, null, 2)}
+function fmtEpoch(sec){ if(!sec && sec!==0) return '-'; try{ return new Date(sec*1000).toISOString().replace('T',' ').slice(0,19);}catch(e){return String(sec);} }
+function esc(s){ return (s==null?'-':String(s)).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function kvRow(k,v){ return `<tr><th class="text-info" style="width:240px;">${esc(k)}</th><td>${v}</td></tr>`; }
+function list(items){ if(!items||!items.length) return '-'; return `<ul class="m-0">${items.map(i=>`<li class="small">${esc(typeof i==='object'? (i.value||i.type||j(i)) : i)}</li>`).join('')}</ul>`; }
+function statBadge(label,val,cls){ return `<span class="badge bg-${cls} me-2">${esc(label)}: ${esc(val)}</span>`; }
+function buildNiceTable(payload){
+  try{
+    const d = (payload && payload.data) || {};
+    const a = d.attributes || {};
+    const cert = a.last_https_certificate || {};
+    const issuer = (cert.issuer)||{};
+    const subject = (cert.subject)||{};
+    const stats = a.last_analysis_stats || {};
+    const votes = a.total_votes || {};
+    const dns = a.last_dns_records || [];
+    const rows = [];
+    rows.push(kvRow('ID', esc(d.id||'-')));
+    rows.push(kvRow('Tipo', esc(d.type||'-')));
+    rows.push(kvRow('Reputación', esc(a.reputation??'-')));
+    rows.push(kvRow('Registrar', esc(a.registrar||'-')));
+    rows.push(kvRow('Creado', fmtEpoch(a.creation_date)));
+    rows.push(kvRow('Última actualización', fmtEpoch(a.last_update_date)));
+    rows.push(kvRow('Última modificación', fmtEpoch(a.last_modification_date)));
+    rows.push(kvRow('Expira', fmtEpoch(a.expiration_date)));
+    rows.push(kvRow('Estadísticas análisis', `
+      ${statBadge('Malicious', stats.malicious||0, 'danger')}
+      ${statBadge('Suspicious', stats.suspicious||0, 'warning')}
+      ${statBadge('Harmless', stats.harmless||0, 'success')}
+      ${statBadge('Undetected', stats.undetected||0, 'secondary')}
+    `));
+    rows.push(kvRow('Votos', `
+      ${statBadge('Harmless', votes.harmless||0, 'success')}
+      ${statBadge('Malicious', votes.malicious||0, 'danger')}
+    `));
+    rows.push(kvRow('DNS (últimos)', list(dns.map(x=>`${x.type} ${x.value} (ttl ${x.ttl})`))));
+    if (Object.keys(cert).length){
+      rows.push(kvRow('Certificado TLS - Sujeto', `${esc(subject.CN||'-')}${subject.OU? ' / '+esc(subject.OU):''}`));
+      rows.push(kvRow('Certificado TLS - Emisor', `${esc(issuer.CN||'-')} ${issuer.O? '('+esc(issuer.O)+')':''}`));
+      rows.push(kvRow('Certificado TLS - Vigencia', `${esc(cert.validity?.not_before||'-')} → ${esc(cert.validity?.not_after||'-')}`));
+      rows.push(kvRow('Algoritmo firma', esc(cert.signature_algorithm||'-')));
+      rows.push(kvRow('Huella (SHA256)', `<code class="small">${esc(cert.thumbprint_sha256||'-')}</code>`));
+    }
+    const html = `<table class="table table-dark table-striped align-middle">${rows.join('')}</table>`;
+    return html;
+  }catch(e){
+    return `<div class="alert alert-danger">Error formateando resultado: ${esc(e.message||e)}</div>`;
+  }
+}
+function toggleRaw(){
+  const pre = document.getElementById('indicatorResult');
+  const nice = document.getElementById('niceResult');
+  const showPre = pre.style.display==='none';
+  pre.style.display = showPre? 'block':'none';
+  nice.style.display = showPre? 'none':'block';
+}
+async function runIndicator(){
+  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  const indicator = document.getElementById('indicatorInput').value.trim();
+  const res = await fetch('{% url "analyze-indicator" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}, body: new URLSearchParams({indicator})});
+  lastVTStatus = res.status;
+  const data = await res.json();
+  const pre = document.getElementById('indicatorResult');
+  const nice = document.getElementById('niceResult');
+  if (data.success){
+    lastVT = data.data;
+    // infer type basic
+    lastVTType = (indicator.includes('/') && indicator.includes('.'))? 'url' : ((indicator.length===32||indicator.length===40||indicator.length===64)? 'file':'domain');
+    pre.textContent = j(data.data);
+    nice.innerHTML = buildNiceTable(data.data);
+    nice.style.display = 'block';
+    pre.style.display = 'none';
+  } else {
+    lastVT = null;
+    pre.textContent = `Error: ${data.error}`;
+    pre.style.display = 'block';
+    nice.style.display = 'none';
+  }
+}
+async function saveLocalVT(){
+  if (!lastVT){ alert('No hay datos para guardar'); return; }
+  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  const indicator = document.getElementById('indicatorInput').value.trim();
+  const body = new URLSearchParams({
+    indicator,
+    indicator_type: lastVTType,
+    data: JSON.stringify(lastVT),
+    status_code: String(lastVTStatus),
+    csrfmiddlewaretoken: csrftoken,
+  });
+  const res = await fetch('{% url "save-vt-record" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken, 'X-Requested-With':'XMLHttpRequest'}, body});
+  const payload = await res.json();
+  alert(payload.success? 'Guardado en histórico' : ('Error: '+(payload.error||'falló')));
+}
+</script>
+{% endblock %}

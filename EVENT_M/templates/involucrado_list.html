@@ -1,0 +1,57 @@
+{% extends "dashboard.html" %}
+{% block title %}Listado de Involucrados | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card bg-secondary shadow">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-info fw-bold">Listado de Involucrados</h5>
+                <a href="{% url 'involucrado-create' %}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus"></i> Nuevo Involucrado
+                </a>
+            </div>
+            <div class="card-body">
+                {% if object_list %}
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre Completo</th>
+                                    <th>Usuario</th>
+                                    <th>IP</th>
+                                    <th>MAC</th>
+                                    <th>Tipo</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for involucrado in object_list %}
+                                <tr>
+                                    <td>{{ involucrado.id }}</td>
+                                    <td>{{ involucrado.nombres }} {{ involucrado.apellidos }}</td>
+                                    <td>{{ involucrado.usuario }}</td>
+                                    <td><code>{{ involucrado.ip }}</code></td>
+                                    <td><code>{{ involucrado.mac }}</code></td>
+                                    <td>{{ involucrado.tipo }}</td>
+                                    <td>
+                                        <a href="{% url 'involucrado-detail' involucrado.pk %}" class="btn btn-info btn-sm">Ver</a>
+                                        <a href="{% url 'involucrado-update' involucrado.pk %}" class="btn btn-warning btn-sm">Editar</a>
+                                        <a href="{% url 'involucrado-delete' involucrado.pk %}" class="btn btn-danger btn-sm">Eliminar</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-muted">No hay involucrados registrados.</p>
+                        <a href="{% url 'involucrado-create' %}" class="btn btn-primary">Crear Primer Involucrado</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

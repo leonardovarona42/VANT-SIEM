@@ -1,0 +1,1148 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{% block title %}Dashboard | VANT-SIEM{% endblock %}</title>
+    <link
+      rel="stylesheet"
+      href="{% static 'bootstrap/css/bootstrap.min.css' %}"
+    />
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}" />
+    {% block extra_css %}{% endblock %}
+  </head>
+  <body class="bg-dark text-light">
+    {% csrf_token %}
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+      <div class="container">
+        <a
+          class="navbar-brand d-flex align-items-center"
+          href="{% url 'dashboard' %}"
+        >
+          <img
+            src="{% static 'img/logo.png' %}"
+            alt="Logo"
+            class="logo-svg me-2"
+          />
+          <span class="fw-bold">VANT-SIEM</span>
+        </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <!-- Menú principal: Gestión de Incidentes -->
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="gestionDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                Gestión de Incidentes
+              </a>
+              <ul
+                class="dropdown-menu dropdown-menu-dark"
+                aria-labelledby="gestionDropdown"
+              >
+                <li><h6 class="dropdown-header text-info">Reportes</h6></li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'reporte-create' %}"
+                    >Crear Reporte</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'reporte-list' %}"
+                    >Listado de Reportes</a
+                  >
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li><h6 class="dropdown-header text-info">Incidentes</h6></li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'incidente-create' %}"
+                    >Crear Incidente</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'incidente-list' %}"
+                    >Listado de Incidentes</a
+                  >
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li><h6 class="dropdown-header text-info">Catálogo</h6></li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'categoria-create' %}"
+                    >Crear Categoría</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'categoria-list' %}"
+                    >Listado de Categorías</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{% url 'subcategoria-create' %}"
+                    >Crear Subcategoría</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'subcategoria-list' %}"
+                    >Listado de Subcategorías</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'servicio-create' %}"
+                    >Crear Servicio</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'servicio-list' %}"
+                    >Listado de Servicios</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'responsable-create' %}"
+                    >Crear Responsable</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'responsable-list' %}"
+                    >Listado de Responsables</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'area-create' %}"
+                    >Crear Área</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'area-list' %}"
+                    >Listado de Áreas</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'medida-create' %}"
+                    >Crear Medida</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'medida-list' %}"
+                    >Listado de Medidas</a
+                  >
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li><h6 class="dropdown-header text-info">Relaciones</h6></li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'involucrado-create' %}"
+                    >Crear Involucrado</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'involucrado-list' %}"
+                    >Listado de Involucrados</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{% url 'involucradoincidente-create' %}"
+                    >Crear Involucrado Incidente</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{% url 'involucradoincidente-list' %}"
+                    >Listado de Involucrados Incidente</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{% url 'medidaincidente-create' %}"
+                    >Crear Medida Incidente</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{% url 'medidaincidente-list' %}"
+                    >Listado de Medidas Incidente</a
+                  >
+                </li>
+              </ul>
+            </li>
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="analysisDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                Análisis
+              </a>
+              <ul
+                class="dropdown-menu dropdown-menu-dark"
+                aria-labelledby="analysisDropdown"
+              >
+                <li><h6 class="dropdown-header text-info">Online</h6></li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'analysis-ip' %}"
+                    ><i class="fas fa-network-wired me-2"></i>IP (AbuseIPDB)</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'analysis-indicator' %}"
+                    ><i class="fas fa-search me-2"></i>Indicador (VirusTotal)</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'analysis-mac' %}"
+                    ><i class="fas fa-microchip me-2"></i>MAC (MacVendors)</a
+                  >
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <h6 class="dropdown-header text-info">Consultas locales</h6>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'local-search-ip' %}"
+                    ><i class="fas fa-database me-2"></i>Buscar IP en
+                    registros</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{% url 'local-search-indicator' %}"
+                    ><i class="fas fa-database me-2"></i>Buscar Indicador en
+                    registros</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'local-search-mac' %}"
+                    ><i class="fas fa-database me-2"></i>Buscar MAC en
+                    registros</a
+                  >
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li><h6 class="dropdown-header text-info">Locales</h6></li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{% url 'analysis-internal-vt' %}"
+                    ><i class="fas fa-archive me-2"></i>Histórico VirusTotal</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{% url 'analysis-internal-abuseipdb' %}"
+                    ><i class="fas fa-archive me-2"></i>Histórico AbuseIPDB</a
+                  >
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{% url 'analysis-internal-macvendors' %}"
+                    ><i class="fas fa-archive me-2"></i>Histórico MacVendors</a
+                  >
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li><h6 class="dropdown-header text-info">Reportes</h6></li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'report-vt' %}"
+                    ><i class="fas fa-chart-bar me-2"></i>Reporte VT</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'report-abuseipdb' %}"
+                    ><i class="fas fa-chart-bar me-2"></i>Reporte AbuseIPDB</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'report-macvendors' %}"
+                    ><i class="fas fa-chart-bar me-2"></i>Reporte MacVendors</a
+                  >
+                </li>
+              </ul>
+            </li>
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="idsDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                <i class="fas fa-shield-alt me-2"></i>IDS-IPS
+              </a>
+              <ul
+                class="dropdown-menu dropdown-menu-dark"
+                aria-labelledby="idsDropdown"
+              >
+                <li><h6 class="dropdown-header text-info">Dashboards</h6></li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'snort-dashboard' %}"
+                    ><i class="fas fa-bug me-2"></i>Dashboard Snort</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'suricata-dashboard' %}"
+                    ><i class="fas fa-biohazard me-2"></i>Dashboard Suricata</a
+                  >
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <h6 class="dropdown-header text-info">
+                    Alertas y Estadísticas
+                  </h6>
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{% url 'intelligence-dashboard' %}"
+                    ><i class="fas fa-brain me-2"></i>Inteligencia IDS/IPS</a
+                  >
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <h6 class="dropdown-header text-info">Configuración</h6>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'ids-config' %}"
+                    ><i class="fas fa-cog me-2"></i>Configurar IDS/IPS</a
+                  >
+                </li>
+              </ul>
+            </li>
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="toolsDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                Herramientas de Red
+              </a>
+              <ul
+                class="dropdown-menu dropdown-menu-dark"
+                aria-labelledby="toolsDropdown"
+              >
+                <li>
+                  <a class="dropdown-item" href="{% url 'tools-ping' %}"
+                    ><i class="fas fa-signal me-2"></i>Ping</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'tools-dns' %}"
+                    ><i class="fas fa-globe me-2"></i>Resolución DNS</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'tools-scan' %}"
+                    ><i class="fas fa-search me-2"></i>Escaneo de Puertos</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'tools-bruteforce' %}"
+                    ><i class="fas fa-lock me-2"></i>Simulación Fuerza Bruta</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'tools-traceroute' %}"
+                    ><i class="fas fa-route me-2"></i>Traceroute</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'tools-service-scan' %}"
+                    ><i class="fas fa-plug me-2"></i>Escaneo de Puertos y
+                    Servicios</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'tools-discovery' %}"
+                    ><i class="fas fa-project-diagram me-2"></i>Descubrimiento
+                    de Red</a
+                  >
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'tools-ipcalc' %}"
+                    ><i class="fas fa-calculator me-2"></i>Calculadora IP</a
+                  >
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{% url 'monitoring-services' %}"
+                    ><i class="fas fa-heartbeat me-2"></i>Monitoreo de
+                    Servicios</a
+                  >
+                </li>
+              </ul>
+            </li>
+
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="settingsDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                <i class="fas fa-cog me-2"></i>Settings
+              </a>
+              <ul
+                class="dropdown-menu dropdown-menu-dark"
+                aria-labelledby="settingsDropdown"
+              >
+                <li>
+                  <h6 class="dropdown-header text-info">Gestión de Usuarios</h6>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'user-management' %}">
+                    <i class="fas fa-users me-2"></i>Gestión de Usuarios
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{% url 'create-user-request' %}"
+                  >
+                    <i class="fas fa-user-plus me-2"></i>Crear Usuario
+                  </a>
+                </li>
+
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <h6 class="dropdown-header text-info">
+                    Notificaciones por Correo
+                  </h6>
+                </li>
+                {% if request.user.is_superuser %}
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{% url 'email-configuration' %}"
+                  >
+                    <i class="fas fa-envelope me-2"></i>Configuración de Correo
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{% url 'email-alerts-management' %}"
+                  >
+                    <i class="fas fa-bell me-2"></i>Alertas por Usuario
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'email-logs' %}">
+                    <i class="fas fa-list-alt me-2"></i>Logs de Correos
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{% url 'notification-settings' %}"
+                  >
+                    <i class="fas fa-bell me-2"></i>Configuración de
+                    Notificaciones
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'analysis-config' %}">
+                    <i class="fas fa-sliders-h me-2"></i>Configurar APIs de
+                    Análisis
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'ollama-config' %}">
+                    <i class="fas fa-brain me-2"></i>Configuración de IA
+                    (Ollama)
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'monitoring-config' %}">
+                    <i class="fas fa-heartbeat me-2"></i>Configurar Monitoreo
+                  </a>
+                </li>
+                {% endif %} {% if request.user.is_superuser %}
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="{% url 'analysis-services-hub' %}"
+                  >
+                    <i class="fas fa-toolbox me-2"></i>Servicios internos de
+                    análisis
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'ids-config' %}">
+                    <i class="fas fa-sliders-h me-2"></i>Configurar IDS/IPS
+                  </a>
+                </li>
+                {% endif %}
+
+                <li><hr class="dropdown-divider" /></li>
+                <li><h6 class="dropdown-header text-info">Sistema</h6></li>
+                {% if request.user.is_superuser %}
+                <li>
+                  <a class="dropdown-item" href="{% url 'system-logs' %}">
+                    <i class="fas fa-file-alt me-2"></i>Logs del Sistema
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'logging-control' %}">
+                    <i class="fas fa-play-circle me-2"></i>Control de Logging
+                  </a>
+                </li>
+                {% endif %}
+              </ul>
+            </li>
+
+            <li class="nav-item position-relative">
+              <a
+                class="nav-link"
+                href="{% url 'notifications' %}"
+                id="notifications-link"
+              >
+                <i class="fas fa-bell me-2"></i>Notificaciones
+                <span
+                  class="badge bg-danger position-absolute top-0 start-100 translate-middle"
+                  id="notification-badge"
+                  style="display: none"
+                  >0</span
+                >
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    {% if messages %}
+    <div class="container mt-3">
+      {% for message in messages %}
+      <div
+        class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show"
+        role="alert"
+      >
+        {{ message }}
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="alert"
+          aria-label="Close"
+        ></button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <div class="container py-5">
+      <div class="d-flex align-items-center justify-content-center mb-4">
+        <a
+          href="{% url 'dashboard' %}"
+          class="text-decoration-none d-flex align-items-center dashboard-logo"
+        >
+          <img
+            src="{% static 'img/logo.png' %}"
+            alt="VANT-SIEM Logo"
+            class="logo-svg me-4"
+          />
+          <h1 class="display-2 fw-bold text-info m-0">VANT-SIEM</h1>
+        </a>
+      </div>
+      {% block content %}
+      <!-- Contenido del Dashboard Principal -->
+      <div class="text-center mb-5">
+        <h4 class="fw-normal text-secondary">
+          Vigilance And Neutralization of Threats - Security Information & Event
+          Management
+        </h4>
+      </div>
+
+      <!-- Métricas principales -->
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="card bg-primary text-white">
+            <div class="card-body">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <h4 class="card-title" id="total-reportes">-</h4>
+                  <p class="card-text">Total Reportes</p>
+                </div>
+                <div class="align-self-center">
+                  <i class="fas fa-file-alt fa-2x"></i>
+                </div>
+              </div>
+              <small id="reportes-24h">Últimas 24h: -</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card bg-warning text-white">
+            <div class="card-body">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <h4 class="card-title" id="total-incidentes">-</h4>
+                  <p class="card-text">Total Incidentes</p>
+                </div>
+                <div class="align-self-center">
+                  <i class="fas fa-exclamation-triangle fa-2x"></i>
+                </div>
+              </div>
+              <small id="incidentes-24h">Últimas 24h: -</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card bg-info text-white">
+            <div class="card-body">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <h4 class="card-title" id="total-involucrados">-</h4>
+                  <p class="card-text">Involucrados</p>
+                </div>
+                <div class="align-self-center">
+                  <i class="fas fa-users fa-2x"></i>
+                </div>
+              </div>
+              <small>Personas registradas</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card bg-success text-white">
+            <div class="card-body">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <h4 class="card-title" id="total-areas">-</h4>
+                  <p class="card-text">Áreas</p>
+                </div>
+                <div class="align-self-center">
+                  <i class="fas fa-building fa-2x"></i>
+                </div>
+              </div>
+              <small>Departamentos</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráficos principales -->
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <div class="card bg-secondary">
+            <div class="card-header">
+              <h5 class="text-info mb-0">Reportes por Estado</h5>
+            </div>
+            <div class="card-body">
+              <canvas
+                id="reportesEstadoChart"
+                width="400"
+                height="200"
+              ></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card bg-secondary">
+            <div class="card-header">
+              <h5 class="text-info mb-0">Incidentes por Estado</h5>
+            </div>
+            <div class="card-body">
+              <canvas
+                id="incidentesEstadoChart"
+                width="400"
+                height="200"
+              ></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráficos de tendencias -->
+      <div class="row mb-4">
+        <div class="col-md-8">
+          <div class="card bg-secondary">
+            <div class="card-header">
+              <h5 class="text-info mb-0">
+                Tendencia de Reportes (Últimos 7 días)
+              </h5>
+            </div>
+            <div class="card-body">
+              <canvas
+                id="tendenciaReportesChart"
+                width="400"
+                height="200"
+              ></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card bg-secondary">
+            <div class="card-header">
+              <h5 class="text-info mb-0">Medidas de Seguridad</h5>
+            </div>
+            <div class="card-body">
+              <canvas id="medidasChart" width="400" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline de incidentes -->
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="card bg-secondary">
+            <div class="card-header">
+              <h5 class="text-info mb-0">
+                Timeline de Incidentes (Últimos 30 días)
+              </h5>
+            </div>
+            <div class="card-body">
+              <canvas id="timelineChart" width="400" height="100"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estado de actualización -->
+      <div class="row">
+        <div class="col-12">
+          <div class="alert alert-info text-center">
+            <i class="fas fa-sync-alt fa-spin"></i>
+            <span id="last-update">Actualizando datos...</span>
+          </div>
+        </div>
+      </div>
+      {% endblock %}
+
+      <!-- Chat Widget - Only on Dashboard -->
+      {% include 'chat_widget.html' %}
+    </div>
+    <footer class="text-center mt-5 mb-3 text-secondary small">
+      &copy; 2025 Developed by LLVT | Email: leonardovarona42@gmail.com | Tel:
+      +53 58003511<br />
+      Todos los derechos reservados. VANT-SIEM &mdash; Versión 1.0
+    </footer>
+    <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    <script src="{% static 'js/chart.umd.min.js' %}"></script>
+    <script>
+      // Variables globales para los gráficos
+      let reportesEstadoChart,
+        incidentesEstadoChart,
+        tendenciaReportesChart,
+        medidasChart,
+        timelineChart;
+
+      // Colores del tema VANT-SIEM
+      const colors = {
+        primary: "#0d6efd",
+        warning: "#ffc107",
+        danger: "#dc3545",
+        success: "#198754",
+        info: "#0dcaf0",
+        secondary: "#6c757d",
+        dark: "#212529",
+      };
+
+      // Función para actualizar métricas
+      async function updateMetrics() {
+        try {
+          const response = await fetch('{% url "dashboard-metrics" %}');
+          const data = await response.json();
+
+          if (data.success) {
+            const metricas = data.metricas;
+
+            // Actualizar tarjetas principales
+            document.getElementById("total-reportes").textContent =
+              metricas.totales.reportes;
+            document.getElementById("total-incidentes").textContent =
+              metricas.totales.incidentes;
+            document.getElementById("total-involucrados").textContent =
+              metricas.totales.involucrados;
+            document.getElementById("total-areas").textContent =
+              metricas.totales.areas;
+
+            document.getElementById(
+              "reportes-24h"
+            ).textContent = `Últimas 24h: ${metricas.ultimas_24h.reportes}`;
+            document.getElementById(
+              "incidentes-24h"
+            ).textContent = `Últimas 24h: ${metricas.ultimas_24h.incidentes}`;
+
+            // Actualizar gráfico de reportes por estado
+            updateReportesEstadoChart(metricas.reportes_por_estado);
+
+            // Actualizar gráfico de incidentes por estado
+            updateIncidentesEstadoChart(metricas.incidentes_por_estado);
+
+            // Actualizar gráfico de tendencia de reportes
+            updateTendenciaReportesChart(metricas.reportes_por_dia);
+
+            // Actualizar gráfico de medidas
+            updateMedidasChart(metricas.medidas);
+
+            // Actualizar timestamp
+            document.getElementById(
+              "last-update"
+            ).textContent = `Última actualización: ${new Date().toLocaleTimeString()}`;
+          }
+        } catch (error) {
+          console.error("Error al actualizar métricas:", error);
+        }
+      }
+
+      // Función para actualizar timeline
+      async function updateTimeline() {
+        try {
+          const response = await fetch('{% url "incidentes-timeline" %}');
+          const data = await response.json();
+
+          if (data.success) {
+            updateTimelineChart(data.timeline);
+          }
+        } catch (error) {
+          console.error("Error al actualizar timeline:", error);
+        }
+      }
+
+      // Inicializar gráficos
+      function initCharts() {
+        // Gráfico de reportes por estado
+        const reportesCtx = document
+          .getElementById("reportesEstadoChart")
+          .getContext("2d");
+        reportesEstadoChart = new Chart(reportesCtx, {
+          type: "doughnut",
+          data: {
+            labels: [],
+            datasets: [
+              {
+                data: [],
+                backgroundColor: [
+                  colors.primary,
+                  colors.warning,
+                  colors.danger,
+                  colors.success,
+                ],
+                borderWidth: 2,
+                borderColor: "#fff",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: {
+                  color: "#fff",
+                },
+              },
+            },
+          },
+        });
+
+        // Gráfico de incidentes por estado
+        const incidentesCtx = document
+          .getElementById("incidentesEstadoChart")
+          .getContext("2d");
+        incidentesEstadoChart = new Chart(incidentesCtx, {
+          type: "pie",
+          data: {
+            labels: [],
+            datasets: [
+              {
+                data: [],
+                backgroundColor: [
+                  colors.danger,
+                  colors.warning,
+                  colors.info,
+                  colors.success,
+                  colors.secondary,
+                ],
+                borderWidth: 2,
+                borderColor: "#fff",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: {
+                  color: "#fff",
+                },
+              },
+            },
+          },
+        });
+
+        // Gráfico de tendencia de reportes
+        const tendenciaCtx = document
+          .getElementById("tendenciaReportesChart")
+          .getContext("2d");
+        tendenciaReportesChart = new Chart(tendenciaCtx, {
+          type: "line",
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: "Reportes",
+                data: [],
+                borderColor: colors.info,
+                backgroundColor: colors.info + "20",
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  color: "#fff",
+                },
+                grid: {
+                  color: "#444",
+                },
+              },
+              x: {
+                ticks: {
+                  color: "#fff",
+                },
+                grid: {
+                  color: "#444",
+                },
+              },
+            },
+            plugins: {
+              legend: {
+                labels: {
+                  color: "#fff",
+                },
+              },
+            },
+          },
+        });
+
+        // Gráfico de medidas
+        const medidasCtx = document
+          .getElementById("medidasChart")
+          .getContext("2d");
+        medidasChart = new Chart(medidasCtx, {
+          type: "doughnut",
+          data: {
+            labels: ["Cumplidas", "Pendientes"],
+            datasets: [
+              {
+                data: [0, 0],
+                backgroundColor: [colors.success, colors.warning],
+                borderWidth: 2,
+                borderColor: "#fff",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: {
+                  color: "#fff",
+                },
+              },
+            },
+          },
+        });
+
+        // Gráfico de timeline
+        const timelineCtx = document
+          .getElementById("timelineChart")
+          .getContext("2d");
+        timelineChart = new Chart(timelineCtx, {
+          type: "bar",
+          data: {
+            labels: [],
+            datasets: [
+              {
+                label: "Nuevos",
+                data: [],
+                backgroundColor: colors.danger,
+                stack: "stack1",
+              },
+              {
+                label: "Abiertos",
+                data: [],
+                backgroundColor: colors.warning,
+                stack: "stack1",
+              },
+              {
+                label: "Investigación",
+                data: [],
+                backgroundColor: colors.info,
+                stack: "stack1",
+              },
+              {
+                label: "Mitigación",
+                data: [],
+                backgroundColor: colors.primary,
+                stack: "stack1",
+              },
+              {
+                label: "Cerrados",
+                data: [],
+                backgroundColor: colors.success,
+                stack: "stack1",
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                stacked: true,
+                ticks: {
+                  color: "#fff",
+                  maxRotation: 45,
+                },
+                grid: {
+                  color: "#444",
+                },
+              },
+              y: {
+                stacked: true,
+                beginAtZero: true,
+                ticks: {
+                  color: "#fff",
+                },
+                grid: {
+                  color: "#444",
+                },
+              },
+            },
+            plugins: {
+              legend: {
+                labels: {
+                  color: "#fff",
+                },
+              },
+            },
+          },
+        });
+      }
+
+      // Funciones de actualización de gráficos
+      function updateReportesEstadoChart(data) {
+        const labels = data.map((item) => item.estado_solucion);
+        const values = data.map((item) => item.total);
+
+        reportesEstadoChart.data.labels = labels;
+        reportesEstadoChart.data.datasets[0].data = values;
+        reportesEstadoChart.update();
+      }
+
+      function updateIncidentesEstadoChart(data) {
+        const labels = data.map((item) => item.estado_solucion);
+        const values = data.map((item) => item.total);
+
+        incidentesEstadoChart.data.labels = labels;
+        incidentesEstadoChart.data.datasets[0].data = values;
+        incidentesEstadoChart.update();
+      }
+
+      function updateTendenciaReportesChart(data) {
+        const labels = data.map((item) => item.dia);
+        const values = data.map((item) => item.total);
+
+        tendenciaReportesChart.data.labels = labels;
+        tendenciaReportesChart.data.datasets[0].data = values;
+        tendenciaReportesChart.update();
+      }
+
+      function updateMedidasChart(data) {
+        medidasChart.data.datasets[0].data = [data.cumplidas, data.pendientes];
+        medidasChart.update();
+      }
+
+      function updateTimelineChart(data) {
+        const labels = data.map((item) => item.dia);
+        const nuevos = data.map((item) => item.nuevos);
+        const abiertos = data.map((item) => item.abiertos);
+        const investigacion = data.map((item) => item.investigacion);
+        const mitigacion = data.map((item) => item.mitigacion);
+        const cerrados = data.map((item) => item.cerrados);
+
+        timelineChart.data.labels = labels;
+        timelineChart.data.datasets[0].data = nuevos;
+        timelineChart.data.datasets[1].data = abiertos;
+        timelineChart.data.datasets[2].data = investigacion;
+        timelineChart.data.datasets[3].data = mitigacion;
+        timelineChart.data.datasets[4].data = cerrados;
+        timelineChart.update();
+      }
+
+      // Inicializar cuando se carga la página
+      document.addEventListener("DOMContentLoaded", function () {
+        const hasDashboardCanvases =
+          document.getElementById("reportesEstadoChart") !== null;
+        if (hasDashboardCanvases) {
+          initCharts();
+          updateMetrics();
+          updateTimeline();
+          // Actualizar cada 10 segundos
+          setInterval(updateMetrics, 10000);
+          setInterval(updateTimeline, 30000); // Timeline cada 30 segundos
+        }
+        // Notificaciones siempre
+        setInterval(updateNotifications, 5000); // Notificaciones cada 5 segundos
+      });
+
+      // Función para actualizar notificaciones
+      async function updateNotifications() {
+        try {
+          const response = await fetch('{% url "get-notifications" %}');
+          const data = await response.json();
+
+          const badge = document.getElementById("notification-badge");
+          if (data.unread_count > 0) {
+            badge.textContent = data.unread_count;
+            badge.style.display = "inline";
+          } else {
+            badge.style.display = "none";
+          }
+        } catch (error) {
+          console.error("Error al actualizar notificaciones:", error);
+        }
+      }
+    </script>
+  </body>
+</html>

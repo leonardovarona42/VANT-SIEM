@@ -1,0 +1,230 @@
+{% extends 'dashboard.html' %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-secondary">
+                <div class="card-header">
+                    <h3 class="text-info mb-0"><i class="fas fa-shield-alt me-2"></i>Dashboard de Amenazas IDS-IPS</h3>
+                </div>
+                <div class="card-body">
+                    <!-- Widgets de estadísticas -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-dark text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title text-info">Total Amenazas</h5>
+                                    <h2 class="text-light">{{ stats.total_amenazas }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title text-dark">Amenazas Hoy</h5>
+                                    <h2 class="text-dark">{{ stats.amenazas_hoy }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-danger text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title text-white">Última Hora</h5>
+                                    <h2 class="text-white">{{ stats.amenazas_ultima_hora }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title text-white">Mitigadas</h5>
+                                    <h2 class="text-white">{{ stats.amenazas_mitigadas }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Amenazas por prioridad -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-danger text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title text-white">Críticas</h5>
+                                    <h2 class="text-white">{{ stats.amenazas_criticas }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title text-dark">Altas</h5>
+                                    <h2 class="text-dark">{{ stats.amenazas_altas }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title text-white">Medias</h5>
+                                    <h2 class="text-white">{{ stats.amenazas_medias }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-secondary text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title text-light">Bajas</h5>
+                                    <h2 class="text-light">{{ stats.amenazas_bajas }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Amenazas por estado -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card bg-primary text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title text-white">Nuevas</h5>
+                                    <h2 class="text-white">{{ stats.amenazas_nuevas }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-warning text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title text-dark">Investigando</h5>
+                                    <h2 class="text-dark">{{ stats.amenazas_investigando }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-success text-center">
+                                <div class="card-body">
+                                    <h5 class="card-title text-white">Mitigadas</h5>
+                                    <h2 class="text-white">{{ stats.amenazas_mitigadas }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuraciones activas -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card bg-dark">
+                                <div class="card-header">
+                                    <h5 class="text-info mb-0">Configuraciones IDS/IPS Activas</h5>
+                                </div>
+                                <div class="card-body">
+                                    {% if configuraciones %}
+                                        <div class="row">
+                                            {% for config in configuraciones %}
+                                            <div class="col-md-4 mb-3">
+                                                <div class="card bg-secondary">
+                                                    <div class="card-body">
+                                                        <h6 class="card-title text-info">{{ config.nombre }}</h6>
+                                                        <p class="card-text small text-light">
+                                                            <strong>Sistema:</strong> {{ config.get_sistema_display }}<br>
+                                                            <strong>SO:</strong> {{ config.get_sistema_operativo_display }}<br>
+                                                            <strong>Tipo:</strong> {{ config.get_tipo_log_display }}<br>
+                                                            <strong>Intervalo:</strong> {{ config.intervalo_escaneo }}s
+                                                        </p>
+                                                        <div class="d-flex justify-content-between">
+                                                            <span class="badge bg-success">Activo</span>
+                                                            <small class="text-muted">{{ config.ultimo_escaneo|date:"d/m/Y H:i"|default:"Nunca" }}</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div class="text-center text-muted">
+                                            <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                                            <p>No hay configuraciones IDS/IPS activas</p>
+                                            <a href="{% url 'ids-configuration-create' %}" class="btn btn-primary">
+                                                <i class="fas fa-plus me-1"></i>Crear Configuración
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Últimas amenazas -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card bg-dark">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="text-info mb-0">Últimas Amenazas Detectadas</h5>
+                                    <a href="{% url 'threats-list' %}" class="btn btn-sm btn-outline-info">
+                                        <i class="fas fa-list me-1"></i>Ver Todas
+                                    </a>
+                                </div>
+                                <div class="card-body">
+                                    {% if ultimas_amenazas %}
+                                        <div class="table-responsive">
+                                            <table class="table table-dark table-striped">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Timestamp</th>
+                                                        <th>Prioridad</th>
+                                                        <th>Mensaje</th>
+                                                        <th>IP Origen</th>
+                                                        <th>IP Destino</th>
+                                                        <th>Estado</th>
+                                                        <th>Configuración</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for threat in ultimas_amenazas %}
+                                                    <tr>
+                                                        <td>{{ threat.timestamp|date:"d/m/Y H:i:s" }}</td>
+                                                        <td>
+                                                            {% if threat.prioridad == 4 %}
+                                                                <span class="badge bg-danger">Crítica</span>
+                                                            {% elif threat.prioridad == 3 %}
+                                                                <span class="badge bg-warning">Alta</span>
+                                                            {% elif threat.prioridad == 2 %}
+                                                                <span class="badge bg-info">Media</span>
+                                                            {% else %}
+                                                                <span class="badge bg-secondary">Baja</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>{{ threat.mensaje|truncatechars:50 }}</td>
+                                                        <td>{{ threat.ip_origen|default:"-" }}</td>
+                                                        <td>{{ threat.ip_destino|default:"-" }}</td>
+                                                        <td>
+                                                            {% if threat.estado == 'nuevo' %}
+                                                                <span class="badge bg-primary">Nuevo</span>
+                                                            {% elif threat.estado == 'investigando' %}
+                                                                <span class="badge bg-warning">Investigando</span>
+                                                            {% elif threat.estado == 'mitigado' %}
+                                                                <span class="badge bg-success">Mitigado</span>
+                                                            {% else %}
+                                                                <span class="badge bg-secondary">{{ threat.get_estado_display }}</span>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>{{ threat.configuracion.nombre }}</td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    {% else %}
+                                        <div class="text-center text-muted">
+                                            <i class="fas fa-shield-alt fa-3x mb-3"></i>
+                                            <p>No hay amenazas detectadas</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

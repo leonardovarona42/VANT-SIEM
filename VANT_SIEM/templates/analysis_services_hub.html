@@ -1,0 +1,28 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card bg-secondary">
+        <div class="card-header">
+          <h3 class="text-info mb-0"><i class="fas fa-toolbox me-2"></i>Servicios internos de análisis</h3>
+        </div>
+        <div class="card-body">
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item bg-dark">
+              <a class="text-decoration-none" href="{% url 'virustotal-config' %}"><i class="fas fa-search me-2"></i>VirusTotal</a>
+            </li>
+            <li class="list-group-item bg-dark">
+              <a class="text-decoration-none" href="{% url 'abuseipdb-config' %}"><i class="fas fa-network-wired me-2"></i>AbuseIPDB</a>
+            </li>
+            <li class="list-group-item bg-dark">
+              <a class="text-decoration-none" href="{% url 'macvendors-config' %}"><i class="fas fa-microchip me-2"></i>MacVendors</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,287 @@
+{% extends "dashboard.html" %}
+{% block title %}{{ form.instance.pk|yesno:"Editar Medida de Incidente,Nueva Medida de Incidente" }} | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card bg-secondary shadow">
+            <div class="card-header text-center text-info fw-bold">
+                {{ form.instance.pk|yesno:"Editar Medida de Incidente,Nueva Medida de Incidente" }}
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        {{ form.errors }}
+                    </div>
+                {% endif %}
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="incidente" class="form-label fw-bold text-info">Incidente</label>
+                        <select name="incidente" id="incidente" class="form-select" required>
+                            <option disabled selected>Seleccione un incidente...</option>
+                            {% for incidente in form.incidente.field.queryset %}
+                                <option value="{{ incidente.id }}" {% if form.incidente.value == incidente.id|stringformat:"s" %}selected{% endif %}>{{ incidente.nombre_incidente }} ({{ incidente.codigo_incidente }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="medida" class="form-label fw-bold text-info">Medida</label>
+                        <div class="input-group">
+                            <select name="medida" id="medida" class="form-select" required>
+                                <option disabled selected>Seleccione una medida...</option>
+                                {% for medida in form.medida.field.queryset %}
+                                    <option value="{{ medida.id }}" {% if form.medida.value == medida.id|stringformat:"s" %}selected{% endif %}>{{ medida.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="button" class="btn btn-outline-success fw-bold" data-bs-toggle="modal" data-bs-target="#crearMedidaModal" data-target="medida" title="Crear nueva medida">
+                                +
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="responsable" class="form-label fw-bold text-info">Responsable</label>
+                        <div class="input-group">
+                            <select name="responsable" id="responsable" class="form-select" required>
+                                <option disabled selected>Seleccione un responsable...</option>
+                                {% for responsable in form.responsable.field.queryset %}
+                                    <option value="{{ responsable.id }}" {% if form.responsable.value == responsable.id|stringformat:"s" %}selected{% endif %}>{{ responsable.nombres }} {{ responsable.apellidos }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="button" class="btn btn-outline-success fw-bold" data-bs-toggle="modal" data-bs-target="#crearResponsableModal" data-target="responsable" title="Crear nuevo responsable">
+                                +
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="fecha_cumplimiento" class="form-label fw-bold text-info">Fecha de Cumplimiento</label>
+                        <input type="date" name="fecha_cumplimiento" id="fecha_cumplimiento" class="form-control" required value="{{ form.fecha_cumplimiento.value|default_if_none:'' }}">
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" name="estado_cumplimiento" id="estado_cumplimiento" class="form-check-input" {% if form.estado_cumplimiento.value %}checked{% endif %}>
+                            <label for="estado_cumplimiento" class="form-check-label fw-bold text-info">Estado de Cumplimiento</label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="observaciones" class="form-label fw-bold text-info">Observaciones</label>
+                        <textarea name="observaciones" id="observaciones" class="form-control" rows="3" required>{{ form.observaciones.value|default_if_none:'' }}</textarea>
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'medidaincidente-list' %}" class="btn btn-secondary me-md-2">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para crear medida -->
+<div class="modal fade" id="crearMedidaModal" tabindex="-1" aria-labelledby="crearMedidaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header">
+                <h5 class="modal-title text-info" id="crearMedidaModalLabel">Crear Nueva Medida</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="crearMedidaForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="modal_medida_nombre" class="form-label fw-bold text-info">Nombre</label>
+                        <input type="text" name="nombre" id="modal_medida_nombre" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_medida_descripcion" class="form-label fw-bold text-info">Descripción</label>
+                        <textarea name="descripcion" id="modal_medida_descripcion" class="form-control" rows="3" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="guardarMedidaBtn">Guardar Medida</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para crear responsable -->
+<div class="modal fade" id="crearResponsableModal" tabindex="-1" aria-labelledby="crearResponsableModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header">
+                <h5 class="modal-title text-info" id="crearResponsableModalLabel">Crear Nuevo Responsable</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="crearResponsableForm">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modal_responsable_nombres" class="form-label fw-bold text-info">Nombres</label>
+                                <input type="text" name="nombres" id="modal_responsable_nombres" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modal_responsable_apellidos" class="form-label fw-bold text-info">Apellidos</label>
+                                <input type="text" name="apellidos" id="modal_responsable_apellidos" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_responsable_email" class="form-label fw-bold text-info">Email</label>
+                        <input type="email" name="email" id="modal_responsable_email" class="form-control" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modal_responsable_telefono_particular" class="form-label fw-bold text-info">Teléfono Particular</label>
+                                <input type="text" name="telefono_particular" id="modal_responsable_telefono_particular" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modal_responsable_telefono_corp" class="form-label fw-bold text-info">Teléfono Corporativo</label>
+                                <input type="text" name="telefono_corp" id="modal_responsable_telefono_corp" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_responsable_tipo" class="form-label fw-bold text-info">Tipo</label>
+                        <input type="text" name="tipo" id="modal_responsable_tipo" class="form-control" required placeholder="Ej: Cuadro Centro, RSI, Admin">
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_responsable_descripcion" class="form-label fw-bold text-info">Descripción</label>
+                        <textarea name="descripcion" id="modal_responsable_descripcion" class="form-control" rows="3" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="guardarResponsableBtn">Guardar Responsable</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let targetSelect = null;
+    
+    // Capturar qué selector se está editando
+    document.querySelectorAll('[data-bs-target="#crearMedidaModal"], [data-bs-target="#crearResponsableModal"]').forEach(button => {
+        button.addEventListener('click', function() {
+            targetSelect = this.getAttribute('data-target');
+        });
+    });
+    
+    // Manejar el guardado de la medida
+    document.getElementById('guardarMedidaBtn').addEventListener('click', function() {
+        const form = document.getElementById('crearMedidaForm');
+        const formData = new FormData(form);
+        
+        fetch('{% url "medida-create" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Error en la respuesta del servidor');
+            }
+        })
+        .then(data => {
+            if (data.success) {
+                // Agregar la nueva opción al selector correspondiente
+                const select = document.getElementById(targetSelect);
+                const newOption = document.createElement('option');
+                newOption.value = data.medida_id;
+                newOption.textContent = data.nombre;
+                newOption.selected = true;
+                select.appendChild(newOption);
+                
+                // Limpiar el formulario del modal
+                form.reset();
+                
+                // Cerrar el modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('crearMedidaModal'));
+                modal.hide();
+                
+                // Mostrar mensaje de éxito
+                alert('Medida creada exitosamente y seleccionada.');
+            } else {
+                alert('Error al crear la medida: ' + (data.error || 'Error desconocido'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al crear la medida. Por favor, intente nuevamente.');
+        });
+    });
+    
+    // Manejar el guardado del responsable
+    document.getElementById('guardarResponsableBtn').addEventListener('click', function() {
+        const form = document.getElementById('crearResponsableForm');
+        const formData = new FormData(form);
+        
+        fetch('{% url "responsable-create" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Error en la respuesta del servidor');
+            }
+        })
+        .then(data => {
+            if (data.success) {
+                // Agregar la nueva opción al selector correspondiente
+                const select = document.getElementById(targetSelect);
+                const newOption = document.createElement('option');
+                newOption.value = data.responsable_id;
+                newOption.textContent = data.nombres + ' ' + data.apellidos;
+                newOption.selected = true;
+                select.appendChild(newOption);
+                
+                // Limpiar el formulario del modal
+                form.reset();
+                
+                // Cerrar el modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('crearResponsableModal'));
+                modal.hide();
+                
+                // Mostrar mensaje de éxito
+                alert('Responsable creado exitosamente y seleccionado.');
+            } else {
+                alert('Error al crear el responsable: ' + (data.error || 'Error desconocido'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al crear el responsable. Por favor, intente nuevamente.');
+        });
+    });
+});
+</script>
+{% endblock %}

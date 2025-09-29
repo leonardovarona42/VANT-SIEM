@@ -1,0 +1,65 @@
+body {
+    background: linear-gradient(135deg, #0f2027, #2c5364);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.login-container {
+    background: rgba(20, 30, 48, 0.95);
+    border-radius: 1rem;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    padding: 2.5rem 2rem;
+    width: 350px;
+}
+.logo {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #00c3ff;
+    letter-spacing: 2px;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 8px #00c3ff88;
+    text-align: center;
+}
+.subtitle {
+    color: #b0bec5;
+    font-size: 1rem;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+.footer {
+    margin-top: 1.5rem;
+    color: #78909c;
+    font-size: 0.9rem;
+    text-align: center;
+}
+/* Inputs tecnológicos */
+.form-control {
+    background-color: #263238 !important;
+    color: #fff !important;
+    border: 1px solid #00c3ff !important;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 8px #00c3ff22;
+    transition: box-shadow 0.2s, border-color 0.2s;
+}
+.form-control:focus {
+    border-color: #00c3ff !important;
+    box-shadow: 0 0 8px #00c3ff88;
+    background-color: #1a232a !important;
+    color: #fff !important;
+}
+::placeholder {
+    color: #b0bec5 !important;
+    opacity: 1;
+}
+/* Botón tecnológico */
+.btn-primary {
+    background: linear-gradient(90deg, #00c3ff, #0072ff);
+    border: none;
+    font-weight: bold;
+    box-shadow: 0 2px 8px #00c3ff44;
+    transition: background 0.2s;
+}
+.btn-primary:hover {
+    background: linear-gradient(90deg, #0072ff, #00c3ff);
+}

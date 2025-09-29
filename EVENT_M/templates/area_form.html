@@ -1,0 +1,214 @@
+{% extends "dashboard.html" %}
+{% block title %}{{ form.instance.pk|yesno:"Editar Área,Nueva Área" }} | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card bg-secondary shadow">
+            <div class="card-header text-center text-info fw-bold">
+                {{ form.instance.pk|yesno:"Editar Área,Nueva Área" }}
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        {{ form.errors }}
+                    </div>
+                {% endif %}
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="nombre" class="form-label fw-bold text-info">Nombre del Área</label>
+                                <input type="text" name="nombre" id="nombre" class="form-control" required value="{{ form.nombre.value|default_if_none:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="acronimo" class="form-label fw-bold text-info">Acrónimo</label>
+                                <input type="text" name="acronimo" id="acronimo" class="form-control" required value="{{ form.acronimo.value|default_if_none:'' }}" maxlength="10">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cuadro_centro" class="form-label fw-bold text-info">Cuadro Centro</label>
+                        <div class="input-group">
+                            <select name="cuadro_centro" id="cuadro_centro" class="form-select" required>
+                                <option disabled selected>Seleccione un responsable...</option>
+                                {% for responsable in form.cuadro_centro.field.queryset %}
+                                    <option value="{{ responsable.id }}" {% if form.cuadro_centro.value == responsable.id|stringformat:"s" %}selected{% endif %}>{{ responsable.nombres }} {{ responsable.apellidos }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="button" class="btn btn-outline-success fw-bold" data-bs-toggle="modal" data-bs-target="#crearResponsableModal" data-target="cuadro_centro" title="Crear nuevo responsable">
+                                +
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="rsi" class="form-label fw-bold text-info">RSI</label>
+                        <div class="input-group">
+                            <select name="rsi" id="rsi" class="form-select" required>
+                                <option disabled selected>Seleccione un responsable...</option>
+                                {% for responsable in form.rsi.field.queryset %}
+                                    <option value="{{ responsable.id }}" {% if form.rsi.value == responsable.id|stringformat:"s" %}selected{% endif %}>{{ responsable.nombres }} {{ responsable.apellidos }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="button" class="btn btn-outline-success fw-bold" data-bs-toggle="modal" data-bs-target="#crearResponsableModal" data-target="rsi" title="Crear nuevo responsable">
+                                +
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="admin" class="form-label fw-bold text-info">Admin</label>
+                        <div class="input-group">
+                            <select name="admin" id="admin" class="form-select" required>
+                                <option disabled selected>Seleccione un responsable...</option>
+                                {% for responsable in form.admin.field.queryset %}
+                                    <option value="{{ responsable.id }}" {% if form.admin.value == responsable.id|stringformat:"s" %}selected{% endif %}>{{ responsable.nombres }} {{ responsable.apellidos }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="button" class="btn btn-outline-success fw-bold" data-bs-toggle="modal" data-bs-target="#crearResponsableModal" data-target="admin" title="Crear nuevo responsable">
+                                +
+                            </button>
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'area-list' %}" class="btn btn-secondary me-md-2">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para crear responsable -->
+<div class="modal fade" id="crearResponsableModal" tabindex="-1" aria-labelledby="crearResponsableModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header">
+                <h5 class="modal-title text-info" id="crearResponsableModalLabel">Crear Nuevo Responsable</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="crearResponsableForm">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modal_nombres" class="form-label fw-bold text-info">Nombres</label>
+                                <input type="text" name="nombres" id="modal_nombres" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modal_apellidos" class="form-label fw-bold text-info">Apellidos</label>
+                                <input type="text" name="apellidos" id="modal_apellidos" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_email" class="form-label fw-bold text-info">Email</label>
+                        <input type="email" name="email" id="modal_email" class="form-control" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modal_telefono_particular" class="form-label fw-bold text-info">Teléfono Particular</label>
+                                <input type="text" name="telefono_particular" id="modal_telefono_particular" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modal_telefono_corp" class="form-label fw-bold text-info">Teléfono Corporativo</label>
+                                <input type="text" name="telefono_corp" id="modal_telefono_corp" class="form-control" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_tipo" class="form-label fw-bold text-info">Tipo</label>
+                        <input type="text" name="tipo" id="modal_tipo" class="form-control" required placeholder="Ej: Cuadro Centro, RSI, Admin">
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_descripcion" class="form-label fw-bold text-info">Descripción</label>
+                        <textarea name="descripcion" id="modal_descripcion" class="form-control" rows="3" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="guardarResponsableBtn">Guardar Responsable</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let targetSelect = null;
+    
+    // Capturar qué selector se está editando
+    document.querySelectorAll('[data-bs-target="#crearResponsableModal"]').forEach(button => {
+        button.addEventListener('click', function() {
+            targetSelect = this.getAttribute('data-target');
+        });
+    });
+    
+    // Manejar el guardado del responsable
+    document.getElementById('guardarResponsableBtn').addEventListener('click', function() {
+        const form = document.getElementById('crearResponsableForm');
+        const formData = new FormData(form);
+        
+        fetch('{% url "responsable-create" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                throw new Error('Error en la respuesta del servidor');
+            }
+        })
+        .then(data => {
+            if (data.success) {
+                // Agregar la nueva opción al selector correspondiente
+                const select = document.getElementById(targetSelect);
+                const newOption = document.createElement('option');
+                newOption.value = data.responsable_id;
+                newOption.textContent = data.nombres + ' ' + data.apellidos;
+                newOption.selected = true;
+                select.appendChild(newOption);
+                
+                // Limpiar el formulario del modal
+                form.reset();
+                
+                // Cerrar el modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('crearResponsableModal'));
+                modal.hide();
+                
+                // Mostrar mensaje de éxito
+                alert('Responsable creado exitosamente y seleccionado.');
+            } else {
+                alert('Error al crear el responsable: ' + (data.error || 'Error desconocido'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al crear el responsable. Por favor, intente nuevamente.');
+        });
+    });
+});
+</script>
+{% endblock %}

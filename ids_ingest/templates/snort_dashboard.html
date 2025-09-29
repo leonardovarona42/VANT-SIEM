@@ -1,0 +1,626 @@
+{% extends "dashboard.html" %}
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var startIcon = document.getElementById('calendar-start');
+        var endIcon = document.getElementById('calendar-end');
+        var startInput = document.getElementById('start_time');
+        var endInput = document.getElementById('end_time');
+        if (startIcon && startInput) {
+            startIcon.addEventListener('click', function(e) {
+                e.preventDefault();
+                startInput.showPicker ? startInput.showPicker() : startInput.focus();
+            });
+        }
+        if (endIcon && endInput) {
+            endIcon.addEventListener('click', function(e) {
+                e.preventDefault();
+                endInput.showPicker ? endInput.showPicker() : endInput.focus();
+            });
+        }
+    });
+</script>
+{% endblock %}
+{% load static %}
+{% block title %}Dashboard Snort | VANT-SIEM{% endblock %}
+
+{% block extra_css %}
+
+<link rel="stylesheet" href="{% static 'css/ids-dashboard.css' %}">
+<style>
+    /* Override base template styles for Snort dashboard */
+    .container.py-5 {
+        padding: 0 !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ids-dashboard-container">
+    <div class="container-fluid">
+        <!-- Header limpio -->
+        <div class="ids-dashboard-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>
+                    <i class="fas fa-bug"></i>Dashboard Snort
+                </h2>
+                <div class="ids-header-actions">
+                    <a href="{% url 'suricata-dashboard' %}" class="ids-btn-modern secondary">
+                        <i class="fas fa-shield-alt"></i>Suricata
+                    </a>
+                    <a href="{% url 'alerts-dashboard' %}" class="ids-btn-modern secondary">
+                        <i class="fas fa-exclamation-triangle"></i>Alertas
+                    </a>
+                    <a href="{% url 'ids-config' %}" class="ids-btn-modern secondary">
+                        <i class="fas fa-cog"></i>Config
+                    </a>
+                    <a href="{% url 'statistics-dashboard' %}" class="ids-btn-modern secondary">
+                        <i class="fas fa-chart-bar"></i>Stats
+                    </a>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Selector de tipo de log y rango de tiempo -->
+        <div class="ids-card-modern fade-in">
+            <div class="ids-card-header-modern">
+                <h5 class="mb-0 d-flex align-items-center gap-3">
+                    <i class="fas fa-filter"></i>
+                    <span>Vista de Datos</span>
+                    <form method="get" class="d-flex align-items-center gap-2 ms-auto">
+                        <input type="hidden" name="log_type" value="{{ log_type }}">
+                        <label for="time_range" class="form-label mb-0 text-light">Período</label>
+                        <select id="time_range" name="time_range" class="ids-form-control-modern">
+                            <option value="5m" {% if time_range == '5m' %}selected{% endif %}>5 minutos</option>
+                            <option value="10m" {% if time_range == '10m' %}selected{% endif %}>10 minutos</option>
+                            <option value="15m" {% if time_range == '15m' %}selected{% endif %}>15 minutos</option>
+                            <option value="30m" {% if time_range == '30m' %}selected{% endif %}>30 minutos</option>
+                            <option value="1h" {% if time_range == '1h' %}selected{% endif %}>1 hora</option>
+                            <option value="2h" {% if time_range == '2h' %}selected{% endif %}>2 horas</option>
+                            <option value="6h" {% if time_range == '6h' %}selected{% endif %}>6 horas</option>
+                            <option value="12h" {% if time_range == '12h' %}selected{% endif %}>12 horas</option>
+                            <option value="24h" {% if time_range == '24h' %}selected{% endif %}>24 horas</option>
+                            <option value="7d" {% if time_range == '7d' %}selected{% endif %}>7 días</option>
+                            <option value="14d" {% if time_range == '14d' %}selected{% endif %}>14 días</option>
+                            <option value="1m" {% if time_range == '1m' %}selected{% endif %}>1 mes</option>
+                            <option value="3m" {% if time_range == '3m' %}selected{% endif %}>3 meses</option>
+                            <option value="6m" {% if time_range == '6m' %}selected{% endif %}>6 meses</option>
+                            <option value="1y" {% if time_range == '1y' %}selected{% endif %}>1 año</option>
+                        </select>
+                        <label for="start_time" class="form-label mb-0 text-light ms-2">Desde</label>
+                        <div class="input-group">
+                            <input type="datetime-local" id="start_time" name="start_time" class="ids-form-control-modern" value="{{ filters.start_time|default:'' }}">
+                            <span class="input-group-text bg-white" style="cursor:pointer;" id="calendar-start">
+                                <i class="fas fa-calendar-alt" style="color: #007bff;"></i>
+                            </span>
+                        </div>
+                        <label for="end_time" class="form-label mb-0 text-light ms-2">Hasta</label>
+                        <div class="input-group">
+                            <input type="datetime-local" id="end_time" name="end_time" class="ids-form-control-modern" value="{{ filters.end_time|default:'' }}">
+                            <span class="input-group-text bg-white" style="cursor:pointer;" id="calendar-end">
+                                <i class="fas fa-calendar-alt" style="color: #007bff;"></i>
+                            </span>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm ms-2">Filtrar</button>
+                    </form>
+                </h5>
+            </div>
+            <div class="ids-card-body-modern">
+                <div class="ids-nav-buttons">
+                    <a href="?log_type=alerts&time_range={{ time_range }}" class="ids-nav-btn {% if log_type == 'alerts' %}active{% endif %}">
+                        <i class="fas fa-exclamation-triangle"></i>Alertas
+                    </a>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Estadísticas principales -->
+        <div class="row mb-4">
+            <div class="col-md-2">
+                <div class="ids-stat-card primary">
+                    <div class="ids-stat-number">{{ stats.total }}</div>
+                    <div class="ids-stat-label">Total Alertas</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="ids-stat-card danger">
+                    <div class="ids-stat-number">{{ stats.critical }}</div>
+                    <div class="ids-stat-label">Críticas</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="ids-stat-card warning">
+                    <div class="ids-stat-number">{{ stats.high }}</div>
+                    <div class="ids-stat-label">Altas</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="ids-stat-card info">
+                    <div class="ids-stat-number">{{ stats.medium }}</div>
+                    <div class="ids-stat-label">Medias</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="ids-stat-card secondary">
+                    <div class="ids-stat-number">{{ stats.low }}</div>
+                    <div class="ids-stat-label">Bajas</div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="ids-stat-card success">
+                    <div class="ids-stat-number">{{ stats.last_24h }}</div>
+                    <div class="ids-stat-label">Últimas 24h</div>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Estadísticas adicionales para Snort -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="ids-card-modern">
+                    <div class="ids-card-header-modern">
+                        <h6 class="mb-0">Top Firmas (24h)</h6>
+                    </div>
+                    <div class="ids-card-body-modern">
+                        {% for sig in top_signatures %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-truncate" style="max-width: 70%;" title="{{ sig.message }}">
+                                {{ sig.sid }}: {{ sig.message|truncatechars:50 }}
+                            </span>
+                            <span class="badge bg-primary">{{ sig.count }}</span>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">No hay datos disponibles</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="ids-card-modern">
+                    <div class="ids-card-header-modern">
+                        <h6 class="mb-0">Top IPs Origen (24h)</h6>
+                    </div>
+                    <div class="ids-card-body-modern">
+                        {% for ip in top_src_ips %}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-warning">{{ ip.src_ip }}</span>
+                            <span class="badge bg-danger">{{ ip.count }}</span>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted">No hay datos disponibles</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Filtros -->
+        <div class="ids-filters-container fade-in">
+            <h5 class="mb-3">
+                <i class="fas fa-filter me-2"></i>Filtros Avanzados
+            </h5>
+            <form method="get" class="row g-3" id="filters-form">
+                <input type="hidden" name="time_range" value="{{ time_range }}">
+                <div class="col-md-2">
+                    <label class="form-label">Severidad</label>
+                    <select name="severity" class="ids-form-control-modern">
+                        <option value="">Todas</option>
+                        {% for severity in severities %}
+                        <option value="{{ severity }}" {% if filters.severity == severity %}selected{% endif %}>{{ severity }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">IP Origen</label>
+                    <input type="text" name="src_ip" class="ids-form-control-modern" value="{{ filters.src_ip }}" placeholder="192.168.1.1">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">IP Destino</label>
+                    <input type="text" name="dst_ip" class="ids-form-control-modern" value="{{ filters.dst_ip }}" placeholder="192.168.1.1">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Protocolo</label>
+                    <select name="protocol" class="ids-form-control-modern">
+                        <option value="">Todos</option>
+                        {% for protocol in protocols %}
+                        <option value="{{ protocol }}" {% if filters.protocol == protocol %}selected{% endif %}>{{ protocol }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Búsqueda</label>
+                    <input type="text" name="search" class="ids-form-control-modern" value="{{ filters.search }}" placeholder="Buscar...">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="submit" class="ids-btn-modern">
+                            <i class="fas fa-search"></i>Buscar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    
+        <!-- Widgets de gráficos -->
+        <div class="row mb-4">
+            <div class="col-lg-6 mb-3">
+                <div class="ids-chart-container fade-in">
+                    <div class="ids-chart-title">
+                        <i class="fas fa-stream"></i>Línea de tiempo
+                    </div>
+                    <canvas id="chartTimeline" height="140"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-6 mb-3">
+                <div class="ids-chart-container fade-in">
+                    <div class="ids-chart-title">
+                        <i class="fas fa-network-wired"></i>Protocolos
+                    </div>
+                    <canvas id="chartProtocols" height="140"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-6 mb-3">
+                <div class="ids-chart-container fade-in">
+                    <div class="ids-chart-title">
+                        <i class="fas fa-arrow-up-right-dots"></i>Top Puertos Origen/Destino
+                    </div>
+                    <canvas id="chartPorts" height="140"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-6 mb-3">
+                <div class="ids-chart-container fade-in">
+                    <div class="ids-chart-title">
+                        <i class="fas fa-location-arrow"></i>Top IPs Origen/Destino
+                    </div>
+                    <canvas id="chartIPs" height="140"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de datos -->
+        <div class="ids-card-modern fade-in">
+            <div class="ids-card-header-modern d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-table me-2"></i>Alertas Snort
+                    <span class="ids-badge-modern ids-badge-primary ms-2" id="total-count">{{ logs.paginator.count }} total</span>
+                </h5>
+                <div>
+                    <div class="btn-group">
+                        <button class="ids-btn-modern" onclick="refreshData()" title="Actualizar datos">
+                            <i class="fas fa-sync-alt"></i>Refrescar
+                        </button>
+                        <button class="ids-btn-modern" onclick="startAutoRefresh()" title="Activar auto-actualización" id="start-auto-btn">
+                            <i class="fas fa-play"></i>Auto-actualizar
+                        </button>
+                        <button class="ids-btn-modern" onclick="stopAutoRefresh()" title="Detener auto-actualización" id="stop-auto-btn" style="display: none;">
+                            <i class="fas fa-stop"></i>Detener Auto
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="ids-card-body-modern p-0">
+                <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+                    <table class="ids-table-modern mb-0" id="logs-table">
+                    <thead class="bg-dark text-light">
+                        <tr>
+                            <th class="bg-dark text-light">Timestamp</th>
+                            <th class="bg-dark text-light">Severidad</th>
+                            <th class="bg-dark text-light">Origen</th>
+                            <th class="bg-dark text-light">Destino</th>
+                            <th class="bg-dark text-light">Protocolo</th>
+                            <th class="bg-dark text-light">Signature ID</th>
+                            <th class="bg-dark text-light">Mensaje</th>
+                            <th class="bg-dark text-light">Clasificación</th>
+                            <th class="bg-dark text-light">TTL</th>
+                            <th class="bg-dark text-light">TOS</th>
+                            <th class="bg-dark text-light">Flags</th>
+                            <th class="bg-dark text-light">Seq/Ack</th>
+                            <th class="bg-dark text-light">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logs-table-body">
+                        {% for log in logs|slice:":10" %}
+                        <tr class="{% if log.severity == '1' %}table-danger{% elif log.severity == '2' %}table-warning{% endif %}" data-log-id="{{ log.id }}">
+                            <td>
+                                <span class="text-info">{{ log.timestamp|date:"d/m/Y H:i:s" }}</span>
+                                <br><small class="text-muted">{{ log.timestamp|timesince }} atrás</small>
+                            </td>
+                            <td>
+                                <span class="ids-badge-modern {% if log.severity == '1' %}ids-badge-critical{% elif log.severity == '2' %}ids-badge-high{% elif log.severity == '3' %}ids-badge-medium{% else %}ids-badge-low{% endif %}">
+                                    {% if log.severity == '1' %}Critical{% elif log.severity == '2' %}High{% elif log.severity == '3' %}Medium{% else %}Low{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="text-warning">{{ log.src_ip }}</span>
+                                {% if log.src_port %}
+                                <br><small class="text-muted">:{{ log.src_port }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="text-info">{{ log.dst_ip }}</span>
+                                {% if log.dst_port %}
+                                <br><small class="text-muted">:{{ log.dst_port }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ log.protocol }}</span>
+                            </td>
+                            <td>
+                                <span class="text-light">{{ log.sid }}</span>
+                            </td>
+                            <td>
+                                <span class="text-light">{{ log.message|truncatechars:80 }}</span>
+                            </td>
+                            <td>
+                                <span class="text-muted">{{ log.classification|default:"-" }}</span>
+                            </td>
+                            <td>
+                                <span class="text-muted">{{ log.ttl|default:"-" }}</span>
+                            </td>
+                            <td>
+                                <span class="text-muted">{{ log.tos|default:"-" }}</span>
+                            </td>
+                            <td>
+                                <span class="text-muted">{{ log.flags|default:"-" }}</span>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {% if log.seq %}Seq: {{ log.seq }}{% endif %}
+                                    {% if log.ack %}<br>Ack: {{ log.ack }}{% endif %}
+                                </small>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <button class="ids-btn-modern" onclick="showDetails({{ log.id }})" title="Ver detalles completos">
+                                        <i class="fas fa-eye"></i>Detalles
+                                    </button>
+                                    <button class="ids-btn-modern" onclick="analyzeIP('{{ log.src_ip }}')" title="Analizar IP origen">
+                                        <i class="fas fa-search"></i>Analizar
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="13" class="text-center text-muted py-4">
+                                <i class="fas fa-info-circle fa-2x mb-2"></i>
+                                <br>No hay datos disponibles para este tipo de log.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% if logs.has_other_pages %}
+        <div class="ids-card-modern">
+            <div class="ids-card-body-modern">
+                <nav aria-label="Paginación">
+                    <ul class="pagination pagination-sm justify-content-center mb-0">
+                        {% if logs.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1&log_type={{ log_type }}{% if filters.severity %}&severity={{ filters.severity }}{% endif %}{% if filters.src_ip %}&src_ip={{ filters.src_ip }}{% endif %}{% if filters.dst_ip %}&dst_ip={{ filters.dst_ip }}{% endif %}{% if filters.protocol %}&protocol={{ filters.protocol }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}">Primera</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ logs.previous_page_number }}&log_type={{ log_type }}{% if filters.severity %}&severity={{ filters.severity }}{% endif %}{% if filters.src_ip %}&src_ip={{ filters.src_ip }}{% endif %}{% if filters.dst_ip %}&dst_ip={{ filters.dst_ip }}{% endif %}{% if filters.protocol %}&protocol={{ filters.protocol }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}">Anterior</a>
+                        </li>
+                        {% endif %}
+                        
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Página {{ logs.number }} de {{ logs.paginator.num_pages }}
+                            </span>
+                        </li>
+                        
+                        {% if logs.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ logs.next_page_number }}&log_type={{ log_type }}{% if filters.severity %}&severity={{ filters.severity }}{% endif %}{% if filters.src_ip %}&src_ip={{ filters.src_ip }}{% endif %}{% if filters.dst_ip %}&dst_ip={{ filters.dst_ip }}{% endif %}{% if filters.protocol %}&protocol={{ filters.protocol }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}">Siguiente</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ logs.paginator.num_pages }}&log_type={{ log_type }}{% if filters.severity %}&severity={{ filters.severity }}{% endif %}{% if filters.src_ip %}&src_ip={{ filters.src_ip }}{% endif %}{% if filters.dst_ip %}&dst_ip={{ filters.dst_ip }}{% endif %}{% if filters.protocol %}&protocol={{ filters.protocol }}{% endif %}{% if filters.search %}&search={{ filters.search }}{% endif %}">Última</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal para detalles -->
+<div class="modal fade" id="detailsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detalles del Evento Snort</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="detailsContent">
+                    <!-- Contenido dinámico -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Indicador de auto-actualización -->
+<div class="ids-auto-refresh-indicator" id="auto-refresh-indicator">
+    <div class="ids-loading-spinner"></div>
+    <span>Auto-actualización activa</span>
+</div>
+
+
+<script src="{% static 'js/ids-dashboard.js' %}"></script>
+<script>
+// Configurar datos de gráficos para el dashboard
+window.chartData = {{ chart|safe|default:'{}' }};
+
+// Debug: mostrar datos en consola
+console.log('Chart data:', window.chartData);
+
+// Forzar renderizado de gráficos si hay datos
+if (window.chartData && Object.keys(window.chartData).length > 0) {
+    setTimeout(() => {
+        if (typeof Chart !== 'undefined') {
+            renderCharts();
+        }
+    }, 1000);
+}
+
+// Función mejorada para mostrar detalles completos del alert.full
+function showDetails(logId) {
+    // Siempre obtener los datos completos por AJAX para mostrar todos los campos
+    fetch(`/ids-ingest/snort/details/${logId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayDetailedModal(data.log);
+            } else {
+                alert('Error obteniendo detalles: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error obteniendo detalles del evento');
+        });
+}
+
+function displayDetailedModal(logData) {
+    const modal = document.getElementById('detailsModal');
+    const content = document.getElementById('detailsContent');
+    
+    // Crear contenido detallado con todos los campos del alert.full
+    content.innerHTML = `
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-3" style="background: #1a2233; border: 1px solid #0ff;">
+                    <div class="card-header" style="background: linear-gradient(90deg,#0ff,#09f); color: #222;">
+                        <h6 class="mb-0"><i class="fas fa-info-circle"></i> Información Básica</h6>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm text-light">
+                            <tr><td><i class="fas fa-clock text-cyan"></i> <strong>Timestamp:</strong></td><td>${logData.timestamp || '<span class=\'text-muted\'>-</span>'}</td></tr>
+                            <tr><td><i class="fas fa-bolt text-warning"></i> <strong>Severidad:</strong></td><td><span class="badge bg-gradient" style="background:linear-gradient(90deg,#0ff,#09f);color:#222;">${logData.severity || '-'}</span></td></tr>
+                            <tr><td><i class="fas fa-layer-group text-info"></i> <strong>Priority:</strong></td><td>${logData.priority || '<span class=\'text-muted\'>-</span>'}</td></tr>
+                            <tr><td><i class="fas fa-fingerprint text-cyan"></i> <strong>GID:</strong></td><td>${logData.gid || '<span class=\'text-muted\'>-</span>'}</td></tr>
+                            <tr><td><i class="fas fa-key text-cyan"></i> <strong>SID:</strong></td><td>${logData.sid || '<span class=\'text-muted\'>-</span>'}</td></tr>
+                            <tr><td><i class="fas fa-sync-alt text-cyan"></i> <strong>Rev:</strong></td><td>${logData.rev || '<span class=\'text-muted\'>-</span>'}</td></tr>
+                            <tr><td><i class="fas fa-project-diagram text-cyan"></i> <strong>Protocolo:</strong></td><td><span class="badge bg-info text-dark">${logData.protocol || '-'}</span></td></tr>
+                            <tr><td><i class="fas fa-tag text-cyan"></i> <strong>Clasificación:</strong></td><td>${logData.classification || '<span class=\'text-muted\'>-</span>'}</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-3" style="background: #1a2233; border: 1px solid #0ff;">
+                    <div class="card-header" style="background: linear-gradient(90deg,#0ff,#09f); color: #222;">
+                        <h6 class="mb-0"><i class="fas fa-network-wired"></i> Conectividad</h6>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm text-light">
+                            <tr><td><i class="fas fa-arrow-up text-warning"></i> <strong>IP Origen:</strong></td><td><span class="text-warning">${logData.src_ip || '-'}</span></td></tr>
+                            <tr><td><i class="fas fa-plug text-cyan"></i> <strong>Puerto Origen:</strong></td><td>${logData.src_port || '<span class=\'text-muted\'>-</span>'}</td></tr>
+                            <tr><td><i class="fas fa-arrow-down text-info"></i> <strong>IP Destino:</strong></td><td><span class="text-info">${logData.dst_ip || '-'}</span></td></tr>
+                            <tr><td><i class="fas fa-plug text-cyan"></i> <strong>Puerto Destino:</strong></td><td>${logData.dst_port || '<span class=\'text-muted\'>-</span>'}</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-3" style="background: #232b3e; border: 1px solid #09f;">
+                    <div class="card-header" style="background: linear-gradient(90deg,#09f,#0ff); color: #fff;">
+                        <h6 class="mb-0"><i class="fas fa-cogs"></i> Detalles de Paquete IP</h6>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm text-light">
+                            <tr><td><i class="fas fa-hourglass-half text-cyan"></i> <strong>TTL:</strong></td><td>${logData.ttl || '<span class=\'text-muted\'>-</span>'}</td></tr>
+                            <tr><td><i class="fas fa-tachometer-alt text-cyan"></i> <strong>TOS:</strong></td><td>${logData.tos || '<span class=\'text-muted\'>-</span>'}</td></tr>
+                            <tr><td><i class="fas fa-id-badge text-cyan"></i> <strong>Packet ID:</strong></td><td>${logData.packet_id || '<span class=\'text-muted\'>-</span>'}</td></tr>
+                            <tr><td><i class="fas fa-ruler-horizontal text-cyan"></i> <strong>IP Length:</strong></td><td>${logData.ip_len || '<span class=\'text-muted\'>-</span>'}</td></tr>
+                            <tr><td><i class="fas fa-ruler-combined text-cyan"></i> <strong>Datagram Length:</strong></td><td>${logData.dgm_len || '<span class=\'text-muted\'>-</span>'}</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-3" style="background: #232b3e; border: 1px solid #09f;">
+                    <div class="card-header" style="background: linear-gradient(90deg,#09f,#0ff); color: #fff;">
+                        <h6 class="mb-0"><i class="fas fa-exchange-alt"></i> Detalles TCP</h6>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm text-light">
+                            <tr><td><i class="fas fa-flag text-cyan"></i> <strong>Flags:</strong></td><td><code>${logData.flags || '<span class=\'text-muted\'>-</span>'}</code></td></tr>
+                            <tr><td><i class="fas fa-random text-cyan"></i> <strong>Sequence:</strong></td><td><code>${logData.seq || '<span class=\'text-muted\'>-</span>'}</code></td></tr>
+                            <tr><td><i class="fas fa-random text-cyan"></i> <strong>Acknowledgment:</strong></td><td><code>${logData.ack || '<span class=\'text-muted\'>-</span>'}</code></td></tr>
+                            <tr><td><i class="fas fa-window-maximize text-cyan"></i> <strong>Window:</strong></td><td><code>${logData.win || '<span class=\'text-muted\'>-</span>'}</code></td></tr>
+                            <tr><td><i class="fas fa-ruler-vertical text-cyan"></i> <strong>TCP Length:</strong></td><td>${logData.tcp_len || '<span class=\'text-muted\'>-</span>'}</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <div class="card mb-3" style="background: #181c24; border: 1px solid #0ff;">
+                    <div class="card-header" style="background: linear-gradient(90deg,#0ff,#09f); color: #222;">
+                        <h6 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Mensaje de Alerta</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0 text-light">${logData.message || '-'}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        ${logData.raw ? `
+        <div class="row">
+            <div class="col-12">
+                <div class="card" style="background: #232b3e; border: 1px solid #333;">
+                    <div class="card-header bg-gradient" style="background: linear-gradient(90deg,#333,#0ff); color: #fff;">
+                        <h6 class="mb-0"><i class="fas fa-file-code"></i> Log Raw Completo</h6>
+                    </div>
+                    <div class="card-body">
+                        <pre class="bg-dark text-light p-3 rounded" style="max-height: 300px; overflow-y: auto;">${logData.raw}</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+        ` : ''}
+    `;
+    
+    // Mostrar modal
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+}
+
+// Función para analizar IP
+function analyzeIP(ip) {
+    // Copiar la IP al portapapeles y mostrar notificación
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(ip).then(function() {
+            // Opcional: mostrar notificación visual
+            alert('IP copiada al portapapeles: ' + ip);
+        }, function(err) {
+            alert('No se pudo copiar la IP: ' + err);
+        });
+    } else {
+        // Fallback para navegadores antiguos
+        const tempInput = document.createElement('input');
+        tempInput.value = ip;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        try {
+            document.execCommand('copy');
+            alert('IP copiada al portapapeles: ' + ip);
+        } catch (err) {
+            alert('No se pudo copiar la IP');
+        }
+        document.body.removeChild(tempInput);
+    }
+}
+</script>
+{% endblock %}

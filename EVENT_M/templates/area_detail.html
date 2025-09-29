@@ -1,0 +1,28 @@
+{% extends "generic_detail.html" %}
+{% block title %}Detalle de Área | VANT-SIEM{% endblock %}
+{% block detail_content %}
+<div class="row">
+    <div class="col-md-6">
+        <h6 class="text-info">ID:</h6>
+        <p class="text-light">{{ object.id }}</p>
+    </div>
+    <div class="col-md-6">
+        <h6 class="text-info">Nombre:</h6>
+        <p class="text-light">{{ object.nombre }}</p>
+    </div>
+</div>
+{% if object.descripcion %}
+<div class="row">
+    <div class="col-12">
+        <h6 class="text-info">Descripción:</h6>
+        <p class="text-light">{{ object.descripcion }}</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{{ block.super }}
+{% endblock %}
+
+

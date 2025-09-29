@@ -1,0 +1,75 @@
+{% extends "dashboard.html" %}
+{% block title %}{{ form.instance.pk|yesno:"Editar Responsable,Nuevo Responsable" }} | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card bg-secondary shadow">
+            <div class="card-header text-center text-info fw-bold">
+                {{ form.instance.pk|yesno:"Editar Responsable,Nuevo Responsable" }}
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        {{ form.errors }}
+                    </div>
+                {% endif %}
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="nombres" class="form-label fw-bold text-info">Nombres</label>
+                                <input type="text" name="nombres" id="nombres" class="form-control" required value="{{ form.nombres.value|default_if_none:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="apellidos" class="form-label fw-bold text-info">Apellidos</label>
+                                <input type="text" name="apellidos" id="apellidos" class="form-control" required value="{{ form.apellidos.value|default_if_none:'' }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label fw-bold text-info">Email</label>
+                        <input type="email" name="email" id="email" class="form-control" required value="{{ form.email.value|default_if_none:'' }}">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="telefono_particular" class="form-label fw-bold text-info">Teléfono Particular</label>
+                                <input type="text" name="telefono_particular" id="telefono_particular" class="form-control" required value="{{ form.telefono_particular.value|default_if_none:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="telefono_corp" class="form-label fw-bold text-info">Teléfono Corporativo</label>
+                                <input type="text" name="telefono_corp" id="telefono_corp" class="form-control" required value="{{ form.telefono_corp.value|default_if_none:'' }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tipo" class="form-label fw-bold text-info">Tipo</label>
+                        <input type="text" name="tipo" id="tipo" class="form-control" required value="{{ form.tipo.value|default_if_none:'' }}" placeholder="Ej: Cuadro Centro, RSI, Admin">
+                    </div>
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label fw-bold text-info">Descripción</label>
+                        <textarea name="descripcion" id="descripcion" class="form-control" rows="3" required>{{ form.descripcion.value|default_if_none:'' }}</textarea>
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'responsable-list' %}" class="btn btn-secondary me-md-2">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

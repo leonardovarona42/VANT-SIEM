@@ -1,0 +1,579 @@
+{% extends "dashboard.html" %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ids-dashboard.css' %}">
+{% endblock %}
+{% block title %}Configuración IDS/IPS | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-info mb-0">Configuración de Ingesta IDS/IPS</h2>
+        <div class="btn-group" role="group">
+            <a href="{% url 'alerts-dashboard' %}" class="btn btn-warning btn-sm">
+                <i class="fas fa-exclamation-triangle me-1"></i>Dashboard Alertas
+            </a>
+            <a href="{% url 'statistics-dashboard' %}" class="btn btn-info btn-sm">
+                <i class="fas fa-chart-bar me-1"></i>Dashboard Estadísticas
+            </a>
+            {% if request.user.is_superuser %}
+            <a href="{% url 'service-management' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-cogs me-1"></i>Gestión de Servicios
+            </a>
+            {% endif %}
+            <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addConfigModal">
+                <i class="fas fa-plus me-1"></i>Nueva Configuración
+            </button>
+        </div>
+    </div>
+    
+    <!-- Estadísticas generales -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ stats.total_configs }}</h4>
+                            <p class="card-text">Total Configuraciones</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-cogs fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ stats.active_configs }}</h4>
+                            <p class="card-text">Configuraciones Activas</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-play fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ stats.snort_configs }}</h4>
+                            <p class="card-text">Configuraciones Snort</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-bug fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ stats.suricata_configs }}</h4>
+                            <p class="card-text">Configuraciones Suricata</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-biohazard fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="ids-card-modern">
+                <div class="ids-card-header-modern d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Estado del Servicio de Ingesta</h6>
+                    <button class="ids-btn-modern" onclick="fetchServiceStatus()"><i class="fas fa-sync-alt"></i>Actualizar</button>
+                </div>
+                <div class="ids-card-body-modern">
+                    <div id="ingest-status" class="small text-muted">Cargando estado...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <form method="post">
+        {% csrf_token %}
+        <div class="table-responsive">
+            <table class="table table-dark table-bordered table-hover">
+                <thead class="bg-dark text-light">
+                    <tr>
+                        <th class="bg-dark text-light">Tipo</th>
+                        <th class="bg-dark text-light">Directorio de Logs</th>
+                        <th class="bg-dark text-light">Estado</th>
+                        <th class="bg-dark text-light">Retención (días)</th>
+                        <th class="bg-dark text-light">Última ejecución</th>
+                        <th class="bg-dark text-light">Posición</th>
+                        <th class="bg-dark text-light">Acciones</th>
+                        <th class="bg-dark text-light">Servicio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for config in configs %}
+                    <tr class="{% if config.active %}table-success{% else %}table-secondary{% endif %}">
+                        <td>
+                            <span class="badge bg-{% if config.ids_type == 'snort' %}warning{% else %}info{% endif %}">
+                                {{ config.ids_type|title }}
+                            </span>
+                        </td>
+                        <td>
+                            <input type="text" name="log_path_{{ config.id }}" value="{{ config.log_path }}" class="form-control form-control-sm" placeholder="C:\\suricata-log o /var/log/suricata">
+                            <small class="text-muted">Directorio base de logs</small>
+                        </td>
+                        <td>
+                            <div class="form-check form-switch">
+                                <input type="checkbox" name="active_{{ config.id }}" class="form-check-input" 
+                                       {% if config.active %}checked{% endif %} id="active_{{ config.id }}">
+                                <label class="form-check-label" for="active_{{ config.id }}">
+                                    {% if config.active %}
+                                        <span class="text-success">Activo</span>
+                                    {% else %}
+                                        <span class="text-muted">Inactivo</span>
+                                    {% endif %}
+                                </label>
+                            </div>
+                        </td>
+                        <td>
+                            <input type="number" name="retention_days_{{ config.id }}" value="{{ config.retention_days }}" 
+                                   class="form-control form-control-sm" min="1" max="365">
+                        </td>
+                        <td>
+                            {% if config.last_run %}
+                                <span class="text-info">{{ config.last_run|date:"d/m/Y H:i" }}</span>
+                                <br><small class="text-muted">{{ config.last_run|timesince }} atrás</small>
+                            {% else %}
+                                <span class="text-muted">Nunca</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">{{ config.last_position|filesizeformat }}</span>
+                        </td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-primary btn-sm" 
+                                        data-bs-toggle="modal" data-bs-target="#editConfigModal{{ config.id }}"
+                                        title="Editar configuración">
+                                    <i class="fas fa-edit me-1"></i>Editar
+                                </button>
+                                <button type="button" class="btn btn-info btn-sm" 
+                                        onclick="testConfig({{ config.id }})" title="Probar configuración">
+                                    <i class="fas fa-vial me-1"></i>Probar
+                                </button>
+                                <button type="button" class="btn btn-warning btn-sm" 
+                                        onclick="showStats({{ config.id }})" title="Ver estadísticas">
+                                    <i class="fas fa-chart-line me-1"></i>Stats
+                                </button>
+                            </div>
+                        </td>
+                        <td>
+                            {% if request.user.is_superuser %}
+                                <div class="btn-group-vertical" role="group">
+                                    {% if config.active %}
+                                        <button type="button" class="btn btn-danger btn-sm mb-1" 
+                                                onclick="toggleIngest({{ config.id }}, false)" title="Detener servicio de ingesta">
+                                            <i class="fas fa-stop me-1"></i>Detener
+                                        </button>
+                                    {% else %}
+                                        <button type="button" class="btn btn-success btn-sm mb-1" 
+                                                onclick="toggleIngest({{ config.id }}, true)" title="Iniciar servicio de ingesta">
+                                            <i class="fas fa-play me-1"></i>Iniciar
+                                        </button>
+                                    {% endif %}
+                                    <button type="button" class="btn btn-warning btn-sm mb-1" 
+                                            onclick="executeAllServices()" title="Ejecutar todas las ingestas activas">
+                                        <i class="fas fa-bolt me-1"></i>Ejecutar Todo
+                                    </button>
+                                    <button type="button" class="btn btn-info btn-sm" 
+                                            onclick="startDaemonService()" title="Iniciar daemon para ingesta automática">
+                                        <i class="fas fa-cogs me-1"></i>Daemon
+                                    </button>
+                                </div>
+                            {% else %}
+                                <button type="button" class="btn btn-secondary btn-sm" disabled title="Solo un superusuario puede gestionar servicios">
+                                    <i class="fas fa-lock me-1"></i>Restringido
+                                </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                <!-- Modal Editar -->
+                <div class="modal fade" id="editConfigModal{{ config.id }}" tabindex="-1" aria-labelledby="editConfigModalLabel{{ config.id }}" aria-hidden="true">
+                  <div class="modal-dialog">
+                    <div class="modal-content">
+                      <form method="post" action="{% url 'ids-config' %}">
+                        {% csrf_token %}
+                        <div class="modal-header">
+                          <h5 class="modal-title" id="editConfigModalLabel{{ config.id }}">Editar Configuración</h5>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                          <input type="hidden" name="edit_id" value="{{ config.id }}">
+                          <div class="mb-3">
+                            <label>Tipo</label>
+                            <select name="edit_ids_type" class="form-select" required>
+                              <option value="snort" {% if config.ids_type == 'snort' %}selected{% endif %}>Snort</option>
+                              <option value="suricata" {% if config.ids_type == 'suricata' %}selected{% endif %}>Suricata</option>
+                            </select>
+                          </div>
+                          <div class="mb-3">
+                            <label>Ruta de Log</label>
+                            <input type="text" name="edit_log_path" value="{{ config.log_path }}" class="form-control" required>
+                          </div>
+                          <div class="mb-3">
+                            <label>Activo</label>
+                            <input type="checkbox" name="edit_active" {% if config.active %}checked{% endif %}>
+                          </div>
+                          <div class="mb-3">
+                            <label>Retención (días)</label>
+                            <input type="number" name="edit_retention_days" value="{{ config.retention_days }}" class="form-control" min="1" required>
+                          </div>
+                        </div>
+                        <div class="modal-footer">
+                          <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+            </tbody>
+        </table>
+        <button type="submit" class="btn btn-info btn-sm mt-3">
+            <i class="fas fa-save me-1"></i>Guardar Cambios Rápidos
+        </button>
+    </form>
+    <!-- Modal Agregar -->
+    <div class="modal fade" id="addConfigModal" tabindex="-1" aria-labelledby="addConfigModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form method="post" action="{% url 'ids-config' %}">
+            {% csrf_token %}
+            <div class="modal-header">
+              <h5 class="modal-title" id="addConfigModalLabel">Agregar Configuración IDS/IPS</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label for="add_ids_type" class="form-label fw-bold text-info">Tipo de IDS/IPS</label>
+                <select name="add_ids_type" id="add_ids_type" class="form-select" required>
+                  <option value="" disabled selected>Seleccione el tipo...</option>
+                  <option value="snort">Snort</option>
+                  <option value="suricata">Suricata</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="add_log_path" class="form-label fw-bold text-info">Directorio de logs</label>
+                <input type="text" name="add_log_path" id="add_log_path" class="form-control" required placeholder="C:\\suricata-log o /var/log/suricata">
+              </div>
+              <div class="mb-3">
+                <label for="add_active" class="form-label fw-bold text-info">¿Activo?</label>
+                <div class="form-check">
+                  <input type="checkbox" name="add_active" id="add_active" class="form-check-input">
+                  <label class="form-check-label" for="add_active">Activar ingesta automática</label>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="add_retention_days" class="form-label fw-bold text-info">Retención (días)</label>
+                <input type="number" name="add_retention_days" id="add_retention_days" class="form-control" min="1" value="30" required>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-success">Agregar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+</div>
+<script>
+async function fetchServiceStatus() {
+    try {
+        const res = await fetch('{% url "get-service-status" %}', { method: 'POST', headers: { 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value } });
+        const data = await res.json();
+        const el = document.getElementById('ingest-status');
+        if (!el) return;
+        if (!data.success) {
+            el.textContent = `Error: ${data.error || 'No disponible'}`;
+            return;
+        }
+        const s = data.status;
+        el.innerHTML = `
+            <div>Activo: <strong>${s.service_running ? 'Sí' : 'No'}</strong></div>
+            <div>Hilos activos: <strong>${s.active_threads}</strong> / ${s.total_threads}</div>
+            <div>Configs activas: <strong>${s.active_configs}</strong> / ${s.total_configs}</div>
+            <div>Procesados totales: <strong>${s.service_stats.total_processed}</strong></div>
+            <div>Errores totales: <strong class="text-danger">${s.service_stats.total_errors}</strong></div>
+            <div>Última ejecución: <strong>${s.service_stats.last_run || 'N/D'}</strong></div>
+        `;
+    } catch (e) {
+        const el = document.getElementById('ingest-status');
+        if (el) el.textContent = 'Error obteniendo estado';
+    }
+}
+document.addEventListener('DOMContentLoaded', () => {
+    fetchServiceStatus();
+    setInterval(fetchServiceStatus, 15000);
+});
+</script>
+<script>
+function testConfig(configId) {
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    
+    // Mostrar loading
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    button.disabled = true;
+    
+    fetch(`/ids-ingest/config/test/${configId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Test exitoso', data.message);
+            if (data.stats) {
+                showStatsModal(configId, data.stats);
+            }
+        } else {
+            showAlert('error', 'Test fallido', data.error);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Error', 'Error de conexión: ' + error.message);
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function toggleIngest(configId, activate) {
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    
+    // Mostrar loading
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    button.disabled = true;
+    
+    fetch(`/ids-ingest/config/toggle/${configId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        },
+        body: JSON.stringify({active: activate})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Estado cambiado', data.message);
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert('error', 'Error', data.error);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Error', 'Error de conexión: ' + error.message);
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function showStats(configId) {
+    // Implementar modal de estadísticas
+    showAlert('info', 'Estadísticas', 'Funcionalidad en desarrollo');
+}
+
+function showStatsModal(configId, stats) {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Estadísticas del Archivo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Información General</h6>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Total de líneas:</span>
+                                    <span class="badge bg-primary">${stats.total_lines || 0}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Líneas parseadas:</span>
+                                    <span class="badge bg-success">${stats.parsed_lines || 0}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Líneas con error:</span>
+                                    <span class="badge bg-danger">${stats.error_lines || 0}</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Distribución por Severidad</h6>
+                            <ul class="list-group list-group-flush">
+                                ${Object.entries(stats.severity_counts || {}).map(([severity, count]) => 
+                                    `<li class="list-group-item d-flex justify-content-between">
+                                        <span>${severity}:</span>
+                                        <span class="badge bg-${getSeverityColor(severity)}">${count}</span>
+                                    </li>`
+                                ).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    // Limpiar modal después de cerrar
+    modal.addEventListener('hidden.bs.modal', () => {
+        document.body.removeChild(modal);
+    });
+}
+
+function getSeverityColor(severity) {
+    const colors = {
+        'Critical': 'danger',
+        'High': 'warning',
+        'Medium': 'info',
+        'Low': 'secondary'
+    };
+    return colors[severity] || 'secondary';
+}
+
+function showAlert(type, title, message) {
+    const alertContainer = document.getElementById('alert-container') || createAlertContainer();
+    
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
+    alert.innerHTML = `
+        <strong>${title}:</strong> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    alertContainer.appendChild(alert);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 5000);
+}
+
+function createAlertContainer() {
+    const container = document.createElement('div');
+    container.id = 'alert-container';
+    container.style.position = 'fixed';
+    container.style.top = '20px';
+    container.style.right = '20px';
+    container.style.zIndex = '9999';
+    container.style.width = '400px';
+    document.body.appendChild(container);
+    return container;
+}
+
+// Función para ejecutar todos los servicios
+function executeAllServices() {
+    if (!confirm('¿Ejecutar ingesta inmediata para todas las configuraciones activas?')) {
+        return;
+    }
+    
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Ejecutando...';
+    button.disabled = true;
+    
+    fetch('/ids-ingest/service/start/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Ingesta ejecutada', data.message);
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert('error', 'Error', data.error);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Error', 'Error de conexión: ' + error.message);
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+// Función para iniciar daemon
+function startDaemonService() {
+    if (!confirm('¿Iniciar servicio daemon para ingesta automática?')) {
+        return;
+    }
+    
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Iniciando...';
+    button.disabled = true;
+    
+    fetch('/ids-ingest/service/start-daemon/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Daemon iniciado', data.message);
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert('error', 'Error', data.error);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Error', 'Error de conexión: ' + error.message);
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+// Auto-refresh cada 30 segundos
+setInterval(() => {
+    // Solo refrescar si no hay modales abiertos
+    if (!document.querySelector('.modal.show')) {
+        location.reload();
+    }
+}, 30000);
+</script>
+{% endblock %}

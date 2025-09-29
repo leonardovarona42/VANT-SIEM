@@ -1,0 +1,16 @@
+{% extends 'dashboard.html' %}
+{% block content %}
+<div class="container">
+  <div class="row mb-3">
+    <div class="col-md-3"><div class="card bg-primary text-white"><div class="card-body"><h4 class="mb-0">{{ total }}</h4><small>Total registros</small></div></div></div>
+    <div class="col-md-9"><div class="card bg-secondary"><div class="card-body"><h5 class="text-info mb-3">Últimos 7 días</h5><div class="table-responsive"><table class="table table-dark table-sm table-striped"><thead><tr><th>Día</th><th>Total</th></tr></thead><tbody>{% for d in last7 %}<tr><td>{{ d.date }}</td><td>{{ d.total }}</td></tr>{% endfor %}</tbody></table></div></div></div></div>
+  </div>
+  <div class="row mb-3">
+    <div class="col-md-6"><div class="card bg-secondary"><div class="card-body"><h5 class="text-info">Por HTTP</h5><table class="table table-dark table-sm table-striped"><thead><tr><th>HTTP</th><th>Total</th></tr></thead><tbody>{% for r in by_status %}<tr><td>{{ r.status_code }}</td><td>{{ r.total }}</td></tr>{% endfor %}</tbody></table></div></div></div>
+    <div class="col-md-6"><div class="card bg-secondary"><div class="card-body"><h5 class="text-info">Top fabricantes</h5><table class="table table-dark table-sm table-striped"><thead><tr><th>Fabricante</th><th>Total</th></tr></thead><tbody>{% for r in top_vendors %}<tr><td>{{ r.vendor|default:'-' }}</td><td>{{ r.total }}</td></tr>{% endfor %}</tbody></table></div></div></div>
+  </div>
+  <div class="row mb-3">
+    <div class="col-12"><div class="card bg-secondary"><div class="card-body"><h5 class="text-info">Top MACs</h5><div class="table-responsive"><table class="table table-dark table-sm table-striped"><thead><tr><th>MAC</th><th>Total</th></tr></thead><tbody>{% for r in top_macs %}<tr><td><code>{{ r.mac_address }}</code></td><td>{{ r.total }}</td></tr>{% endfor %}</tbody></table></div></div></div></div>
+  </div>
+</div>
+{% endblock %}

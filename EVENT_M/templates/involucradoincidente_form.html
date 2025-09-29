@@ -1,0 +1,80 @@
+{% extends "dashboard.html" %}
+{% block title %}{{ form.instance.pk|yesno:"Editar Involucrado en Incidente,Nuevo Involucrado en Incidente" }} | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card bg-secondary shadow">
+            <div class="card-header text-center text-info fw-bold">
+                {{ form.instance.pk|yesno:"Editar Involucrado en Incidente,Nuevo Involucrado en Incidente" }}
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        {{ form.errors }}
+                    </div>
+                {% endif %}
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="incidente" class="form-label fw-bold text-info">Incidente</label>
+                        <select name="incidente" id="incidente" class="form-select" required>
+                            <option disabled selected>Seleccione un incidente...</option>
+                            {% for incidente in form.incidente.field.queryset %}
+                                <option value="{{ incidente.id }}" {% if form.incidente.value == incidente.id|stringformat:"s" %}selected{% endif %}>{{ incidente.nombre_incidente }} ({{ incidente.codigo_incidente }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="involucrado" class="form-label fw-bold text-info">Involucrado</label>
+                        <select name="involucrado" id="involucrado" class="form-select" required>
+                            <option disabled selected>Seleccione un involucrado...</option>
+                            {% for involucrado in form.involucrado.field.queryset %}
+                                <option value="{{ involucrado.id }}" {% if form.involucrado.value == involucrado.id|stringformat:"s" %}selected{% endif %}>{{ involucrado.nombres }} {{ involucrado.apellidos }} ({{ involucrado.usuario }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="medida_impuesta" class="form-label fw-bold text-info">Medida Impuesta</label>
+                        <select name="medida_impuesta" id="medida_impuesta" class="form-select" required>
+                            <option disabled selected>Seleccione una medida...</option>
+                            {% for medida in form.medida_impuesta.field.queryset %}
+                                <option value="{{ medida.id }}" {% if form.medida_impuesta.value == medida.id|stringformat:"s" %}selected{% endif %}>{{ medida.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="fecha_inicio" class="form-label fw-bold text-info">Fecha de Inicio</label>
+                                <input type="date" name="fecha_inicio" id="fecha_inicio" class="form-control" required value="{{ form.fecha_inicio.value|default_if_none:'' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="fecha_fin" class="form-label fw-bold text-info">Fecha de Fin</label>
+                                <input type="date" name="fecha_fin" id="fecha_fin" class="form-control" required value="{{ form.fecha_fin.value|default_if_none:'' }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label fw-bold text-info">Descripción</label>
+                        <textarea name="descripcion" id="descripcion" class="form-control" rows="3" required>{{ form.descripcion.value|default_if_none:'' }}</textarea>
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'involucradoincidente-list' %}" class="btn btn-secondary me-md-2">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

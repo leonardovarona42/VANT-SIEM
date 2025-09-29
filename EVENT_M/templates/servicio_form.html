@@ -1,0 +1,55 @@
+{% extends "dashboard.html" %}
+{% block title %}{{ form.instance.pk|yesno:"Editar Servicio,Nuevo Servicio" }} | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card bg-secondary shadow">
+            <div class="card-header text-center text-info fw-bold">
+                {{ form.instance.pk|yesno:"Editar Servicio,Nuevo Servicio" }}
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        {{ form.errors }}
+                    </div>
+                {% endif %}
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label fw-bold text-info">Nombre</label>
+                        <input type="text" name="nombre" id="nombre" class="form-control" required value="{{ form.nombre.value|default_if_none:'' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label fw-bold text-info">Descripción</label>
+                        <textarea name="descripcion" id="descripcion" class="form-control" rows="4" required>{{ form.descripcion.value|default_if_none:'' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="host" class="form-label fw-bold text-info">IP del Servicio</label>
+                        <input type="text" name="host" id="host" class="form-control" placeholder="Ej: 192.168.1.100" value="{{ form.host.value|default_if_none:'' }}">
+                        <div class="form-text">IP del servicio para monitoreo (opcional)</div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" name="monitorear" id="monitorear" class="form-check-input" {% if form.monitorear.value %}checked{% endif %}>
+                            <label for="monitorear" class="form-check-label fw-bold text-info">Activar monitoreo</label>
+                        </div>
+                        <div class="form-text">Monitorear este servicio con ping periódico</div>
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'servicio-list' %}" class="btn btn-secondary me-md-2">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

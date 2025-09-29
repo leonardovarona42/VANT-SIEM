@@ -1,0 +1,380 @@
+/* Estilos específicos para dashboards de IDS/IPS */
+
+/* Variables CSS para tema consistente */
+:root {
+    --ids-primary: #3b82f6;
+    --ids-primary-dark: #1e40af;
+    --ids-secondary: #64748b;
+    --ids-success: #10b981;
+    --ids-warning: #f59e0b;
+    --ids-danger: #ef4444;
+    --ids-info: #06b6d4;
+    --ids-dark-bg: #0f172a;
+    --ids-card-bg: #1e293b;
+    --ids-border-color: #334155;
+    --ids-text-primary: #f8fafc;
+    --ids-text-secondary: #cbd5e1;
+    --ids-text-muted: #94a3b8;
+    --ids-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --ids-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Override del contenedor principal */
+.ids-dashboard-container {
+    background: var(--ids-dark-bg);
+    min-height: 100vh;
+    padding: 1.5rem 0;
+}
+
+/* Header del dashboard */
+.ids-dashboard-header {
+    background: var(--ids-card-bg);
+    border: 1px solid var(--ids-border-color);
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--ids-shadow);
+}
+
+.ids-dashboard-header h2 {
+    color: var(--ids-text-primary);
+    font-weight: 600;
+    font-size: 1.875rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.ids-header-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+/* Botones modernos */
+.ids-btn-modern {
+    background: var(--ids-primary);
+    border: 1px solid var(--ids-primary);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.ids-btn-modern:hover {
+    background: var(--ids-primary-dark);
+    border-color: var(--ids-primary-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--ids-shadow-lg);
+    color: white;
+}
+
+.ids-btn-modern.secondary {
+    background: transparent;
+    border-color: var(--ids-border-color);
+    color: var(--ids-text-secondary);
+}
+
+.ids-btn-modern.secondary:hover {
+    background: var(--ids-border-color);
+    color: var(--ids-text-primary);
+}
+
+/* Cards modernas */
+.ids-card-modern {
+    background: var(--ids-card-bg);
+    border: 1px solid var(--ids-border-color);
+    border-radius: 8px;
+    box-shadow: var(--ids-shadow);
+    transition: all 0.2s ease;
+}
+
+.ids-card-modern:hover {
+    box-shadow: var(--ids-shadow-lg);
+}
+
+.ids-card-header-modern {
+    background: var(--ids-card-bg);
+    border-bottom: 1px solid var(--ids-border-color);
+    padding: 1rem 1.5rem;
+    color: var(--ids-text-primary);
+}
+
+.ids-card-body-modern {
+    padding: 1.5rem;
+    background: var(--ids-card-bg);
+}
+
+/* Stats cards */
+.ids-stat-card {
+    background: var(--ids-card-bg);
+    border: 1px solid var(--ids-border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.ids-stat-card:hover {
+    box-shadow: var(--ids-shadow-lg);
+}
+
+.ids-stat-card.primary { border-left: 4px solid var(--ids-primary); }
+.ids-stat-card.danger { border-left: 4px solid var(--ids-danger); }
+.ids-stat-card.warning { border-left: 4px solid var(--ids-warning); }
+.ids-stat-card.info { border-left: 4px solid var(--ids-info); }
+.ids-stat-card.success { border-left: 4px solid var(--ids-success); }
+.ids-stat-card.secondary { border-left: 4px solid var(--ids-secondary); }
+
+.ids-stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0.5rem 0;
+    color: var(--ids-text-primary);
+}
+
+.ids-stat-label {
+    color: var(--ids-text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+/* Botones de navegación */
+.ids-nav-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.ids-nav-btn {
+    background: transparent;
+    border: 1px solid var(--ids-border-color);
+    color: var(--ids-text-secondary);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ids-nav-btn:hover {
+    background: var(--ids-primary);
+    border-color: var(--ids-primary);
+    color: white;
+}
+
+.ids-nav-btn.active {
+    background: var(--ids-primary);
+    border-color: var(--ids-primary);
+    color: white;
+}
+
+/* Tablas modernas */
+.ids-table-modern {
+    background: var(--ids-card-bg);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: var(--ids-shadow);
+}
+
+.ids-table-modern thead {
+    background: var(--ids-card-bg);
+}
+
+.ids-table-modern th {
+    border: none;
+    color: var(--ids-text-primary);
+    font-weight: 600;
+    padding: 1rem;
+    font-size: 0.875rem;
+    text-align: left;
+}
+
+.ids-table-modern td {
+    border: none;
+    border-bottom: 1px solid var(--ids-border-color);
+    padding: 1rem;
+    color: var(--ids-text-primary);
+    vertical-align: middle;
+}
+
+.ids-table-modern tbody tr {
+    transition: all 0.2s ease;
+}
+
+.ids-table-modern tbody tr:hover {
+    background: rgba(59, 130, 246, 0.05);
+}
+
+/* Badges modernos */
+.ids-badge-modern {
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.ids-badge-critical {
+    background: var(--ids-danger);
+    color: white;
+}
+
+.ids-badge-high {
+    background: var(--ids-warning);
+    color: white;
+}
+
+.ids-badge-medium {
+    background: var(--ids-info);
+    color: white;
+}
+
+.ids-badge-low {
+    background: var(--ids-secondary);
+    color: white;
+}
+
+/* Filtros */
+.ids-filters-container {
+    background: var(--ids-card-bg);
+    border: 1px solid var(--ids-border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--ids-shadow);
+}
+
+.ids-form-control-modern {
+    background: var(--ids-dark-bg);
+    border: 1px solid var(--ids-border-color);
+    color: var(--ids-text-primary);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.ids-form-control-modern:focus {
+    background: var(--ids-dark-bg);
+    border-color: var(--ids-primary);
+    color: var(--ids-text-primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    outline: none;
+}
+
+.ids-form-control-modern::placeholder {
+    color: var(--ids-text-muted);
+}
+
+/* Contenedores de gráficos */
+.ids-chart-container {
+    background: var(--ids-card-bg);
+    border: 1px solid var(--ids-border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: var(--ids-shadow);
+    margin-bottom: 1.5rem;
+    height: 300px;
+    position: relative;
+}
+
+.ids-chart-container canvas {
+    max-height: 250px;
+    width: 100%;
+}
+
+.ids-chart-title {
+    color: var(--ids-text-primary);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+}
+
+/* Indicador de auto-actualización */
+.ids-auto-refresh-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--ids-success);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    z-index: 1000;
+    box-shadow: var(--ids-shadow-lg);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.ids-auto-refresh-indicator.inactive {
+    background: var(--ids-secondary);
+}
+
+/* Loading spinner */
+.ids-loading-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: ids-spin 1s linear infinite;
+}
+
+@keyframes ids-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .ids-dashboard-header {
+        padding: 1rem;
+    }
+    
+    .ids-dashboard-header h2 {
+        font-size: 1.5rem;
+    }
+    
+    .ids-nav-buttons {
+        flex-direction: column;
+    }
+    
+    .ids-stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .ids-header-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+    
+    .ids-chart-container {
+        height: 250px;
+    }
+    
+    .ids-chart-container canvas {
+        max-height: 200px;
+    }
+}

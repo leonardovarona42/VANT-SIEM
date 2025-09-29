@@ -1,0 +1,38 @@
+{% extends "dashboard.html" %}
+{% block title %}Detalle de Involucrado en Incidente | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card bg-secondary shadow">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-info fw-bold">Detalle de Involucrado en Incidente</h5>
+                <div>
+                    <a href="{% url 'involucradoincidente-update' object.pk %}" class="btn btn-warning btn-sm me-2">Editar</a>
+                    <a href="{% url 'involucradoincidente-delete' object.pk %}" class="btn btn-danger btn-sm">Eliminar</a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <h6 class="text-info">Involucrado:</h6>
+                        <p class="text-light">{{ object.involucrado.nombres }} {{ object.involucrado.apellidos }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-info">Incidente:</h6>
+                        <p class="text-light">{{ object.incidente.nombre_incidente }}</p>
+                    </div>
+                    <div class="col-12">
+                        <h6 class="text-info">Participación:</h6>
+                        <p class="text-light">{{ object.participacion }}</p>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{% url 'involucradoincidente-list' %}" class="btn btn-secondary">Volver al Listado</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

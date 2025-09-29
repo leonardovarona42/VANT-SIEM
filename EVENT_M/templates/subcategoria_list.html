@@ -1,0 +1,59 @@
+{% extends "dashboard.html" %}
+{% block title %}Listado de Subcategorías | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card bg-secondary shadow">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-info fw-bold">Listado de Subcategorías</h5>
+                <a href="{% url 'subcategoria-create' %}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus"></i> Nueva Subcategoría
+                </a>
+            </div>
+            <div class="card-body">
+                {% if object_list %}
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Categoría</th>
+                                    <th>Nivel Peligrosidad</th>
+                                    <th>Descripción</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for subcategoria in object_list %}
+                                <tr>
+                                    <td>{{ subcategoria.id }}</td>
+                                    <td>{{ subcategoria.nombre }}</td>
+                                    <td>{{ subcategoria.categoria.nombre }}</td>
+                                    <td>
+                                        <span class="badge {% if subcategoria.nivel_peligrosidad >= 8 %}bg-danger{% elif subcategoria.nivel_peligrosidad >= 5 %}bg-warning{% else %}bg-success{% endif %}">
+                                            {{ subcategoria.nivel_peligrosidad }}/10
+                                        </span>
+                                    </td>
+                                    <td>{{ subcategoria.descripcion|truncatechars:30 }}</td>
+                                    <td>
+                                        <a href="{% url 'subcategoria-detail' subcategoria.pk %}" class="btn btn-info btn-sm">Ver</a>
+                                        <a href="{% url 'subcategoria-update' subcategoria.pk %}" class="btn btn-warning btn-sm">Editar</a>
+                                        <a href="{% url 'subcategoria-delete' subcategoria.pk %}" class="btn btn-danger btn-sm">Eliminar</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-muted">No hay subcategorías registradas.</p>
+                        <a href="{% url 'subcategoria-create' %}" class="btn btn-primary">Crear Primera Subcategoría</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

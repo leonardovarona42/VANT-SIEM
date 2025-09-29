@@ -1,0 +1,29 @@
+{% extends "dashboard.html" %}
+{% block title %}Eliminar Categoría | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card bg-secondary shadow">
+            <div class="card-header text-center text-danger fw-bold">
+                Confirmar Eliminación
+            </div>
+            <div class="card-body text-center">
+                <h5 class="text-warning">¿Está seguro que desea eliminar esta categoría?</h5>
+                <div class="card bg-dark mt-3">
+                    <div class="card-body">
+                        <h6 class="text-info">Categoría: {{ object.nombre }}</h6>
+                        <p class="text-muted">{{ object.descripcion }}</p>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        <a href="{% url 'categoria-list' %}" class="btn btn-secondary me-2">Cancelar</a>
+                        <button type="submit" class="btn btn-danger">Sí, Eliminar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

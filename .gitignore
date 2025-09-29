@@ -1,0 +1,6 @@
+.git/
+dependencias/
+snort-logs/
+suricata-log/
+VANT_SIEM_PRESENTATION.md
+logs/eventos.json

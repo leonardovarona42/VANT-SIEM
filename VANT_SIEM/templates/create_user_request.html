@@ -1,0 +1,291 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card bg-secondary">
+                <div class="card-header">
+                    <h3 class="text-info mb-0">
+                        <i class="fas fa-user-plus me-2"></i>Crear Solicitud de Usuario
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="username" class="form-label fw-bold text-info">Nombre de Usuario</label>
+                                    <input type="text" class="form-control" id="username" name="username" required>
+                                    <div class="form-text text-light">Nombre único para el usuario</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="email" class="form-label fw-bold text-info">Email</label>
+                                    <input type="email" class="form-control" id="email" name="email" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="first_name" class="form-label fw-bold text-info">Nombre</label>
+                                    <input type="text" class="form-control" id="first_name" name="first_name" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="last_name" class="form-label fw-bold text-info">Apellidos</label>
+                                    <input type="text" class="form-control" id="last_name" name="last_name" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label fw-bold text-info">Contraseña</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                            <div class="form-text text-light">Mínimo 8 caracteres</div>
+                        </div>
+
+                        <!-- Permisos sobre Modelos -->
+                        <div class="mb-4">
+                            <h5 class="text-info mb-3">
+                                <i class="fas fa-shield-alt me-2"></i>Permisos de Acceso
+                            </h5>
+                            
+                            <!-- Reportes -->
+                            <div class="card bg-dark mb-3">
+                                <div class="card-header">
+                                    <h6 class="text-warning mb-0">
+                                        <i class="fas fa-file-alt me-2"></i>Reportes
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="reporte_view" name="permissions" value="reporte_view">
+                                                <label class="form-check-label text-light" for="reporte_view">Ver</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="reporte_add" name="permissions" value="reporte_add">
+                                                <label class="form-check-label text-light" for="reporte_add">Crear</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="reporte_change" name="permissions" value="reporte_change">
+                                                <label class="form-check-label text-light" for="reporte_change">Editar</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="reporte_delete" name="permissions" value="reporte_delete">
+                                                <label class="form-check-label text-light" for="reporte_delete">Eliminar</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Incidentes -->
+                            <div class="card bg-dark mb-3">
+                                <div class="card-header">
+                                    <h6 class="text-warning mb-0">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>Incidentes
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="incidente_view" name="permissions" value="incidente_view">
+                                                <label class="form-check-label text-light" for="incidente_view">Ver</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="incidente_add" name="permissions" value="incidente_add">
+                                                <label class="form-check-label text-light" for="incidente_add">Crear</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="incidente_change" name="permissions" value="incidente_change">
+                                                <label class="form-check-label text-light" for="incidente_change">Editar</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="incidente_delete" name="permissions" value="incidente_delete">
+                                                <label class="form-check-label text-light" for="incidente_delete">Eliminar</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Involucrados -->
+                            <div class="card bg-dark mb-3">
+                                <div class="card-header">
+                                    <h6 class="text-warning mb-0">
+                                        <i class="fas fa-users me-2"></i>Involucrados
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="involucrado_view" name="permissions" value="involucrado_view">
+                                                <label class="form-check-label text-light" for="involucrado_view">Ver</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="involucrado_add" name="permissions" value="involucrado_add">
+                                                <label class="form-check-label text-light" for="involucrado_add">Crear</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="involucrado_change" name="permissions" value="involucrado_change">
+                                                <label class="form-check-label text-light" for="involucrado_change">Editar</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="involucrado_delete" name="permissions" value="involucrado_delete">
+                                                <label class="form-check-label text-light" for="involucrado_delete">Eliminar</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Áreas -->
+                            <div class="card bg-dark mb-3">
+                                <div class="card-header">
+                                    <h6 class="text-warning mb-0">
+                                        <i class="fas fa-building me-2"></i>Áreas
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="area_view" name="permissions" value="area_view">
+                                                <label class="form-check-label text-light" for="area_view">Ver</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="area_add" name="permissions" value="area_add">
+                                                <label class="form-check-label text-light" for="area_add">Crear</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="area_change" name="permissions" value="area_change">
+                                                <label class="form-check-label text-light" for="area_change">Editar</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="area_delete" name="permissions" value="area_delete">
+                                                <label class="form-check-label text-light" for="area_delete">Eliminar</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Medidas de Seguridad -->
+                            <div class="card bg-dark mb-3">
+                                <div class="card-header">
+                                    <h6 class="text-warning mb-0">
+                                        <i class="fas fa-shield-alt me-2"></i>Medidas de Seguridad
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="medida_view" name="permissions" value="medida_view">
+                                                <label class="form-check-label text-light" for="medida_view">Ver</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="medida_add" name="permissions" value="medida_add">
+                                                <label class="form-check-label text-light" for="medida_add">Crear</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="medida_change" name="permissions" value="medida_change">
+                                                <label class="form-check-label text-light" for="medida_change">Editar</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="medida_delete" name="permissions" value="medida_delete">
+                                                <label class="form-check-label text-light" for="medida_delete">Eliminar</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dashboard -->
+                            <div class="card bg-dark mb-3">
+                                <div class="card-header">
+                                    <h6 class="text-warning mb-0">
+                                        <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="dashboard_view" name="permissions" value="dashboard_view">
+                                                <label class="form-check-label text-light" for="dashboard_view">Ver Dashboard</label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="dashboard_metrics" name="permissions" value="dashboard_metrics">
+                                                <label class="form-check-label text-light" for="dashboard_metrics">Ver Métricas</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Nota:</strong> Esta solicitud será enviada para aprobación. Un superusuario debe aprobar la creación del usuario antes de que pueda acceder al sistema.
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'user-management' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-paper-plane me-2"></i>Enviar Solicitud
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

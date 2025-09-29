@@ -1,0 +1,38 @@
+{% extends "dashboard.html" %} {% block title %}Eliminar Incidente | VANT-SIEM{%
+endblock %} {% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="card bg-secondary shadow">
+      <div class="card-header text-center text-danger fw-bold">
+        Confirmar Eliminación
+      </div>
+      <div class="card-body text-center">
+        <h5 class="text-warning">
+          ¿Está seguro que desea eliminar este incidente?
+        </h5>
+        <div class="card bg-dark mt-3">
+          <div class="card-body">
+            <h6 class="text-info">Incidente: {{ object.nombre_incidente }}</h6>
+            <p class="text-muted">Código: {{ object.codigo_incidente }}</p>
+            {% if object.descripcion %}
+            <p class="text-muted">{{ object.descripcion|truncatechars:100 }}</p>
+            {% endif %}
+            <p class="text-muted">
+              Estado: {{ object.get_estado_solucion_display }}
+            </p>
+          </div>
+        </div>
+        <div class="mt-4">
+          <form method="post">
+            {% csrf_token %}
+            <a href="{% url 'incidente-list' %}" class="btn btn-secondary me-2"
+              >Cancelar</a
+            >
+            <button type="submit" class="btn btn-danger">Sí, Eliminar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

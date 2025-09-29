@@ -1,0 +1,42 @@
+{% extends "dashboard.html" %}
+{% block title %}Detalle de Servicio | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card bg-secondary shadow">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-info fw-bold">Detalle de Servicio</h5>
+                <div>
+                    <a href="{% url 'servicio-update' object.pk %}" class="btn btn-warning btn-sm me-2">Editar</a>
+                    <a href="{% url 'servicio-delete' object.pk %}" class="btn btn-danger btn-sm">Eliminar</a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-info">ID:</h6>
+                        <p class="text-light">{{ object.id }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-info">Nombre:</h6>
+                        <p class="text-light">{{ object.nombre }}</p>
+                    </div>
+                </div>
+                {% if object.descripcion %}
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-info">Descripción:</h6>
+                        <p class="text-light">{{ object.descripcion }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                <div class="mt-3">
+                    <a href="{% url 'servicio-list' %}" class="btn btn-secondary">Volver al Listado</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

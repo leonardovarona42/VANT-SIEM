@@ -1,0 +1,51 @@
+{% extends "dashboard.html" %}
+{% block title %}Listado de Servicios | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card bg-secondary shadow">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-info fw-bold">Listado de Servicios</h5>
+                <a href="{% url 'servicio-create' %}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus"></i> Nuevo Servicio
+                </a>
+            </div>
+            <div class="card-body">
+                {% if object_list %}
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Descripción</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for servicio in object_list %}
+                                <tr>
+                                    <td>{{ servicio.id }}</td>
+                                    <td>{{ servicio.nombre }}</td>
+                                    <td>{{ servicio.descripcion|truncatechars:50 }}</td>
+                                    <td>
+                                        <a href="{% url 'servicio-detail' servicio.pk %}" class="btn btn-info btn-sm">Ver</a>
+                                        <a href="{% url 'servicio-update' servicio.pk %}" class="btn btn-warning btn-sm">Editar</a>
+                                        <a href="{% url 'servicio-delete' servicio.pk %}" class="btn btn-danger btn-sm">Eliminar</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-muted">No hay servicios registrados.</p>
+                        <a href="{% url 'servicio-create' %}" class="btn btn-primary">Crear Primer Servicio</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

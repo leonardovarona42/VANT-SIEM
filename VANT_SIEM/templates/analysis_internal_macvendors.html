@@ -1,0 +1,49 @@
+{% extends 'dashboard.html' %}
+{% block content %}
+<div class="container">
+  <div class="row">
+    <div class="col-12">
+      <div class="card bg-secondary">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h3 class="text-info mb-0"><i class="fas fa-database me-2"></i>Histórico Interno - MacVendors</h3>
+          <a href="{% url 'analysis-mac' %}" class="btn btn-outline-light btn-sm"><i class="fas fa-search me-1"></i>Nuevo análisis</a>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-dark table-hover">
+              <thead><tr><th>Fecha</th><th>MAC</th><th>Fabricante</th><th>HTTP</th><th>Acciones</th></tr></thead>
+              <tbody>
+                {% for r in page_obj %}
+                <tr>
+                  <td>{{ r.created_at|date:"Y-m-d H:i" }}</td>
+                  <td><code>{{ r.mac_address }}</code></td>
+                  <td>{{ r.vendor|default:'-' }}</td>
+                  <td>{{ r.status_code }}</td>
+                  <td>
+                    <a class="btn btn-sm btn-outline-info" href="{% url 'analysis-internal-macvendors-detail' r.id %}" title="Ver detalles"><i class="fas fa-eye"></i></a>
+                    <a class="btn btn-sm btn-outline-light" href="{% url 'analysis-internal-macvendors-detail' r.id %}#json" title="Ver JSON"><i class="fas fa-code"></i></a>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-muted">Sin registros</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <nav>
+            <ul class="pagination pagination-sm justify-content-end">
+              {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a></li>
+              {% endif %}
+              <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+              {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Siguiente</a></li>
+              {% endif %}
+            </ul>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

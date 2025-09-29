@@ -1,0 +1,86 @@
+{% extends "dashboard.html" %}
+{% block title %}Listado de Reportes | VANT-SIEM{% endblock %}
+{% block content %}
+    <h2 class="mb-4 text-info text-center">Listado de Reportes</h2>
+    <!-- Widget de totales por estado -->
+    <div class="row mb-4">
+        {% for estado, total in totales.items %}
+        <div class="col-md-3 mb-2">
+            <div class="card bg-dark text-light shadow-sm">
+                <div class="card-body text-center">
+                    <span class="fw-bold">{{ estado }}</span>
+                    <div class="display-6 text-info">{{ total }}</div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    <!-- Buscador -->
+    <form method="get" class="mb-4">
+        <div class="input-group">
+            <input type="text" name="q" class="form-control" placeholder="Buscar por nombre, email, área o estado" value="{{ request.GET.q }}">
+            <button class="btn btn-info" type="submit">Buscar</button>
+        </div>
+    </form>
+    <div class="table-responsive">
+        <table class="table table-dark table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre Informante</th>
+                    <th>Email Informante</th>
+                    <th>Área</th>
+                    <th>Descripción</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reporte in page_obj %}
+                <tr>
+                    <td>{{ reporte.id }}</td>
+                    <td>{{ reporte.nombre_informante }}</td>
+                    <td>{{ reporte.email_informante }}</td>
+                    <td>{{ reporte.area }}</td>
+                    <td>{{ reporte.descripcion }}</td>
+                    <td>{{ reporte.estado_solucion }}</td>
+                    <td>{{ reporte.fecha }}</td>
+                    <td>
+                        <a href="{% url 'incidente-create' %}?reporte={{ reporte.id }}" class="btn btn-info btn-sm">Investigar</a>
+                        <a href="{% url 'reporte-update' reporte.id %}" class="btn btn-warning btn-sm">Editar</a>
+                        <a href="{% url 'reporte-delete' reporte.id %}" class="btn btn-danger btn-sm">Eliminar</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center">No hay reportes registrados.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <!-- Paginación -->
+    <nav aria-label="Paginación de reportes">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ request.GET.q }}&page={{ page_obj.previous_page_number }}">Anterior</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">Anterior</span></li>
+            {% endif %}
+            <li class="page-item disabled"><span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span></li>
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?q={{ request.GET.q }}&page={{ page_obj.next_page_number }}">Siguiente</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">Siguiente</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+    <div class="text-center mt-4">
+        <a href="{% url 'reporte-create' %}" class="btn btn-success">Nuevo Reporte</a>
+    </div>
+{% endblock %}

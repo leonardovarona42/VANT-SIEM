@@ -1,0 +1,124 @@
+{% extends "dashboard.html" %}
+{% block title %}{{ form.instance.pk|yesno:"Editar Incidente,Nuevo Incidente" }} | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card bg-secondary shadow">
+            <div class="card-header text-center text-info fw-bold">
+                {{ form.instance.pk|yesno:"Editar Incidente,Nuevo Incidente" }}
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        {{ form.errors }}
+                    </div>
+                {% endif %}
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="nombre_incidente" class="form-label fw-bold text-info">Nombre del Incidente</label>
+                        <input type="text" name="nombre_incidente" id="nombre_incidente" class="form-control" required value="{{ form.nombre_incidente.value|default_if_none:'' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label fw-bold text-info">Descripción</label>
+                        <textarea name="descripcion" id="descripcion" class="form-control" rows="4" required>{{ form.descripcion.value|default_if_none:'' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reporte" class="form-label">Reporte Asociado</label>
+                        {% if form.instance.pk %}
+                            <!-- Modo edición: mostrar reporte como solo lectura -->
+                            <div class="form-control bg-light" readonly>
+                                
+                                <strong>Informante:</strong> {{ form.instance.reporte.nombre_informante }} - 
+                                <strong>Descripción:</strong> {{ form.instance.reporte.descripcion|truncatechars:50 }}
+                            </div>
+                        {% else %}
+                            <!-- Modo creación: permitir selección -->
+                            <select name="reporte" id="reporte" class="form-select" required>
+                                <option disabled {% if not reporte_prefijado %}selected{% endif %}>Seleccione un reporte...</option>
+                                {% for rep in reportes %}
+                                    <option value="{{ rep.id }}" {% if reporte_prefijado == rep.id or form.reporte.value == rep.id|stringformat:"s" %}selected{% endif %}>{{ rep.descripcion }}</option>
+                                {% endfor %}
+                            </select>
+                        {% endif %}
+                    </div>
+                    <div class="mb-4">
+                        <label for="servicios" class="form-label fw-bold text-info">Servicio</label>
+                        <select name="servicios" id="servicios" class="form-select" required>
+                            <option disabled {% if not selected_servicios %}selected{% endif %}>Seleccione un servicio...</option>
+                            {% for servicio in servicios %}
+                                <option value="{{ servicio.id }}" {% if servicio.id in selected_servicios %}selected{% endif %}>{{ servicio.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="areas" class="form-label fw-bold text-info">Área</label>
+                        <select name="areas" id="areas" class="form-select" required>
+                            <option disabled {% if not selected_areas %}selected{% endif %}>Seleccione un área...</option>
+                            {% for area in areas %}
+                                <option value="{{ area.id }}" {% if area.id in selected_areas %}selected{% endif %}>{{ area.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="subcategorias" class="form-label fw-bold text-info">Subcategoría</label>
+                        <select name="subcategorias" id="subcategorias" class="form-select" required>
+                            <option disabled {% if not selected_subcategorias %}selected{% endif %}>Seleccione una subcategoría...</option>
+                            {% for subcategoria in subcategorias %}
+                                <option value="{{ subcategoria.id }}" {% if subcategoria.id in selected_subcategorias %}selected{% endif %}>{{ subcategoria.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="evidencia" class="form-label fw-bold text-info">Evidencia</label>
+                        {% if form.instance.evidencia %}
+                            <div class="mb-2">
+                                <a href="{{ form.instance.evidencia.url }}" download class="btn btn-outline-info btn-sm">Descargar archivo actual</a>
+                            </div>
+                        {% endif %}
+                        <input type="file" id="evidencia" name="evidencia" class="form-control" accept="image/*,.pdf,.doc,.docx">
+                    </div>
+                    <div class="mb-3">
+                        <label for="estado_solucion" class="form-label">Estado de Solución</label>
+                        <select id="estado_solucion" name="estado_solucion" class="form-select" required>
+                            <option value="nuevo" {% if form.estado_solucion.value == 'nuevo' %}selected{% endif %}>Nuevo</option>
+                            <option value="abierto" {% if form.estado_solucion.value == 'abierto' %}selected{% endif %}>Abierto</option>
+                            <option value="investigacion" {% if form.estado_solucion.value == 'investigacion' %}selected{% endif %}>Investigación</option>
+                            <option value="mitigacion" {% if form.estado_solucion.value == 'mitigacion' %}selected{% endif %}>Mitigación</option>
+                            <option value="cerrado" {% if form.estado_solucion.value == 'cerrado' %}selected{% endif %}>Cerrado</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notificado_osri" class="form-label">Notificado a OSRI</label>
+                        <select id="notificado_osri" name="notificado_osri" class="form-select" required>
+                            <option value="si" {% if form.notificado_osri.value == 'si' %}selected{% endif %}>Sí</option>
+                            <option value="no" {% if form.notificado_osri.value == 'no' %}selected{% endif %}>No</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 mt-3">Guardar Incidente</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    setTimeout(function() {
+        var alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            alert.classList.remove('show');
+            alert.classList.add('fade');
+            setTimeout(function() {
+                alert.remove();
+            }, 500);
+        });
+    }, 5000);
+</script>
+{% endblock %}

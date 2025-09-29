@@ -1,0 +1,690 @@
+{% extends "dashboard.html" %}
+{% block title %}Gestión de Servicios IDS/IPS | VANT-SIEM{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-info mb-0">
+            <i class="fas fa-cogs"></i> Gestión de Servicios IDS/IPS
+        </h2>
+        <div class="btn-group" role="group">
+            <a href="{% url 'ids-config' %}" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left me-1"></i>Volver a Configuración
+            </a>
+            <button class="btn btn-success btn-sm" onclick="startDaemonService()">
+                <i class="fas fa-play me-1"></i>Iniciar Daemon
+            </button>
+            <button class="btn btn-info btn-sm" onclick="checkServiceStatus()">
+                <i class="fas fa-info-circle me-1"></i>Ver Estado
+            </button>
+            <button class="btn btn-warning btn-sm" onclick="startAllServices()">
+                <i class="fas fa-bolt me-1"></i>Ejecutar Ahora
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="stopAllServices()">
+                <i class="fas fa-stop me-1"></i>Detener Servicios
+            </button>
+        </div>
+    </div>
+    
+    <!-- Comandos de Rotación -->
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h5 class="mb-0">
+                <i class="fas fa-recycle me-2"></i>Gestión de Rotación de Logs
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Estadísticas de Rotación</h6>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Configuraciones Totales:</span>
+                            <span class="badge bg-primary">{{ rotation_stats.total_configs }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Configuraciones Activas:</span>
+                            <span class="badge bg-success">{{ rotation_stats.active_configs }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Suricata Activas:</span>
+                            <span class="badge bg-info">{{ rotation_stats.suricata_configs }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Snort Activas:</span>
+                            <span class="badge bg-warning">{{ rotation_stats.snort_configs }}</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <h6>Comandos de Rotación</h6>
+                    <div class="btn-group-vertical w-100" role="group">
+                        <button class="btn btn-outline-primary btn-sm mb-2" onclick="runLogRotation('--dry-run')">
+                            <i class="fas fa-eye me-1"></i>Simular Rotación
+                        </button>
+                        <button class="btn btn-outline-success btn-sm mb-2" onclick="runLogRotation('--backup')">
+                            <i class="fas fa-archive me-1"></i>Rotar con Backup
+                        </button>
+                        <button class="btn btn-outline-warning btn-sm mb-2" onclick="runLogRotation('--hours=5')">
+                            <i class="fas fa-clock me-1"></i>Rotar (5 horas)
+                        </button>
+                        <button class="btn btn-outline-info btn-sm mb-2" onclick="runLogRotation('--hours=1')">
+                            <i class="fas fa-clock me-1"></i>Rotar (1 hora)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Estadísticas del servicio -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ stats.total_configs }}</h4>
+                            <p class="card-text">Total Configuraciones</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-cogs fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ stats.active_configs }}</h4>
+                            <p class="card-text">Servicios Activos</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-play fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ stats.inactive_configs }}</h4>
+                            <p class="card-text">Servicios Inactivos</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-pause fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="card-title">{{ stats.recent_logs|floatformat:0 }}</h4>
+                            <p class="card-text">Logs (24h)</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-chart-line fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Alertas y recomendaciones -->
+    {% if stale_configs %}
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Atención:</strong> {{ stale_configs.count }} configuración(es) no se han ejecutado recientemente.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+    
+    <!-- Tabla de configuraciones -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>Estado de Configuraciones
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-dark table-bordered table-hover mb-0">
+                    <thead class="bg-dark text-light">
+                        <tr>
+                            <th class="bg-dark text-light">ID</th>
+                            <th class="bg-dark text-light">Tipo</th>
+                            <th class="bg-dark text-light">Ruta de Logs</th>
+                            <th class="bg-dark text-light">Estado</th>
+                            <th class="bg-dark text-light">Última Ejecución</th>
+                            <th class="bg-dark text-light">Logs (24h)</th>
+                            <th class="bg-dark text-light">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for config in configs %}
+                        <tr class="{% if config.active %}table-success{% else %}table-secondary{% endif %}">
+                            <td>
+                                <span class="badge bg-primary">{{ config.id }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if config.ids_type == 'snort' %}warning{% else %}info{% endif %}">
+                                    {{ config.ids_type|title }}
+                                </span>
+                            </td>
+                            <td>
+                                <code class="text-light">{{ config.log_path }}</code>
+                            </td>
+                            <td>
+                                {% if config.active %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-play me-1"></i>Activo
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-pause me-1"></i>Inactivo
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if config.last_run %}
+                                    <span class="text-info">{{ config.last_run|date:"d/m/Y H:i" }}</span>
+                                    <br><small class="text-muted">{{ config.last_run|timesince }} atrás</small>
+                                {% else %}
+                                    <span class="text-muted">Nunca</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if config.ids_type == 'snort' %}
+                                    <span class="badge bg-warning">{{ recent_snort }}</span>
+                                {% else %}
+                                    <span class="badge bg-info">{{ recent_suricata }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    {% if config.active %}
+                                        <button type="button" class="btn btn-danger btn-sm" 
+                                                onclick="toggleService({{ config.id }}, false)" 
+                                                title="Detener servicio">
+                                            <i class="fas fa-stop me-1"></i>Detener
+                                        </button>
+                                    {% else %}
+                                        <button type="button" class="btn btn-success btn-sm" 
+                                                onclick="toggleService({{ config.id }}, true)" 
+                                                title="Iniciar servicio">
+                                            <i class="fas fa-play me-1"></i>Iniciar
+                                        </button>
+                                    {% endif %}
+                                    <button type="button" class="btn btn-info btn-sm" 
+                                            onclick="executeNow({{ config.id }})" 
+                                            title="Ejecutar ahora">
+                                        <i class="fas fa-bolt me-1"></i>Ejecutar
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">
+                                <i class="fas fa-info-circle me-2"></i>No hay configuraciones disponibles
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Información del sistema -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Información del Sistema
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Comando de inicio:</span>
+                            <code>python manage.py start_ingest_service --daemon</code>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Comando de estado:</span>
+                            <code>python manage.py status_ingest_service</code>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Comando de detención:</span>
+                            <code>python manage.py stop_ingest_service --all</code>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>Recomendaciones
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Ejecuta el servicio como daemon para ingesta automática
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Monitorea regularmente el estado de las configuraciones
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Verifica que las rutas de logs sean accesibles
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            Configura retención de datos según tus necesidades
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function startDaemonService() {
+    if (!confirm('¿Iniciar servicio daemon para ingesta automática?')) {
+        return;
+    }
+    
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Iniciando Daemon...';
+    button.disabled = true;
+    
+    fetch('/ids-ingest/service/start-daemon/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Daemon iniciado', data.message);
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert('error', 'Error', data.error);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Error', 'Error de conexión: ' + error.message);
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function checkServiceStatus() {
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Verificando...';
+    button.disabled = true;
+    
+    fetch('/ids-ingest/service/status/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatusModal(data.status);
+        } else {
+            showAlert('error', 'Error', data.error);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Error', 'Error de conexión: ' + error.message);
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function startAllServices() {
+    if (!confirm('¿Ejecutar ingesta inmediata para todas las configuraciones activas?')) {
+        return;
+    }
+    
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Ejecutando...';
+    button.disabled = true;
+    
+    fetch('/ids-ingest/service/start/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Ingesta ejecutada', data.message);
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert('error', 'Error', data.error);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Error', 'Error de conexión: ' + error.message);
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function stopAllServices() {
+    if (!confirm('¿Estás seguro de que quieres detener todos los servicios?')) {
+        return;
+    }
+    
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Deteniendo...';
+    button.disabled = true;
+    
+    fetch('/ids-ingest/service/stop/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Servicios detenidos', data.message);
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert('error', 'Error', data.error);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Error', 'Error de conexión: ' + error.message);
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function runLogRotation(options) {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    
+    // Mostrar loading
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Ejecutando...';
+    button.disabled = true;
+    
+    // Ejecutar comando de rotación
+    fetch('/ids-ingest/service/rotate-logs/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            options: options
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Rotación ejecutada', data.message);
+        } else {
+            showAlert('error', 'Error en rotación', data.error);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Error de conexión', error.message);
+    })
+    .finally(() => {
+        // Restaurar botón
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function toggleService(configId, activate) {
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    button.disabled = true;
+    
+    fetch(`/ids-ingest/config/toggle/${configId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        },
+        body: JSON.stringify({active: activate})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Estado cambiado', data.message);
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showAlert('error', 'Error', data.error);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Error', 'Error de conexión: ' + error.message);
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function executeNow(configId) {
+    const button = event.target.closest('button');
+    const originalText = button.innerHTML;
+    
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    button.disabled = true;
+    
+    fetch(`/ids-ingest/config/test/${configId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', 'Ejecución completada', data.message);
+        } else {
+            showAlert('error', 'Error', data.error);
+        }
+    })
+    .catch(error => {
+        showAlert('error', 'Error', 'Error de conexión: ' + error.message);
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+    });
+}
+
+function showAlert(type, title, message) {
+    const alertContainer = document.getElementById('alert-container') || createAlertContainer();
+    
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
+    alert.innerHTML = `
+        <strong>${title}:</strong> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    alertContainer.appendChild(alert);
+    
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 5000);
+}
+
+function showStatusModal(status) {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Estado del Servicio de Ingesta Optimizado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Estado del Servicio</h6>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Servicio:</span>
+                                    <span class="badge ${status.service_running ? 'bg-success' : 'bg-danger'}">
+                                        ${status.service_running ? 'ACTIVO' : 'INACTIVO'}
+                                    </span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Hilos activos:</span>
+                                    <span class="badge bg-info">${status.active_threads || 0}/${status.total_threads || 0}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Eventos procesados:</span>
+                                    <span class="badge bg-primary">${status.service_stats?.total_processed || 0}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Errores:</span>
+                                    <span class="badge bg-danger">${status.service_stats?.total_errors || 0}</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Configuraciones</h6>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Total:</span>
+                                    <span class="badge bg-primary">${status.total_configs || 0}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Activas:</span>
+                                    <span class="badge bg-success">${status.active_configs || 0}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Inactivas:</span>
+                                    <span class="badge bg-secondary">${status.inactive_configs || 0}</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <h6>Logs Recientes (24h)</h6>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Snort:</span>
+                                    <span class="badge bg-warning">${status.recent_snort || 0}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Suricata:</span>
+                                    <span class="badge bg-info">${status.recent_suricata || 0}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>Total:</span>
+                                    <span class="badge bg-primary">${status.recent_logs || 0}</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Estado de Colas</h6>
+                            <ul class="list-group list-group-flush">
+                                ${Object.entries(status.queue_sizes || {}).map(([configId, size]) => 
+                                    `<li class="list-group-item d-flex justify-content-between">
+                                        <span>Config ${configId}:</span>
+                                        <span class="badge bg-secondary">${size} elementos</span>
+                                    </li>`
+                                ).join('') || '<li class="list-group-item text-muted">No hay colas activas</li>'}
+                            </ul>
+                        </div>
+                    </div>
+                    ${status.stale_configs && status.stale_configs.length > 0 ? `
+                    <div class="alert alert-warning mt-3">
+                        <strong>⚠️ Atención:</strong> ${status.stale_configs.length} configuración(es) no se han ejecutado recientemente.
+                    </div>
+                    ` : ''}
+                    <div class="alert alert-info mt-3">
+                        <strong>ℹ️ Información:</strong> El servicio utiliza threading optimizado para procesamiento paralelo y manejo robusto de errores.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    modal.addEventListener('hidden.bs.modal', () => {
+        document.body.removeChild(modal);
+    });
+}
+
+function createAlertContainer() {
+    const container = document.createElement('div');
+    container.id = 'alert-container';
+    container.style.position = 'fixed';
+    container.style.top = '20px';
+    container.style.right = '20px';
+    container.style.zIndex = '9999';
+    container.style.width = '400px';
+    document.body.appendChild(container);
+    return container;
+}
+
+// Auto-refresh cada 30 segundos
+setInterval(() => {
+    if (!document.querySelector('.modal.show')) {
+        location.reload();
+    }
+}, 30000);
+</script>
+{% endblock %}

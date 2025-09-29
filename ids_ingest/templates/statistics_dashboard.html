@@ -1,0 +1,21 @@
+{% extends "dashboard.html" %} {% load static %} {% block title %}Estadísticas
+IDS/IPS | VANT-SIEM{% endblock %} {% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ids-dashboard.css' %}" />
+{% endblock %} {% block content %}
+<div class="container">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-info mb-0">Estadísticas IDS/IPS</h2>
+    <div>
+      <a href="{% url 'snort-dashboard' %}" class="btn btn-warning me-2">
+        <i class="fas fa-bug"></i> Snort
+      </a>
+      <a href="{% url 'suricata-dashboard' %}" class="btn btn-info me-2">
+        <i class="fas fa-biohazard"></i> Suricata
+      </a>
+      <a href="{% url 'alerts-dashboard' %}" class="btn btn-warning me-2">
+        <i class="fas fa-exclamation-triangle"></i> Alertas
+      </a>
+      <a href="{% url 'ids-config' %}" class="btn btn-secondary"> </a>
+    </div>
+  </div>
+</div>

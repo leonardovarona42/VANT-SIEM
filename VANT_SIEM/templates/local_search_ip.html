@@ -1,0 +1,58 @@
+{% extends 'dashboard.html' %}
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card bg-secondary">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <h3 class="text-info mb-0"><i class="fas fa-database me-2"></i>Consulta Local - IP</h3>
+          <a href="{% url 'analysis-internal-abuseipdb' %}" class="btn btn-outline-light btn-sm"><i class="fas fa-list me-1"></i>Histórico</a>
+        </div>
+        <div class="card-body">
+          <form method="get" class="mb-3">
+            <div class="input-group">
+              <input type="text" class="form-control" placeholder="8.8.8.8" name="q" value="{{ q|default:'' }}">
+              <button class="btn btn-primary" type="submit"><i class="fas fa-search me-1"></i>Buscar</button>
+            </div>
+          </form>
+          {% if q %}
+          <h6 class="text-info">Resultado principal</h6>
+          {% if record %}
+          <table class="table table-dark table-striped">
+            <tr><th class="text-info">IP</th><td><code>{{ record.ip_address }}</code></td></tr>
+            <tr><th class="text-info">HTTP</th><td>{{ record.status_code }}</td></tr>
+            <tr><th class="text-info">Fecha</th><td>{{ record.created_at|date:"Y-m-d H:i" }}</td></tr>
+            <tr><th class="text-info">Usuario</th><td>{{ record.requested_by|default:'-' }}</td></tr>
+          </table>
+          <h6 class="text-info">JSON</h6>
+          <pre id="json_pre" class="bg-dark text-light p-2 small"></pre>
+          {{ record.result|json_script:"json_data" }}
+          <script>
+            (function(){
+              const src = document.getElementById('json_data');
+              const dst = document.getElementById('json_pre');
+              if (src && dst) { try{ dst.textContent = JSON.stringify(JSON.parse(src.textContent), null, 2);}catch(e){ dst.textContent = src.textContent||''; } }
+            })();
+          </script>
+          {% else %}
+          <div class="alert alert-warning">No hay registros locales para <strong>{{ q }}</strong>.</div>
+          {% endif %}
+          <hr>
+          <h6 class="text-info">Coincidencias recientes</h6>
+          <ul class="list-group list-group-flush">
+            {% for r in results %}
+            <li class="list-group-item bg-dark d-flex justify-content-between align-items-center">
+              <span><code>{{ r.ip_address }}</code> · {{ r.created_at|date:"Y-m-d H:i" }}</span>
+              <a class="btn btn-sm btn-outline-info" href="{% url 'analysis-internal-abuseipdb-detail' r.id %}"><i class="fas fa-eye"></i></a>
+            </li>
+            {% empty %}
+            <li class="list-group-item bg-dark text-muted">Sin coincidencias</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

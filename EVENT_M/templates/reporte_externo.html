@@ -1,0 +1,206 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Incidente Externo | VANT-SIEM</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap 5 CSS -->
+    <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.min.css' %}">
+    <style>
+        body {
+            background: radial-gradient(circle at 20% 30%, #00c3ff22 0%, #0f2027 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .report-card {
+            background: rgba(20, 30, 48, 0.98);
+            border-radius: 1.5rem;
+            box-shadow: 0 8px 32px 0 rgba(0,195,255,0.15);
+            padding: 2.5rem 2rem;
+            width: 100%;
+            max-width: 500px;
+            animation: fadeIn 1s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(40px);}
+            to { opacity: 1; transform: translateY(0);}
+        }
+        .logo-svg {
+            display: block;
+            margin: 0 auto 1rem auto;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .app-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #00c3ff;
+            letter-spacing: 2px;
+            text-align: center;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 8px #00c3ff88;
+        }
+        .app-desc {
+            color: #b0bec5;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .form-label {
+            color: #b0bec5;
+            font-weight: 500;
+        }
+        .form-control {
+            background-color: #232b36 !important;
+            color: #fff !important;
+            border: 1px solid #00c3ff !important;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 8px #00c3ff22;
+        }
+        .form-control:focus {
+            border-color: #00c3ff !important;
+            box-shadow: 0 0 8px #00c3ff88;
+            background-color: #1a232a !important;
+        }
+        .form-control::placeholder {
+            color: #b0bec5 !important;
+            opacity: 1;
+        }
+        .form-select {
+            background-color: #232b36 !important;
+            color: #fff !important;
+            border: 1px solid #00c3ff !important;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 8px #00c3ff22;
+        }
+        .form-select:focus {
+            border-color: #00c3ff !important;
+            box-shadow: 0 0 8px #00c3ff88;
+            background-color: #1a232a !important;
+        }
+
+        .btn-primary {
+            background: linear-gradient(90deg, #00c3ff, #0072ff);
+            border: none;
+            font-weight: bold;
+            box-shadow: 0 2px 8px #00c3ff44;
+            transition: background 0.2s;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(90deg, #0072ff, #00c3ff);
+        }
+
+        .alert {
+            border-radius: 0.5rem;
+            border: none;
+        }
+        .alert-success {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border: 1px solid #10b981;
+        }
+        .alert-danger {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid #ef4444;
+        }
+
+        .footer {
+            margin-top: 2rem;
+            color: #78909c;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+
+        .required-field::after {
+            content: " *";
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="report-card">
+        <img src="{% static 'img/logo.png' %}" alt="VANT-SIEM Logo" class="logo-svg" />
+        <div class="app-title">VANT-SIEM</div>
+        <div class="app-desc">Reporte Externo de Incidentes de Seguridad</div>
+
+        {% if success %}
+            <div class="alert alert-success" role="alert">
+                <strong>¡Reporte Enviado!</strong><br>
+                {{ mensaje }}
+            </div>
+            <div class="text-center mt-3">
+                <a href="{% url 'reporte-externo' %}" class="btn btn-primary">Enviar Otro Reporte</a>
+            </div>
+        {% else %}
+            {% if error %}
+                <div class="alert alert-danger" role="alert">
+                    <strong>Error:</strong> {{ error }}
+                </div>
+            {% endif %}
+
+            <form method="post" class="w-100">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="nombre_informante" class="form-label required-field">Nombre del Informante</label>
+                    <input type="text" name="nombre_informante" id="nombre_informante" class="form-control"
+                           placeholder="Ingrese su nombre completo" required
+                           value="{{ form_data.nombre_informante|default:'' }}">
+                </div>
+
+                <div class="mb-3">
+                    <label for="email_informante" class="form-label required-field">Correo Electrónico</label>
+                    <input type="email" name="email_informante" id="email_informante" class="form-control"
+                           placeholder="correo@ejemplo.com" required
+                           value="{{ form_data.email_informante|default:'' }}">
+                    <div class="form-text text-muted">Se usará para confirmar recepción del reporte</div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="area" class="form-label required-field">Área Afectada</label>
+                    <select name="area" id="area" class="form-select" required>
+                        <option value="">Seleccione un área...</option>
+                        {% for area in areas %}
+                            <option value="{{ area.id }}" {% if form_data.area == area.id|stringformat:"s" %}selected{% endif %}>
+                                {{ area.nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="descripcion" class="form-label required-field">Descripción del Incidente</label>
+                    <textarea name="descripcion" id="descripcion" class="form-control" rows="5"
+                              placeholder="Describa detalladamente el incidente de seguridad observado..." required>{{ form_data.descripcion|default:'' }}</textarea>
+                    <div class="form-text text-muted">
+                        Incluya: qué sucedió, cuándo, dónde, cómo lo detectó, impacto observado, etc.
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-lg w-100">
+                    📤 Enviar Reporte de Incidente
+                </button>
+            </form>
+
+            <div class="mt-3 text-center">
+                <small class="text-muted">
+                    Los reportes son confidenciales y serán atendidos por el equipo de seguridad.
+                </small>
+            </div>
+        {% endif %}
+
+        <div class="footer">
+            © 2025 VANT-SIEM. Reporte externo de incidentes de seguridad.
+        </div>
+    </div>
+
+    <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+</body>
+</html>

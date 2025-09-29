@@ -1,0 +1,52 @@
+/* Dashboard Styles - VANT-SIEM */
+
+.logo-svg {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 4px 16px #00c3ff44;
+}
+
+.navbar-brand:hover {
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+.navbar-brand:hover .logo-svg {
+    box-shadow: 0 4px 20px #00c3ff66;
+    transition: box-shadow 0.3s ease;
+}
+
+.dashboard-logo:hover {
+    opacity: 0.9;
+    transition: opacity 0.3s ease;
+}
+
+.dashboard-logo:hover .logo-svg {
+    box-shadow: 0 4px 24px #00c3ff88;
+    transition: box-shadow 0.3s ease;
+}
+
+/* Efectos adicionales para mejor UX */
+.navbar-brand {
+    cursor: pointer;
+}
+
+.dashboard-logo {
+    cursor: pointer;
+}
+
+/* Animación sutil para el logo */
+.logo-svg {
+    transition: all 0.3s ease;
+}
+
+/* Efecto de escala sutil en hover */
+.navbar-brand:hover .logo-svg {
+    transform: scale(1.05);
+}
+
+.dashboard-logo:hover .logo-svg {
+    transform: scale(1.08);
+}

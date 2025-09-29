@@ -1,0 +1,57 @@
+{% extends "dashboard.html" %}
+{% block title %}{{ form.instance.pk|yesno:"Editar Subcategoría,Nueva Subcategoría" }} | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card bg-secondary shadow">
+            <div class="card-header text-center text-info fw-bold">
+                {{ form.instance.pk|yesno:"Editar Subcategoría,Nueva Subcategoría" }}
+            </div>
+            <div class="card-body">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        {{ form.errors }}
+                    </div>
+                {% endif %}
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label fw-bold text-info">Nombre</label>
+                        <input type="text" name="nombre" id="nombre" class="form-control" required value="{{ form.nombre.value|default_if_none:'' }}">
+                    </div>
+                    <div class="mb-3">
+                        <label for="descripcion" class="form-label fw-bold text-info">Descripción</label>
+                        <textarea name="descripcion" id="descripcion" class="form-control" rows="3" required>{{ form.descripcion.value|default_if_none:'' }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="nivel_peligrosidad" class="form-label fw-bold text-info">Nivel de Peligrosidad (1-10)</label>
+                        <input type="number" name="nivel_peligrosidad" id="nivel_peligrosidad" class="form-control" min="1" max="10" required value="{{ form.nivel_peligrosidad.value|default_if_none:'' }}">
+                        <div class="form-text text-muted">1 = Muy bajo, 10 = Muy alto</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="categoria" class="form-label fw-bold text-info">Categoría</label>
+                        <select name="categoria" id="categoria" class="form-select" required>
+                            <option disabled selected>Seleccione una categoría...</option>
+                            {% for categoria in form.categoria.field.queryset %}
+                                <option value="{{ categoria.id }}" {% if form.categoria.value == categoria.id|stringformat:"s" %}selected{% endif %}>{{ categoria.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'subcategoria-list' %}" class="btn btn-secondary me-md-2">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

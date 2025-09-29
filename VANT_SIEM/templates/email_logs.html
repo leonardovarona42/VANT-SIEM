@@ -1,0 +1,202 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-secondary">
+                <div class="card-header">
+                    <h3 class="text-info mb-0">
+                        <i class="fas fa-list-alt me-2"></i>Logs de Correos Enviados
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <!-- Filtros -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label text-light">Estado:</label>
+                            <select class="form-select" id="statusFilter" onchange="applyFilters()">
+                                <option value="">Todos</option>
+                                {% for status, label in status_choices %}
+                                    <option value="{{ status }}" {% if current_filters.status == status %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label text-light">Tipo de Alerta:</label>
+                            <select class="form-select" id="alertTypeFilter" onchange="applyFilters()">
+                                <option value="">Todos</option>
+                                {% for alert_type, label in alert_type_choices %}
+                                    <option value="{{ alert_type }}" {% if current_filters.alert_type == alert_type %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label text-light">Desde:</label>
+                            <input type="date" class="form-control" id="dateFromFilter" value="{{ current_filters.date_from }}" onchange="applyFilters()">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label text-light">Hasta:</label>
+                            <input type="date" class="form-control" id="dateToFilter" value="{{ current_filters.date_to }}" onchange="applyFilters()">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label text-light">&nbsp;</label>
+                            <button class="btn btn-secondary d-block" onclick="clearFilters()">
+                                <i class="fas fa-times me-1"></i>Limpiar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de logs -->
+                    {% if page_obj %}
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Destinatario</th>
+                                        <th>Asunto</th>
+                                        <th>Tipo de Alerta</th>
+                                        <th>Prioridad</th>
+                                        <th>Estado</th>
+                                        <th>Error</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in page_obj %}
+                                    <tr>
+                                        <td>
+                                            <small>{{ log.created_at|date:"d/m/Y H:i:s" }}</small>
+                                        </td>
+                                        <td>
+                                            <strong>{{ log.to_email }}</strong>
+                                            {% if log.to_user %}
+                                                <br><small class="text-muted">{{ log.to_user.username }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span title="{{ log.subject }}">{{ log.subject|truncatechars:50 }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ log.get_alert_type_display }}</span>
+                                        </td>
+                                        <td>
+                                            {% if log.priority == 'CRITICAL' %}
+                                                <span class="badge bg-danger">{{ log.get_priority_display }}</span>
+                                            {% elif log.priority == 'HIGH' %}
+                                                <span class="badge bg-warning">{{ log.get_priority_display }}</span>
+                                            {% elif log.priority == 'MEDIUM' %}
+                                                <span class="badge bg-primary">{{ log.get_priority_display }}</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ log.get_priority_display }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if log.status == 'SENT' %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check me-1"></i>{{ log.get_status_display }}
+                                                </span>
+                                            {% elif log.status == 'FAILED' %}
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-times me-1"></i>{{ log.get_status_display }}
+                                                </span>
+                                            {% elif log.status == 'PENDING' %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-clock me-1"></i>{{ log.get_status_display }}
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-info">{{ log.get_status_display }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if log.error_message %}
+                                                <span class="text-danger" title="{{ log.error_message }}">
+                                                    <i class="fas fa-exclamation-triangle"></i>
+                                                    {{ log.error_message|truncatechars:30 }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Paginación -->
+                        {% if page_obj.has_other_pages %}
+                            <nav aria-label="Paginación de logs">
+                                <ul class="pagination justify-content-center">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.alert_type %}&alert_type={{ current_filters.alert_type }}{% endif %}{% if current_filters.date_from %}&date_from={{ current_filters.date_from }}{% endif %}{% if current_filters.date_to %}&date_to={{ current_filters.date_to }}{% endif %}">Primera</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.alert_type %}&alert_type={{ current_filters.alert_type }}{% endif %}{% if current_filters.date_from %}&date_from={{ current_filters.date_from }}{% endif %}{% if current_filters.date_to %}&date_to={{ current_filters.date_to }}{% endif %}">Anterior</a>
+                                        </li>
+                                    {% endif %}
+
+                                    <li class="page-item active">
+                                        <span class="page-link">
+                                            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                                        </span>
+                                    </li>
+
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.alert_type %}&alert_type={{ current_filters.alert_type }}{% endif %}{% if current_filters.date_from %}&date_from={{ current_filters.date_from }}{% endif %}{% if current_filters.date_to %}&date_to={{ current_filters.date_to }}{% endif %}">Siguiente</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if current_filters.status %}&status={{ current_filters.status }}{% endif %}{% if current_filters.alert_type %}&alert_type={{ current_filters.alert_type }}{% endif %}{% if current_filters.date_from %}&date_from={{ current_filters.date_from }}{% endif %}{% if current_filters.date_to %}&date_to={{ current_filters.date_to }}{% endif %}">Última</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-envelope fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No hay logs de correos</h5>
+                            <p class="text-muted">Los correos enviados aparecerán aquí</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function applyFilters() {
+    const status = document.getElementById('statusFilter').value;
+    const alertType = document.getElementById('alertTypeFilter').value;
+    const dateFrom = document.getElementById('dateFromFilter').value;
+    const dateTo = document.getElementById('dateToFilter').value;
+    
+    let url = window.location.pathname + '?';
+    const params = [];
+    
+    if (status) params.push(`status=${status}`);
+    if (alertType) params.push(`alert_type=${alertType}`);
+    if (dateFrom) params.push(`date_from=${dateFrom}`);
+    if (dateTo) params.push(`date_to=${dateTo}`);
+    
+    if (params.length > 0) {
+        url += params.join('&');
+    }
+    
+    window.location.href = url;
+}
+
+function clearFilters() {
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('alertTypeFilter').value = '';
+    document.getElementById('dateFromFilter').value = '';
+    document.getElementById('dateToFilter').value = '';
+    
+    window.location.href = window.location.pathname;
+}
+</script>
+{% endblock %}

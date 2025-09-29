@@ -1,0 +1,57 @@
+{% extends "dashboard.html" %}
+{% block title %}Listado de Involucrados en Incidentes | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card bg-secondary shadow">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-info fw-bold">Listado de Involucrados en Incidentes</h5>
+                <a href="{% url 'involucradoincidente-create' %}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus"></i> Nuevo Involucrado en Incidente
+                </a>
+            </div>
+            <div class="card-body">
+                {% if object_list %}
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Incidente</th>
+                                    <th>Involucrado</th>
+                                    <th>Medida Impuesta</th>
+                                    <th>Fecha Inicio</th>
+                                    <th>Fecha Fin</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for involucradoincidente in object_list %}
+                                <tr>
+                                    <td>{{ involucradoincidente.id }}</td>
+                                    <td>{{ involucradoincidente.incidente.nombre_incidente }}</td>
+                                    <td>{{ involucradoincidente.involucrado.nombres }} {{ involucradoincidente.involucrado.apellidos }}</td>
+                                    <td>{{ involucradoincidente.medida_impuesta.nombre }}</td>
+                                    <td>{{ involucradoincidente.fecha_inicio }}</td>
+                                    <td>{{ involucradoincidente.fecha_fin }}</td>
+                                    <td>
+                                        <a href="{% url 'involucradoincidente-detail' involucradoincidente.pk %}" class="btn btn-info btn-sm">Ver</a>
+                                        <a href="{% url 'involucradoincidente-update' involucradoincidente.pk %}" class="btn btn-warning btn-sm">Editar</a>
+                                        <a href="{% url 'involucradoincidente-delete' involucradoincidente.pk %}" class="btn btn-danger btn-sm">Eliminar</a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-muted">No hay involucrados en incidentes registrados.</p>
+                        <a href="{% url 'involucradoincidente-create' %}" class="btn btn-primary">Crear Primer Involucrado en Incidente</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

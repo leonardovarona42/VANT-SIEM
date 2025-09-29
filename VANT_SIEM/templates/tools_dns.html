@@ -1,0 +1,49 @@
+{% extends 'dashboard.html' %}
+{% block content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card bg-secondary">
+        <div class="card-header"><h3 class="text-info mb-0"><i class="fas fa-globe me-2"></i>Resolución DNS</h3></div>
+        <div class="card-body">
+          <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+          <div class="mb-3">
+            <label for="name" class="form-label text-info">Nombre de dominio</label>
+            <div class="input-group">
+              <input id="name" class="form-control" placeholder="Ej: example.com">
+              <button class="btn btn-primary" onclick="runDNS()"><i class="fas fa-search me-1"></i>Resolver</button>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <label class="form-label text-info">Direcciones IPv4</label>
+              <ul id="v4" class="list-group list-group-flush"></ul>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label text-info">Direcciones IPv6</label>
+              <ul id="v6" class="list-group list-group-flush"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+async function runDNS(){
+  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  const res = await fetch('{% url "api-tools-dns" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}, body: new URLSearchParams({name: document.getElementById('name').value.trim()})});
+  const data = await res.json();
+  const v4 = document.getElementById('v4');
+  const v6 = document.getElementById('v6');
+  v4.innerHTML = '';
+  v6.innerHTML = '';
+  if (data.success){
+    (data.ipv4||[]).forEach(ip=>{ const li=document.createElement('li'); li.className='list-group-item bg-dark'; li.textContent=ip; v4.appendChild(li);});
+    (data.ipv6||[]).forEach(ip=>{ const li=document.createElement('li'); li.className='list-group-item bg-dark'; li.textContent=ip; v6.appendChild(li);});
+  } else {
+    const li = document.createElement('li'); li.className='list-group-item bg-dark text-danger'; li.textContent=data.error||'Error'; v4.appendChild(li);
+  }
+}
+</script>
+{% endblock %}
