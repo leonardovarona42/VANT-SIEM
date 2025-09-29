@@ -91,7 +91,7 @@ VANT-SIEM CORE/
 ### 1. Clonación del Repositorio
 
 ```bash
-git clone <https://github.com/leonardovarona42/VANT-SIEM.git>
+git clone https://github.com/leonardovarona42/VANT-SIEM.git
 cd VANT-SIEM-CORE
 ```
 
