@@ -193,25 +193,55 @@ class IngestService:
     
     def _process_snort_config(self, config: IDSIngestConfig):
         """Procesar configuración de Snort"""
-        log_dir = config.log_path
-        
-        # Verificar que el directorio existe
-        if not os.path.exists(log_dir):
-            logger.warning(f"⚠️ Directorio no existe: {log_dir}")
+        log_path = config.log_path
+
+        # Verificar si es un archivo específico o un directorio
+        if os.path.isfile(log_path):
+            # Es un archivo específico
+            filename = os.path.basename(log_path)
+            if filename == 'alert.full' or filename.endswith('.full'):
+                self._process_snort_alert_file(log_path, config)
+            else:
+                self._process_snort_other_file(log_path, config, filename)
             return
-        
-        # Procesar alert.full (prioridad)
-        alert_file = os.path.join(log_dir, 'alert.full')
-        if os.path.exists(alert_file):
-            self._process_snort_alert_file(alert_file, config)
-        else:
-            logger.warning(f"⚠️ Archivo alert.full no encontrado en: {log_dir}")
-        
+
+        # Es un directorio
+        if not os.path.exists(log_path):
+            logger.warning(f"⚠️ Directorio no existe: {log_path}")
+            return
+
+        # Procesar alert.full (prioridad) - buscar varias variaciones
+        alert_files = ['alert.full', 'alert_full.txt', 'alert.full.txt']
+        alert_processed = False
+        for alert_filename in alert_files:
+            alert_file = os.path.join(log_path, alert_filename)
+            if os.path.exists(alert_file):
+                self._process_snort_alert_file(alert_file, config)
+                alert_processed = True
+                break
+        if not alert_processed:
+            logger.warning(f"⚠️ Archivo alert.full no encontrado en: {log_path}")
+
         # Procesar otros archivos de Snort si existen
-        for filename in ['alerts.fast', 'alert.fast', 'alerts.csv']:
-            file_path = os.path.join(log_dir, filename)
+        for filename in ['alerts.fast', 'alert.fast', 'alerts.csv', 'alert_fast.txt', 'snort.log']:
+            file_path = os.path.join(log_path, filename)
             if os.path.exists(file_path):
                 self._process_snort_other_file(file_path, config, filename)
+
+        # Escanear directorio en busca de otros archivos de Snort
+        if os.path.isdir(log_path):
+            try:
+                for file_name in os.listdir(log_path):
+                    if file_name.startswith('alert') and (file_name.endswith('.fast') or file_name.endswith('.txt') or file_name.endswith('.full')):
+                        file_path = os.path.join(log_path, file_name)
+                        if os.path.isfile(file_path) and file_name not in ['alerts.fast', 'alert.fast', 'alerts.csv', 'alert_fast.txt', 'alert.full', 'alert_full.txt', 'alert.full.txt']:
+                            # Determinar si es archivo full o fast
+                            if file_name.endswith('.full') or 'full' in file_name:
+                                self._process_snort_alert_file(file_path, config)
+                            else:
+                                self._process_snort_other_file(file_path, config, file_name)
+            except Exception as e:
+                logger.warning(f"Error escaneando directorio {log_path}: {e}")
     
     def _process_snort_alert_file(self, file_path: str, config: IDSIngestConfig):
         """Procesar archivo alert.full de Snort"""
@@ -289,46 +319,46 @@ class IngestService:
                 # Leer desde la última posición si está disponible
                 if config.last_position > 0:
                     f.seek(config.last_position)
-                
+
                 batch = []
                 batch_size = 100
                 processed = 0
-                
+
                 for line_num, line in enumerate(f, 1):
                     if not line.strip():
                         continue
-                    
+
                     try:
-                        if filename.endswith('.csv'):
+                        if filename.endswith('.csv') or 'csv' in filename:
                             # Procesar CSV
                             parsed = self._parse_snort_csv_line(line)
                         else:
-                            # Procesar fast log
-                            from .parsers import parse_snort_alert_full
-                            parsed = parse_snort_alert_full(line)
-                        
+                            # Procesar fast log usando el parser principal
+                            from .parsers import parse_snort_line
+                            parsed = parse_snort_line(line)
+
                         if parsed:
                             batch.append(parsed)
                             processed += 1
-                            
+
                             if len(batch) >= batch_size:
                                 self._save_snort_batch(batch)
                                 batch = []
-                                
+
                                 config.last_position = f.tell()
                                 config.save()
-                                
+
                     except Exception as e:
                         logger.warning(f"Error parseando línea {line_num} en {file_path}: {e}")
                         continue
-                
+
                 # Procesar lote final
                 if batch:
                     self._save_snort_batch(batch)
-                
+
                 logger.info(f"✅ Snort {filename}: {processed} eventos procesados")
                 self.stats['total_processed'] += processed
-                
+
         except Exception as e:
             logger.error(f"❌ Error procesando {filename}: {e}")
             raise
