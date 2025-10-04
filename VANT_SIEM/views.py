@@ -24,7 +24,34 @@ from datetime import timedelta
 import socket
 import subprocess
 import ipaddress
+import shutil
+import os
 # IDS features removed per user request
+
+def find_command_path(command):
+    """Find the full path of a command, checking common locations"""
+    # First try shutil.which (Python 3.3+)
+    if hasattr(shutil, 'which'):
+        path = shutil.which(command)
+        if path:
+            return path
+
+    # Fallback: check common paths manually
+    common_paths = [
+        '/bin',
+        '/usr/bin',
+        '/usr/local/bin',
+        '/sbin',
+        '/usr/sbin',
+        '/usr/local/sbin'
+    ]
+
+    for base_path in common_paths:
+        full_path = os.path.join(base_path, command)
+        if os.path.isfile(full_path) and os.access(full_path, os.X_OK):
+            return full_path
+
+    return None
 
 # Vista principal del dashboard
 @login_required
@@ -1827,9 +1854,20 @@ def api_tools_ping(request):
         import platform
         system = platform.system().lower()
         if 'windows' in system:
-            cmd = ['ping', '-n', str(min(max(count,1),10)), '-w', str(max(timeout*1000, 1000)), host]
+            ping_cmd = 'ping'
+            cmd = [ping_cmd, '-n', str(min(max(count,1),10)), '-w', str(max(timeout*1000, 1000)), host]
         else:
-            cmd = ['ping', '-c', str(min(max(count,1),10)), '-W', str(max(timeout,1)), host]
+            ping_cmd = 'ping'
+            cmd = [ping_cmd, '-c', str(min(max(count,1),10)), '-W', str(max(timeout,1)), host]
+
+        # Find the full path of the ping command
+        ping_path = find_command_path(ping_cmd)
+        if not ping_path:
+            return JsonResponse({'success': False, 'error': f'Comando {ping_cmd} no encontrado en el sistema'})
+
+        # Replace the command with full path
+        cmd[0] = ping_path
+
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=max(timeout*count+2, 5))
         # log
         event_logger.log_event(
@@ -1993,9 +2031,20 @@ def api_tools_traceroute(request):
         import platform
         system = platform.system().lower()
         if 'windows' in system:
-            cmd = ['tracert', '-d', '-h', str(min(max_hops,30)), host]
+            traceroute_cmd = 'tracert'
+            cmd = [traceroute_cmd, '-d', '-h', str(min(max_hops,30)), host]
         else:
-            cmd = ['traceroute', '-n', '-m', str(min(max_hops,30)), '-w', str(max(timeout,1)), host]
+            traceroute_cmd = 'traceroute'
+            cmd = [traceroute_cmd, '-n', '-m', str(min(max_hops,30)), '-w', str(max(timeout,1)), host]
+
+        # Find the full path of the traceroute command
+        traceroute_path = find_command_path(traceroute_cmd)
+        if not traceroute_path:
+            return JsonResponse({'success': False, 'error': f'Comando {traceroute_cmd} no encontrado en el sistema'})
+
+        # Replace the command with full path
+        cmd[0] = traceroute_path
+
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=max(timeout*max_hops+5, 10))
         event_logger.log_event(user=request.user, event_type='NET_TRACEROUTE', description=f'Traceroute {host}', details={'host': host, 'max_hops': max_hops, 'returncode': result.returncode})
         return JsonResponse({'success': result.returncode == 0 or result.stdout != '', 'stdout': result.stdout, 'stderr': result.stderr, 'returncode': result.returncode})
@@ -2068,12 +2117,19 @@ def api_tools_discovery(request):
     try:
         import platform
         system = platform.system().lower()
+
+        # Find ping command path
+        ping_cmd = 'ping'
+        ping_path = find_command_path(ping_cmd)
+        if not ping_path:
+            return JsonResponse({'success': False, 'error': f'Comando {ping_cmd} no encontrado en el sistema'})
+
         for ip in hosts:
             try:
                 if 'windows' in system:
-                    cmd = ['ping', '-n', '1', '-w', '800', ip]
+                    cmd = [ping_path, '-n', '1', '-w', '800', ip]
                 else:
-                    cmd = ['ping', '-c', '1', '-W', '1', ip]
+                    cmd = [ping_path, '-c', '1', '-W', '1', ip]
                 res = subprocess.run(cmd, capture_output=True, text=True, timeout=2)
                 if res.returncode == 0:
                     alive.append(ip)
@@ -2081,18 +2137,22 @@ def api_tools_discovery(request):
                 continue
         macs = {}
         try:
-            if 'windows' in system:
-                arp = subprocess.run(['arp', '-a'], capture_output=True, text=True)
-                for line in arp.stdout.splitlines():
-                    parts = line.split()
-                    if len(parts) >= 3 and parts[0].count('.')==3 and '-' in parts[1]:
-                        macs[parts[0]] = parts[1]
-            else:
-                arp = subprocess.run(['arp', '-n'], capture_output=True, text=True)
-                for line in arp.stdout.splitlines():
-                    parts = line.split()
-                    if len(parts) >= 3 and parts[0].count('.')==3 and (':' in parts[2] or '-' in parts[2]):
-                        macs[parts[0]] = parts[2]
+            # Find arp command path
+            arp_cmd = 'arp'
+            arp_path = find_command_path(arp_cmd)
+            if arp_path:
+                if 'windows' in system:
+                    arp = subprocess.run([arp_path, '-a'], capture_output=True, text=True)
+                    for line in arp.stdout.splitlines():
+                        parts = line.split()
+                        if len(parts) >= 3 and parts[0].count('.')==3 and '-' in parts[1]:
+                            macs[parts[0]] = parts[1]
+                else:
+                    arp = subprocess.run([arp_path, '-n'], capture_output=True, text=True)
+                    for line in arp.stdout.splitlines():
+                        parts = line.split()
+                        if len(parts) >= 3 and parts[0].count('.')==3 and (':' in parts[2] or '-' in parts[2]):
+                            macs[parts[0]] = parts[2]
         except Exception:
             pass
         results = [{'ip': ip, 'mac': macs.get(ip, '')} for ip in alive]
