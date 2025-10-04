@@ -30,23 +30,34 @@ class LoggingMiddleware(MiddlewareMixin):
     
     def process_response(self, request, response):
         """Procesar response y crear log si es necesario"""
-        
+
         # Solo logear para usuarios autenticados
         if not getattr(request, 'user', None) or not request.user.is_authenticated:
             return response
-        
+
         # Obtener información del request
         method = request.method
         path = request.path
         user = request.user
-        
+
+        # Excluir APIs de polling frecuente que no necesitan logging detallado
+        excluded_paths = [
+            '/siem/ids/api/notifications/',  # API de notificaciones (polling cada 5s)
+            '/siem/dashboard/metrics/',      # Métricas del dashboard (polling frecuente)
+            '/siem/incidentes/timeline/',    # Timeline de incidentes
+        ]
+
+        # Verificar si la ruta está excluida
+        if any(excluded_path in path for excluded_path in excluded_paths):
+            return response
+
         # Determinar tipo de evento basado en la URL y método
         event_type = self._get_event_type(method, path)
-        
+
         if event_type:
             # Crear descripción del evento
             description = self._get_event_description(method, path, response.status_code)
-            
+
             # Log del evento
             event_logger.log_event(
                 user=user,
@@ -60,7 +71,7 @@ class LoggingMiddleware(MiddlewareMixin):
                     'ip_address': request.META.get('REMOTE_ADDR', ''),
                 }
             )
-        
+
         return response
     
     def _get_event_type(self, method, path):
