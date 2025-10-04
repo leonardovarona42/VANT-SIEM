@@ -2002,5 +2002,73 @@
     "target_id": null,
     "ip_address": null,
     "user_agent": null
+  },
+  {
+    "id": 85,
+    "timestamp": "2025-10-04T02:20:57.774259+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardovarona42@icloud.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario consultó login exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/login/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 86,
+    "timestamp": "2025-10-04T02:21:01.062194+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardovarona42@icloud.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 87,
+    "timestamp": "2025-10-04T02:21:01.075040+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardovarona42@icloud.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36 Edg/140.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
   }
 ]

@@ -1029,20 +1029,66 @@ def ids_config(request):
 
 @login_required
 def test_config(request, config_id):
-    """Probar configuración con validaciones mejoradas"""
+    """Probar configuración con validaciones mejoradas y soporte completo para Snort 3 y Suricata"""
     if request.method == 'POST':
         try:
             config = get_object_or_404(IDSIngestConfig, id=config_id)
-            
+
             # Aceptar archivo o directorio
             path = config.log_path
             if not os.path.exists(path):
                 return JsonResponse({
-                    'success': False, 
+                    'success': False,
                     'error': 'Ruta no existe',
                     'details': f'Ruta: {path}'
                 })
-            
+
+            # Si es archivo específico, procesarlo directamente
+            if os.path.isfile(path):
+                filename = os.path.basename(path)
+                stats = get_log_statistics(path, config.ids_type)
+
+                if stats.get('parsed_lines', 0) == 0:
+                    if stats.get('error'):
+                        return JsonResponse({'success': False, 'error': stats['error']})
+                    else:
+                        return JsonResponse({
+                            'success': False,
+                            'error': 'No se encontraron líneas parseables',
+                            'details': f'Archivo: {filename}, Total líneas: {stats.get("total_lines", 0)}, Errores: {stats.get("error_lines", 0)}'
+                        })
+
+                # Intentar ejecutar ingesta para archivo específico
+                from django.core.management import call_command
+                from io import StringIO
+
+                output = StringIO()
+                try:
+                    if config.ids_type == 'snort':
+                        # Para archivos específicos de Snort, usar el servicio optimizado
+                        from ids_ingest.services import ingest_service
+                        ingest_service._process_snort_config(config)
+                        result = "Procesamiento completado usando servicio optimizado"
+                    else:  # suricata
+                        call_command('ingest_suricata_logs', log_dir=os.path.dirname(path), verbosity=0, stdout=output)
+                        result = output.getvalue()
+
+                    stats['ingested_lines'] = len(result.split('\n')) if result else 0
+
+                except Exception as e:
+                    stats['ingest_error'] = str(e)
+
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Archivo {filename} válido - {stats.get("parsed_lines", 0)} líneas parseables',
+                    'stats': stats,
+                    'file_info': {
+                        'name': filename,
+                        'size': os.path.getsize(path),
+                        'type': config.ids_type
+                    }
+                })
+
             # Si es directorio, detectar archivos relevantes según el tipo de IDS
             if os.path.isdir(path):
                 if config.ids_type == 'suricata':
@@ -1050,7 +1096,12 @@ def test_config(request, config_id):
                     not_found_msg = 'No se encontraron archivos de Suricata dentro del directorio'
                     success_msg = 'Se detectaron {n} archivos de Suricata en el directorio'
                 elif config.ids_type == 'snort':
-                    candidates = ['alert.full', 'alerts.fast', 'alerts.csv', 'alert.fast']
+                    # Incluir todas las variaciones de archivos Snort
+                    candidates = [
+                        'alert.full', 'alert_full.txt', 'alert.full.txt',  # archivos full
+                        'alerts.fast', 'alert.fast', 'alert_fast.txt',     # archivos fast
+                        'alerts.csv', 'snort.log'                          # otros
+                    ]
                     not_found_msg = 'No se encontraron archivos de Snort dentro del directorio'
                     success_msg = 'Se detectaron {n} archivos de Snort en el directorio'
                 else:
@@ -1062,58 +1113,87 @@ def test_config(request, config_id):
                 for name in candidates:
                     fp = os.path.join(path, name)
                     if os.path.exists(fp):
-                        found.append({'file': name, 'size_bytes': os.path.getsize(fp)})
+                        found.append({
+                            'file': name,
+                            'size_bytes': os.path.getsize(fp),
+                            'type': 'full' if 'full' in name else ('fast' if 'fast' in name else 'other')
+                        })
+
+                # Escanear archivos adicionales que podrían existir
+                if config.ids_type == 'snort':
+                    try:
+                        for file_name in os.listdir(path):
+                            if file_name.startswith('alert') and (file_name.endswith('.fast') or file_name.endswith('.txt') or file_name.endswith('.full')):
+                                fp = os.path.join(path, file_name)
+                                if os.path.isfile(fp) and file_name not in [f['file'] for f in found]:
+                                    found.append({
+                                        'file': file_name,
+                                        'size_bytes': os.path.getsize(fp),
+                                        'type': 'full' if 'full' in file_name else 'fast'
+                                    })
+                    except Exception as e:
+                        # Ignorar errores de escaneo
+                        pass
+
                 if not found:
                     return JsonResponse({
                         'success': False,
                         'error': not_found_msg,
                         'details': f'Directorio: {path}'
                     })
+
+                # Probar parsing de los archivos encontrados
+                parsing_results = []
+                total_parsed = 0
+                total_lines = 0
+
+                for file_info in found[:5]:  # Probar máximo 5 archivos
+                    file_path = os.path.join(path, file_info['file'])
+                    try:
+                        stats = get_log_statistics(file_path, config.ids_type)
+                        parsing_results.append({
+                            'file': file_info['file'],
+                            'parsed_lines': stats.get('parsed_lines', 0),
+                            'total_lines': stats.get('total_lines', 0),
+                            'error': stats.get('error')
+                        })
+                        total_parsed += stats.get('parsed_lines', 0)
+                        total_lines += stats.get('total_lines', 0)
+                    except Exception as e:
+                        parsing_results.append({
+                            'file': file_info['file'],
+                            'parsed_lines': 0,
+                            'total_lines': 0,
+                            'error': str(e)
+                        })
+
+                # Intentar ejecutar ingesta usando el servicio optimizado
+                try:
+                    from ids_ingest.services import ingest_service
+                    ingest_service._process_config(config)
+                    ingest_message = "Ingesta ejecutada usando servicio optimizado con threading"
+                except Exception as e:
+                    ingest_message = f"Error en ingesta: {str(e)}"
+
                 return JsonResponse({
                     'success': True,
                     'message': success_msg.format(n=len(found)),
-                    'files': found
+                    'files': found,
+                    'parsing_summary': {
+                        'total_files': len(found),
+                        'total_parsed_lines': total_parsed,
+                        'total_lines': total_lines,
+                        'parsing_results': parsing_results
+                    },
+                    'ingest_result': ingest_message
                 })
-            
-            # Si es archivo, obtener estadísticas
-            stats = get_log_statistics(path, config.ids_type)
-            if stats.get('parsed_lines', 0) == 0 and stats.get('error'):
-                return JsonResponse({'success': False, 'error': stats['error']})
-            if stats.get('parsed_lines', 0) == 0:
-                return JsonResponse({
-                    'success': False,
-                    'error': 'No se encontraron líneas parseables',
-                    'details': f'Total líneas: {stats.get("total_lines", 0)}, Errores: {stats.get("error_lines", 0)}'
-                })
-            # Ejecutar comando de ingesta según el tipo
-            from django.core.management import call_command
-            from io import StringIO
-            
-            output = StringIO()
-            try:
-                if config.ids_type == 'snort':
-                    call_command('ingest_snort_logs', log_dir=os.path.dirname(path), verbosity=0, stdout=output)
-                else:  # suricata
-                    call_command('ingest_suricata_logs', log_dir=os.path.dirname(path), verbosity=0, stdout=output)
-                
-                result = output.getvalue()
-                stats['ingested_lines'] = len(result.split('\n')) if result else 0
-                
-            except Exception as e:
-                stats['ingest_error'] = str(e)
-            
-            return JsonResponse({
-                'success': True, 
-                'message': f'Configuración {config.ids_type} válida - {stats.get("parsed_lines", 0)} líneas parseables', 
-                'stats': stats
-            })
-            
+
         except Exception as e:
             return JsonResponse({
                 'success': False,
                 'error': f'Error probando configuración: {str(e)}'
             })
-    
+
     return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
 
 @csrf_exempt

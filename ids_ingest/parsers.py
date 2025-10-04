@@ -37,13 +37,17 @@ SNORT_PATTERNS = [
     re.compile(
         r'(?P<timestamp>\d{2}/\d{2}-\d{2}:\d{2}:\d{2}\.\d+)\s+(?P<src_ip>[\d\.]+):(?P<src_port>\d+)\s+->\s+(?P<dst_ip>[\d\.]+):(?P<dst_port>\d+)\s+(?P<protocol>\w+)\s+TTL:(?P<ttl>\d+)\s+TOS:(?P<tos>0x[0-9a-fA-F]+)\s+ID:(?P<id>\d+)\s+IpLen:(?P<iplen>\d+)\s+DgmLen:(?P<dgmlen>\d+)\s+(?P<flags>.*?)\s+Seq:\s+(?P<seq>0x[0-9a-fA-F]+)\s+Ack:\s+(?P<ack>0x[0-9a-fA-F]+)\s+Win:\s+(?P<win>0x[0-9a-fA-F]+)\s+TcpLen:\s+(?P<tcplen>\d+)'
     ),
-    # Formato alerts.fast (NUEVO)
+    # Formato alerts.fast (NUEVO) - con clasificación
     re.compile(
-        r'(?P<timestamp>\d{2}/\d{2}-\d{2}:\d{2}:\d{2}\.\d+)\s+\[\*\*\]\s+\[(?P<gid>\d+):(?P<sid>\d+):(?P<rev>\d+)\]\s+(?P<message>.*?)\s+\[\*\*\]\s+\[Classification:\s+(?P<classification>.*?)\]\s+\[Priority:\s+(?P<priority>\d+)\]\s+\{(?P<protocol>\w+)\}\s+(?P<src_ip>[\d\.]+):(?P<src_port>\d+)\s+->\s+(?P<dst_ip>[\d\.]+):(?P<dst_port>\d+)'
+        r'(?P<timestamp>\d{2}/\d{2}-\d{2}:\d{2}:\d{2}\.\d+)\s+\[\*\*\]\s+\[(?P<gid>\d+):(?P<sid>\d+):(?P<rev>\d+)\]\s+(?P<message>.*?)\s+\[\*\*\]\s+\[Classification:\s+(?P<classification>.*?)\]\s+\[Priority:\s+(?P<priority>\d+)\]\s+\{(?P<protocol>\w+)\}\s+(?P<src_ip>[\d\.]+)(?::(?P<src_port>\d+))?\s+->\s+(?P<dst_ip>[\d\.]+)(?::(?P<dst_port>\d+))?'
     ),
-    # Formato alerts.csv (NUEVO)
+    # Formato alerts.fast sin clasificación (NUEVO)
     re.compile(
-        r'(?P<timestamp>\d{2}/\d{2}-\d{2}:\d{2}:\d{2}\.\d+),\s*"(?P<message>.*?)",,,(?P<src_port>\d+),(?P<dst_port>\d+),(?P<protocol>\w+),,'
+        r'(?P<timestamp>\d{2}/\d{2}-\d{2}:\d{2}:\d{2}\.\d+)\s+\[\*\*\]\s+\[(?P<gid>\d+):(?P<sid>\d+):(?P<rev>\d+)\]\s+(?P<message>.*?)\s+\[\*\*\]\s+\[Priority:\s+(?P<priority>\d+)\]\s+\{(?P<protocol>\w+)\}\s+(?P<src_ip>[\d\.]+)(?::(?P<src_port>\d+))?\s+->\s+(?P<dst_ip>[\d\.]+)(?::(?P<dst_port>\d+))?'
+    ),
+    # Formato alerts.csv (NUEVO) - ajustado para espacios después del timestamp
+    re.compile(
+        r'(?P<timestamp>\d{2}/\d{2}-\d{2}:\d{2}:\d{2}\.\d+)\s*,\s*"(?P<message>.*?)",,,(?P<src_port>\d+),(?P<dst_port>\d+),(?P<protocol>\w+),,'
     )
 ]
 
@@ -859,9 +863,9 @@ def parse_snort_csv_line(line: str) -> Optional[Dict[str, Any]]:
 
     line = line.strip()
 
-    # Pattern for alerts.csv format: timestamp,"message",,,src_port,dst_port,protocol,,
+    # Pattern for alerts.csv format: timestamp ,"message",,,src_port,dst_port,protocol,,
     pattern = re.compile(
-        r'(?P<timestamp>\d{2}/\d{2}-\d{2}:\d{2}:\d{2}\.\d+),\s*"(?P<message>.*?)",,,(?P<src_port>\d+),(?P<dst_port>\d+),(?P<protocol>\w+),,'
+        r'(?P<timestamp>\d{2}/\d{2}-\d{2}:\d{2}:\d{2}\.\d+)\s*,\s*"(?P<message>.*?)",,,(?P<src_port>\d+),(?P<dst_port>\d+),(?P<protocol>\w+),,'
     )
 
     match = pattern.match(line)
