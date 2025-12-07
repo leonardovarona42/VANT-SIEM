@@ -11,6 +11,20 @@
                 </a>
             </div>
             <div class="card-body">
+                <!-- Search Input -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" id="search-input" class="form-control" placeholder="Buscar por ID, nombre, descripción, categoría o nivel de peligrosidad..."
+                                   value="{{ search_query }}">
+                            <button type="button" id="clear-search" class="btn btn-outline-secondary {% if not search_query %}d-none{% endif %}">
+                                <i class="fas fa-times"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 {% if object_list %}
                     <div class="table-responsive">
                         <table class="table table-dark table-striped">
@@ -29,13 +43,15 @@
                                 <tr>
                                     <td>{{ subcategoria.id }}</td>
                                     <td>{{ subcategoria.nombre }}</td>
-                                    <td>{{ subcategoria.categoria.nombre }}</td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ subcategoria.categoria.nombre }}</span>
+                                    </td>
                                     <td>
                                         <span class="badge {% if subcategoria.nivel_peligrosidad >= 8 %}bg-danger{% elif subcategoria.nivel_peligrosidad >= 5 %}bg-warning{% else %}bg-success{% endif %}">
                                             {{ subcategoria.nivel_peligrosidad }}/10
                                         </span>
                                     </td>
-                                    <td>{{ subcategoria.descripcion|truncatechars:30 }}</td>
+                                    <td>{{ subcategoria.descripcion|truncatechars:60 }}</td>
                                     <td>
                                         <a href="{% url 'subcategoria-detail' subcategoria.pk %}" class="btn btn-info btn-sm">Ver</a>
                                         <a href="{% url 'subcategoria-update' subcategoria.pk %}" class="btn btn-warning btn-sm">Editar</a>
@@ -46,14 +62,186 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- Pagination -->
+                    {% if is_paginated %}
+                        <nav aria-label="Navegación de páginas" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}page=1">
+                                            <i class="fas fa-angle-double-left"></i> Primera
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                                            <i class="fas fa-angle-left"></i> Anterior
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ num }}</span>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ num }}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.next_page_number }}">
+                                            Siguiente <i class="fas fa-angle-right"></i>
+                                        </a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.paginator.num_pages }}">
+                                            Última <i class="fas fa-angle-double-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+
+                        <div class="text-center text-muted mt-2">
+                            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}.
+                            Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ paginator.count }} resultado{{ paginator.count|pluralize:"s" }}.
+                        </div>
+                    {% endif %}
+
                 {% else %}
                     <div class="text-center py-4">
-                        <p class="text-muted">No hay subcategorías registradas.</p>
-                        <a href="{% url 'subcategoria-create' %}" class="btn btn-primary">Crear Primera Subcategoría</a>
+                        {% if search_query %}
+                            <p class="text-muted">No se encontraron subcategorías que coincidan con la búsqueda "{{ search_query }}".</p>
+                        {% else %}
+                            <p class="text-muted">No hay subcategorías registradas.</p>
+                        {% endif %}
+                        <a href="{% url 'subcategoria-create' %}" class="btn btn-primary">{% if search_query %}Crear Nueva Subcategoría{% else %}Crear Primera Subcategoría{% endif %}</a>
                     </div>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
+
+<script>
+console.log('Real-time search script loaded for subcategories');
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded event fired for subcategories');
+    const searchInput = document.getElementById('search-input');
+    const clearButton = document.getElementById('clear-search');
+    const tableBody = document.querySelector('tbody');
+
+    console.log('Elements found:', {searchInput, clearButton, tableBody});
+
+    if (!searchInput) {
+        console.error('Search input not found!');
+        return;
+    }
+
+    let searchTimeout;
+
+    // Function to perform AJAX search
+    function performSearch(query = '') {
+        console.log('performSearch called with query:', query);
+
+        // Show loading state
+        tableBody.innerHTML = '<tr><td colspan="6" class="text-center"><i class="fas fa-spinner fa-spin"></i> Buscando...</td></tr>';
+
+        const url = `${window.location.pathname}?q=${encodeURIComponent(query)}`;
+        console.log('Fetching URL:', url);
+
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            }
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Received data:', data);
+            updateTable(data);
+        })
+        .catch(error => {
+            console.error('Search error:', error);
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error al buscar: ' + error.message + '</td></tr>';
+        });
+    }
+
+    // Function to update table with search results
+    function updateTable(data) {
+        if (!data.subcategorias || data.subcategorias.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="6" class="text-center">No se encontraron subcategorías que coincidan con la búsqueda.</td></tr>';
+            return;
+        }
+
+        let html = '';
+        data.subcategorias.forEach(subcategoria => {
+            html += `
+                <tr>
+                    <td>${subcategoria.id}</td>
+                    <td>${subcategoria.nombre}</td>
+                    <td><span class="badge bg-secondary">${subcategoria.categoria}</span></td>
+                    <td>
+                        <span class="badge ${subcategoria.nivel_peligrosidad >= 8 ? 'bg-danger' : subcategoria.nivel_peligrosidad >= 5 ? 'bg-warning' : 'bg-success'}">
+                            ${subcategoria.nivel_peligrosidad}/10
+                        </span>
+                    </td>
+                    <td>${subcategoria.descripcion.length > 60 ? subcategoria.descripcion.substring(0, 60) + '...' : subcategoria.descripcion}</td>
+                    <td>
+                        <a href="${subcategoria.detail_url}" class="btn btn-info btn-sm">Ver</a>
+                        <a href="${subcategoria.update_url}" class="btn btn-warning btn-sm">Editar</a>
+                        <a href="${subcategoria.delete_url}" class="btn btn-danger btn-sm">Eliminar</a>
+                    </td>
+                </tr>
+            `;
+        });
+        tableBody.innerHTML = html;
+    }
+
+    // Event listener for search input
+    searchInput.addEventListener('input', function() {
+        console.log('Input event triggered on search input');
+        const query = this.value.trim();
+        console.log('Query value:', query);
+
+        // Show/hide clear button
+        if (query) {
+            clearButton.classList.remove('d-none');
+        } else {
+            clearButton.classList.add('d-none');
+        }
+
+        // Clear previous timeout
+        clearTimeout(searchTimeout);
+
+        // Set new timeout for search (debounce)
+        searchTimeout = setTimeout(() => {
+            console.log('Timeout triggered, calling performSearch');
+            performSearch(query);
+        }, 300); // Wait 300ms after user stops typing
+    });
+
+    // Event listener for clear button
+    clearButton.addEventListener('click', function() {
+        console.log('Clear button clicked');
+        searchInput.value = '';
+        clearButton.classList.add('d-none');
+        performSearch('');
+    });
+
+    console.log('Event listeners attached successfully for subcategories');
+});
+</script>
 {% endblock %}

@@ -1,0 +1,2 @@
+18:23:36
+0 minutes atrás	Medium	31.13.66.51	10.212.38.12	ICMP	2200025	SURICATA ICMPv4 unknown code	Unknown Classtype

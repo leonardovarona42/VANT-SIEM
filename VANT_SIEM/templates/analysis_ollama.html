@@ -263,8 +263,422 @@
   </div>
 </div>
 
+<style>
+/* Ensure proper text contrast in analysis results */
+.analysis-results .card-body,
+.analysis-results .alert,
+.analysis-results p,
+.analysis-results li,
+.analysis-results span {
+  color: #212529 !important; /* Dark text for contrast */
+}
+
+.analysis-results .badge {
+  color: white !important; /* Keep badge text white */
+}
+
+.analysis-results .card-header.bg-primary,
+.analysis-results .card-header.bg-danger,
+.analysis-results .card-header.bg-success,
+.analysis-results .card-header.bg-warning {
+  color: white !important; /* Keep header text white on colored backgrounds */
+}
+</style>
+
 <script>
   const csrftoken = document.querySelector("[name=csrfmiddlewaretoken]").value;
+
+  // Función para formatear resultados de análisis de manera legible
+  function formatAnalysisResults(analysis, dataSummary = null) {
+    let html = '<div class="analysis-results text-dark">';
+
+    // Resumen de datos si está disponible
+    if (dataSummary) {
+      html += '<div class="alert alert-info mb-3">';
+      html += '<h6><i class="fas fa-chart-bar me-2"></i>Resumen de Datos Analizados</h6>';
+      html += `<p class="mb-1"><strong>Eventos Snort:</strong> ${dataSummary.snort_events || 0}</p>`;
+      html += `<p class="mb-1"><strong>Eventos Suricata:</strong> ${dataSummary.suricata_events || 0}</p>`;
+      html += `<p class="mb-1"><strong>Período:</strong> ${dataSummary.analysis_period || 'N/A'}</p>`;
+      html += `<p class="mb-0"><strong>Generado:</strong> ${dataSummary.generated_at ? new Date(dataSummary.generated_at).toLocaleString() : 'N/A'}</p>`;
+      html += '</div>';
+    }
+
+    // Nivel de riesgo
+    if (analysis.risk_level) {
+      const riskClass = analysis.risk_level.toLowerCase() === 'critical' ? 'danger' :
+                       analysis.risk_level.toLowerCase() === 'high' ? 'warning' :
+                       analysis.risk_level.toLowerCase() === 'medium' ? 'info' : 'success';
+      html += `<div class="alert alert-${riskClass} mb-3">`;
+      html += '<h6><i class="fas fa-exclamation-triangle me-2"></i>Nivel de Riesgo</h6>';
+      html += `<span class="badge bg-${riskClass} fs-6">${analysis.risk_level}</span>`;
+      html += '</div>';
+    }
+
+    // Resumen de amenazas
+    if (analysis.threat_summary) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header"><h6 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Resumen Ejecutivo de Amenazas</h6></div>';
+      html += '<div class="card-body">';
+      // Si threat_summary es un string JSON, intentar parsearlo
+      if (typeof analysis.threat_summary === 'string' && analysis.threat_summary.includes('{')) {
+        try {
+          const parsed = JSON.parse(analysis.threat_summary);
+          html += '<pre class="mb-0 text-dark bg-light p-2 rounded" style="white-space: pre-wrap; font-family: inherit;">' + JSON.stringify(parsed, null, 2) + '</pre>';
+        } catch (e) {
+          html += '<p class="mb-0 text-dark">' + analysis.threat_summary.replace(/\n/g, '<br>') + '</p>';
+        }
+      } else {
+        html += '<p class="mb-0 text-dark">' + analysis.threat_summary.replace(/\n/g, '<br>') + '</p>';
+      }
+      html += '</div></div>';
+    }
+
+    // Segmento más atacado
+    if (analysis.most_attacked_segment) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header"><h6 class="mb-0"><i class="fas fa-network-wired me-2"></i>Segmento Más Atacado</h6></div>';
+      html += '<div class="card-body">';
+      html += '<code class="bg-secondary text-dark p-2 rounded">' + analysis.most_attacked_segment + '</code>';
+      html += '</div></div>';
+    }
+
+    // IP más sospechosa
+    if (analysis.most_suspicious_ip) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header"><h6 class="mb-0"><i class="fas fa-user-secret me-2"></i>IP Más Sospechosa</h6></div>';
+      html += '<div class="card-body">';
+      html += '<code class="bg-secondary text-dark p-2 rounded">' + analysis.most_suspicious_ip + '</code>';
+      html += '</div></div>';
+    }
+
+    // Recomendaciones
+    if (analysis.recommendations && Array.isArray(analysis.recommendations)) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header"><h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Recomendaciones</h6></div>';
+      html += '<div class="card-body"><ul class="mb-0">';
+      analysis.recommendations.forEach(rec => {
+        html += '<li>' + rec + '</li>';
+      });
+      html += '</ul></div></div>';
+    }
+
+    // Otros campos relevantes
+    const otherFields = ['peak_hour', 'top_attack_type', 'correlated_alerts', 'anomalous_events'];
+    otherFields.forEach(field => {
+      if (analysis[field]) {
+        const fieldNames = {
+          'peak_hour': 'Hora Pico de Actividad',
+          'top_attack_type': 'Tipo de Ataque Más Común',
+          'correlated_alerts': 'Alertas Correlacionadas',
+          'anomalous_events': 'Eventos Anómalos'
+        };
+        html += '<div class="card mb-3">';
+        html += `<div class="card-header"><h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>${fieldNames[field]}</h6></div>`;
+        html += '<div class="card-body">';
+        html += '<span class="badge bg-secondary">' + analysis[field] + '</span>';
+        html += '</div></div>';
+      }
+    });
+
+    html += '</div>';
+    return html;
+  }
+
+  // Función para formatear resultados de cruzado de información
+  function formatCrossReferenceResults(results) {
+    let html = '<div class="analysis-results text-dark">';
+
+    // Consulta realizada
+    if (results.query) {
+      html += '<div class="alert alert-info mb-3">';
+      html += '<h6><i class="fas fa-search me-2"></i>Consulta Realizada</h6>';
+      html += `<p class="mb-1"><strong>Consulta:</strong> "${results.query}"</p>`;
+      html += `<p class="mb-0"><strong>Tipo de modelo:</strong> ${results.model_type || 'Todos'}</p>`;
+      html += '</div>';
+    }
+
+    // Resumen de datos
+    if (results.data_summary) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header"><h6 class="mb-0"><i class="fas fa-database me-2"></i>Resumen de Datos Analizados</h6></div>';
+      html += '<div class="card-body">';
+      html += `<p class="mb-1"><strong>Logs Snort:</strong> ${results.data_summary.snort_logs_count || 0}</p>`;
+      html += `<p class="mb-1"><strong>Alertas Suricata:</strong> ${results.data_summary.suricata_alerts_count || 0}</p>`;
+      html += `<p class="mb-1"><strong>Incidentes:</strong> ${results.data_summary.incidentes_count || 0}</p>`;
+      html += `<p class="mb-0"><strong>Reportes:</strong> ${results.data_summary.reportes_count || 0}</p>`;
+      html += '</div></div>';
+    }
+
+    // Análisis/Resultados
+    if (results.analysis) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header bg-primary text-white"><h6 class="mb-0"><i class="fas fa-brain me-2"></i>Análisis Inteligente</h6></div>';
+      html += '<div class="card-body">';
+      html += '<p class="mb-0">' + results.analysis.replace(/\n/g, '<br>') + '</p>';
+      html += '</div></div>';
+    }
+
+    // Resultados específicos
+    if (results.results && Array.isArray(results.results)) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header"><h6 class="mb-0"><i class="fas fa-list me-2"></i>Resultados Encontrados</h6></div>';
+      html += '<div class="card-body">';
+      html += '<ul class="mb-0">';
+      results.results.forEach(result => {
+        html += '<li>' + result + '</li>';
+      });
+      html += '</ul></div></div>';
+    }
+
+    // Insights
+    if (results.insights && Array.isArray(results.insights)) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header bg-success text-white"><h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Insights Identificados</h6></div>';
+      html += '<div class="card-body"><ul class="mb-0">';
+      results.insights.forEach(insight => {
+        html += '<li>' + insight + '</li>';
+      });
+      html += '</ul></div></div>';
+    }
+
+    // Recomendaciones
+    if (results.recommendations && Array.isArray(results.recommendations)) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header bg-warning text-dark"><h6 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>Recomendaciones</h6></div>';
+      html += '<div class="card-body"><ul class="mb-0">';
+      results.recommendations.forEach(rec => {
+        html += '<li>' + rec + '</li>';
+      });
+      html += '</ul></div></div>';
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  // Función para formatear resultados de reportes
+  function formatReportResults(report, metadata = null) {
+    let html = '<div class="analysis-results text-dark">';
+
+    // Metadatos del reporte
+    if (metadata) {
+      html += '<div class="alert alert-info mb-3">';
+      html += '<h6><i class="fas fa-info-circle me-2"></i>Información del Reporte</h6>';
+      html += `<p class="mb-1"><strong>Período:</strong> ${metadata.period_hours || 0} horas</p>`;
+      html += `<p class="mb-1"><strong>Alertas no reconocidas:</strong> ${metadata.unacknowledged_alerts || 0}</p>`;
+      html += `<p class="mb-1"><strong>Flujos sospechosos:</strong> ${metadata.suspicious_flows || 0}</p>`;
+      html += `<p class="mb-0"><strong>Generado:</strong> ${metadata.generated_at ? new Date(metadata.generated_at).toLocaleString() : 'N/A'}</p>`;
+      html += '</div>';
+    }
+
+    // Resumen ejecutivo
+    if (report.executive_summary) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header bg-primary text-white"><h6 class="mb-0"><i class="fas fa-briefcase me-2"></i>Resumen Ejecutivo</h6></div>';
+      html += '<div class="card-body">';
+      html += '<p class="mb-0">' + report.executive_summary.replace(/\n/g, '<br>') + '</p>';
+      html += '</div></div>';
+    }
+
+    // Nivel de amenaza
+    if (report.threat_level) {
+      const threatClass = report.threat_level.toLowerCase() === 'critical' ? 'danger' :
+                         report.threat_level.toLowerCase() === 'high' ? 'warning' :
+                         report.threat_level.toLowerCase() === 'medium' ? 'info' : 'success';
+      html += `<div class="alert alert-${threatClass} mb-3">`;
+      html += '<h6><i class="fas fa-exclamation-triangle me-2"></i>Nivel de Amenaza General</h6>';
+      html += `<span class="badge bg-${threatClass} fs-6">${report.threat_level}</span>`;
+      html += '</div>';
+    }
+
+    // Alertas críticas
+    if (report.critical_alerts) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header bg-danger text-white"><h6 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Alertas Críticas</h6></div>';
+      html += '<div class="card-body">';
+      if (Array.isArray(report.critical_alerts)) {
+        html += '<ul class="mb-0">';
+        report.critical_alerts.forEach(alert => {
+          html += '<li>' + alert + '</li>';
+        });
+        html += '</ul>';
+      } else {
+        html += '<p class="mb-0">' + report.critical_alerts + '</p>';
+      }
+      html += '</div></div>';
+    }
+
+    // Recomendaciones
+    if (report.recommendations && Array.isArray(report.recommendations)) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header bg-success text-white"><h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Recomendaciones Prioritarias</h6></div>';
+      html += '<div class="card-body"><ul class="mb-0">';
+      report.recommendations.forEach(rec => {
+        html += '<li>' + rec + '</li>';
+      });
+      html += '</ul></div></div>';
+    }
+
+    // Plan de acción
+    if (report.action_plan) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header bg-warning text-dark"><h6 class="mb-0"><i class="fas fa-tasks me-2"></i>Plan de Acción Inmediato</h6></div>';
+      html += '<div class="card-body">';
+      html += '<p class="mb-0">' + report.action_plan.replace(/\n/g, '<br>') + '</p>';
+      html += '</div></div>';
+    }
+
+    // Métricas clave
+    if (report.key_metrics) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header"><h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Métricas Clave</h6></div>';
+      html += '<div class="card-body">';
+      if (typeof report.key_metrics === 'object') {
+        html += '<ul class="mb-0">';
+        Object.entries(report.key_metrics).forEach(([key, value]) => {
+          html += `<li><strong>${key}:</strong> ${value}</li>`;
+        });
+        html += '</ul>';
+      } else {
+        html += '<p class="mb-0">' + report.key_metrics + '</p>';
+      }
+      html += '</div></div>';
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  // Función para formatear resultados de correlación
+  function formatCorrelationResults(correlations, eventCounts = null) {
+    let html = '<div class="analysis-results text-dark">';
+
+    // Conteo de eventos
+    if (eventCounts) {
+      html += '<div class="alert alert-info mb-3">';
+      html += '<h6><i class="fas fa-chart-bar me-2"></i>Eventos Analizados</h6>';
+      html += `<p class="mb-1"><strong>Eventos Snort:</strong> ${eventCounts.snort_events || 0}</p>`;
+      html += `<p class="mb-0"><strong>Eventos Suricata:</strong> ${eventCounts.suricata_events || 0}</p>`;
+      html += '</div>';
+    }
+
+    // Resumen de correlaciones
+    if (correlations.summary) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header"><h6 class="mb-0"><i class="fas fa-link me-2"></i>Resumen de Correlaciones</h6></div>';
+      html += '<div class="card-body">';
+      html += '<p class="mb-0">' + correlations.summary.replace(/\n/g, '<br>') + '</p>';
+      html += '</div></div>';
+    }
+
+    // Eventos correlacionados
+    if (correlations.correlated_events !== undefined) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header"><h6 class="mb-0"><i class="fas fa-project-diagram me-2"></i>Eventos Correlacionados</h6></div>';
+      html += '<div class="card-body">';
+      html += `<span class="badge bg-primary fs-6">${correlations.correlated_events}</span>`;
+      html += '</div></div>';
+    }
+
+    // Recomendaciones
+    if (correlations.recommendations && Array.isArray(correlations.recommendations)) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header"><h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Recomendaciones</h6></div>';
+      html += '<div class="card-body"><ul class="mb-0">';
+      correlations.recommendations.forEach(rec => {
+        html += '<li>' + rec + '</li>';
+      });
+      html += '</ul></div></div>';
+    }
+
+    // Patrones identificados
+    if (correlations.patterns && Array.isArray(correlations.patterns)) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header"><h6 class="mb-0"><i class="fas fa-search me-2"></i>Patrones Identificados</h6></div>';
+      html += '<div class="card-body"><ul class="mb-0">';
+      correlations.patterns.forEach(pattern => {
+        html += '<li>' + pattern + '</li>';
+      });
+      html += '</ul></div></div>';
+    }
+
+    html += '</div>';
+    return html;
+  }
+
+  // Función para formatear resultados de análisis de IP
+  function formatIPAnalysisResults(analysis, rawData = null) {
+    let html = '<div class="analysis-results text-dark">';
+
+    // Información básica de la IP
+    if (rawData && rawData.ip_address) {
+      html += '<div class="alert alert-info mb-3">';
+      html += '<h6><i class="fas fa-globe me-2"></i>Análisis de IP</h6>';
+      html += `<p class="mb-1"><strong>Dirección IP:</strong> <code class="bg-secondary text-dark p-1 rounded">${rawData.ip_address}</code></p>`;
+      html += `<p class="mb-1"><strong>Período analizado:</strong> ${rawData.analysis_period}</p>`;
+      if (rawData.snort_as_source) {
+        html += `<p class="mb-1"><strong>Eventos como fuente (Snort):</strong> ${rawData.snort_as_source.total_events}</p>`;
+      }
+      if (rawData.snort_as_target) {
+        html += `<p class="mb-0"><strong>Eventos como destino (Snort):</strong> ${rawData.snort_as_target.total_events}</p>`;
+      }
+      html += '</div>';
+    }
+
+    // Nivel de amenaza
+    if (analysis.threat_level) {
+      const threatClass = analysis.threat_level.toLowerCase() === 'critical' ? 'danger' :
+                         analysis.threat_level.toLowerCase() === 'high' ? 'warning' :
+                         analysis.threat_level.toLowerCase() === 'medium' ? 'info' : 'success';
+      html += `<div class="alert alert-${threatClass} mb-3">`;
+      html += '<h6><i class="fas fa-exclamation-triangle me-2"></i>Nivel de Amenaza</h6>';
+      html += `<span class="badge bg-${threatClass} fs-6">${analysis.threat_level}</span>`;
+      html += '</div>';
+    }
+
+    // Tipo de actividad
+    if (analysis.activity_type) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header"><h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>Tipo de Actividad</h6></div>';
+      html += '<div class="card-body">';
+      html += `<span class="badge bg-secondary">${analysis.activity_type}</span>`;
+      html += '</div></div>';
+    }
+
+    // Resumen
+    if (analysis.summary) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header"><h6 class="mb-0"><i class="fas fa-file-alt me-2"></i>Resumen del Análisis</h6></div>';
+      html += '<div class="card-body">';
+      html += '<p class="mb-0">' + analysis.summary.replace(/\n/g, '<br>') + '</p>';
+      html += '</div></div>';
+    }
+
+    // Recomendaciones
+    if (analysis.recommendations && Array.isArray(analysis.recommendations)) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header"><h6 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Recomendaciones</h6></div>';
+      html += '<div class="card-body"><ul class="mb-0">';
+      analysis.recommendations.forEach(rec => {
+        html += '<li>' + rec + '</li>';
+      });
+      html += '</ul></div></div>';
+    }
+
+    // IoCs si existen
+    if (analysis.iocs && Array.isArray(analysis.iocs)) {
+      html += '<div class="card mb-3">';
+      html += '<div class="card-header"><h6 class="mb-0"><i class="fas fa-search me-2"></i>Indicadores de Compromiso (IoCs)</h6></div>';
+      html += '<div class="card-body"><ul class="mb-0">';
+      analysis.iocs.forEach(ioc => {
+        html += '<li><code class="bg-secondary text-dark p-1 rounded">' + ioc + '</code></li>';
+      });
+      html += '</ul></div></div>';
+    }
+
+    html += '</div>';
+    return html;
+  }
 
   // Probar conexión con Ollama
   async function testConnection() {
@@ -310,7 +724,7 @@
       const data = await response.json();
 
       if (data.success) {
-        resultEl.textContent = JSON.stringify(data.analysis, null, 2);
+        resultEl.innerHTML = formatAnalysisResults(data.analysis, data.data_summary);
       } else {
         resultEl.textContent = "Error: " + data.error;
       }
@@ -326,11 +740,11 @@
     const resultEl = document.getElementById("ipResult");
 
     if (!ip) {
-      resultEl.textContent = "Por favor ingrese una dirección IP válida.";
+      resultEl.innerHTML = '<div class="alert alert-warning">Por favor ingrese una dirección IP válida.</div>';
       return;
     }
 
-    resultEl.textContent = "Analizando comportamiento de IP...";
+    resultEl.innerHTML = '<div class="alert alert-info">Analizando comportamiento de IP...</div>';
 
     try {
       const response = await fetch('{% url "ollama-analyze-ip" %}', {
@@ -344,12 +758,12 @@
       const data = await response.json();
 
       if (data.success) {
-        resultEl.textContent = JSON.stringify(data.ip_analysis, null, 2);
+        resultEl.innerHTML = formatIPAnalysisResults(data.ip_analysis, data.raw_data);
       } else {
-        resultEl.textContent = "Error: " + data.error;
+        resultEl.innerHTML = '<div class="alert alert-danger">Error: ' + data.error + '</div>';
       }
     } catch (error) {
-      resultEl.textContent = "Error de conexión: " + error.message;
+      resultEl.innerHTML = '<div class="alert alert-danger">Error de conexión: ' + error.message + '</div>';
     }
   }
 
@@ -357,7 +771,7 @@
   async function correlateEvents() {
     const window = document.getElementById("correlationWindow").value;
     const resultEl = document.getElementById("correlationResult");
-    resultEl.textContent = "Correlacionando eventos...";
+    resultEl.innerHTML = '<div class="alert alert-info">Correlacionando eventos...</div>';
 
     try {
       const response = await fetch('{% url "ollama-correlate-events" %}', {
@@ -371,12 +785,12 @@
       const data = await response.json();
 
       if (data.success) {
-        resultEl.textContent = JSON.stringify(data.correlations, null, 2);
+        resultEl.innerHTML = formatCorrelationResults(data.correlations, data.event_counts);
       } else {
-        resultEl.textContent = "Error: " + data.error;
+        resultEl.innerHTML = '<div class="alert alert-danger">Error: ' + data.error + '</div>';
       }
     } catch (error) {
-      resultEl.textContent = "Error de conexión: " + error.message;
+      resultEl.innerHTML = '<div class="alert alert-danger">Error de conexión: ' + error.message + '</div>';
     }
   }
 
@@ -385,7 +799,7 @@
     const type = document.getElementById("reportType").value;
     const period = document.getElementById("reportPeriod").value;
     const resultEl = document.getElementById("reportResult");
-    resultEl.textContent = "Generando reporte...";
+    resultEl.innerHTML = '<div class="alert alert-info">Generando reporte...</div>';
 
     try {
       const response = await fetch('{% url "ollama-generate-report" %}', {
@@ -399,12 +813,12 @@
       const data = await response.json();
 
       if (data.success) {
-        resultEl.textContent = JSON.stringify(data.report, null, 2);
+        resultEl.innerHTML = formatReportResults(data.report, data.metadata);
       } else {
-        resultEl.textContent = "Error: " + data.error;
+        resultEl.innerHTML = '<div class="alert alert-danger">Error: ' + data.error + '</div>';
       }
     } catch (error) {
-      resultEl.textContent = "Error de conexión: " + error.message;
+      resultEl.innerHTML = '<div class="alert alert-danger">Error de conexión: ' + error.message + '</div>';
     }
   }
 
@@ -442,11 +856,11 @@
     const resultEl = document.getElementById("crossRefResult");
 
     if (!query) {
-      resultEl.textContent = "Por favor ingrese una consulta descriptiva.";
+      resultEl.innerHTML = '<div class="alert alert-warning">Por favor ingrese una consulta descriptiva.</div>';
       return;
     }
 
-    resultEl.textContent = "Realizando cruzado de información...";
+    resultEl.innerHTML = '<div class="alert alert-info">Realizando cruzado de información...</div>';
 
     try {
       const response = await fetch('{% url "ollama-cross-reference" %}', {
@@ -460,12 +874,12 @@
       const data = await response.json();
 
       if (data.success) {
-        resultEl.textContent = JSON.stringify(data.results, null, 2);
+        resultEl.innerHTML = formatCrossReferenceResults(data.results);
       } else {
-        resultEl.textContent = "Error: " + data.error;
+        resultEl.innerHTML = '<div class="alert alert-danger">Error: ' + data.error + '</div>';
       }
     } catch (error) {
-      resultEl.textContent = "Error de conexión: " + error.message;
+      resultEl.innerHTML = '<div class="alert alert-danger">Error de conexión: ' + error.message + '</div>';
     }
   }
 

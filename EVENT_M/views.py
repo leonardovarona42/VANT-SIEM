@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.shortcuts import redirect
 from django.http import JsonResponse
 from django.utils import timezone
+from django.urls import reverse
 from datetime import datetime, timedelta
 from .models import (
     Categoria, Subcategoria, Servicio, Responsable, Area,
@@ -25,6 +26,52 @@ logger = logging.getLogger(__name__)
 class CategoriaListView(ListView):
     model = Categoria
     template_name = 'categoria_list.html'
+    paginate_by = 10
+    context_object_name = 'object_list'
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        q = self.request.GET.get('q')
+        if q:
+            queryset = queryset.filter(
+                Q(nombre__icontains=q) |
+                Q(descripcion__icontains=q) |
+                Q(id__icontains=q)
+            )
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('q', '')
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        # Check if this is an AJAX request
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            # Return JSON data for AJAX requests
+            categorias_data = []
+            for categoria in context['object_list']:
+                categorias_data.append({
+                    'id': categoria.id,
+                    'nombre': categoria.nombre,
+                    'descripcion': categoria.descripcion,
+                    'detail_url': reverse('categoria-detail', args=[categoria.id]),
+                    'update_url': reverse('categoria-update', args=[categoria.id]),
+                    'delete_url': reverse('categoria-delete', args=[categoria.id])
+                })
+
+            data = {
+                'categorias': categorias_data,
+                'has_next': context['page_obj'].has_next(),
+                'has_previous': context['page_obj'].has_previous(),
+                'current_page': context['page_obj'].number,
+                'total_pages': context['page_obj'].paginator.num_pages,
+                'total_count': context['paginator'].count
+            }
+            return JsonResponse(data)
+        else:
+            # Return normal HTML response
+            return super().render_to_response(context, **response_kwargs)
 
 class CategoriaDetailView(DetailView):
     model = Categoria
@@ -73,6 +120,56 @@ class CategoriaDeleteView(DeleteView):
 class SubcategoriaListView(ListView):
     model = Subcategoria
     template_name = 'subcategoria_list.html'
+    paginate_by = 10
+    context_object_name = 'object_list'
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        q = self.request.GET.get('q')
+        if q:
+            queryset = queryset.filter(
+                Q(nombre__icontains=q) |
+                Q(descripcion__icontains=q) |
+                Q(categoria__nombre__icontains=q) |
+                Q(id__icontains=q) |
+                Q(nivel_peligrosidad__icontains=q)
+            )
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('q', '')
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        # Check if this is an AJAX request
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            # Return JSON data for AJAX requests
+            subcategorias_data = []
+            for subcategoria in context['object_list']:
+                subcategorias_data.append({
+                    'id': subcategoria.id,
+                    'nombre': subcategoria.nombre,
+                    'categoria': subcategoria.categoria.nombre,
+                    'nivel_peligrosidad': subcategoria.nivel_peligrosidad,
+                    'descripcion': subcategoria.descripcion,
+                    'detail_url': reverse('subcategoria-detail', args=[subcategoria.id]),
+                    'update_url': reverse('subcategoria-update', args=[subcategoria.id]),
+                    'delete_url': reverse('subcategoria-delete', args=[subcategoria.id])
+                })
+
+            data = {
+                'subcategorias': subcategorias_data,
+                'has_next': context['page_obj'].has_next(),
+                'has_previous': context['page_obj'].has_previous(),
+                'current_page': context['page_obj'].number,
+                'total_pages': context['page_obj'].paginator.num_pages,
+                'total_count': context['paginator'].count
+            }
+            return JsonResponse(data)
+        else:
+            # Return normal HTML response
+            return super().render_to_response(context, **response_kwargs)
 
 class SubcategoriaDetailView(DetailView):
     model = Subcategoria
@@ -121,6 +218,56 @@ class SubcategoriaDeleteView(DeleteView):
 class ServicioListView(ListView):
     model = Servicio
     template_name = 'servicio_list.html'
+    paginate_by = 10
+    context_object_name = 'object_list'
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        q = self.request.GET.get('q')
+        if q:
+            queryset = queryset.filter(
+                Q(nombre__icontains=q) |
+                Q(descripcion__icontains=q) |
+                Q(host__icontains=q) |
+                Q(id__icontains=q) |
+                Q(monitorear__icontains=q)
+            )
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('q', '')
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        # Check if this is an AJAX request
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            # Return JSON data for AJAX requests
+            servicios_data = []
+            for servicio in context['object_list']:
+                servicios_data.append({
+                    'id': servicio.id,
+                    'nombre': servicio.nombre,
+                    'descripcion': servicio.descripcion,
+                    'host': servicio.host or 'N/A',
+                    'monitorear': servicio.monitorear,
+                    'detail_url': reverse('servicio-detail', args=[servicio.id]),
+                    'update_url': reverse('servicio-update', args=[servicio.id]),
+                    'delete_url': reverse('servicio-delete', args=[servicio.id])
+                })
+
+            data = {
+                'servicios': servicios_data,
+                'has_next': context['page_obj'].has_next(),
+                'has_previous': context['page_obj'].has_previous(),
+                'current_page': context['page_obj'].number,
+                'total_pages': context['page_obj'].paginator.num_pages,
+                'total_count': context['paginator'].count
+            }
+            return JsonResponse(data)
+        else:
+            # Return normal HTML response
+            return super().render_to_response(context, **response_kwargs)
 
 class ServicioDetailView(DetailView):
     model = Servicio
@@ -169,6 +316,62 @@ class ServicioDeleteView(DeleteView):
 class ResponsableListView(ListView):
     model = Responsable
     template_name = 'responsable_list.html'
+    paginate_by = 10
+    context_object_name = 'object_list'
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        q = self.request.GET.get('q')
+        if q:
+            queryset = queryset.filter(
+                Q(nombres__icontains=q) |
+                Q(apellidos__icontains=q) |
+                Q(email__icontains=q) |
+                Q(telefono_particular__icontains=q) |
+                Q(telefono_corp__icontains=q) |
+                Q(tipo__icontains=q) |
+                Q(descripcion__icontains=q) |
+                Q(id__icontains=q)
+            )
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('q', '')
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        # Check if this is an AJAX request
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            # Return JSON data for AJAX requests
+            responsables_data = []
+            for responsable in context['object_list']:
+                responsables_data.append({
+                    'id': responsable.id,
+                    'nombres': responsable.nombres,
+                    'apellidos': responsable.apellidos,
+                    'email': responsable.email,
+                    'telefono_particular': responsable.telefono_particular,
+                    'telefono_corp': responsable.telefono_corp,
+                    'tipo': responsable.tipo,
+                    'descripcion': responsable.descripcion,
+                    'detail_url': reverse('responsable-detail', args=[responsable.id]),
+                    'update_url': reverse('responsable-update', args=[responsable.id]),
+                    'delete_url': reverse('responsable-delete', args=[responsable.id])
+                })
+
+            data = {
+                'responsables': responsables_data,
+                'has_next': context['page_obj'].has_next(),
+                'has_previous': context['page_obj'].has_previous(),
+                'current_page': context['page_obj'].number,
+                'total_pages': context['page_obj'].paginator.num_pages,
+                'total_count': context['paginator'].count
+            }
+            return JsonResponse(data)
+        else:
+            # Return normal HTML response
+            return super().render_to_response(context, **response_kwargs)
 
 class ResponsableDetailView(DetailView):
     model = Responsable
@@ -237,6 +440,61 @@ class ResponsableDeleteView(DeleteView):
 class AreaListView(ListView):
     model = Area
     template_name = 'area_list.html'
+    paginate_by = 10
+    context_object_name = 'object_list'
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        q = self.request.GET.get('q')
+        if q:
+            queryset = queryset.filter(
+                Q(nombre__icontains=q) |
+                Q(acronimo__icontains=q) |
+                Q(cuadro_centro__nombres__icontains=q) |
+                Q(cuadro_centro__apellidos__icontains=q) |
+                Q(rsi__nombres__icontains=q) |
+                Q(rsi__apellidos__icontains=q) |
+                Q(admin__nombres__icontains=q) |
+                Q(admin__apellidos__icontains=q) |
+                Q(id__icontains=q)
+            )
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('q', '')
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        # Check if this is an AJAX request
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            # Return JSON data for AJAX requests
+            areas_data = []
+            for area in context['object_list']:
+                areas_data.append({
+                    'id': area.id,
+                    'nombre': area.nombre,
+                    'acronimo': area.acronimo,
+                    'cuadro_centro': f"{area.cuadro_centro.nombres} {area.cuadro_centro.apellidos}",
+                    'rsi': f"{area.rsi.nombres} {area.rsi.apellidos}",
+                    'admin': f"{area.admin.nombres} {area.admin.apellidos}",
+                    'detail_url': reverse('area-detail', args=[area.id]),
+                    'update_url': reverse('area-update', args=[area.id]),
+                    'delete_url': reverse('area-delete', args=[area.id])
+                })
+
+            data = {
+                'areas': areas_data,
+                'has_next': context['page_obj'].has_next(),
+                'has_previous': context['page_obj'].has_previous(),
+                'current_page': context['page_obj'].number,
+                'total_pages': context['page_obj'].paginator.num_pages,
+                'total_count': context['paginator'].count
+            }
+            return JsonResponse(data)
+        else:
+            # Return normal HTML response
+            return super().render_to_response(context, **response_kwargs)
 
 class AreaDetailView(DetailView):
     model = Area
@@ -472,6 +730,73 @@ class ReporteDeleteView(DeleteView):
 class IncidenteListView(ListView):
     model = Incidente
     template_name = 'incidentes_list.html'
+    paginate_by = 10
+    context_object_name = 'object_list'
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        q = self.request.GET.get('q')
+        if q:
+            queryset = queryset.filter(
+                Q(nombre_incidente__icontains=q) |
+                Q(descripcion__icontains=q) |
+                Q(codigo_incidente__icontains=q) |
+                Q(reporte__nombre_informante__icontains=q) |
+                Q(reporte__email_informante__icontains=q) |
+                Q(reporte__descripcion__icontains=q) |
+                Q(servicios__nombre__icontains=q) |
+                Q(areas__nombre__icontains=q) |
+                Q(subcategorias__nombre__icontains=q) |
+                Q(estado_solucion__icontains=q) |
+                Q(notificado_osri__icontains=q)
+            ).distinct()
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('q', '')
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        # Check if this is an AJAX request
+        is_ajax = self.request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        print(f"DEBUG: is_ajax={is_ajax}, headers={dict(self.request.headers)}, GET={dict(self.request.GET)}")
+        if is_ajax:
+            print(f"DEBUG: Returning JSON for query: {self.request.GET.get('q', 'empty')}")
+            # Return JSON data for AJAX requests
+            incidents_data = []
+            for incident in context['object_list']:
+                incidents_data.append({
+                    'id': incident.id,
+                    'nombre_incidente': incident.nombre_incidente,
+                    'descripcion': incident.descripcion,
+                    'reporte': f"{incident.reporte.nombre_informante} - {incident.reporte.descripcion[:30]}...",
+                    'servicios': ', '.join([s.nombre for s in incident.servicios.all()]),
+                    'areas': ', '.join([a.nombre for a in incident.areas.all()]),
+                    'subcategorias': ', '.join([s.nombre for s in incident.subcategorias.all()]),
+                    'estado_solucion': incident.get_estado_solucion_display(),
+                    'estado_class': 'bg-secondary' if incident.estado_solucion == 'nuevo' else 'bg-warning' if incident.estado_solucion == 'abierto' else 'bg-info' if incident.estado_solucion == 'investigacion' else 'bg-danger' if incident.estado_solucion == 'mitigacion' else 'bg-success',
+                    'notificado_osri': incident.get_notificado_osri_display(),
+                    'notificado_class': 'bg-success' if incident.notificado_osri == 'si' else 'bg-secondary',
+                    'fecha_hora': incident.fecha_hora.strftime('%d/%m/%Y %H:%M'),
+                    'evidencia_url': incident.evidencia.url if incident.evidencia else None,
+                    'detail_url': reverse('incidente-detail', args=[incident.id]),
+                    'update_url': reverse('incidente-update', args=[incident.id]),
+                    'delete_url': reverse('incidente-delete', args=[incident.id])
+                })
+
+            data = {
+                'incidents': incidents_data,
+                'has_next': context['page_obj'].has_next(),
+                'has_previous': context['page_obj'].has_previous(),
+                'current_page': context['page_obj'].number,
+                'total_pages': context['page_obj'].paginator.num_pages,
+                'total_count': context['paginator'].count
+            }
+            return JsonResponse(data)
+        else:
+            # Return normal HTML response
+            return super().render_to_response(context, **response_kwargs)
 
 class IncidenteDetailView(DetailView):
     model = Incidente

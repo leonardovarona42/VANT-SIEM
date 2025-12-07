@@ -11,6 +11,20 @@
                 </a>
             </div>
             <div class="card-body">
+                <!-- Search Input -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" id="search-input" class="form-control" placeholder="Buscar por ID, nombres, apellidos, email, teléfonos, tipo o descripción..."
+                                   value="{{ search_query }}">
+                            <button type="button" id="clear-search" class="btn btn-outline-secondary {% if not search_query %}d-none{% endif %}">
+                                <i class="fas fa-times"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 {% if object_list %}
                     <div class="table-responsive">
                         <table class="table table-dark table-striped">
@@ -44,6 +58,45 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- Pagination -->
+                    {% if is_paginated %}
+                        <nav aria-label="Navegación de páginas" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                            <i class="fas fa-chevron-left"></i> Anterior
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <li class="page-item active">
+                                            <a class="page-link" href="#">{{ num }}</a>
+                                        </li>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}">{{ num }}</a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}">
+                                            Siguiente <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+
+                        <div class="text-center text-muted mt-2">
+                            Página {{ page_obj.number }} de {{ paginator.num_pages }}. Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ paginator.count }} responsable{{ paginator.count|pluralize:"s" }}.
+                        </div>
+                    {% endif %}
                 {% else %}
                     <div class="text-center py-4">
                         <p class="text-muted">No hay responsables registrados.</p>
@@ -54,4 +107,118 @@
         </div>
     </div>
 </div>
+
+<script>
+console.log('Real-time search script loaded for responsables');
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded event fired for responsables');
+    const searchInput = document.getElementById('search-input');
+    const clearButton = document.getElementById('clear-search');
+    const tableBody = document.querySelector('tbody');
+
+    console.log('Elements found:', {searchInput, clearButton, tableBody});
+
+    if (!searchInput) {
+        console.error('Search input not found!');
+        return;
+    }
+
+    let searchTimeout;
+
+    // Function to perform AJAX search
+    function performSearch(query = '') {
+        console.log('performSearch called with query:', query);
+
+        // Show loading state
+        tableBody.innerHTML = '<tr><td colspan="7" class="text-center"><i class="fas fa-spinner fa-spin"></i> Buscando...</td></tr>';
+
+        const url = `${window.location.pathname}?q=${encodeURIComponent(query)}`;
+        console.log('Fetching URL:', url);
+
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            }
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Received data:', data);
+            updateTable(data);
+        })
+        .catch(error => {
+            console.error('Search error:', error);
+            tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Error al buscar: ' + error.message + '</td></tr>';
+        });
+    }
+
+    // Function to update table with search results
+    function updateTable(data) {
+        if (!data.responsables || data.responsables.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="7" class="text-center">No se encontraron responsables que coincidan con la búsqueda.</td></tr>';
+            return;
+        }
+
+        let html = '';
+        data.responsables.forEach(responsable => {
+            html += `
+                <tr>
+                    <td>${responsable.id}</td>
+                    <td>${responsable.nombres} ${responsable.apellidos}</td>
+                    <td>${responsable.email}</td>
+                    <td>${responsable.tipo}</td>
+                    <td>${responsable.telefono_particular}</td>
+                    <td>${responsable.telefono_corp}</td>
+                    <td>
+                        <a href="${responsable.detail_url}" class="btn btn-info btn-sm">Ver</a>
+                        <a href="${responsable.update_url}" class="btn btn-warning btn-sm">Editar</a>
+                        <a href="${responsable.delete_url}" class="btn btn-danger btn-sm">Eliminar</a>
+                    </td>
+                </tr>
+            `;
+        });
+        tableBody.innerHTML = html;
+    }
+
+    // Event listener for search input
+    searchInput.addEventListener('input', function() {
+        console.log('Input event triggered on search input');
+        const query = this.value.trim();
+        console.log('Query value:', query);
+
+        // Show/hide clear button
+        if (query) {
+            clearButton.classList.remove('d-none');
+        } else {
+            clearButton.classList.add('d-none');
+        }
+
+        // Clear previous timeout
+        clearTimeout(searchTimeout);
+
+        // Set new timeout for search (debounce)
+        searchTimeout = setTimeout(() => {
+            console.log('Timeout triggered, calling performSearch');
+            performSearch(query);
+        }, 300); // Wait 300ms after user stops typing
+    });
+
+    // Event listener for clear button
+    clearButton.addEventListener('click', function() {
+        console.log('Clear button clicked');
+        searchInput.value = '';
+        clearButton.classList.add('d-none');
+        performSearch('');
+    });
+
+    console.log('Event listeners attached successfully for responsables');
+});
+</script>
 {% endblock %}

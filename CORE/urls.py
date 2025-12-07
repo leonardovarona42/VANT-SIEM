@@ -16,6 +16,7 @@ urlpatterns = [
     path('siem/login/', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
     path('siem/dashboard/', include('VANT_SIEM.urls')),
     path('siem/ids/', include('VANT_SIEM.urls')),  # alias para rutas IDS/servicios
+    path('collector/', include('collector.urls')),  # URLs de Collector
     path('eventos/', include('EVENT_M.urls')),  # URLs de EVENT_M
     path('ids-ingest/', include('ids_ingest.urls')),
     path('siem/dashboard/logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
