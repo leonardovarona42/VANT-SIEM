@@ -4,3 +4,9 @@ snort-logs/
 suricata-log/
 VANT_SIEM_PRESENTATION.md
 logs/eventos.json
+collector/
+scripts/build/collector_agent/
+scripts/collector_agent*
+scripts/README_COLLECTOR_AGENT.md
+scripts/dist/*
+logs/*

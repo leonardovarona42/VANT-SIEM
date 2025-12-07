@@ -3329,8 +3329,19 @@ def ollama_analyze_ip(request):
     """Analizar comportamiento de una IP usando IA"""
     from .ollama_service import ollama_service
     try:
+        # Intentar obtener datos del POST (form data)
         ip = request.POST.get('ip', '').strip()
         hours = int(request.POST.get('hours', 24))
+
+        # Si no hay IP en POST, intentar JSON
+        if not ip and request.content_type == 'application/json':
+            try:
+                import json
+                data = json.loads(request.body)
+                ip = data.get('ip', '').strip()
+                hours = int(data.get('hours', 24))
+            except (json.JSONDecodeError, KeyError):
+                pass
 
         if not ip:
             return JsonResponse({'success': False, 'error': 'IP requerida'})

@@ -2,6 +2,21 @@
 {% block title %}Listado de Incidentes | VANT-SIEM{% endblock %}
 {% block content %}
     <h2 class="mb-4 text-info text-center">Listado de Incidentes</h2>
+
+    <!-- Search Input -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" id="search-input" class="form-control" placeholder="Buscar por nombre, descripción, código, reporte, servicios, áreas, subcategorías, estado..."
+                       value="{{ search_query }}">
+                <button type="button" id="clear-search" class="btn btn-outline-secondary {% if not search_query %}d-none{% endif %}">
+                    <i class="fas fa-times"></i> Limpiar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="table-responsive">
         <table class="table table-dark table-striped">
             <thead>
@@ -25,8 +40,8 @@
                 <tr>
                     <td>{{ incidente.id }}</td>
                     <td>{{ incidente.nombre_incidente }}</td>
-                    <td>{{ incidente.descripcion }}</td>
-                    <td>{{ incidente.reporte.descripcion }}</td>
+                    <td>{{ incidente.descripcion|truncatechars:50 }}</td>
+                    <td>{{ incidente.reporte.nombre_informante }} - {{ incidente.reporte.descripcion|truncatechars:30 }}</td>
                     <td>
                         {% for servicio in incidente.servicios.all %}
                             {{ servicio.nombre }}{% if not forloop.last %}, {% endif %}
@@ -42,30 +57,232 @@
                             {{ sub.nombre }}{% if not forloop.last %}, {% endif %}
                         {% endfor %}
                     </td>
-                    <td>{{ incidente.estado_solucion }}</td>
-                    <td>{{ incidente.notificado_osri }}</td>
-                    <td>{{ incidente.fecha_hora }}</td>
+                    <td>
+                        <span class="badge
+                            {% if incidente.estado_solucion == 'nuevo' %}bg-secondary
+                            {% elif incidente.estado_solucion == 'abierto' %}bg-warning
+                            {% elif incidente.estado_solucion == 'investigacion' %}bg-info
+                            {% elif incidente.estado_solucion == 'mitigacion' %}bg-danger
+                            {% elif incidente.estado_solucion == 'cerrado' %}bg-success
+                            {% endif %}">
+                            {{ incidente.get_estado_solucion_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge {% if incidente.notificado_osri == 'si' %}bg-success{% else %}bg-secondary{% endif %}">
+                            {{ incidente.get_notificado_osri_display }}
+                        </span>
+                    </td>
+                    <td>{{ incidente.fecha_hora|date:"d/m/Y H:i" }}</td>
                     <td>
                         {% if incidente.evidencia %}
-                            <a href="{{ incidente.evidencia.url }}" download class="btn btn-outline-info btn-sm">Descargar archivo</a>
+                            <a href="{{ incidente.evidencia.url }}" download class="text-info">
+                                <i class="fas fa-download"></i> Descargar
+                            </a>
                         {% else %}
-                            <span class="text-muted">Sin archivo</span>
+                            <span class="text-muted">-</span>
                         {% endif %}
                     </td>
                     <td>
+                        <a href="{% url 'incidente-detail' incidente.id %}" class="btn btn-info btn-sm">Ver</a>
                         <a href="{% url 'incidente-update' incidente.id %}" class="btn btn-warning btn-sm">Editar</a>
                         <a href="{% url 'incidente-delete' incidente.id %}" class="btn btn-danger btn-sm">Eliminar</a>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="12" class="text-center">No hay incidentes registrados.</td>
+                    <td colspan="12" class="text-center">
+                        {% if search_query %}
+                            No se encontraron incidentes que coincidan con la búsqueda "{{ search_query }}".
+                        {% else %}
+                            No hay incidentes registrados.
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+        <nav aria-label="Navegación de páginas" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}page=1">
+                            <i class="fas fa-angle-double-left"></i> Primera
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                            <i class="fas fa-angle-left"></i> Anterior
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.next_page_number }}">
+                            Siguiente <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.paginator.num_pages }}">
+                            Última <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+
+        <div class="text-center text-muted mt-2">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}.
+            Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ paginator.count }} resultado{{ paginator.count|pluralize:"s" }}.
+        </div>
+    {% endif %}
+
     <div class="text-center mt-4">
-        <a href="{% url 'incidente-create' %}" class="btn btn-success">Nuevo Incidente</a>
+        <a href="{% url 'incidente-create' %}" class="btn btn-success">
+            <i class="fas fa-plus"></i> Nuevo Incidente
+        </a>
     </div>
+
+<script>
+console.log('Real-time search script loaded - direct in template');
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded event fired');
+    const searchInput = document.getElementById('search-input');
+    const clearButton = document.getElementById('clear-search');
+    const tableBody = document.querySelector('tbody');
+
+    console.log('Elements found:', {searchInput, clearButton, tableBody});
+
+    if (!searchInput) {
+        console.error('Search input not found!');
+        return;
+    }
+
+    let searchTimeout;
+
+    // Function to perform AJAX search
+    function performSearch(query = '') {
+        console.log('performSearch called with query:', query);
+
+        // Show loading state
+        tableBody.innerHTML = '<tr><td colspan="12" class="text-center"><i class="fas fa-spinner fa-spin"></i> Buscando...</td></tr>';
+
+        const url = `${window.location.pathname}?q=${encodeURIComponent(query)}`;
+        console.log('Fetching URL:', url);
+
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+            }
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Received data:', data);
+            updateTable(data);
+        })
+        .catch(error => {
+            console.error('Search error:', error);
+            tableBody.innerHTML = '<tr><td colspan="12" class="text-center text-danger">Error al buscar: ' + error.message + '</td></tr>';
+        });
+    }
+
+    // Function to update table with search results
+    function updateTable(data) {
+        if (!data.incidents || data.incidents.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="12" class="text-center">No se encontraron incidentes que coincidan con la búsqueda.</td></tr>';
+            return;
+        }
+
+        let html = '';
+        data.incidents.forEach(incident => {
+            html += `
+                <tr>
+                    <td>${incident.id}</td>
+                    <td>${incident.nombre_incidente}</td>
+                    <td>${incident.descripcion.length > 50 ? incident.descripcion.substring(0, 50) + '...' : incident.descripcion}</td>
+                    <td>${incident.reporte}</td>
+                    <td>${incident.servicios}</td>
+                    <td>${incident.areas}</td>
+                    <td>${incident.subcategorias}</td>
+                    <td><span class="badge ${incident.estado_class}">${incident.estado_solucion}</span></td>
+                    <td><span class="badge ${incident.notificado_class}">${incident.notificado_osri}</span></td>
+                    <td>${incident.fecha_hora}</td>
+                    <td>
+                        ${incident.evidencia_url ?
+                            `<a href="${incident.evidencia_url}" download class="text-info">
+                                <i class="fas fa-download"></i> Descargar
+                            </a>` :
+                            '<span class="text-muted">-</span>'
+                        }
+                    </td>
+                    <td>
+                        <a href="${incident.detail_url}" class="btn btn-info btn-sm">Ver</a>
+                        <a href="${incident.update_url}" class="btn btn-warning btn-sm">Editar</a>
+                        <a href="${incident.delete_url}" class="btn btn-danger btn-sm">Eliminar</a>
+                    </td>
+                </tr>
+            `;
+        });
+        tableBody.innerHTML = html;
+    }
+
+    // Event listener for search input
+    searchInput.addEventListener('input', function() {
+        console.log('Input event triggered on search input');
+        const query = this.value.trim();
+        console.log('Query value:', query);
+
+        // Show/hide clear button
+        if (query) {
+            clearButton.classList.remove('d-none');
+        } else {
+            clearButton.classList.add('d-none');
+        }
+
+        // Clear previous timeout
+        clearTimeout(searchTimeout);
+
+        // Set new timeout for search (debounce)
+        searchTimeout = setTimeout(() => {
+            console.log('Timeout triggered, calling performSearch');
+            performSearch(query);
+        }, 300); // Wait 300ms after user stops typing
+    });
+
+    // Event listener for clear button
+    clearButton.addEventListener('click', function() {
+        console.log('Clear button clicked');
+        searchInput.value = '';
+        clearButton.classList.add('d-none');
+        performSearch('');
+    });
+
+    console.log('Event listeners attached successfully');
+});
+</script>
 {% endblock %}

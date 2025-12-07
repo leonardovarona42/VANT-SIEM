@@ -394,11 +394,7 @@ Inteligencia y Analítica IDS/IPS | VANT-SIEM
 </script>
 
 <script id="chart-data" type="application/json">
-  {
-    "tendencias_7_dias": {{ intelligence.chart_data.tendencias_7_dias|safe|default:'[]' }},
-    "distribucion_alertas": {{ intelligence.chart_data.distribucion_alertas|safe|default:'[]' }},
-    "correlaciones": {{ intelligence.chart_data.correlaciones|safe|default:'[]' }}
-  }
+  {{ intelligence.chart_data_json|safe|default:'{}' }}
 </script>
 <script>
   const chartData = JSON.parse(document.getElementById("chart-data").textContent);

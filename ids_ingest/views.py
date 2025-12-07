@@ -370,6 +370,10 @@ def intelligence_dashboard(request):
         ]
     }
 
+    # Convertir chart_data a JSON serializable
+    import json
+    intelligence['chart_data_json'] = json.dumps(intelligence['chart_data'])
+
     # ===== RECOMENDACIONES INTELIGENTES =====
     recomendaciones = []
 
