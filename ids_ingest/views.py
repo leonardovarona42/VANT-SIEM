@@ -505,7 +505,14 @@ def snort_dashboard(request):
     ).values('src_ip').annotate(
         count=Count('id')
     ).order_by('-count')[:10]
-    
+
+    # Top signatures (24h)
+    top_signatures = SnortLog.objects.filter(
+        timestamp__gte=now - timedelta(hours=24)
+    ).values('sid', 'message').annotate(
+        count=Count('id')
+    ).order_by('-count')[:10]
+
     # Datos para gráficos
     chart_data = get_snort_chart_data(logs, start_time)
     
@@ -533,7 +540,7 @@ def snort_dashboard(request):
     context = {
         'logs': page_obj,
         'stats': stats,
-        'top_signatures': top_signatures if 'top_signatures' in locals() else [],
+        'top_signatures': top_signatures,
         'top_src_ips': top_src_ips,
         'chart': json.dumps(chart_data),
         'chart_data': chart_data,  # También pasar como objeto Python
