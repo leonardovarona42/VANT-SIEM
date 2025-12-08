@@ -60,9 +60,15 @@ def parse_timestamp(timestamp_str: str, format_type: str) -> Optional[datetime]:
             return timezone.make_aware(dt)
         elif format_type == 'snort':
             # CORRECCIÓN: Formato: MM/DD-HH:MM:SS.microseconds (año actual)
+            # El timestamp de Snort está en hora local, no en UTC
             dt = datetime.strptime(timestamp_str, "%m/%d-%H:%M:%S.%f")
             dt = dt.replace(year=timezone.now().year)
-            return timezone.make_aware(dt)
+            # Crear datetime aware en la zona horaria local del sistema
+            import pytz
+            local_tz = pytz.timezone('America/New_York')  # Ajustar según la zona horaria del sistema Snort
+            dt = local_tz.localize(dt)
+            # Convertir a UTC para almacenamiento
+            return dt.astimezone(pytz.utc)
         elif format_type == 'suricata_json':
             # Formato ISO: YYYY-MM-DDTHH:MM:SS.microseconds±HHMM
             # Remover la Z si existe y manejar timezone offset
