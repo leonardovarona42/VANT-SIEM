@@ -1,5 +1,10 @@
 {% extends "dashboard.html" %}
+{% load static %}
 {% block title %}Gestión de Servicios IDS/IPS | VANT-SIEM{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ids-dashboard.css' %}">
+{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -27,13 +32,13 @@
     </div>
     
     <!-- Comandos de Rotación -->
-    <div class="card mb-4">
-        <div class="card-header bg-warning text-dark">
+    <div class="card mb-4 bg-dark border" style="border-color: #0ff !important;">
+        <div class="card-header bg-dark text-light border-bottom" style="border-color: #0ff !important;">
             <h5 class="mb-0">
-                <i class="fas fa-recycle me-2"></i>Gestión de Rotación de Logs
+                <i class="fas fa-recycle text-warning me-2"></i>Gestión de Rotación de Logs
             </h5>
         </div>
-        <div class="card-body">
+        <div class="card-body bg-dark text-light">
             <div class="row">
                 <div class="col-md-6">
                     <h6>Estadísticas de Rotación</h6>
@@ -151,13 +156,13 @@
     {% endif %}
     
     <!-- Tabla de configuraciones -->
-    <div class="card">
-        <div class="card-header">
+    <div class="card bg-dark border" style="border-color: #0ff !important;">
+        <div class="card-header bg-dark text-light border-bottom" style="border-color: #0ff !important;">
             <h5 class="mb-0">
-                <i class="fas fa-list me-2"></i>Estado de Configuraciones
+                <i class="fas fa-list text-info me-2"></i>Estado de Configuraciones
             </h5>
         </div>
-        <div class="card-body p-0">
+        <div class="card-body bg-dark p-0">
             <div class="table-responsive">
                 <table class="table table-dark table-bordered table-hover mb-0">
                     <thead class="bg-dark text-light">
@@ -250,13 +255,13 @@
     <!-- Información del sistema -->
     <div class="row mt-4">
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
+            <div class="card bg-dark border" style="border-color: #0ff !important;">
+                <div class="card-header bg-dark text-light border-bottom" style="border-color: #0ff !important;">
                     <h6 class="mb-0">
-                        <i class="fas fa-info-circle me-2"></i>Información del Sistema
+                        <i class="fas fa-info-circle text-info me-2"></i>Información del Sistema
                     </h6>
                 </div>
-                <div class="card-body">
+                <div class="card-body bg-dark text-light">
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item d-flex justify-content-between">
                             <span>Comando de inicio:</span>
@@ -275,13 +280,13 @@
             </div>
         </div>
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
+            <div class="card bg-dark border" style="border-color: #0ff !important;">
+                <div class="card-header bg-dark text-light border-bottom" style="border-color: #0ff !important;">
                     <h6 class="mb-0">
-                        <i class="fas fa-lightbulb me-2"></i>Recomendaciones
+                        <i class="fas fa-lightbulb text-warning me-2"></i>Recomendaciones
                     </h6>
                 </div>
-                <div class="card-body">
+                <div class="card-body bg-dark text-light">
                     <ul class="list-group list-group-flush">
                         <li class="list-group-item">
                             <i class="fas fa-check text-success me-2"></i>
@@ -565,12 +570,14 @@ function showStatusModal(status) {
     modal.className = 'modal fade';
     modal.innerHTML = `
         <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Estado del Servicio de Ingesta Optimizado</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-content bg-dark text-light border" style="border-color: #0ff !important;">
+                <div class="modal-header bg-dark border-bottom" style="border-color: #0ff !important;">
+                    <h5 class="modal-title text-light">
+                        <i class="fas fa-info-circle text-info me-2"></i>Estado del Servicio de Ingesta Optimizado
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body bg-dark">
                     <div class="row">
                         <div class="col-md-6">
                             <h6>Estado del Servicio</h6>
@@ -652,7 +659,7 @@ function showStatusModal(status) {
                         <strong>ℹ️ Información:</strong> El servicio utiliza threading optimizado para procesamiento paralelo y manejo robusto de errores.
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer bg-dark border-top" style="border-color: #0ff !important;">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
