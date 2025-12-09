@@ -2,7 +2,7 @@
 
 ## Resumen Ejecutivo
 
-Se ha realizado una mejora completa del servicio `ids_ingest` del proyecto VANT-SIEM, transformándolo de un sistema básico a una solución robusta y profesional para la ingesta y análisis de logs de sistemas IDS/IPS.
+Se ha realizado una mejora completa del servicio `ids_ingest` del proyecto Vigilance & Neutralization threads SIEM, transformándolo de un sistema básico a una solución robusta y profesional para la ingesta y análisis de logs de sistemas IDS/IPS.
 
 ## 🚀 Mejoras Implementadas
 

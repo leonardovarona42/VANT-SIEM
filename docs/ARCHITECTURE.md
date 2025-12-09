@@ -1,4 +1,4 @@
-# Arquitectura y Diagramas de Flujo - VANT-SIEM CORE
+# Arquitectura y Diagramas de Flujo - Vigilance & Neutralization threads SIEM
 
 ## Diagrama General de Arquitectura
 
@@ -370,24 +370,24 @@ flowchart LR
 
 ## Leyenda de Iconos
 
-| Icono | Significado             |
-| ----- | ----------------------- |
-| 👤    | Usuario/Actor           |
-| 🌐    | Interfaz Web            |
-| 📊    | Dashboard/Análisis      |
-| 💾    | Base de Datos           |
-| 🔍    | Sistema IDS             |
-| 📧    | Correo Electrónico      |
-| 🚨    | Alertas/Notificaciones  |
-| 🔐    | Seguridad/Autenticación |
-| 📝    | Logging/Auditoría       |
-| ⚙️    | Configuración           |
-| 🔄    | Procesos/Flujos         |
-| ✅    | Éxito/Confirmación      |
-| ❌    | Error/Rechazo           |
-| ⏳    | Espera/Tiempo           |
-| 📈    | Estadísticas/Métricas   |
+| Icono | Significado |
+|-------|-------------|
+| 👤 | Usuario/Actor |
+| 🌐 | Interfaz Web |
+| 📊 | Dashboard/Análisis |
+| 💾 | Base de Datos |
+| 🔍 | Sistema IDS |
+| 📧 | Correo Electrónico |
+| 🚨 | Alertas/Notificaciones |
+| 🔐 | Seguridad/Autenticación |
+| 📝 | Logging/Auditoría |
+| ⚙️ | Configuración |
+| 🔄 | Procesos/Flujos |
+| ✅ | Éxito/Confirmación |
+| ❌ | Error/Rechazo |
+| ⏳ | Espera/Tiempo |
+| 📈 | Estadísticas/Métricas |
 
 ---
 
-**Estos diagramas proporcionan una visión completa de la arquitectura y flujos de VANT-SIEM CORE, facilitando el entendimiento del sistema para desarrolladores, administradores y usuarios finales.**
+**Estos diagramas proporcionan una visión completa de la arquitectura y flujos de Vigilance & Neutralization threads SIEM, facilitando el entendimiento del sistema para desarrolladores, administradores y usuarios finales.**

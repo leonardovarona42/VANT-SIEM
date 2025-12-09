@@ -1,8 +1,8 @@
-# Manual de Usuario - VANT-SIEM CORE
+# Manual de Usuario - Vigilance & Neutralization threads SIEM
 
 ## Introducción
 
-VANT-SIEM CORE es una plataforma integral de Security Information and Event Management (SIEM) que proporciona herramientas completas para la gestión, análisis y respuesta a incidentes de seguridad. Este manual le guiará a través de todas las funcionalidades disponibles en el sistema.
+Vigilance & Neutralization threads SIEM es una plataforma integral de Security Information and Event Management (SIEM) que proporciona herramientas completas para la gestión, análisis y respuesta a incidentes de seguridad. Este manual le guiará a través de todas las funcionalidades disponibles en el sistema.
 
 ## Inicio de Sesión
 
@@ -11,7 +11,6 @@ VANT-SIEM CORE es una plataforma integral de Security Information and Event Mana
 3. Haga clic en "Iniciar Sesión"
 
 ### Recuperación de Contraseña
-
 - Contacte a un administrador del sistema para restablecer su contraseña
 - Los superusuarios pueden gestionar contraseñas desde el panel de administración
 
@@ -20,14 +19,11 @@ VANT-SIEM CORE es una plataforma integral de Security Information and Event Mana
 Si no tiene acceso al sistema pero necesita reportar un incidente de seguridad, puede utilizar el formulario público de reporte externo:
 
 ### Acceso al Formulario Externo
-
 - **URL**: `http://[servidor]/eventos/reporte_externo/`
 - **No requiere autenticación**: Cualquier persona puede acceder y enviar reportes
 
 ### Envío de Reporte Externo
-
 1. Complete el formulario con:
-
    - **Nombre del informante**: Su nombre completo
    - **Correo electrónico**: Para confirmación y seguimiento
    - **Área afectada**: Seleccione el área correspondiente
@@ -38,7 +34,6 @@ Si no tiene acceso al sistema pero necesita reportar un incidente de seguridad, 
 3. Recibirá confirmación inmediata con el ID del reporte
 
 ### Características del Reporte Externo
-
 - **Confidencialidad**: Los reportes son tratados de forma confidencial
 - **Seguimiento**: Se le notificará sobre el progreso del reporte
 - **Sin registro**: No requiere crear una cuenta en el sistema
@@ -47,7 +42,6 @@ Si no tiene acceso al sistema pero necesita reportar un incidente de seguridad, 
 ## Navegación Principal
 
 ### Dashboard General
-
 - **URL**: `/siem/dashboard/`
 - **Contenido**: Vista general del estado del sistema, estadísticas y alertas recientes
 - **Funcionalidades**:
@@ -59,7 +53,6 @@ Si no tiene acceso al sistema pero necesita reportar un incidente de seguridad, 
 ### Gestión de Incidentes (EVENT_M)
 
 #### Reportes de Seguridad
-
 1. **Acceso**: Navegación → "Reportes" o `/event-m/reports/`
 2. **Crear Reporte**:
    - Haga clic en "Nuevo Reporte"
@@ -73,7 +66,6 @@ Si no tiene acceso al sistema pero necesita reportar un incidente de seguridad, 
    - **Rechazado**: Reporte no válido o duplicado
 
 #### Gestión de Incidentes
-
 1. **Acceso**: `/event-m/incidents/`
 2. **Crear Incidente**:
    - Desde un reporte: Haga clic en "Investigar" en un reporte
@@ -86,13 +78,11 @@ Si no tiene acceso al sistema pero necesita reportar un incidente de seguridad, 
    - **Cerrado**: Incidente resuelto
 
 #### Categorización
-
 - **Categorías**: Clasificación general (ej: Acceso no autorizado, Malware)
 - **Subcategorías**: Detalles específicos con nivel de peligrosidad (1-10)
 - **Servicios**: Sistemas afectados con monitoreo opcional
 
 #### Responsables y Áreas
-
 - **Áreas**: Divisiones organizacionales con responsables asignados
 - **Responsables**: Contactos con información completa (nombres, emails, teléfonos)
 - **Medidas**: Acciones correctivas con seguimiento de cumplimiento
@@ -100,7 +90,6 @@ Si no tiene acceso al sistema pero necesita reportar un incidente de seguridad, 
 ### Análisis IDS/IPS
 
 #### Configuración de Fuentes
-
 1. **Acceso**: `/ids-ingest/config/`
 2. **Crear Configuración**:
    - **Tipo**: Snort o Suricata
@@ -112,25 +101,21 @@ Si no tiene acceso al sistema pero necesita reportar un incidente de seguridad, 
 #### Dashboards de Amenazas
 
 ##### Dashboard General
-
 - **URL**: `/siem/dashboard/threats/`
 - **Vista**: Eventos consolidados de todos los IDS
 - **Filtros**: Por severidad, fecha, IP, protocolo
 
 ##### Dashboard Snort
-
 - **URL**: `/ids-ingest/snort/`
 - **Específico**: Eventos de Snort con métricas detalladas
 - **Campos Adicionales**: TTL, TOS, flags TCP, etc.
 
 ##### Dashboard Suricata
-
 - **URL**: `/ids-ingest/suricata/`
 - **Específico**: Eventos de Suricata con análisis EVE JSON
 - **Tipos**: Alertas, flujos, estadísticas, logs del sistema
 
 #### Gestión de Alertas
-
 - **Acceso**: `/ids-ingest/alerts/`
 - **Funcionalidades**:
   - Visualización de alertas críticas
@@ -139,7 +124,6 @@ Si no tiene acceso al sistema pero necesita reportar un incidente de seguridad, 
   - Filtros por severidad y estado
 
 #### Estadísticas
-
 - **URL**: `/ids-ingest/statistics/`
 - **Métricas**:
   - Eventos por severidad y día
@@ -150,16 +134,13 @@ Si no tiene acceso al sistema pero necesita reportar un incidente de seguridad, 
 ### Sistema SIEM Principal
 
 #### Gestión de Usuarios
-
 **Solo Superusuarios**
 
 1. **Solicitudes Pendientes**: `/users/`
-
    - Revisar solicitudes de nuevos usuarios
    - Aprobar o rechazar con justificación
 
 2. **Usuarios Activos**: Gestión de usuarios existentes
-
    - Ver lista completa
    - Gestionar permisos individuales
 
@@ -171,7 +152,6 @@ Si no tiene acceso al sistema pero necesita reportar un incidente de seguridad, 
    - Exportar datos
 
 #### Notificaciones Mejoradas
-
 - **Campanita en Navbar**: Indicador de notificaciones no leídas
 - **Múltiples Canales**: Email, SMS, Slack, Teams, Webhooks, Push
 - **Tipos de Notificación**:
@@ -188,18 +168,14 @@ Si no tiene acceso al sistema pero necesita reportar un incidente de seguridad, 
   - Preferencias por canal
 
 #### Sistema de Logs
-
 **Solo Superusuarios**
-
 - **Acceso**: `/logs/` o Settings → "Logs del Sistema"
 - **Filtros**: Por tipo de evento, usuario, fecha, IP
 - **Detalles**: Vista modal con información completa
 - **Auditoría**: Registro de todas las operaciones del sistema
 
 #### Configuración de Correo
-
 **Solo Superusuarios**
-
 1. **Acceso**: `/email/config/`
 2. **Configurar Servidor**:
    - Servidor SMTP y puerto
@@ -213,9 +189,7 @@ Si no tiene acceso al sistema pero necesita reportar un incidente de seguridad, 
 ### Análisis de Amenazas
 
 #### Configuración de APIs
-
 **Solo Superusuarios**
-
 1. **Acceso**: `/analysis/config/`
 2. **Servicios Disponibles**:
    - **VirusTotal**: Análisis de hashes, URLs, dominios
@@ -226,53 +200,15 @@ Si no tiene acceso al sistema pero necesita reportar un incidente de seguridad, 
    - Activación/desactivación individual
 
 #### Herramientas de Análisis
-
 - **Análisis de IP**: `/analysis/ip/[IP]`
 - **Análisis de MAC**: `/analysis/mac/[MAC]`
 - **Análisis de Indicadores**: Búsqueda general
 - **Reportes**: Resultados detallados con scores y reputación
 
-#### Análisis Inteligente con IA (Ollama)
-
-- **Dashboard de IA**: `/analysis/ollama/` - Análisis inteligente con Ollama
-- **Análisis Predictivo**: Predicción de tendencias de amenazas
-- **Correlación de Eventos**: Análisis inteligente entre Snort y Suricata
-- **Análisis de Comportamiento IP**: Evaluación detallada de direcciones IP
-- **Generación de Reportes**: Reportes ejecutivos automáticos
-- **Cruzado de Información**: Consulta inteligente en toda la base de datos
-
-##### Uso de Herramientas IA
-
-1. **Análisis de Tendencias**:
-
-   - Acceder a `/analysis/ollama/trends/`
-   - Seleccionar período de análisis (24h, 7d, 30d)
-   - Revisar insights generados por IA sobre patrones de ataque
-
-2. **Análisis de IP Específica**:
-
-   - Ingresar dirección IP en el campo correspondiente
-   - Obtener evaluación de amenaza con recomendaciones
-   - Ver historial de comportamiento
-
-3. **Correlación de Eventos**:
-
-   - Configurar ventana temporal
-   - Identificar eventos relacionados automáticamente
-   - Recibir alertas de correlaciones sospechosas
-
-4. **Generación de Reportes**:
-
-   - Solicitar reportes ejecutivos automáticos
-   - Recibir análisis completo con predicciones
-   - Exportar reportes en múltiples formatos
-
 ### Monitoreo de Servicios
 
 #### Configuración
-
 **Solo Superusuarios**
-
 1. **Acceso**: `/event-m/monitoring/config/`
 2. **Parámetros**:
    - Intervalo de verificación (segundos)
@@ -280,7 +216,6 @@ Si no tiene acceso al sistema pero necesita reportar un incidente de seguridad, 
    - Umbrales de alerta
 
 #### Dashboard de Monitoreo
-
 - **Estado Actual**: Servicios activos/inactivos
 - **Latencia**: Tiempos de respuesta
 - **Historial**: Gráfico de disponibilidad
@@ -289,27 +224,21 @@ Si no tiene acceso al sistema pero necesita reportar un incidente de seguridad, 
 ### Configuración del Sistema
 
 #### Servicios IDS
-
 **Solo Superusuarios**
-
 - **Acceso**: Settings → "Servicios IDS"
 - **Control**: Iniciar/detener ingesta automática
 - **Estado**: Monitoreo en tiempo real
 - **Estadísticas**: Eventos procesados por hora
 
 #### Control de Logging
-
 **Solo Superusuarios**
-
 - **Acceso**: Settings → "Logs del Sistema" → "Control de Logging"
 - **Estados**: Activo/Inactivo
 - **Métricas**: Total de eventos registrados
 - **Auditoría**: Registro de cambios de estado
 
 #### Configuración de Notificaciones
-
 **Solo Superusuarios**
-
 - **Acceso**: Settings → "Notificaciones"
 - **Configuración Global**:
   - Procesamiento asíncrono
@@ -329,31 +258,26 @@ Si no tiene acceso al sistema pero necesita reportar un incidente de seguridad, 
 ### Investigación de un Incidente
 
 1. **Recepción del Reporte**
-
    - Usuario reporta incidente vía formulario
    - Notificación automática a analistas
 
 2. **Creación del Incidente**
-
    - Analista revisa reporte
    - Crea incidente con detalles completos
    - Asigna responsables y medidas
 
 3. **Investigación**
-
    - Consulta dashboards IDS/IPS
    - Análisis de logs relacionados
    - Consulta APIs externas (VirusTotal, etc.)
    - Documenta hallazgos
 
 4. **Mitigación**
-
    - Implementa medidas correctivas
    - Actualiza estado del incidente
    - Notifica a interesados
 
 5. **Cierre**
-
    - Verifica efectividad de medidas
    - Documenta lecciones aprendidas
    - Cierra incidente
@@ -361,38 +285,32 @@ Si no tiene acceso al sistema pero necesita reportar un incidente de seguridad, 
 ### Respuesta a Amenaza IDS
 
 1. **Detección**
-
    - Sistema IDS genera alerta
    - Notificación automática al SIEM
 
 2. **Análisis**
-
    - Revisar detalles de la alerta
    - Correlacionar con otros eventos
    - Consultar reputación de IPs/MACs
 
 3. **Acción**
-
    - Reconocer alerta
    - Implementar bloqueo si necesario
    - Crear incidente si requiere investigación
 
 4. **Seguimiento**
-
    - Monitorear efectividad
    - Ajustar reglas IDS si necesario
 
 ## Permisos y Seguridad
 
 ### Niveles de Acceso
-
 - **Usuario Básico**: Acceso limitado según permisos asignados
 - **Analista**: Acceso a dashboards y creación de incidentes
 - **Administrador**: Gestión de usuarios y configuraciones
 - **Superusuario**: Control total del sistema
 
 ### Mejores Prácticas
-
 - **Principio de Menor Privilegio**: Otorgar solo permisos necesarios
 - **Auditoría**: Revisar logs regularmente
 - **Actualizaciones**: Mantener contraseñas seguras
@@ -403,31 +321,26 @@ Si no tiene acceso al sistema pero necesita reportar un incidente de seguridad, 
 ### Problemas Comunes
 
 #### No puede acceder al sistema
-
 - Verificar credenciales
 - Contactar administrador para reset de contraseña
 - Verificar conectividad de red
 
 #### Dashboards no se actualizan
-
 - Verificar configuración IDS activa
 - Revisar rutas de archivos de log
 - Comprobar permisos de lectura
 
 #### Alertas no se envían
-
 - Verificar configuración SMTP
 - Revisar logs de correo
 - Comprobar conectividad de red
 
 #### APIs de análisis fallan
-
 - Verificar claves API válidas
 - Comprobar límites de rate
 - Revisar conectividad a servicios externos
 
 ### Contacto de Soporte
-
 - **Administrador del Sistema**: Para problemas técnicos
 - **Equipo de Seguridad**: Para consultas sobre procedimientos
 - **Desarrolladores**: Para bugs o mejoras del sistema
@@ -441,49 +354,7 @@ Si no tiene acceso al sistema pero necesita reportar un incidente de seguridad, 
 - **TTL**: Time To Live (campo IP)
 - **TOS**: Type of Service (campo IP)
 - **MAC**: Media Access Control address
-- **Ollama**: Framework de IA local para análisis inteligente de logs y predicción de amenazas
-- **Análisis Predictivo**: Uso de IA para identificar tendencias futuras de seguridad
-- **Correlación IA**: Análisis automático de relaciones entre eventos de seguridad
-
-## Configuración del Sistema
-
-### Configuración de IA (Ollama)
-
-#### Acceso a Configuración
-
-1. **Solo Superusuarios**: La configuración de IA solo está disponible para superusuarios
-2. **Acceder desde Settings**: Navegación → Settings → "Configuración de IA (Ollama)"
-3. **URL**: `/settings/ollama/`
-
-#### Configuración Inicial
-
-1. **Instalar Ollama**: Si no está instalado, siga las instrucciones en pantalla
-2. **Descargar Modelo**: `ollama pull llama3.2` (recomendado)
-3. **Iniciar Servicio**: `ollama serve`
-4. **Configurar URL**: Por defecto `http://localhost:11434`
-
-#### Parámetros de Configuración
-
-- **URL del Servidor**: Dirección donde está ejecutándose Ollama
-- **Modelo de IA**: Seleccionar modelo descargado (llama3.2 recomendado)
-- **Máximo de Tokens**: Longitud máxima de respuestas (500-8000)
-- **Temperatura**: Creatividad de respuestas (0.1-1.0, recomendado 0.3)
-- **Timeout**: Tiempo máximo de espera para respuestas
-- **Estado del Servicio**: Habilitar/deshabilitar funcionalidades de IA
-
-#### Verificación de Conexión
-
-1. **Botón "Probar Conexión"**: Verifica que Ollama esté accesible
-2. **Estado Visual**: Indicador de conexión exitosa o errores
-3. **Modelos Disponibles**: Lista de modelos descargados en Ollama
-
-#### Recomendaciones de Configuración
-
-- **Modelo**: Use llama3.2 para balance óptimo entre velocidad y calidad
-- **Temperatura**: 0.3 para respuestas consistentes y útiles
-- **Tokens**: 2000 para respuestas completas pero no excesivamente largas
-- **Timeout**: 30 segundos para evitar esperas prolongadas
 
 ---
 
-**VANT-SIEM CORE** - Su aliado en la ciberseguridad empresarial.
+**Vigilance & Neutralization threads SIEM** - Su aliado en la ciberseguridad empresarial.
