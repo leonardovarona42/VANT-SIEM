@@ -1,8 +1,8 @@
-# VANT-SIEM CORE - Guía de Instalación
+# Vigilance & Neutralization threads SIEM - Guía de Instalación
 
-## Sistema de Gestión de Información y Eventos de Seguridad (SIEM)
+## Sistema de Gestión de Información y Eventos de Seguridad
 
-VANT-SIEM CORE es una plataforma integral de SIEM (Security Information and Event Management) desarrollada en Django que proporciona gestión completa de incidentes de seguridad, análisis de logs IDS/IPS, monitoreo de servicios, y herramientas avanzadas de análisis de amenazas.
+Vigilance & Neutralization threads SIEM es una plataforma integral de SIEM desarrollada en Django que proporciona gestión completa de incidentes de seguridad, análisis de logs IDS/IPS, monitoreo de servicios, y herramientas avanzadas de análisis de amenazas.
 
 ## 📋 Requisitos del Sistema
 
@@ -66,7 +66,7 @@ sudo apt install -y suricata
 ```bash
 # Clonar el repositorio
 git clone <repository-url>
-cd VANT-SIEM-CORE
+cd Vigilance-Neutralization-threads-siem
 
 # Verificar estructura de archivos
 ls -la
@@ -221,7 +221,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'tu-email@gmail.com'
 EMAIL_HOST_PASSWORD = 'tu-app-password'
-DEFAULT_FROM_EMAIL = 'VANT-SIEM <noreply@vant-siem.local>'
+DEFAULT_FROM_EMAIL = 'Vigilance & Neutralization threads SIEM <noreply@vigilance-siem.local>'
 ```
 
 ### Configuración de Redis (Opcional)
@@ -272,15 +272,15 @@ Contenido del archivo de servicio:
 
 ```ini
 [Unit]
-Description=VANT-SIEM Django Application
+Description=Vigilance & Neutralization threads SIEM Django Application
 After=network.target
 
 [Service]
 User=www-data
 Group=www-data
-WorkingDirectory=/path/to/VANT-SIEM-CORE
-Environment="PATH=/path/to/VANT-SIEM-CORE/venv/bin"
-ExecStart=/path/to/VANT-SIEM-CORE/venv/bin/gunicorn --workers 3 --bind unix:/run/vant-siem.sock CORE.wsgi:application
+WorkingDirectory=/path/to/Vigilance-Neutralization-threads-siem
+Environment="PATH=/path/to/Vigilance-Neutralization-threads-siem/venv/bin"
+ExecStart=/path/to/Vigilance-Neutralization-threads-siem/venv/bin/gunicorn --workers 3 --bind unix:/run/vigilance-siem.sock CORE.wsgi:application
 Restart=always
 
 [Install]
@@ -313,12 +313,12 @@ server {
     location = /favicon.ico { access_log off; log_not_found off; }
 
     location /static/ {
-        alias /path/to/VANT-SIEM-CORE/staticfiles/;
+        alias /path/to/Vigilance-Neutralization-threads-siem/staticfiles/;
     }
 
     location / {
         include proxy_params;
-        proxy_pass http://unix:/run/vant-siem.sock;
+        proxy_pass http://unix:/run/vigilance-siem.sock;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
@@ -470,8 +470,8 @@ python manage.py migrate --fake-initial
 
 ```bash
 # Corregir permisos de archivos
-sudo chown -R www-data:www-data /path/to/VANT-SIEM-CORE
-sudo chmod -R 755 /path/to/VANT-SIEM-CORE
+sudo chown -R www-data:www-data /path/to/Vigilance-Neutralization-threads-siem
+sudo chmod -R 755 /path/to/Vigilance-Neutralization-threads-siem
 ```
 
 #### Error de Ollama
@@ -527,4 +527,4 @@ Para problemas durante la instalación:
 
 ---
 
-**¡Instalación completada!** El sistema VANT-SIEM CORE está listo para usar.
+**¡Instalación completada!** El sistema Vigilance & Neutralization threads SIEM está listo para usar.

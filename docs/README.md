@@ -1,8 +1,8 @@
-# VANT-SIEM Documentation
+# Vigilance & Neutralization threads SIEM Documentation
 
 ## 📚 Documentation Overview
 
-This directory contains all documentation for the VANT-SIEM (Sistema de Gestión de Incidentes de Seguridad) project. The documentation is organized into logical sections for easy navigation and maintenance.
+This directory contains all documentation for the Vigilance & Neutralization threads SIEM project. The documentation is organized into logical sections for easy navigation and maintenance.
 
 ## 📁 Directory Structure
 
@@ -12,21 +12,17 @@ docs/
 ├── ARCHITECTURE.md             # System architecture and design
 ├── INSTALLATION.md             # Installation and setup guide
 ├── USER_MANUAL.md              # User manual and usage guide
-├── API_REFERENCE.md            # API documentation
-├── DEVELOPMENT.md              # Development guidelines
 ├── TESTING_STRATEGY.md         # Testing approach and methodology
 ├── TEST_RESULTS.md             # Test execution results and reports
-├── SECURITY.md                 # Security guidelines and procedures
-├── TROUBLESHOOTING.md          # Common issues and solutions
 ├── CHANGELOG.md                # Version history and changes
-├── CONTRIBUTING.md             # Contribution guidelines
+├── LOG_ROTATION_SYSTEM.md      # Advanced log rotation management system
 └── archive/                    # Archived documentation
     ├── IDS_INGEST_IMPROVEMENTS.md
     ├── IMPLEMENTACION_COMPLETA_IDS_IPS.md
-    ├── MEJORAS_DASHBOARD_SURICATA_FINAL.md
-    ├── MEJORAS_DASHBOARD_SURICATA.md
     ├── OPTIMIZACIONES_IDS_INGEST.md
-    └── ROTACION_LOGS_SURICATA.md
+    ├── ROTACION_LOGS_SURICATA.md
+    ├── SISTEMA_LOGGING_README.md
+    └── SISTEMA_USUARIOS_README.md
 ```
 
 ## 🚀 Quick Start
@@ -151,10 +147,11 @@ docs/
 
 - **Installation**: ✅ Complete
 - **User Manual**: ✅ Complete
+- **Log Rotation System**: ✅ Complete
+- **Testing Guide**: ✅ Complete
 - **API Reference**: 🔄 In Progress
 - **Development Guide**: ✅ Complete
 - **Security Guide**: ✅ Complete
-- **Testing Guide**: ✅ Complete
 
 ### Quality Metrics
 

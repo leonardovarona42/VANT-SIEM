@@ -1,8 +1,6 @@
-# VANT-SIEM CORE
+# Vigilance & Neutralization threads SIEM
 
-## Sistema de Gestión de Información y Eventos de Seguridad (SIEM)
-
-VANT-SIEM CORE es una plataforma integral de SIEM (Security Information and Event Management) desarrollada en Django que proporciona gestión completa de incidentes de seguridad, análisis de logs IDS/IPS, monitoreo de servicios, y herramientas avanzadas de análisis de amenazas.
+Vigilance & Neutralization threads SIEM es una plataforma integral de SIEM desarrollada en Django que proporciona gestión completa de incidentes de seguridad, análisis de logs IDS/IPS, monitoreo de servicios, y herramientas avanzadas de análisis de amenazas.
 
 ## 🚀 Características Principales
 
@@ -24,6 +22,9 @@ VANT-SIEM CORE es una plataforma integral de SIEM (Security Information and Even
 - **Sistema de Alertas**: Generación automática de alertas críticas con reconocimiento
 - **Estadísticas Detalladas**: Métricas de rendimiento y tendencias temporales
 - **Deduplicación Inteligente**: Prevención de registros duplicados con hash único
+- **Rotación Avanzada**: Sistema profesional de gestión de logs con 3 pestañas (Base de Datos, Archivos, Estadísticas)
+- **Mantenimiento Automático**: Optimización BD, reconstrucción de índices, limpieza de archivos temporales
+- **Reportes de Rotación**: Generación automática de reportes descargables
 
 ### 🛡️ Sistema SIEM Principal (VANT_SIEM)
 
@@ -66,7 +67,7 @@ VANT-SIEM CORE es una plataforma integral de SIEM (Security Information and Even
 ## 🏗️ Arquitectura del Sistema
 
 ```
-VANT-SIEM CORE/
+Vigilance & Neutralization threads SIEM/
 ├── CORE/                 # Proyecto Django principal
 ├── EVENT_M/             # Módulo de gestión de incidentes
 ├── VANT_SIEM/          # Núcleo del SIEM
@@ -91,8 +92,8 @@ VANT-SIEM CORE/
 ### 1. Clonación del Repositorio
 
 ```bash
-git clone https://github.com/leonardovarona42/VANT-SIEM.git
-cd VANT-SIEM-CORE
+git clone https://github.com/leonardovarona42/Vigilance-Neutralization-threads-siem.git
+cd Vigilance-Neutralization-threads-siem
 ```
 
 ### 2. Instalación de Dependencias
@@ -232,16 +233,28 @@ python manage.py monitor_services
 
 ## 📚 Documentación
 
-- **[Manual de Usuario](USER_MANUAL.md)**: Guía completa para usuarios finales
-- **[Arquitectura y Diagramas](ARCHITECTURE.md)**: Diagramas de flujo y arquitectura del sistema
-- **[Registro de Cambios](CHANGELOG.md)**: Historial completo de mejoras y versiones
-- **[Sistema de Logging](SISTEMA_LOGGING_README.md)**: Documentación del sistema de auditoría
-- **[Gestión de Usuarios](SISTEMA_USUARIOS_README.md)**: Sistema de usuarios y permisos
+Toda la documentación se encuentra organizada en la carpeta `docs/`:
+
+### 📖 Documentación Principal
+- **[Manual de Usuario](docs/USER_MANUAL.md)**: Guía completa para usuarios finales
+- **[Arquitectura y Diagramas](docs/ARCHITECTURE.md)**: Diagramas de flujo y arquitectura del sistema
+- **[Registro de Cambios](docs/CHANGELOG.md)**: Historial completo de mejoras y versiones
+- **[Instalación](docs/INSTALLATION.md)**: Guía detallada de instalación y configuración
+- **[Estrategia de Testing](docs/TESTING_STRATEGY.md)**: Metodología de pruebas y calidad
+- **[Resultados de Tests](docs/TEST_RESULTS.md)**: Reportes de ejecución de pruebas
+
+### 🔧 Documentación Técnica
 - **[Servicio IDS](ids_ingest/README.md)**: Documentación detallada del módulo IDS/IPS
+- **[Sistema de Logging](docs/archive/SISTEMA_LOGGING_README.md)**: Documentación del sistema de auditoría
+- **[Gestión de Usuarios](docs/archive/SISTEMA_USUARIOS_README.md)**: Sistema de usuarios y permisos
 
 ### 📁 Documentación Archivada
 
-Documentos de desarrollo específicos se encuentran en `docs/archive/` para referencia histórica.
+Documentos de desarrollo específicos se encuentran en `docs/archive/` para referencia histórica:
+- Mejoras del módulo IDS/INGEST
+- Implementaciones completas de funcionalidades
+- Optimizaciones del sistema
+- Documentación técnica específica
 
 ## 🤝 Contribución
 
@@ -265,4 +278,4 @@ Para soporte técnico o reportes de bugs:
 
 ---
 
-**VANT-SIEM CORE** - Plataforma integral para la gestión y análisis de seguridad de la información.
+**Vigilance & Neutralization threads SIEM** - Plataforma integral para la gestión y análisis de seguridad de la información.
