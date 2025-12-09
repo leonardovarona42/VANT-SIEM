@@ -6,7 +6,7 @@ Este sistema permite que la IA revise automáticamente las alertas de Snort y Su
 
 - **Monitoreo continuo**: Revisa alertas cada 5 minutos
 - **Análisis inteligente**: Usa Ollama para analizar patrones y amenazas
-- **Reportes automáticos**: Genera reportes detallados en el área "VANT-SIEM-AI-Monitor"
+- **Reportes automáticos**: Genera reportes detallados en el área "Vigilance-Neutralization-threads-SIEM-AI-Monitor"
 - **Alertas críticas**: Prioriza amenazas de alta severidad
 - **Logging completo**: Registra todas las actividades
 
@@ -99,7 +99,7 @@ ollama serve
 - `VANT_SIEM/management/commands/ai_alert_monitor.py` - Comando principal
 - `scripts/ai_monitor_cron.sh` - Script para cron
 - `logs/ai_monitor.log` - Archivo de logs
-- Área "VANT-SIEM-AI-Monitor" - Para reportes automáticos
+- Área "Vigilance-Neutralization-threads-SIEM-AI-Monitor" - Para reportes automáticos
 
 ## 📈 Logs y Monitoreo
 
@@ -116,7 +116,7 @@ Los logs se guardan en `logs/ai_monitor.log`:
 
 1. **Ollama debe estar ejecutándose** para que funcione el análisis de IA
 2. **Si Ollama no está disponible**, se genera un análisis básico
-3. **Los reportes se crean automáticamente** en el área "VANT-SIEM-AI-Monitor"
+3. **Los reportes se crean automáticamente** en el área "Vigilance-Neutralization-threads-SIEM-AI-Monitor"
 4. **No interfiere con el chat de IA** - son sistemas separados
 5. **Es seguro ejecutar múltiples veces** - no duplica reportes
 
@@ -132,7 +132,7 @@ python manage.py ai_alert_monitor --force
 tail -f logs/ai_monitor.log
 
 # Ver reportes generados
-# Ir a Reportes -> Área: VANT-SIEM-AI-Monitor
+# Ir a Reportes -> Área: Vigilance-Neutralization-threads-SIEM-AI-Monitor
 ```
 
 ## 🔄 Personalización
