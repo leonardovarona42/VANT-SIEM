@@ -26,4 +26,16 @@ urlpatterns = [
     path('service/status/', views.get_service_status, name='get-service-status'),
     path('service/stop/', views.stop_service, name='stop-service'),
     path('service/rotate-logs/', views.run_log_rotation, name='run-log-rotation'),
+
+    # Nuevas rutas de rotación avanzada
+    path('service/rotate-database/', views.rotate_database, name='rotate-database'),
+    path('service/preview-db-rotation/', views.preview_db_rotation, name='preview-db-rotation'),
+    path('service/rotate-files/', views.rotate_files, name='rotate-files'),
+    path('service/scan-files/', views.scan_files, name='scan-files'),
+    path('service/preview-file-rotation/', views.preview_file_rotation, name='preview-file-rotation'),
+    path('service/optimize-db/', views.optimize_database, name='optimize-database'),
+    path('service/rebuild-indexes/', views.rebuild_indexes, name='rebuild-indexes'),
+    path('service/cleanup-temp/', views.cleanup_temp_files, name='cleanup-temp'),
+    path('service/generate-report/', views.generate_report, name='generate-report'),
+    path('service/rotation-history/', views.rotation_history, name='rotation-history'),
 ]

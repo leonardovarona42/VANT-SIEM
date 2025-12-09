@@ -1,4 +1,4 @@
-# Sistema de Gestión de Usuarios y Notificaciones - VANT-SIEM
+# Sistema de Gestión de Usuarios y Notificaciones - Vigilance & Neutralization threads SIEM
 
 ## 🚀 Características Implementadas
 
@@ -180,7 +180,7 @@ El sistema está completamente integrado con el módulo EVENT_M:
 
 ## 🎯 Resultado Final
 
-**VANT-SIEM** ahora es un sistema SIEM empresarial completo con:
+**Vigilance & Neutralization threads SIEM** ahora es un sistema SIEM empresarial completo con:
 - ✅ **Gestión de Usuarios** con aprobación y permisos granulares
 - ✅ **Sistema de Notificaciones** en tiempo real
 - ✅ **Logging Avanzado** con auditoría completa

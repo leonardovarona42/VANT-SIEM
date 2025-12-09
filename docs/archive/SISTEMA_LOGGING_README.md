@@ -97,7 +97,7 @@ if not user or not user.is_superuser:
 # En VANT_SIEM/apps.py
 def ready(self):
     from .logging_system import event_logger
-    print("🚀 VANT-SIEM: Sistema de logging inicializado automáticamente")
+    print("🚀 Vigilance & Neutralization threads SIEM: Sistema de logging inicializado automáticamente")
 ```
 
 ### **Estado del Sistema**
@@ -222,7 +222,7 @@ python manage.py runserver
 
 ## 🎯 Resultado Final
 
-**VANT-SIEM** ahora tiene un **sistema de logging completamente controlado por superusuarios** con:
+**Vigilance & Neutralization threads SIEM** ahora tiene un **sistema de logging completamente controlado por superusuarios** con:
 
 - ✅ **Inicio Automático** al arrancar la aplicación
 - ✅ **Control Exclusivo** de superusuarios

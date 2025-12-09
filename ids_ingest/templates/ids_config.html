@@ -206,13 +206,16 @@
                 <!-- Modal Editar -->
                 <div class="modal fade" id="editConfigModal{{ config.id }}" tabindex="-1" aria-labelledby="editConfigModalLabel{{ config.id }}" aria-hidden="true">
                   <div class="modal-dialog">
-                    <div class="modal-content">
+                    <div class="modal-content bg-dark text-light border" style="border-color: #0ff !important;">
                       <form method="post" action="{% url 'ids-config' %}">
                         {% csrf_token %}
-                        <div class="modal-header">
-                          <h5 class="modal-title" id="editConfigModalLabel{{ config.id }}">Editar Configuración</h5>
-                          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        <div class="modal-header bg-dark border-bottom" style="border-color: #0ff !important;">
+                          <h5 class="modal-title text-light" id="editConfigModalLabel{{ config.id }}">
+                            <i class="fas fa-edit text-warning me-2"></i>Editar Configuración
+                          </h5>
+                          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                         </div>
+                        <div class="modal-body bg-dark">
                         <div class="modal-body">
                           <input type="hidden" name="edit_id" value="{{ config.id }}">
                           <div class="mb-3">
@@ -235,7 +238,7 @@
                             <input type="number" name="edit_retention_days" value="{{ config.retention_days }}" class="form-control" min="1" required>
                           </div>
                         </div>
-                        <div class="modal-footer">
+                        <div class="modal-footer bg-dark border-top" style="border-color: #0ff !important;">
                           <button type="submit" class="btn btn-primary">Guardar Cambios</button>
                         </div>
                       </form>
@@ -252,13 +255,16 @@
     <!-- Modal Agregar -->
     <div class="modal fade" id="addConfigModal" tabindex="-1" aria-labelledby="addConfigModalLabel" aria-hidden="true">
       <div class="modal-dialog">
-        <div class="modal-content">
+        <div class="modal-content bg-dark text-light border" style="border-color: #0ff !important;">
           <form method="post" action="{% url 'ids-config' %}">
             {% csrf_token %}
-            <div class="modal-header">
-              <h5 class="modal-title" id="addConfigModalLabel">Agregar Configuración IDS/IPS</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header bg-dark border-bottom" style="border-color: #0ff !important;">
+              <h5 class="modal-title text-light" id="addConfigModalLabel">
+                <i class="fas fa-plus text-success me-2"></i>Agregar Configuración IDS/IPS
+              </h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
+            <div class="modal-body bg-dark">
             <div class="modal-body">
               <div class="mb-3">
                 <label for="add_ids_type" class="form-label fw-bold text-info">Tipo de IDS/IPS</label>
@@ -284,7 +290,7 @@
                 <input type="number" name="add_retention_days" id="add_retention_days" class="form-control" min="1" value="30" required>
               </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer bg-dark border-top" style="border-color: #0ff !important;">
               <button type="submit" class="btn btn-success">Agregar</button>
             </div>
           </form>
@@ -400,11 +406,14 @@ function showStatsModal(configId, stats) {
     modal.className = 'modal fade';
     modal.innerHTML = `
         <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Estadísticas del Archivo</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-content bg-dark text-light border" style="border-color: #0ff !important;">
+                <div class="modal-header bg-dark border-bottom" style="border-color: #0ff !important;">
+                    <h5 class="modal-title text-light">
+                        <i class="fas fa-chart-line text-info me-2"></i>Estadísticas del Archivo
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
+                <div class="modal-body bg-dark">
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-6">
@@ -437,7 +446,7 @@ function showStatsModal(configId, stats) {
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer bg-dark border-top" style="border-color: #0ff !important;">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>

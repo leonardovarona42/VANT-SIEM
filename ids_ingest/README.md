@@ -1,8 +1,8 @@
-# Servicio IDS/IPS - VANT-SIEM
+# Servicio IDS/IPS - Vigilance & Neutralization threads SIEM
 
 ## Descripción
 
-El servicio IDS/IPS de VANT-SIEM proporciona ingesta, procesamiento y análisis de logs de sistemas de detección de intrusiones como Snort y Suricata. Incluye funcionalidades avanzadas de parsing, alertas en tiempo real, dashboards interactivos y estadísticas detalladas.
+El servicio IDS/IPS de Vigilance & Neutralization threads SIEM proporciona ingesta, procesamiento y análisis de logs de sistemas de detección de intrusiones como Snort y Suricata. Incluye funcionalidades avanzadas de parsing, alertas en tiempo real, dashboards interactivos y estadísticas detalladas.
 
 ## Características Principales
 
@@ -207,4 +207,4 @@ Para contribuir al desarrollo del servicio IDS/IPS:
 
 ## Licencia
 
-Este servicio es parte del proyecto VANT-SIEM y está sujeto a la misma licencia.
+Este servicio es parte del proyecto Vigilance & Neutralization threads SIEM y está sujeto a la misma licencia.
