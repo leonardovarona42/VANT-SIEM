@@ -24,7 +24,7 @@ class OllamaAIService:
     def __init__(self, base_url: str = None, model: str = None):
         # Inicializar con valores por defecto - la configuración se cargará cuando sea necesaria
         self._base_url = base_url or "http://localhost:11434"
-        self._model = model or "llama3.2"
+        self._model = model or "mistral:7b"  # Modelo más robusto y permisivo
         self._max_tokens = 2000
         self._temperature = 0.1
         self._timeout_seconds = 30
@@ -86,6 +86,7 @@ class OllamaAIService:
 
     def _set_defaults(self):
         """Establecer valores por defecto"""
+        self._model = "mistral:7b"  # Modelo más robusto y permisivo
         self._can_read_snort_logs = True
         self._can_read_suricata_logs = True
         self._can_read_incidents = True
@@ -227,58 +228,67 @@ class OllamaAIService:
         try:
             # Obtener datos de las últimas horas
             since = timezone.now() - timedelta(hours=hours)
-            
+
             # Estadísticas de Snort
             snort_data = self._get_snort_analysis_data(since)
-            
+
             # Estadísticas de Suricata
             suricata_data = self._get_suricata_analysis_data(since)
-            
-            # Crear prompt para análisis
-            system_prompt = """Eres un analista de ciberseguridad profesional especializado en análisis de logs IDS/IPS.
-            Tu tarea es analizar datos de seguridad reales de Snort y Suricata y proporcionar insights técnicos precisos.
 
-            INSTRUCCIONES CRÍTICAS:
-            - Analiza ÚNICAMENTE los datos de seguridad proporcionados
-            - No inventes datos ni uses información externa
-            - Si no hay suficientes datos, indica análisis limitado
-            - Proporciona recomendaciones basadas en evidencia real
-            - Mantén respuestas técnicas y profesionales
+            # Crear prompt para análisis más técnico y específico
+            system_prompt = """Eres un analista forense de ciberseguridad especializado en IDS/IPS.
+            ANALIZA ÚNICAMENTE los datos técnicos proporcionados abajo. NO inventes información.
 
-            Responde EXCLUSIVAMENTE en formato JSON válido con estas claves exactas:
+            INSTRUCCIONES TÉCNICAS:
+            - Examina patrones de IPs, puertos, protocolos y severidades
+            - Identifica amenazas basadas en firmas de Snort/Suricata reales
+            - Calcula métricas de riesgo basadas en datos cuantitativos
+            - Proporciona recomendaciones específicas y accionables
+
+            FORMATO DE RESPUESTA JSON EXACTO:
             {
-              "most_attacked_segment": "segmento más atacado basado en datos (ej: 192.168.1.0/24)",
-              "most_suspicious_ip": "IP más sospechosa con justificación técnica",
-              "peak_hour": "hora con más actividad (ej: 14:00-15:00)",
-              "top_attack_type": "tipo de ataque más común identificado",
-              "risk_level": "Low/Medium/High/Critical basado en evidencia",
-              "recommendations": ["lista específica de recomendaciones técnicas"],
-              "threat_summary": "resumen ejecutivo conciso de amenazas identificadas"
+              "most_attacked_segment": "segmento de red más afectado (ej: 192.168.1.0/24) basado en dst_ip patterns",
+              "most_suspicious_ip": "IP fuente con más alertas críticas + justificación técnica",
+              "peak_hour": "hora del día con mayor volumen de alertas",
+              "top_attack_type": "firma/mensaje de alerta más frecuente",
+              "risk_level": "Low/Medium/High/Critical basado en: volumen de alertas, severidades, IPs únicas",
+              "recommendations": ["recomendaciones técnicas específicas basadas en datos"],
+              "threat_summary": "resumen técnico: X alertas totales, Y críticas, Z IPs sospechosas"
             }
 
-            IMPORTANTE: Si no hay datos suficientes, usa valores por defecto pero indica limitación."""
+            REGLAS CRÍTICAS:
+            - Si total_events = 0, risk_level = "Low" y threat_summary = "Sin actividad detectada"
+            - Usa ÚNICAMENTE datos de los arrays proporcionados
+            - Sé específico con IPs, puertos y protocolos mencionados"""
             
             analysis_prompt = f"""
-            ANÁLISIS DE SEGURIDAD - DATOS REALES DE IDS/IPS ({hours} HORAS)
+            ANÁLISIS FORENSE DE SEGURIDAD - DATOS REALES IDS/IPS ({hours} HORAS)
 
-            DATOS SNORT (Sistema de Detección de Intrusiones):
-            {json.dumps(snort_data, indent=2, default=str)}
+            DATOS SNORT:
+            - Total eventos: {snort_data.get('total_events', 0)}
+            - Eventos críticos: {snort_data.get('critical_events', 0)}
+            - IPs fuente más activas: {json.dumps(snort_data.get('top_source_ips', [])[:3], default=str)}
+            - IPs destino más atacadas: {json.dumps(snort_data.get('top_target_ips', [])[:3], default=str)}
+            - Firmas más comunes: {json.dumps(snort_data.get('top_signatures', [])[:3], default=str)}
 
-            DATOS SURICATA (Sistema de Detección de Intrusiones):
-            {json.dumps(suricata_data, indent=2, default=str)}
+            DATOS SURICATA:
+            - Total eventos: {suricata_data.get('total_events', 0)}
+            - Eventos críticos: {suricata_data.get('critical_events', 0)}
+            - IPs fuente más activas: {json.dumps(suricata_data.get('top_source_ips', [])[:3], default=str)}
+            - IPs destino más atacadas: {json.dumps(suricata_data.get('top_target_ips', [])[:3], default=str)}
+            - Firmas más comunes: {json.dumps(suricata_data.get('top_signatures', [])[:3], default=str)}
 
-            INSTRUCCIONES DE ANÁLISIS:
-            1. Analiza los patrones de eventos de seguridad reales mostrados arriba
-            2. Identifica IPs más activas en ataques (top_source_ips)
-            3. Determina segmentos de red más afectados (basado en dst_ip patterns)
-            4. Evalúa severidad de eventos (Critical/High events)
-            5. Proporciona recomendaciones basadas en evidencia real
+            ANÁLISIS TÉCNICO REQUERIDO:
+            1. Identificar segmento más atacado basado en patrones dst_ip
+            2. Determinar IP más sospechosa por volumen de alertas críticas
+            3. Encontrar hora del día con mayor actividad (de hourly_distribution)
+            4. Extraer tipo de ataque más común de top_signatures
+            5. Calcular nivel de riesgo: Low(<10), Medium(10-50), High(50-100), Critical(>100)
 
-            IMPORTANTE:
-            - Usa ÚNICAMENTE los datos proporcionados arriba
-            - No inventes información ni uses conocimiento externo
-            - Si hay pocos datos, indica "análisis limitado"
-            - Responde solo con JSON válido
+            SI NO HAY DATOS SUFICIENTES:
+            - most_attacked_segment: "Sin datos suficientes"
+            - risk_level: "Low"
+            - threat_summary: "Análisis limitado - pocos datos disponibles"
             """
             
             ai_response = self._call_ollama(analysis_prompt, system_prompt)
@@ -514,41 +524,38 @@ class OllamaAIService:
                 }
             }
             
-            system_prompt = """Eres un analista forense de ciberseguridad profesional. Tu tarea es analizar
-            el comportamiento de una IP específica y proporcionar un resumen claro y técnico en ESPAÑOL.
+            system_prompt = """Eres un analista forense de ciberseguridad especializado en análisis de IPs.
+            ANALIZA ÚNICAMENTE los datos técnicos proporcionados. NO inventes información externa.
 
-            IMPORTANTE:
-            - Responde SIEMPRE en español
-            - Proporciona un resumen legible y profesional
-            - Incluye estadísticas clave
-            - Da recomendaciones específicas
-            - Mantén un tono técnico pero comprensible
+            REGLAS TÉCNICAS:
+            - Examina patrones de puertos, protocolos y severidades
+            - Identifica si la IP es cliente (muchos puertos destino) o servidor (puertos destino consistentes)
+            - Evalúa riesgo basado en volumen de eventos y severidades
+            - Proporciona recomendaciones específicas basadas en evidencia
 
-            Estructura tu respuesta como un informe profesional."""
+            FORMATO: Responde en ESPAÑOL con análisis técnico preciso."""
 
             analysis_prompt = f"""
-            ANÁLISIS FORENSE DE IP: {ip_address}
+            ANÁLISIS FORENSE TÉCNICO DE IP: {ip_address}
 
-            DATOS TÉCNICOS RECOPILADOS:
-            • Eventos como fuente (Snort): {ip_data['snort_as_source']['total_events']:,}
-            • Eventos como destino (Snort): {ip_data['snort_as_target']['total_events']:,}
-            • Eventos como fuente (Suricata): {ip_data['suricata_as_source']['total_events']:,}
-            • Eventos como destino (Suricata): {ip_data['suricata_as_target']['total_events']:,}
+            MÉTRICAS CUANTITATIVAS:
+            • Total eventos como FUENTE: {ip_data['snort_as_source']['total_events'] + ip_data['suricata_as_source']['total_events']:,}
+            • Total eventos como DESTINO: {ip_data['snort_as_target']['total_events'] + ip_data['suricata_as_target']['total_events']:,}
+            • Severidades Snort fuente: {ip_data['snort_as_source']['severity_dist']}
+            • Severidades Suricata fuente: {ip_data['suricata_as_source']['severity_dist']}
 
-            PUERTOS DESTINO MÁS FRECUENTES:
-            {chr(10).join([f"• Puerto {p['dst_port']}: {p['count']:,} conexiones" for p in ip_data['snort_as_source']['target_ports'][:5]])}
+            PATRONES DE CONEXIÓN:
+            • Puertos destino más usados: {json.dumps(ip_data['snort_as_source']['target_ports'][:3], default=str)}
+            • IPs fuente más activas (como destino): {json.dumps(ip_data['snort_as_target']['source_ips'][:3], default=str)}
+            • Protocolos usados: {ip_data['snort_as_source']['protocols']}
 
-            IPs FUENTE MÁS ACTIVAS (cuando es destino):
-            {chr(10).join([f"• {ip['src_ip']}: {ip['count']:,} eventos" for ip in ip_data['snort_as_target']['source_ips'][:5]])}
+            ANÁLISIS TÉCNICO REQUERIDO:
+            1. CLASIFICACIÓN: Cliente activo (muchos puertos destino) vs Servidor (puertos consistentes)
+            2. NIVEL DE RIESGO: Low(<10 eventos), Medium(10-100), High(100-1000), Critical(>1000)
+            3. PATRONES SOSPECHOSOS: Escaneo de puertos, conexiones masivas, IPs destino críticas
+            4. RECOMENDACIONES: Bloqueo, monitoreo, whitelist/blacklist basadas en evidencia
 
-            ESCRIBE UN RESUMEN PROFESIONAL Y LEGIBLE en español que incluya:
-            1. Nivel de amenaza general
-            2. Tipo de actividad observada
-            3. Patrones de comportamiento clave
-            4. Recomendaciones específicas de seguridad
-            5. Indicadores de riesgo o normalidad
-
-            El resumen debe ser claro, técnico y directamente utilizable por un analista de seguridad.
+            RESPUESTA EN ESPAÑOL: Análisis técnico conciso y profesional.
             """
             
             ai_response = self._call_ollama(analysis_prompt, system_prompt)
@@ -669,25 +676,45 @@ class OllamaAIService:
                 timestamp__gte=since
             ).values('timestamp', 'src_ip', 'dest_ip', 'proto', 'message', 'severity')[:50])
             
-            system_prompt = """Eres un experto en correlación de eventos de seguridad. Analiza los eventos 
-            de Snort y Suricata para identificar:
-            1. Eventos correlacionados (misma IP, tiempo similar)
-            2. Patrones de ataque coordinados
-            3. Cadenas de eventos sospechosos
-            4. Anomalías temporales
-            
-            Responde en formato JSON con correlaciones identificadas."""
+            system_prompt = """Eres un analista de correlación de eventos IDS/IPS.
+            ANALIZA ÚNICAMENTE los datos técnicos proporcionados. Identifica patrones reales.
+
+            CORRELACIONES TÉCNICAS A BUSCAR:
+            1. Mismas IPs fuente/destino en ambos sistemas
+            2. Eventos secuenciales con timestamps similares (< 5 minutos)
+            3. Patrones de escaneo (múltiples puertos, misma IP)
+            4. Ataques coordinados (diferentes firmas, misma IP)
+            5. Anomalías temporales (picos de actividad)
+
+            FORMATO JSON EXACTO:
+            {
+              "correlated_events": número de eventos correlacionados,
+              "suspicious_patterns": ["lista de patrones identificados"],
+              "risk_assessment": "Low/Medium/High/Critical",
+              "recommendations": ["acciones específicas"]
+            }"""
             
             correlation_prompt = f"""
-            CORRELACIÓN DE EVENTOS ({time_window} minutos):
-            
-            EVENTOS SNORT:
-            {json.dumps(recent_snort, indent=2, default=str)}
-            
-            EVENTOS SURICATA:
-            {json.dumps(recent_suricata, indent=2, default=str)}
-            
-            Identifica correlaciones y patrones en formato JSON.
+            CORRELACIÓN DE EVENTOS IDS/IPS ({time_window} minutos)
+
+            DATOS SNORT ({len(recent_snort)} eventos):
+            {json.dumps(recent_snort[:10], indent=2, default=str)}
+
+            DATOS SURICATA ({len(recent_suricata)} eventos):
+            {json.dumps(recent_suricata[:10], indent=2, default=str)}
+
+            ANÁLISIS TÉCNICO DE CORRELACIÓN:
+            1. IPs que aparecen en AMBOS sistemas (Snort y Suricata)
+            2. Eventos con timestamps similares (±2 minutos)
+            3. Patrones de escaneo (múltiples puertos desde misma IP)
+            4. Ataques coordinados (diferentes firmas, misma IP origen)
+            5. Anomalías temporales (concentración de eventos)
+
+            SI NO HAY CORRELACIONES:
+            - correlated_events: 0
+            - suspicious_patterns: []
+            - risk_assessment: "Low"
+            - recommendations: ["Continuar monitoreo normal"]
             """
             
             ai_response = self._call_ollama(correlation_prompt, system_prompt)
@@ -720,30 +747,84 @@ class OllamaAIService:
             return {'success': False, 'error': str(e)}
     
     def _is_valid_security_response(self, response: str) -> bool:
-        """Validar que la respuesta de IA sea sobre ciberseguridad y no datos irrelevantes"""
+        """Validar que la respuesta de IA sea sobre ciberseguridad técnica y no contenga alucinaciones"""
         response_lower = response.lower()
 
-        # Palabras clave que deben estar presentes en una respuesta válida de ciberseguridad
+        # Palabras clave TÉCNICAS que deben estar presentes (más específicas)
         security_keywords = [
-            'ip', 'ataque', 'seguridad', 'threat', 'intrusion', 'malware', 'vulnerabilidad',
-            'riesgo', 'análisis', 'evento', 'alerta', 'sospechoso', 'segmento', 'red',
-            'snort', 'suricata', 'ids', 'ips', 'ciberseguridad', 'attack', 'security'
+            'ip', 'puerto', 'protocolo', 'tcp', 'udp', 'icmp', 'severidad', 'crítico', 'alerta',
+            'evento', 'log', 'registro', 'firma', 'gid', 'sid', 'clasificación', 'prioridad',
+            'snort', 'suricata', 'ids', 'ips', 'ataque', 'intrusion', 'amenaza', 'riesgo',
+            'análisis', 'sospechoso', 'segmento', 'red', 'firewall', 'vulnerabilidad',
+            'malware', 'exploit', 'escaneo', 'ddos', 'phishing', 'sql injection'
         ]
 
-        # Palabras clave que indican respuestas inválidas (datos meteorológicos, etc.)
-        invalid_keywords = [
+        # Palabras clave que indican CONTENIDO INVÁLIDO (no relacionado con ciberseguridad)
+        invalid_content = [
+            # Datos meteorológicos
             'temperatura', 'clima', 'weather', 'humidity', 'wind', 'precipitation',
-            'temperature', 'clouds', 'pressure', 'dew', 'visibility', 'latitude', 'longitude'
+            'temperature', 'clouds', 'pressure', 'dew', 'visibility', 'latitude', 'longitude',
+            # Contenido no técnico
+            'noticias', 'news', 'radio', 'television', 'tv', 'periódico', 'newspaper',
+            'gobierno', 'government', 'oficial', 'official', 'autoridad', 'authority',
+            'redes sociales', 'social media', 'twitter', 'facebook', 'linkedin', 'instagram',
+            # Contenido irrelevante
+            'deporte', 'sports', 'música', 'music', 'cine', 'movies', 'comida', 'food'
         ]
 
-        # Contar palabras clave de seguridad
-        security_count = sum(1 for keyword in security_keywords if keyword in response_lower)
+        # Patrones que indican ALUCINACIONES CRÍTICAS
+        hallucination_patterns = [
+            # URLs externas (excepto dominios técnicos legítimos)
+            r'https?://[^\s]*\.(com|org|net|edu|gov|info|biz)[^\s]*',
+            # IPs inválidas o datos falsos
+            r'\b\d{10,}\b',  # Números demasiado largos (como "123456789")
+            r'\b[a-zA-Z]+\.gov\b',  # Dominios .gov inventados
+            r'\b[a-zA-Z]+\s+(news|radio|tv)\b',  # Fuentes de noticias inventadas
+            # Referencias a sitios web externos
+            r'\b(website|webpage|sitio web|página web|online|internet)\b',
+            # JSON malformado o datos irrelevantes
+            r'"IP":\s*"[^"]*123456789[^"]*"',
+            r'"Referencia":\s*"https?://'
+        ]
 
-        # Verificar si contiene palabras clave inválidas
-        invalid_count = sum(1 for keyword in invalid_keywords if keyword in response_lower)
+        # Contar palabras clave de seguridad (más peso a términos técnicos)
+        security_score = 0
+        for keyword in security_keywords:
+            if keyword in response_lower:
+                # Dar más peso a términos técnicos específicos
+                weight = 2 if keyword in ['gid', 'sid', 'tcp', 'udp', 'icmp', 'firma'] else 1
+                security_score += weight
 
-        # La respuesta es válida si tiene al menos 3 palabras clave de seguridad y ninguna inválida
-        return security_count >= 3 and invalid_count == 0
+        # Verificar contenido inválido
+        invalid_score = sum(1 for keyword in invalid_content if keyword in response_lower)
+
+        # Verificar alucinaciones críticas
+        hallucination_score = 0
+        for pattern in hallucination_patterns:
+            if re.search(pattern, response, re.IGNORECASE):
+                hallucination_score += 1
+
+        # Verificar si es JSON malformado (caso específico del error visto)
+        is_malformed_json = ('"IP":' in response and '123456789' in response) or \
+                           ('"Referencia":' in response and 'https://' in response)
+
+        # CRITERIOS DE VALIDACIÓN MÁS ESTRICTOS
+        is_valid = (
+            security_score >= 4 and  # Mínimo 4 puntos de términos técnicos
+            invalid_score == 0 and   # Ningún contenido inválido
+            hallucination_score == 0 and  # Ninguna alucinación crítica
+            not is_malformed_json and     # No JSON malformado
+            len(response.strip()) >= 50   # Respuesta no trivial
+        )
+
+        # Log detallado para debugging
+        if not is_valid:
+            logger.warning(f"Respuesta IA RECHAZADA - Score seguridad: {security_score}, "
+                         f"Contenido inválido: {invalid_score}, Alucinaciones: {hallucination_score}, "
+                         f"JSON malformado: {is_malformed_json}. "
+                         f"Respuesta: {response[:150]}...")
+
+        return is_valid
 
     def _format_ip_analysis_summary(self, ai_response: str, ip_data: Dict) -> str:
         """Formatear el resumen de análisis de IP de manera legible"""

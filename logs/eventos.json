@@ -6273,5 +6273,4102 @@
     "target_id": null,
     "ip_address": null,
     "user_agent": null
+  },
+  {
+    "id": 277,
+    "timestamp": "2025-12-09T04:16:28.160084+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario leonardo.varona cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 278,
+    "timestamp": "2025-12-09T04:16:30.606937+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 279,
+    "timestamp": "2025-12-09T04:16:30.626628+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 280,
+    "timestamp": "2025-12-09T04:22:14.562869+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario leonardo.varona cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 281,
+    "timestamp": "2025-12-09T04:22:17.070702+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 282,
+    "timestamp": "2025-12-09T04:22:17.089810+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 283,
+    "timestamp": "2025-12-09T04:33:08.874519+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario leonardo.varona cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 284,
+    "timestamp": "2025-12-09T04:33:12.060688+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 285,
+    "timestamp": "2025-12-09T04:33:12.079842+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 286,
+    "timestamp": "2025-12-09T04:48:31.459391+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: Analizar alertas recientes...",
+    "details": {
+      "message_length": 26,
+      "response_length": 41,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 287,
+    "timestamp": "2025-12-09T04:54:13.981570+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: Analizar alertas recientes...",
+    "details": {
+      "message_length": 26,
+      "response_length": 112,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 288,
+    "timestamp": "2025-12-09T04:56:19.766932+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: Analizar alertas recientes...",
+    "details": {
+      "message_length": 26,
+      "response_length": 278,
+      "has_history": true,
+      "debug_info": {
+        "ollama_called": true,
+        "ai_response_length": 278,
+        "has_specific_data": false,
+        "specific_data_keys": [],
+        "context_parts_count": 3
+      }
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 289,
+    "timestamp": "2025-12-09T04:59:06.439273+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: Analizar alertas recientes...",
+    "details": {
+      "message_length": 26,
+      "response_length": 168,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 290,
+    "timestamp": "2025-12-09T05:01:26.192919+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: Analizar alertas recientes...",
+    "details": {
+      "message_length": 26,
+      "response_length": 158,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 291,
+    "timestamp": "2025-12-09T05:01:36.438975+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: ¿Estado actual del sistema?...",
+    "details": {
+      "message_length": 27,
+      "response_length": 24,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 292,
+    "timestamp": "2025-12-09T05:01:48.886187+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: Revisar incidentes activos...",
+    "details": {
+      "message_length": 26,
+      "response_length": 246,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 293,
+    "timestamp": "2025-12-09T05:02:09.179528+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: dame un top de las ultimas alertas de snort...",
+    "details": {
+      "message_length": 43,
+      "response_length": 231,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 294,
+    "timestamp": "2025-12-09T05:04:39.914472+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: Analizar alertas recientes...",
+    "details": {
+      "message_length": 26,
+      "response_length": 460,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 295,
+    "timestamp": "2025-12-09T05:05:09.624186+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: dime un top de las ultimas alertas de snort...",
+    "details": {
+      "message_length": 43,
+      "response_length": 149,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 296,
+    "timestamp": "2025-12-09T05:05:30.107612+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: informame entonces...",
+    "details": {
+      "message_length": 18,
+      "response_length": 145,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 297,
+    "timestamp": "2025-12-09T05:05:47.191671+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: dime de suricata...",
+    "details": {
+      "message_length": 16,
+      "response_length": 152,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 298,
+    "timestamp": "2025-12-09T05:05:55.574545+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: ¿Estado actual del sistema?...",
+    "details": {
+      "message_length": 27,
+      "response_length": 76,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 299,
+    "timestamp": "2025-12-09T05:06:05.856768+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: Revisar incidentes activos...",
+    "details": {
+      "message_length": 26,
+      "response_length": 156,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 300,
+    "timestamp": "2025-12-11T02:32:01.460047+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario consultó login exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/login/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 301,
+    "timestamp": "2025-12-11T02:32:04.763645+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 302,
+    "timestamp": "2025-12-11T02:32:04.783238+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 303,
+    "timestamp": "2025-12-11T02:35:08.820391+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: ¿Estado actual del sistema?...",
+    "details": {
+      "message_length": 27,
+      "response_length": 63,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 304,
+    "timestamp": "2025-12-11T02:45:54.084055+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: Hay incidentes activos?...",
+    "details": {
+      "message_length": 23,
+      "response_length": 51,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 305,
+    "timestamp": "2025-12-11T02:46:26.605755+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: Puedes revisar cuales son las alertas mas recientes de snort?...",
+    "details": {
+      "message_length": 61,
+      "response_length": 95,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 306,
+    "timestamp": "2025-12-11T02:47:28.145880+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: Analizar alertas recientes...",
+    "details": {
+      "message_length": 26,
+      "response_length": 6604,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 307,
+    "timestamp": "2025-12-11T02:51:11.715243+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: Dime cuales son las alertas mas recientes de snort...",
+    "details": {
+      "message_length": 50,
+      "response_length": 378,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 308,
+    "timestamp": "2025-12-11T02:51:41.400355+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: y de suricata??...",
+    "details": {
+      "message_length": 15,
+      "response_length": 54,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 309,
+    "timestamp": "2025-12-11T02:53:04.327611+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: revisa bine porque fui al dashboard y vi dos recinetes...",
+    "details": {
+      "message_length": 54,
+      "response_length": 54,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 310,
+    "timestamp": "2025-12-11T02:55:13.456595+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: revisa cuales son las ultimas 5 alertas de suricata?...",
+    "details": {
+      "message_length": 52,
+      "response_length": 37,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 311,
+    "timestamp": "2025-12-11T02:55:26.403778+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: y de snort?...",
+    "details": {
+      "message_length": 11,
+      "response_length": 37,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 312,
+    "timestamp": "2025-12-11T02:56:08.398300+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: revisa cuales son las ultimas 5 alertas de suricata?...",
+    "details": {
+      "message_length": 52,
+      "response_length": 116,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 313,
+    "timestamp": "2025-12-11T02:56:34.182133+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: dime las que existan de suricata...",
+    "details": {
+      "message_length": 32,
+      "response_length": 580,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 314,
+    "timestamp": "2025-12-11T03:22:27.190328+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario leonardo.varona cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 315,
+    "timestamp": "2025-12-11T03:22:29.600803+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 316,
+    "timestamp": "2025-12-11T03:22:29.620549+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 317,
+    "timestamp": "2025-12-11T03:22:56.341248+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: actualizame sobre las alertas recinetes de snort y suricata...",
+    "details": {
+      "message_length": 59,
+      "response_length": 33,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 318,
+    "timestamp": "2025-12-11T03:23:07.694066+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: actualizame sobre las alertas recinetes de snort y suricata...",
+    "details": {
+      "message_length": 59,
+      "response_length": 33,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 319,
+    "timestamp": "2025-12-11T03:23:14.390199+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: actualizame sobre las alertas recinetes de snort y suricata...",
+    "details": {
+      "message_length": 59,
+      "response_length": 33,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 320,
+    "timestamp": "2025-12-11T03:23:19.810739+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: actualizame sobre las alertas recinetes de snort y suricata...",
+    "details": {
+      "message_length": 59,
+      "response_length": 33,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 321,
+    "timestamp": "2025-12-11T03:29:21.370026+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario leonardo.varona cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 322,
+    "timestamp": "2025-12-11T03:29:24.311945+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 323,
+    "timestamp": "2025-12-11T03:29:24.332366+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 324,
+    "timestamp": "2025-12-11T03:29:41.705348+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: hola...",
+    "details": {
+      "message_length": 4,
+      "response_length": 33,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 325,
+    "timestamp": "2025-12-11T03:30:02.257140+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: actualizame con las ultimas alertas de snort y suricata...",
+    "details": {
+      "message_length": 55,
+      "response_length": 33,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 326,
+    "timestamp": "2025-12-11T03:30:22.490224+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "OLLAMA_CONFIG_UPDATED",
+    "description": "Configuración de Ollama actualizada: qwen:0.5b",
+    "details": {
+      "ollama_url": "http://localhost:11434",
+      "ollama_model": "qwen:0.5b",
+      "is_active": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 327,
+    "timestamp": "2025-12-11T03:30:48.676896+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: actualizame con las ultimas alertas de snort y suricata...",
+    "details": {
+      "message_length": 55,
+      "response_length": 32,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 328,
+    "timestamp": "2025-12-11T03:39:19.906885+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario leonardo.varona cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 329,
+    "timestamp": "2025-12-11T03:39:22.383401+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 330,
+    "timestamp": "2025-12-11T03:39:22.405873+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 331,
+    "timestamp": "2025-12-11T03:39:49.710533+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: ¿Estado actual del sistema?...",
+    "details": {
+      "message_length": 27,
+      "response_length": 37,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 332,
+    "timestamp": "2025-12-11T03:40:00.654148+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: Analizar alertas recientes...",
+    "details": {
+      "message_length": 26,
+      "response_length": 197,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 333,
+    "timestamp": "2025-12-11T03:40:26.403051+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: amplia el rango de timepo a 1 hora y dime que hay...",
+    "details": {
+      "message_length": 49,
+      "response_length": 118,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 334,
+    "timestamp": "2025-12-11T03:40:49.838516+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: si dime sobre la ingesta de snort y suricata que hayd e nuevo...",
+    "details": {
+      "message_length": 61,
+      "response_length": 118,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 335,
+    "timestamp": "2025-12-11T03:49:12.607525+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: Revisar incidentes activos...",
+    "details": {
+      "message_length": 26,
+      "response_length": 174,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 336,
+    "timestamp": "2025-12-11T03:49:29.471999+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: hay reportes nuevo?...",
+    "details": {
+      "message_length": 19,
+      "response_length": 160,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 337,
+    "timestamp": "2025-12-11T03:49:52.542634+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: dime los logs de snort mas recientes?...",
+    "details": {
+      "message_length": 37,
+      "response_length": 174,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 338,
+    "timestamp": "2025-12-11T04:08:17.533415+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó nuevo exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/involucrado-incidente/nuevo/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 339,
+    "timestamp": "2025-12-11T04:08:22.832815+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó involucrados-incidente exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/involucrados-incidente/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 340,
+    "timestamp": "2025-12-11T04:08:29.448903+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó nueva exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/medida-incidente/nueva/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 341,
+    "timestamp": "2025-12-11T04:08:32.713760+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó medidas-incidente exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/medidas-incidente/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 342,
+    "timestamp": "2025-12-11T04:08:40.104643+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INVOLUCRADO",
+    "description": "Usuario consultó involucrados exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/involucrados/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 343,
+    "timestamp": "2025-12-11T04:09:22.443619+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INVOLUCRADO",
+    "description": "Usuario consultó involucrados exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/involucrados/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 344,
+    "timestamp": "2025-12-11T04:09:33.038741+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó involucrados-incidente exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/involucrados-incidente/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 345,
+    "timestamp": "2025-12-11T04:09:44.665558+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó medidas-incidente exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/medidas-incidente/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 346,
+    "timestamp": "2025-12-11T04:10:06.193993+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_SERVICIO",
+    "description": "Usuario consultó servicios exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/servicios/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 347,
+    "timestamp": "2025-12-11T04:10:13.420490+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_SERVICIO",
+    "description": "Usuario consultó editar exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/servicio/1/editar/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 348,
+    "timestamp": "2025-12-11T04:10:16.464001+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "CREATE_SERVICIO",
+    "description": "Usuario creó editar exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/eventos/servicio/1/editar/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 349,
+    "timestamp": "2025-12-11T04:10:16.541618+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_SERVICIO",
+    "description": "Usuario consultó servicios exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/servicios/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 350,
+    "timestamp": "2025-12-11T04:10:19.749058+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_SERVICIO",
+    "description": "Usuario consultó editar exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/servicio/2/editar/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 351,
+    "timestamp": "2025-12-11T04:10:23.211890+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "CREATE_SERVICIO",
+    "description": "Usuario creó editar exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/eventos/servicio/2/editar/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 352,
+    "timestamp": "2025-12-11T04:10:23.290698+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_SERVICIO",
+    "description": "Usuario consultó servicios exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/servicios/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 353,
+    "timestamp": "2025-12-11T04:10:25.594024+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_SERVICIO",
+    "description": "Usuario consultó editar exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/servicio/5/editar/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 354,
+    "timestamp": "2025-12-11T04:10:28.120372+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "CREATE_SERVICIO",
+    "description": "Usuario creó editar exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/eventos/servicio/5/editar/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 355,
+    "timestamp": "2025-12-11T04:10:28.201563+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_SERVICIO",
+    "description": "Usuario consultó servicios exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/servicios/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 356,
+    "timestamp": "2025-12-11T04:10:29.346995+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_SERVICIO",
+    "description": "Usuario consultó 4 exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/servicio/4/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 357,
+    "timestamp": "2025-12-11T04:10:31.139142+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_SERVICIO",
+    "description": "Usuario consultó editar exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/servicio/4/editar/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 358,
+    "timestamp": "2025-12-11T04:10:34.179692+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "CREATE_SERVICIO",
+    "description": "Usuario creó editar exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/eventos/servicio/4/editar/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 359,
+    "timestamp": "2025-12-11T04:10:34.258360+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_SERVICIO",
+    "description": "Usuario consultó servicios exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/servicios/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 360,
+    "timestamp": "2025-12-11T04:10:35.949584+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_SERVICIO",
+    "description": "Usuario consultó editar exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/servicio/3/editar/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 361,
+    "timestamp": "2025-12-11T04:10:39.003532+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "CREATE_SERVICIO",
+    "description": "Usuario creó editar exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/eventos/servicio/3/editar/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 362,
+    "timestamp": "2025-12-11T04:10:39.083633+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_SERVICIO",
+    "description": "Usuario consultó servicios exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/servicios/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 363,
+    "timestamp": "2025-12-11T04:11:12.079840+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INVOLUCRADO",
+    "description": "Usuario consultó involucrados exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/involucrados/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 364,
+    "timestamp": "2025-12-11T04:11:23.212540+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INVOLUCRADO",
+    "description": "Usuario consultó editar exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/involucrado/1/editar/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 365,
+    "timestamp": "2025-12-11T04:50:15.323469+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "EMAIL_ALERT_UPDATED",
+    "description": "Alerta de correo actualizada para admin",
+    "details": {
+      "target_user": "admin",
+      "alert_type": "USER_APPROVED",
+      "enabled": true,
+      "priority": "MEDIUM"
+    },
+    "target_model": "EmailAlert",
+    "target_id": 16,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 366,
+    "timestamp": "2025-12-11T04:50:15.355173+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "EMAIL_ALERT_UPDATED",
+    "description": "Alerta de correo actualizada para admin",
+    "details": {
+      "target_user": "admin",
+      "alert_type": "USER_CREATE_REQUEST",
+      "enabled": true,
+      "priority": "MEDIUM"
+    },
+    "target_model": "EmailAlert",
+    "target_id": 15,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 367,
+    "timestamp": "2025-12-11T04:50:15.381234+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "EMAIL_ALERT_UPDATED",
+    "description": "Alerta de correo actualizada para admin",
+    "details": {
+      "target_user": "admin",
+      "alert_type": "INCIDENT_CREATED",
+      "enabled": true,
+      "priority": "MEDIUM"
+    },
+    "target_model": "EmailAlert",
+    "target_id": 17,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 368,
+    "timestamp": "2025-12-11T04:50:15.409549+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "EMAIL_ALERT_UPDATED",
+    "description": "Alerta de correo actualizada para admin",
+    "details": {
+      "target_user": "admin",
+      "alert_type": "USER_REJECTED",
+      "enabled": true,
+      "priority": "MEDIUM"
+    },
+    "target_model": "EmailAlert",
+    "target_id": 18,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 369,
+    "timestamp": "2025-12-11T04:50:15.437995+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "EMAIL_ALERT_UPDATED",
+    "description": "Alerta de correo actualizada para admin",
+    "details": {
+      "target_user": "admin",
+      "alert_type": "REPORT_CREATED",
+      "enabled": true,
+      "priority": "MEDIUM"
+    },
+    "target_model": "EmailAlert",
+    "target_id": 19,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 370,
+    "timestamp": "2025-12-11T04:50:15.467078+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "EMAIL_ALERT_UPDATED",
+    "description": "Alerta de correo actualizada para admin",
+    "details": {
+      "target_user": "admin",
+      "alert_type": "INCIDENT_UPDATED",
+      "enabled": true,
+      "priority": "MEDIUM"
+    },
+    "target_model": "EmailAlert",
+    "target_id": 20,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 371,
+    "timestamp": "2025-12-11T04:50:15.494221+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "EMAIL_ALERT_UPDATED",
+    "description": "Alerta de correo actualizada para admin",
+    "details": {
+      "target_user": "admin",
+      "alert_type": "REPORT_UPDATED",
+      "enabled": true,
+      "priority": "MEDIUM"
+    },
+    "target_model": "EmailAlert",
+    "target_id": 21,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 372,
+    "timestamp": "2025-12-11T04:50:15.529255+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "EMAIL_ALERT_UPDATED",
+    "description": "Alerta de correo actualizada para admin",
+    "details": {
+      "target_user": "admin",
+      "alert_type": "SECURITY_EVENT",
+      "enabled": true,
+      "priority": "MEDIUM"
+    },
+    "target_model": "EmailAlert",
+    "target_id": 22,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 373,
+    "timestamp": "2025-12-11T04:50:15.558457+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "EMAIL_ALERT_UPDATED",
+    "description": "Alerta de correo actualizada para admin",
+    "details": {
+      "target_user": "admin",
+      "alert_type": "SYSTEM_ERROR",
+      "enabled": true,
+      "priority": "MEDIUM"
+    },
+    "target_model": "EmailAlert",
+    "target_id": 23,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 374,
+    "timestamp": "2025-12-11T04:50:15.590076+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "EMAIL_ALERT_UPDATED",
+    "description": "Alerta de correo actualizada para admin",
+    "details": {
+      "target_user": "admin",
+      "alert_type": "BACKUP_COMPLETED",
+      "enabled": true,
+      "priority": "MEDIUM"
+    },
+    "target_model": "EmailAlert",
+    "target_id": 24,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 375,
+    "timestamp": "2025-12-11T04:50:15.618900+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "EMAIL_ALERT_UPDATED",
+    "description": "Alerta de correo actualizada para admin",
+    "details": {
+      "target_user": "admin",
+      "alert_type": "BACKUP_FAILED",
+      "enabled": true,
+      "priority": "MEDIUM"
+    },
+    "target_model": "EmailAlert",
+    "target_id": 25,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 376,
+    "timestamp": "2025-12-11T04:50:15.644000+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "EMAIL_ALERT_UPDATED",
+    "description": "Alerta de correo actualizada para admin",
+    "details": {
+      "target_user": "admin",
+      "alert_type": "MAINTENANCE_SCHEDULED",
+      "enabled": true,
+      "priority": "MEDIUM"
+    },
+    "target_model": "EmailAlert",
+    "target_id": 26,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 377,
+    "timestamp": "2025-12-11T04:50:15.670116+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "EMAIL_ALERT_UPDATED",
+    "description": "Alerta de correo actualizada para admin",
+    "details": {
+      "target_user": "admin",
+      "alert_type": "LOGIN_FAILED",
+      "enabled": true,
+      "priority": "MEDIUM"
+    },
+    "target_model": "EmailAlert",
+    "target_id": 27,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 378,
+    "timestamp": "2025-12-11T04:50:15.693664+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "EMAIL_ALERT_UPDATED",
+    "description": "Alerta de correo actualizada para admin",
+    "details": {
+      "target_user": "admin",
+      "alert_type": "PERMISSION_CHANGED",
+      "enabled": true,
+      "priority": "MEDIUM"
+    },
+    "target_model": "EmailAlert",
+    "target_id": 28,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 379,
+    "timestamp": "2025-12-11T04:52:25.442501+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "OLLAMA_CONFIG_UPDATED",
+    "description": "Configuración de Ollama actualizada: qwen:0.5b",
+    "details": {
+      "ollama_url": "http://localhost:11434",
+      "ollama_model": "qwen:0.5b",
+      "is_active": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 380,
+    "timestamp": "2025-12-11T04:52:26.458865+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "OLLAMA_CONFIG_UPDATED",
+    "description": "Configuración de Ollama actualizada: qwen:0.5b",
+    "details": {
+      "ollama_url": "http://localhost:11434",
+      "ollama_model": "qwen:0.5b",
+      "is_active": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 381,
+    "timestamp": "2025-12-11T04:52:27.123015+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "OLLAMA_CONFIG_UPDATED",
+    "description": "Configuración de Ollama actualizada: qwen:0.5b",
+    "details": {
+      "ollama_url": "http://localhost:11434",
+      "ollama_model": "qwen:0.5b",
+      "is_active": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 382,
+    "timestamp": "2025-12-11T04:52:27.705390+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "OLLAMA_CONFIG_UPDATED",
+    "description": "Configuración de Ollama actualizada: qwen:0.5b",
+    "details": {
+      "ollama_url": "http://localhost:11434",
+      "ollama_model": "qwen:0.5b",
+      "is_active": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 383,
+    "timestamp": "2025-12-11T04:53:49.071515+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: Revisar incidentes activos...",
+    "details": {
+      "message_length": 26,
+      "response_length": 161,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 384,
+    "timestamp": "2025-12-13T23:50:39.998693+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario consultó login exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/login/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 385,
+    "timestamp": "2025-12-13T23:50:42.861557+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 386,
+    "timestamp": "2025-12-13T23:50:42.885944+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 387,
+    "timestamp": "2025-12-13T23:55:40.888333+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario consultó login exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/login/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 388,
+    "timestamp": "2025-12-13T23:55:43.290512+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 389,
+    "timestamp": "2025-12-13T23:55:43.312680+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 390,
+    "timestamp": "2025-12-14T00:25:52.958500+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: analiza los logs recientes de snort y dame tu opinion...",
+    "details": {
+      "message_length": 53,
+      "response_length": 236,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 391,
+    "timestamp": "2025-12-14T01:25:09.529337+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_REPORTE",
+    "description": "Usuario consultó nuevo exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/reporte/nuevo/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 392,
+    "timestamp": "2025-12-14T01:25:26.617208+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "CREATE_REPORTE",
+    "description": "Usuario creó nuevo exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/eventos/reporte/nuevo/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 393,
+    "timestamp": "2025-12-14T01:25:26.731093+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_REPORTE",
+    "description": "Usuario consultó reportes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/reportes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 394,
+    "timestamp": "2025-12-14T01:25:40.711267+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_REPORTE",
+    "description": "Usuario consultó editar exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/reporte/2/editar/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 395,
+    "timestamp": "2025-12-14T01:25:54.680568+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "CREATE_REPORTE",
+    "description": "Usuario creó editar exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/eventos/reporte/2/editar/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 396,
+    "timestamp": "2025-12-14T01:25:54.778197+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_REPORTE",
+    "description": "Usuario consultó reportes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/reportes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 397,
+    "timestamp": "2025-12-14T01:26:23.074042+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOG_ACCESS",
+    "description": "Usuario consultó logs exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/logs/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 398,
+    "timestamp": "2025-12-14T01:26:38.743704+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOG_ACCESS",
+    "description": "Usuario consultó logs exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/logs/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 399,
+    "timestamp": "2025-12-14T01:27:02.319943+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOG_ACCESS",
+    "description": "Usuario consultó logs exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/logs/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 400,
+    "timestamp": "2025-12-14T01:27:03.914048+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOG_ACCESS",
+    "description": "Usuario consultó logs exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/logs/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 401,
+    "timestamp": "2025-12-14T01:27:15.607372+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOG_ACCESS",
+    "description": "Usuario consultó logs exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/logs/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 402,
+    "timestamp": "2025-12-14T01:27:17.992578+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOG_ACCESS",
+    "description": "Usuario consultó logs exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/logs/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 403,
+    "timestamp": "2025-12-16T03:49:15.314384+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario leonardo.varona cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 404,
+    "timestamp": "2025-12-16T03:49:18.315526+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 405,
+    "timestamp": "2025-12-16T03:49:18.340035+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 406,
+    "timestamp": "2025-12-16T03:51:04.962165+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario leonardo.varona cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 407,
+    "timestamp": "2025-12-16T04:04:06.251228+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 408,
+    "timestamp": "2025-12-16T04:04:06.277456+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 409,
+    "timestamp": "2025-12-16T04:23:20.504579+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "OLLAMA_CONFIG_UPDATED",
+    "description": "Configuración de Ollama actualizada: llama3.2:3b-instruct-q4_K_M",
+    "details": {
+      "ollama_url": "http://localhost:11434",
+      "ollama_model": "llama3.2:3b-instruct-q4_K_M",
+      "is_active": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 410,
+    "timestamp": "2025-12-16T04:23:38.480444+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: hola...",
+    "details": {
+      "message_length": 4,
+      "response_length": 34,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 411,
+    "timestamp": "2025-12-16T04:23:55.578226+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: necesito que me revises los ultimos logs de snort...",
+    "details": {
+      "message_length": 49,
+      "response_length": 50,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 412,
+    "timestamp": "2025-12-16T04:24:03.945053+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: porque ?...",
+    "details": {
+      "message_length": 8,
+      "response_length": 96,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 413,
+    "timestamp": "2025-12-16T04:24:54.045852+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: ver reportes nuevos...",
+    "details": {
+      "message_length": 19,
+      "response_length": 50,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 414,
+    "timestamp": "2025-12-16T04:25:28.784399+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: cuales son los reportes nuevos?...",
+    "details": {
+      "message_length": 31,
+      "response_length": 50,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 415,
+    "timestamp": "2025-12-16T04:48:05.256934+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario leonardo.varona cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 416,
+    "timestamp": "2025-12-16T04:48:07.944948+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 417,
+    "timestamp": "2025-12-16T04:48:07.982670+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 418,
+    "timestamp": "2025-12-17T23:23:24.644858+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario leonardo.varona cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 419,
+    "timestamp": "2025-12-17T23:23:27.484733+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 420,
+    "timestamp": "2025-12-17T23:23:27.510994+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 421,
+    "timestamp": "2025-12-18T00:04:12.303711+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOG_ACCESS",
+    "description": "Usuario consultó logs exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/logs/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 422,
+    "timestamp": "2025-12-18T00:04:24.966017+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOG_ACCESS",
+    "description": "Usuario consultó logs exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/logs/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 423,
+    "timestamp": "2025-12-18T22:54:22.312381+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario leonardo.varona cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 424,
+    "timestamp": "2025-12-18T22:54:26.096620+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 425,
+    "timestamp": "2025-12-18T22:54:26.121474+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 426,
+    "timestamp": "2025-12-20T02:54:28.803546+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario leonardo.varona cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 427,
+    "timestamp": "2025-12-20T02:54:31.462761+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 428,
+    "timestamp": "2025-12-20T02:54:31.487714+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 429,
+    "timestamp": "2025-12-20T03:31:37.057225+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario leonardo.varona cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 430,
+    "timestamp": "2025-12-20T03:31:41.067017+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 431,
+    "timestamp": "2025-12-20T03:31:41.092541+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 432,
+    "timestamp": "2025-12-20T17:40:37.600689+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario leonardo.varona cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 433,
+    "timestamp": "2025-12-20T17:40:40.702431+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 434,
+    "timestamp": "2025-12-20T17:40:40.738272+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 435,
+    "timestamp": "2025-12-21T19:26:39.787264+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario leonardo.varona cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 436,
+    "timestamp": "2025-12-21T19:26:42.912138+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 437,
+    "timestamp": "2025-12-21T19:26:42.936267+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 438,
+    "timestamp": "2025-12-21T19:49:38.033197+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario leonardo.varona cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 439,
+    "timestamp": "2025-12-28T21:08:53.197784+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 440,
+    "timestamp": "2025-12-28T21:08:53.227905+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 441,
+    "timestamp": "2025-12-28T21:08:56.600223+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario leonardo.varona cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 442,
+    "timestamp": "2025-12-28T21:09:35.061736+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 443,
+    "timestamp": "2025-12-28T21:09:35.088171+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 444,
+    "timestamp": "2025-12-28T22:10:21.107093+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "NET_PORT_SCAN",
+    "description": "Port scan 10.212.8.179",
+    "details": {
+      "host": "10.212.8.179",
+      "range": [
+        1,
+        201
+      ],
+      "open_ports": []
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 445,
+    "timestamp": "2025-12-28T22:18:04.250128+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "MONITORING_CHECK",
+    "description": "Verificación de monitoreo de 0 servicios",
+    "details": {
+      "servicios_verificados": 0,
+      "resultados": []
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 446,
+    "timestamp": "2025-12-28T22:18:35.255417+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "MONITORING_CHECK",
+    "description": "Verificación de monitoreo de 0 servicios",
+    "details": {
+      "servicios_verificados": 0,
+      "resultados": []
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 447,
+    "timestamp": "2025-12-28T22:19:06.265398+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "MONITORING_CHECK",
+    "description": "Verificación de monitoreo de 0 servicios",
+    "details": {
+      "servicios_verificados": 0,
+      "resultados": []
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 448,
+    "timestamp": "2025-12-28T22:19:37.266099+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "MONITORING_CHECK",
+    "description": "Verificación de monitoreo de 0 servicios",
+    "details": {
+      "servicios_verificados": 0,
+      "resultados": []
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 449,
+    "timestamp": "2025-12-28T22:20:08.250485+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "MONITORING_CHECK",
+    "description": "Verificación de monitoreo de 0 servicios",
+    "details": {
+      "servicios_verificados": 0,
+      "resultados": []
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 450,
+    "timestamp": "2025-12-28T22:20:39.276257+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "MONITORING_CHECK",
+    "description": "Verificación de monitoreo de 0 servicios",
+    "details": {
+      "servicios_verificados": 0,
+      "resultados": []
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 451,
+    "timestamp": "2025-12-28T22:21:10.257344+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "MONITORING_CHECK",
+    "description": "Verificación de monitoreo de 0 servicios",
+    "details": {
+      "servicios_verificados": 0,
+      "resultados": []
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 452,
+    "timestamp": "2025-12-28T22:21:41.281219+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "MONITORING_CHECK",
+    "description": "Verificación de monitoreo de 0 servicios",
+    "details": {
+      "servicios_verificados": 0,
+      "resultados": []
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 453,
+    "timestamp": "2025-12-28T22:22:12.263223+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "MONITORING_CHECK",
+    "description": "Verificación de monitoreo de 0 servicios",
+    "details": {
+      "servicios_verificados": 0,
+      "resultados": []
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 454,
+    "timestamp": "2025-12-28T22:22:43.261040+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "MONITORING_CHECK",
+    "description": "Verificación de monitoreo de 0 servicios",
+    "details": {
+      "servicios_verificados": 0,
+      "resultados": []
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 455,
+    "timestamp": "2025-12-28T22:23:14.255574+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "MONITORING_CHECK",
+    "description": "Verificación de monitoreo de 0 servicios",
+    "details": {
+      "servicios_verificados": 0,
+      "resultados": []
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 456,
+    "timestamp": "2025-12-28T22:23:45.282195+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "MONITORING_CHECK",
+    "description": "Verificación de monitoreo de 0 servicios",
+    "details": {
+      "servicios_verificados": 0,
+      "resultados": []
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 457,
+    "timestamp": "2025-12-28T22:24:16.263919+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "MONITORING_CHECK",
+    "description": "Verificación de monitoreo de 0 servicios",
+    "details": {
+      "servicios_verificados": 0,
+      "resultados": []
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 458,
+    "timestamp": "2025-12-28T22:24:47.263614+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "MONITORING_CHECK",
+    "description": "Verificación de monitoreo de 0 servicios",
+    "details": {
+      "servicios_verificados": 0,
+      "resultados": []
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 459,
+    "timestamp": "2025-12-28T22:25:18.259848+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "MONITORING_CHECK",
+    "description": "Verificación de monitoreo de 0 servicios",
+    "details": {
+      "servicios_verificados": 0,
+      "resultados": []
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 460,
+    "timestamp": "2025-12-28T22:25:49.248823+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "MONITORING_CHECK",
+    "description": "Verificación de monitoreo de 0 servicios",
+    "details": {
+      "servicios_verificados": 0,
+      "resultados": []
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 461,
+    "timestamp": "2025-12-28T22:33:59.961179+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "MONITORING_CHECK",
+    "description": "Verificación de monitoreo de 0 servicios",
+    "details": {
+      "servicios_verificados": 0,
+      "resultados": []
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
   }
 ]

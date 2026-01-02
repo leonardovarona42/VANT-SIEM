@@ -1348,12 +1348,24 @@ def _generate_fallback_response(message, specific_data, context_parts):
     elif any(word in message_lower for word in ['amenaza', 'amenazas', 'alerta', 'alertas', 'ataque', 'ataques', 'intrusion']):
         if 'critical_alerts' in specific_data and specific_data['critical_alerts']:
             alerts = specific_data['critical_alerts']
-            response = f"⚠️ Alertas críticas recientes ({len(alerts)}):\n\n"
+            response = f"⚠️ Alertas críticas detectadas ({len(alerts)}):\n\n"
             for i, alert in enumerate(alerts, 1):
                 response += f"{i}. {alert['mensaje']} - {alert['timestamp']}\n"
             response += "\n🔍 Revisar logs detallados inmediatamente."
         else:
-            response = "⚠️ No hay alertas críticas recientes detectadas."
+            # Verificar si hay alguna actividad de IDS en general
+            total_alerts = IDSAlert.objects.all().count()
+            total_snort = SnortLog.objects.all().count()
+            total_suricata = SuricataEveAlert.objects.all().count()
+
+            if total_alerts > 0 or total_snort > 0 or total_suricata > 0:
+                response = f"📊 Sistema operativo. Encontré datos históricos:\n"
+                response += f"• Alertas IDS totales: {total_alerts}\n"
+                response += f"• Logs Snort: {total_snort}\n"
+                response += f"• Logs Suricata: {total_suricata}\n"
+                response += "\n💡 No hay actividad reciente, pero el sistema tiene datos históricos."
+            else:
+                response = "⚠️ No se detectaron alertas o actividad de IDS/IPS."
 
     elif any(phrase in message_lower for phrase in ['estado del sistema', 'que esta pasando', 'qué está pasando', 'como esta', 'cómo está']):
         response = "📊 Estado del sistema VANT-SIEM:\n\n"
@@ -1365,23 +1377,81 @@ def _generate_fallback_response(message, specific_data, context_parts):
         response += "✅ Sistema operativo monitoreando la red."
 
     else:
-        response = "🤖 VANT-IA activo. Consultas disponibles:\n"
-        response += "• Reportes nuevos\n• Incidentes activos\n• Amenazas recientes\n• Estado del sistema\n\n"
-        response += "🔄 IA completa disponible cuando se restaure conexión con Ollama."
+        # Verificar qué datos están disponibles en el sistema
+        total_alerts = IDSAlert.objects.all().count()
+        total_snort = SnortLog.objects.all().count()
+        total_suricata = SuricataEveAlert.objects.all().count()
+        total_reportes = Reporte.objects.all().count()
+        total_incidentes = Incidente.objects.all().count()
+
+        # Verificar datos recientes (últimas 24 horas)
+        last_24h = timezone.now() - timezone.timedelta(hours=24)
+        recent_alerts = IDSAlert.objects.filter(timestamp__gte=last_24h).count()
+        recent_snort = SnortLog.objects.filter(timestamp__gte=last_24h).count()
+        recent_suricata = SuricataEveAlert.objects.filter(timestamp__gte=last_24h).count()
+
+        response = "🤖 VANT-IA: Sistema operativo - Análisis automático disponible\n\n"
+        response += f"📊 **Estado de datos en el sistema:**\n"
+        response += f"• Alertas IDS totales: {total_alerts} ({recent_alerts} últimas 24h)\n"
+        response += f"• Logs Snort totales: {total_snort} ({recent_snort} últimas 24h)\n"
+        response += f"• Logs Suricata totales: {total_suricata} ({recent_suricata} últimas 24h)\n"
+        response += f"• Reportes: {total_reportes}\n"
+        response += f"• Incidentes: {total_incidentes}\n\n"
+
+        # Evaluar disponibilidad de datos
+        has_recent_data = (recent_alerts > 0 or recent_snort > 0 or recent_suricata > 0)
+        has_any_data = (total_alerts > 0 or total_snort > 0 or total_suricata > 0)
+
+        if has_recent_data:
+            response += "✅ **Sistema con datos de seguridad recientes**\n"
+            response += "💡 **Consultas disponibles:**\n"
+            response += "• 'analizar alertas recientes' - Ver amenazas activas\n"
+            response += "• 'ver reportes nuevos' - Consultar reportes recientes\n"
+            response += "• 'estado del sistema' - Resumen general\n"
+            response += "• 'incidentes activos' - Gestionar incidentes\n"
+        elif has_any_data:
+            response += "⚠️ **Sistema con datos históricos, pero sin actividad reciente**\n"
+            response += "💡 **Consultas disponibles:**\n"
+            response += "• 'analizar alertas' - Revisar datos históricos\n"
+            response += "• 'ver reportes' - Consultar reportes existentes\n"
+            response += "• 'estado del sistema' - Resumen general\n"
+        else:
+            response += "🔄 **Sistema esperando datos de IDS/IPS**\n"
+            response += "💡 **Para comenzar:**\n"
+            response += "• Configure la ingesta de logs de Snort y Suricata\n"
+            response += "• Verifique que los servicios IDS estén ejecutándose\n"
+            response += "• Revise la configuración de parsers en ids_ingest\n"
+
+        response += "\n🔄 **Nota:** IA completa disponible cuando se restaure conexión con Ollama."
 
     return response
 
 
+@csrf_exempt
 @login_required
 @require_POST
 def ollama_chat(request):
     """Endpoint para chat con IA usando Ollama"""
     try:
+        # Debug logging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Chat request received. User authenticated: {request.user.is_authenticated}")
+        if request.user.is_authenticated:
+            logger.info(f"User: {request.user.username} (ID: {request.user.id})")
+        else:
+            logger.warning("Request received but user not authenticated")
+            return JsonResponse({'success': False, 'error': 'Usuario no autenticado'})
+
         data = json.loads(request.body)
         message = data.get('message', '').strip()
         history = data.get('history', [])
 
+        logger.info(f"Chat message: '{message}' (length: {len(message)})")
+        logger.info(f"Chat history length: {len(history)}")
+
         if not message:
+            logger.warning("Empty message received")
             return JsonResponse({'success': False, 'error': 'Mensaje requerido'})
 
         # Verificar permisos de configuración
@@ -1391,18 +1461,6 @@ def ollama_chat(request):
                 'success': False,
                 'error': 'No tienes permisos para acceder a datos de logs'
             })
-
-        # Prompt del sistema en español
-        system_prompt = """Eres VANT-IA, asistente inteligente de ciberseguridad del sistema VANT-SIEM.
-
-INSTRUCCIONES IMPORTANTES:
-- Responde SIEMPRE en español
-- Usa los datos específicos proporcionados en el contexto
-- Si encuentras reportes, incidentes o alertas, LISTALOS explícitamente con sus detalles
-- Sé específico y técnico en tus respuestas
-- Si no hay datos relevantes, di claramente "No se encontraron datos"
-- Mantén un tono profesional y directo
-- Proporciona análisis y recomendaciones cuando sea apropiado"""
 
         # Construir contexto dinámico basado en datos disponibles
         context_parts = []
@@ -1418,24 +1476,44 @@ INSTRUCCIONES IMPORTANTES:
             now = timezone.now()
             last_hour = now - timezone.timedelta(hours=1)
             last_24h = now - timezone.timedelta(hours=24)
+            last_7d = now - timezone.timedelta(days=7)  # Más amplio para encontrar datos
 
-            # Alertas recientes
+            # Alertas recientes (última hora, si no hay, buscar en últimas 24h)
             recent_alerts = IDSAlert.objects.filter(timestamp__gte=last_hour).count()
+            if recent_alerts == 0:
+                recent_alerts = IDSAlert.objects.filter(timestamp__gte=last_24h).count()
+
             critical_alerts = IDSAlert.objects.filter(
                 timestamp__gte=last_hour, severity='Critical'
             ).count()
+            if critical_alerts == 0:
+                critical_alerts = IDSAlert.objects.filter(
+                    timestamp__gte=last_24h, severity='Critical'
+                ).count()
 
-            # Actividad de logs
+            # Actividad de logs (última hora, si no hay, buscar en últimas 24h)
             snort_logs_hour = SnortLog.objects.filter(timestamp__gte=last_hour).count()
-            suricata_logs_hour = SuricataEveAlert.objects.filter(timestamp__gte=last_hour).count()
+            if snort_logs_hour == 0:
+                snort_logs_hour = SnortLog.objects.filter(timestamp__gte=last_24h).count()
 
-            # Top amenazas recientes
+            suricata_logs_hour = SuricataEveAlert.objects.filter(timestamp__gte=last_hour).count()
+            if suricata_logs_hour == 0:
+                suricata_logs_hour = SuricataEveAlert.objects.filter(timestamp__gte=last_24h).count()
+
+            # Top amenazas recientes (si no hay en 24h, buscar en 7 días)
             top_threats = list(
                 IDSAlert.objects.filter(timestamp__gte=last_24h)
                 .values('message')
                 .annotate(count=Count('id'))
                 .order_by('-count')[:3]
             )
+            if not top_threats:
+                top_threats = list(
+                    IDSAlert.objects.filter(timestamp__gte=last_7d)
+                    .values('message')
+                    .annotate(count=Count('id'))
+                    .order_by('-count')[:3]
+                )
 
             # Consultas específicas basadas en el mensaje del usuario
             message_lower = message.lower()
@@ -1525,13 +1603,31 @@ DETALLES DE INCIDENTES MÁS RECIENTES:
                     context_parts.append(f"\nError consultando incidentes: {str(e)}")
 
             # Si pregunta por amenazas o alertas
-            elif any(word in message_lower for word in ['amenaza', 'alerta', 'ataque', 'intrusion']):
+            elif any(word in message_lower for word in ['amenaza', 'amenazas', 'alerta', 'alertas', 'ataque', 'ataques', 'intrusion', 'intrusiones', 'analizar']):
                 try:
-                    # Alertas críticas recientes
+                    # Alertas críticas recientes (últimas 24h, si no hay, buscar en 7 días)
                     critical_recent = IDSAlert.objects.filter(
                         timestamp__gte=last_24h,
                         severity='Critical'
                     ).order_by('-timestamp')[:5]
+
+                    if not critical_recent.exists():
+                        # Si no hay en 24h, buscar en 7 días
+                        critical_recent = IDSAlert.objects.filter(
+                            timestamp__gte=last_7d,
+                            severity='Critical'
+                        ).order_by('-timestamp')[:5]
+
+                    # También buscar alertas de cualquier severidad si no hay críticas
+                    if not critical_recent.exists():
+                        critical_recent = IDSAlert.objects.filter(
+                            timestamp__gte=last_24h
+                        ).order_by('-timestamp')[:5]
+
+                    if not critical_recent.exists():
+                        critical_recent = IDSAlert.objects.filter(
+                            timestamp__gte=last_7d
+                        ).order_by('-timestamp')[:5]
 
                     if critical_recent.exists():
                         alerts_data = []
@@ -1583,24 +1679,67 @@ CONTEXTO ACTUAL DEL SISTEMA:
 
         context_info = "\n".join(context_parts)
 
-        # Crear prompt simplificado y directo
-        context_summary = f"""
-CONTEXTO SISTEMA:
-- Alertas últimas 24h: {IDSAlert.objects.filter(timestamp__gte=last_24h).count()}
-- Incidentes activos: {Incidente.objects.filter(estado_solucion__in=['abierto', 'investigacion', 'mitigacion']).count()}
-- Reportes totales: {Reporte.objects.count()}
+        # Crear prompt con contexto completo para análisis inteligente
+        specific_data_json = json.dumps(specific_data, indent=2, default=str, ensure_ascii=False) if specific_data else "No hay datos específicos disponibles"
+
+        # Información básica del sistema siempre disponible
+        # Debug: verificar consultas de base de datos
+        try:
+            ids_alerts_total = IDSAlert.objects.all().count()
+            snort_logs_total = SnortLog.objects.all().count()
+            suricata_logs_total = SuricataEveAlert.objects.all().count()
+            ids_alerts_24h = IDSAlert.objects.filter(timestamp__gte=last_24h).count()
+            snort_logs_24h = SnortLog.objects.filter(timestamp__gte=last_24h).count()
+            suricata_logs_24h = SuricataEveAlert.objects.filter(timestamp__gte=last_24h).count()
+
+            # Obtener algunas alertas de ejemplo para verificar datos
+            sample_ids_alerts = list(IDSAlert.objects.all()[:3].values('message', 'severity', 'timestamp'))
+            sample_snort_logs = list(SnortLog.objects.all()[:3].values('message', 'severity', 'timestamp'))
+            sample_suricata_logs = list(SuricataEveAlert.objects.all()[:3].values('message', 'severity', 'timestamp'))
+
+        except Exception as db_error:
+            ids_alerts_total = snort_logs_total = suricata_logs_total = 0
+            ids_alerts_24h = snort_logs_24h = suricata_logs_24h = 0
+            sample_ids_alerts = sample_snort_logs = sample_suricata_logs = []
+            logger.error(f"Error consultando base de datos: {db_error}")
+
+        basic_system_info = f"""
+INFORMACIÓN BÁSICA DEL SISTEMA:
+- Alertas IDS totales: {ids_alerts_total}
+- Logs Snort totales: {snort_logs_total}
+- Logs Suricata totales: {suricata_logs_total}
+- Alertas últimas 24h: {ids_alerts_24h}
+- Logs Snort últimas 24h: {snort_logs_24h}
+- Logs Suricata últimas 24h: {suricata_logs_24h}
+
+DATOS DE EJEMPLO (primeros 3 registros):
+IDS Alerts: {json.dumps(sample_ids_alerts, indent=2, default=str)}
+Snort Logs: {json.dumps(sample_snort_logs, indent=2, default=str)}
+Suricata Logs: {json.dumps(sample_suricata_logs, indent=2, default=str)}
 """
 
-        # Crear prompt simplificado sin contexto del sistema
-        full_prompt = f"""PREGUNTA: {message}
+        full_prompt = f"""VANT-SIEM - ANÁLISIS FORENSE DE SEGURIDAD
 
-INSTRUCCIONES:
-- Responde SIEMPRE en español
-- Sé específico y directo en tus respuestas
-- Si necesitas información del sistema, solicita datos específicos
-- Mantén un tono profesional y técnico
+        DATOS DEL SISTEMA:
+        {basic_system_info}
 
-RESPUESTA:"""
+        CONTEXTO OPERACIONAL:
+        {context_info}
+
+        DATOS ESPECÍFICOS PARA ANÁLISIS:
+        {specific_data_json}
+
+        CONSULTA DEL USUARIO: {message}
+
+        PROTOCOLO DE ANÁLISIS TÉCNICO:
+        1. Responder ÚNICAMENTE en español profesional
+        2. Basar análisis EXCLUSIVAMENTE en datos proporcionados arriba
+        3. Si datos = 0: "No se encontraron registros de [tema] en el período consultado"
+        4. Incluir métricas cuantitativas: número de eventos, IPs, severidades
+        5. Proporcionar recomendaciones específicas basadas en evidencia técnica
+        6. NO mencionar fuentes externas, sitios web o conocimiento general
+
+        ANÁLISIS TÉCNICO DETALLADO:"""
 
         # Verificar si es una solicitud de generación de reporte automático
         if 'genera' in message_lower and ('reporte' in message_lower or 'informe' in message_lower):
@@ -1673,11 +1812,158 @@ REPORTE EJECUTIVO:
                         'error': f'Error creando reporte automático: {str(e)}'
                     })
 
-        # Llamar a Ollama para consultas normales
-        ai_response = ollama_service._call_ollama(full_prompt, system_prompt)
+        # Sistema híbrido: respuestas directas para consultas básicas, IA para análisis complejo
+        has_data = (ids_alerts_total > 0 or snort_logs_total > 0 or suricata_logs_total > 0)
 
-        if ai_response and len(ai_response.strip()) > 10 and not ai_response.strip().startswith('Eres VANT-IA'):
-            # Log del evento
+        # Obtener totales de reportes e incidentes para todas las respuestas
+        total_reportes = Reporte.objects.all().count()
+        total_incidentes = Incidente.objects.all().count()
+
+        # Consultas básicas que responden directamente sin IA
+        if 'estado' in message_lower and 'sistema' in message_lower:
+            logger.info("Providing direct system status response")
+            response = f"📊 **Estado del Sistema VANT-SIEM**\n\n"
+            response += f"**Datos registrados en el sistema:**\n"
+            response += f"• Alertas IDS totales: {ids_alerts_total:,}\n"
+            response += f"• Alertas últimas 24h: {ids_alerts_24h:,}\n"
+            response += f"• Logs Snort totales: {snort_logs_total:,}\n"
+            response += f"• Logs Suricata totales: {suricata_logs_total:,}\n"
+            response += f"• Reportes: {total_reportes:,}\n"
+            response += f"• Incidentes: {total_incidentes:,}\n\n"
+
+            if has_data:
+                response += f"✅ **Sistema operativo con datos de seguridad**\n"
+                response += f"💡 Puedes consultar: 'analizar alertas recientes', 'ver reportes nuevos', etc."
+            else:
+                response += f"🔄 **Esperando datos de IDS/IPS**\n"
+                response += f"💡 Configura la ingesta de logs para comenzar a recibir alertas."
+
+            return JsonResponse({
+                'success': True,
+                'response': response,
+                'timestamp': timezone.now().isoformat(),
+                'direct_response': True
+            })
+
+        # Consultas sobre alertas que responden directamente
+        elif ('alerta' in message_lower or 'alertas' in message_lower) and ('reciente' in message_lower or 'ultima' in message_lower or 'última' in message_lower):
+            logger.info("Providing direct alerts analysis response")
+            response = f"🔍 **Análisis de Alertas Recientes**\n\n"
+
+            if has_data:
+                response += f"**Alertas IDS encontradas:**\n"
+                response += f"• Total de alertas: {ids_alerts_total:,}\n"
+                response += f"• Alertas últimas 24h: {ids_alerts_24h:,}\n"
+                response += f"• Alertas críticas: {critical_alerts}\n\n"
+
+                if ids_alerts_24h > 0:
+                    response += f"✅ **Hay actividad reciente de seguridad**\n"
+                    response += f"📈 Recomendación: Revisar el dashboard de amenazas para detalles específicos."
+                else:
+                    response += f"⚠️ **No hay alertas en las últimas 24 horas**\n"
+                    response += f"📊 El sistema registra {ids_alerts_total} alertas históricas."
+            else:
+                response += f"📭 **No hay alertas registradas en el sistema**\n\n"
+                response += f"💡 **Para recibir alertas:**\n"
+                response += f"• Configura parsers de Snort/Suricata\n"
+                response += f"• Verifica rutas de logs\n"
+                response += f"• Revisa configuración en 'Settings > IDS Services'"
+
+            return JsonResponse({
+                'success': True,
+                'response': response,
+                'timestamp': timezone.now().isoformat(),
+                'direct_response': True
+            })
+
+        # Consultas sobre ingesta que responden directamente
+        elif ('ingesta' in message_lower or 'snort' in message_lower or 'suricata' in message_lower) and ('que hay' in message_lower or 'estado' in message_lower or 'nuevo' in message_lower):
+            logger.info("Providing direct ingestion status response")
+            response = f"🔧 **Estado de Ingesta de Logs**\n\n"
+            response += f"**Datos procesados por el sistema:**\n"
+            response += f"• Snort: {snort_logs_total:,} logs totales ({snort_logs_24h:,} últimas 24h)\n"
+            response += f"• Suricata: {suricata_logs_total:,} logs totales ({suricata_logs_24h:,} últimas 24h)\n"
+            response += f"• Alertas IDS: {ids_alerts_total:,} totales ({ids_alerts_24h:,} últimas 24h)\n\n"
+
+            if has_data:
+                response += f"✅ **Ingesta funcionando correctamente**\n"
+                response += f"📊 Datos disponibles para análisis de seguridad."
+            else:
+                response += f"⚠️ **Sin datos de ingesta**\n"
+                response += f"🔧 Verifica:\n"
+                response += f"• Que Snort/Suricata estén ejecutándose\n"
+                response += f"• Rutas de archivos de log configuradas\n"
+                response += f"• Permisos de lectura en archivos de log\n"
+                response += f"• Configuración de parsers activa"
+
+            return JsonResponse({
+                'success': True,
+                'response': response,
+                'timestamp': timezone.now().isoformat(),
+                'direct_response': True
+            })
+
+        # Para consultas más complejas, usar IA (si hay datos)
+        if not has_data:
+            logger.info("No data available, providing direct fallback response")
+            return JsonResponse({
+                'success': True,
+                'response': f"📊 **Sistema VANT-SIEM**\n\n"
+                           f"El sistema está operativo pero actualmente no tiene datos de seguridad registrados.\n\n"
+                           f"**Estado actual:**\n"
+                           f"• Alertas IDS: 0\n"
+                           f"• Logs Snort: 0\n"
+                           f"• Logs Suricata: 0\n\n"
+                           f"💡 **Para comenzar:** Configura la ingesta de logs de Snort y Suricata en 'Settings > IDS Services'.\n\n"
+                           f"El sistema está listo para procesar datos de seguridad cuando estén disponibles.",
+                'timestamp': timezone.now().isoformat(),
+                'fallback': True
+            })
+
+        # Agregar historial de conversación al prompt
+        conversation_history = ""
+        if history:
+            conversation_history = "\n\nHISTORIAL DE CONVERSACIÓN RECIENTE:\n"
+            # Mostrar últimas 3 interacciones para contexto
+            recent_history = history[-6:]  # últimos 3 pares pregunta-respuesta
+            for i, msg in enumerate(recent_history):
+                role = "Usuario" if msg.get('role') == 'user' else "VANT-AI"
+                content = msg.get('content', '')[:200]  # limitar longitud
+                conversation_history += f"{role}: {content}\n"
+
+        # Incluir historial en el prompt
+        full_prompt_with_history = full_prompt + conversation_history
+
+        # Definir system prompt técnico y específico
+        chat_system_prompt = """SISTEMA VANT-AI - ANALISTA FORENSE DE CIBERSEGURIDAD
+
+        PERFIL: Eres un analista técnico especializado en IDS/IPS (Snort/Suricata) para entornos corporativos.
+
+        FUNCIONES TÉCNICAS:
+        - Análisis de logs de seguridad reales
+        - Identificación de patrones de amenazas
+        - Evaluación de riesgos basada en evidencia
+        - Recomendaciones de mitigación específicas
+
+        PROTOCOLO DE RESPUESTA:
+        1. SIEMPRE basar respuestas en datos proporcionados arriba
+        2. Usar terminología técnica precisa (GID, SID, firmas, severidades)
+        3. Responder en ESPAÑOL profesional y técnico
+        4. Si no hay datos: "No se encontraron registros de [tema] en el período analizado"
+        5. Enfocarse SOLO en análisis defensivo y monitoreo
+
+        FORMATO DE RESPUESTAS:
+        - Estadísticas cuantitativas cuando aplique
+        - IPs, puertos y protocolos específicos
+        - Recomendaciones accionables basadas en evidencia
+        - Nivel de riesgo justificado técnicamente
+        """
+
+        # Llamar a Ollama para consultas normales con system prompt
+        ai_response = ollama_service._call_ollama(full_prompt_with_history, system_prompt=chat_system_prompt)
+
+        if ai_response and len(ai_response.strip()) > 5:
+            # Log del evento exitoso
             event_logger.log_event(
                 user=request.user,
                 event_type='AI_CHAT',
@@ -1697,6 +1983,33 @@ REPORTE EJECUTIVO:
         else:
             # Respuesta de respaldo cuando Ollama no está disponible
             fallback_response = _generate_fallback_response(message, specific_data, context_parts)
+
+            # Si la respuesta de respaldo es genérica, forzar respuesta informativa
+            if "Respeito si tienes alguna pregunta" in fallback_response or "Respeito si no hay información" in fallback_response:
+                # Crear respuesta informativa forzada
+                total_alerts = IDSAlert.objects.all().count()
+                total_snort = SnortLog.objects.all().count()
+                total_suricata = SuricataEveAlert.objects.all().count()
+                total_reportes = Reporte.objects.all().count()
+                total_incidentes = Incidente.objects.all().count()
+
+                fallback_response = f"🤖 VANT-IA: Sistema operativo\n\n"
+                fallback_response += f"📊 **Estado del sistema:**\n"
+                fallback_response += f"• Alertas IDS: {total_alerts}\n"
+                fallback_response += f"• Logs Snort: {total_snort}\n"
+                fallback_response += f"• Logs Suricata: {total_suricata}\n"
+                fallback_response += f"• Reportes: {total_reportes}\n"
+                fallback_response += f"• Incidentes: {total_incidentes}\n\n"
+
+                if total_alerts > 0 or total_snort > 0 or total_suricata > 0:
+                    fallback_response += f"✅ **Sistema con datos de seguridad**\n\n"
+                    fallback_response += f"💡 **Consultas disponibles:**\n"
+                    fallback_response += f"• 'analizar amenazas'\n"
+                    fallback_response += f"• 'ver estado del sistema'\n"
+                    fallback_response += f"• 'reportes recientes'\n"
+                else:
+                    fallback_response += f"🔄 **Esperando datos de IDS/IPS**\n\n"
+                    fallback_response += f"💡 El sistema está listo para recibir datos de Snort y Suricata."
 
             # Log del evento con fallback
             event_logger.log_event(
@@ -3136,7 +3449,7 @@ def ollama_config(request):
             def __init__(self):
                 # Campos básicos
                 self.ollama_url = "http://localhost:11434"
-                self.ollama_model = "llama3.2"
+                self.ollama_model = "mistral:7b"  # Modelo más robusto
                 self.max_tokens = 2000
                 self.temperature = 0.3
                 self.timeout_seconds = 30

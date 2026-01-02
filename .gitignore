@@ -1,12 +1,78 @@
+# Git
 .git/
+
+# Dependencies
 dependencias/
+
+# IDS/IPS Logs
 snort-logs/
 suricata-log/
+logs/
+
+# Documentation
 VANT_SIEM_PRESENTATION.md
-logs/eventos.json
+scripts/README_COLLECTOR_AGENT.md
+
+# Build artifacts
 collector/
 scripts/build/collector_agent/
 scripts/collector_agent*
-scripts/README_COLLECTOR_AGENT.md
 scripts/dist/*
-logs/*
+
+# Test and development files
+test_chat_fix.py
+populate_test_data.py
+setup_chat_verification.py
+test_*.py
+*_test.py
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+media/
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
