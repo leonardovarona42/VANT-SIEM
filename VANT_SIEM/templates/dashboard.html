@@ -183,6 +183,73 @@
                 </li>
               </ul>
             </li>
+
+            <!-- Neural Network Visualization for IRIS
+            <li class="nav-item">
+              <div id="neural-network-canvas" style="width: 60px; height: 40px; position: relative; display: inline-block; margin-right: 10px;">
+                <canvas id="neuralCanvas" width="60" height="40" style="display: block;"></canvas>
+              </div>
+            </li> -->
+
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="irisDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                <i class="fas fa-brain me-2"></i>IRIS-S.O.A.R
+              </a>
+              <ul
+                class="dropdown-menu dropdown-menu-dark"
+                aria-labelledby="irisDropdown"
+              >
+                <li><h6 class="dropdown-header text-warning">Dashboard IA</h6></li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'iris:iris_dashboard' %}">
+                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard Principal
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'iris:live_ai_monitor' %}">
+                    <i class="fas fa-brain me-2"></i>Monitor Neuronal en Vivo
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li><h6 class="dropdown-header text-warning">Investigación</h6></li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'iris:iris_predictions' %}">
+                    <i class="fas fa-search me-2"></i>Predicciones Pendientes
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'iris:performance_report' %}">
+                    <i class="fas fa-chart-line me-2"></i>Reporte de Rendimiento
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li><h6 class="dropdown-header text-warning">Configuración</h6></li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'iris:iris_configuration' %}">
+                    <i class="fas fa-sliders-h me-2"></i>Configuración del Sistema
+                  </a>
+                </li>
+                {% if request.user.is_superuser %}
+                <li>
+                  <a class="dropdown-item" href="#" onclick="runAIAnalysis()">
+                    <i class="fas fa-play me-2"></i>Ejecutar Análisis IA
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#" onclick="trainAIModels()">
+                    <i class="fas fa-graduation-cap me-2"></i>Entrenar Modelos
+                  </a>
+                </li>
+                {% endif %}
+              </ul>
+            </li>
             <li class="nav-item dropdown">
               <a
                 class="nav-link dropdown-toggle"
@@ -753,13 +820,176 @@
     </footer>
     <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'js/chart.umd.min.js' %}"></script>
+
+    <!-- Funciones IRIS -->
     <script>
+    function runAIAnalysis() {
+        if (confirm('¿Ejecutar análisis automático de IA? Esto puede tomar varios minutos.')) {
+            // Redirigir al dashboard de IRIS con parámetro de análisis
+            window.location.href = '{% url 'iris:iris_dashboard' %}?action=run_analysis';
+        }
+    }
+
+    function trainAIModels() {
+        if (confirm('¿Entrenar modelos de IA? Esto puede tomar tiempo y recursos del sistema.')) {
+            // Redirigir al dashboard de IRIS con parámetro de entrenamiento
+            window.location.href = '{% url 'iris:iris_dashboard' %}?action=train_models';
+        }
+    }
+    </script>
+
+    <script>
+      // Neural Network Animation Class
+      class NeuralNetwork {
+        constructor(canvas) {
+          this.canvas = canvas;
+          this.ctx = canvas.getContext('2d');
+          this.width = canvas.width;
+          this.height = canvas.height;
+          this.nodes = [];
+          this.connections = [];
+          this.animationId = null;
+
+          // Initialize nodes
+          this.initNodes();
+          this.initConnections();
+        }
+
+        initNodes() {
+          // Create nodes in a neural network pattern
+          const layers = [3, 5, 4, 3]; // Input, hidden, hidden, output layers
+          const layerSpacing = this.width / (layers.length + 1);
+
+          layers.forEach((nodeCount, layerIndex) => {
+            const x = layerSpacing * (layerIndex + 1);
+            const nodeSpacing = this.height / (nodeCount + 1);
+
+            for (let i = 0; i < nodeCount; i++) {
+              const y = nodeSpacing * (i + 1);
+              this.nodes.push({
+                x: x,
+                y: y,
+                radius: 2,
+                pulse: Math.random() * Math.PI * 2,
+                pulseSpeed: 0.02 + Math.random() * 0.03,
+                active: Math.random() > 0.7
+              });
+            }
+          });
+        }
+
+        initConnections() {
+          // Create connections between adjacent layers
+          const layers = [3, 5, 4, 3];
+          let nodeIndex = 0;
+
+          layers.forEach((nodeCount, layerIndex) => {
+            if (layerIndex < layers.length - 1) {
+              const nextLayerCount = layers[layerIndex + 1];
+              const startIndex = nodeIndex;
+              const endIndex = nodeIndex + nodeCount;
+
+              for (let i = startIndex; i < endIndex; i++) {
+                for (let j = 0; j < nextLayerCount; j++) {
+                  const targetIndex = endIndex + j;
+                  this.connections.push({
+                    from: i,
+                    to: targetIndex,
+                    active: false,
+                    pulse: 0,
+                    strength: Math.random()
+                  });
+                }
+              }
+            }
+            nodeIndex += nodeCount;
+          });
+        }
+
+        update() {
+          // Update node pulses
+          this.nodes.forEach(node => {
+            node.pulse += node.pulseSpeed;
+            node.active = Math.random() > 0.85; // Random activation
+          });
+
+          // Update connections
+          this.connections.forEach(conn => {
+            if (this.nodes[conn.from].active && Math.random() > 0.7) {
+              conn.active = true;
+              conn.pulse = 1;
+            }
+
+            if (conn.active) {
+              conn.pulse *= 0.95;
+              if (conn.pulse < 0.01) {
+                conn.active = false;
+              }
+            }
+          });
+        }
+
+        draw() {
+          // Clear canvas
+          this.ctx.clearRect(0, 0, this.width, this.height);
+
+          // Draw connections
+          this.connections.forEach(conn => {
+            const fromNode = this.nodes[conn.from];
+            const toNode = this.nodes[conn.to];
+
+            this.ctx.beginPath();
+            this.ctx.moveTo(fromNode.x, fromNode.y);
+            this.ctx.lineTo(toNode.x, toNode.y);
+
+            const alpha = conn.active ? conn.pulse * 0.8 : 0.1;
+            this.ctx.strokeStyle = `rgba(0, 123, 255, ${alpha})`;
+            this.ctx.lineWidth = conn.active ? 2 : 1;
+            this.ctx.stroke();
+          });
+
+          // Draw nodes
+          this.nodes.forEach(node => {
+            this.ctx.beginPath();
+            this.ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+
+            if (node.active) {
+              // Pulsing effect for active nodes
+              const pulseRadius = node.radius + Math.sin(node.pulse) * 1.5;
+              this.ctx.arc(node.x, node.y, pulseRadius, 0, Math.PI * 2);
+              this.ctx.fillStyle = 'rgba(0, 123, 255, 0.8)';
+            } else {
+              this.ctx.fillStyle = 'rgba(108, 117, 125, 0.6)';
+            }
+
+            this.ctx.fill();
+          });
+        }
+
+        animate() {
+          this.update();
+          this.draw();
+          this.animationId = requestAnimationFrame(() => this.animate());
+        }
+
+        start() {
+          this.animate();
+        }
+
+        stop() {
+          if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+          }
+        }
+      }
+
       // Variables globales para los gráficos
       let reportesEstadoChart,
         incidentesEstadoChart,
         tendenciaReportesChart,
         medidasChart,
-        timelineChart;
+        timelineChart,
+        neuralNetwork;
 
       // Colores del tema VANT-SIEM
       const colors = {
@@ -1128,6 +1358,14 @@
           setInterval(updateMetrics, 10000);
           setInterval(updateTimeline, 30000); // Timeline cada 30 segundos
         }
+
+        // Initialize neural network animation for IRIS
+        const neuralCanvas = document.getElementById('neuralCanvas');
+        if (neuralCanvas) {
+          neuralNetwork = new NeuralNetwork(neuralCanvas);
+          neuralNetwork.start();
+        }
+
         // Notificaciones siempre
         setInterval(updateNotifications, 5000); // Notificaciones cada 5 segundos
       });

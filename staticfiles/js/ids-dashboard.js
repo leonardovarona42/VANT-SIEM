@@ -227,7 +227,7 @@ function startAutoRefresh() {
     if (isAutoRefreshActive) return;
     
     isAutoRefreshActive = true;
-    autoRefreshInterval = setInterval(refreshData, 5000); // Cada 5 segundos
+    autoRefreshInterval = setInterval(refreshData, 10000); // Cada 10 segundos
     
     // Actualizar UI
     const startBtn = document.getElementById('start-auto-btn');
@@ -273,7 +273,6 @@ function attachEventListeners() {
 // Render de gráficos
 function renderCharts() {
     const chartData = window.chartData || {};
-    console.log('Rendering charts with data:', chartData);
 
     // Destruir gráficos existentes si existen
     Object.values(charts).forEach(chart => {
@@ -283,78 +282,62 @@ function renderCharts() {
 
     // Timeline
     const tl = chartData.timeline || [];
-    console.log('Timeline data:', tl);
+    const tlLabels = tl.map(t => Object.values(t)[0]);
+    const tlValues = tl.map(t => t.count);
     
-    if (tl.length > 0) {
-        const tlLabels = tl.map(t => t.hour || Object.values(t)[0]);
-        const tlValues = tl.map(t => t.count || 0);
-        
-        const timelineCanvas = document.getElementById('chartTimeline');
-        if (timelineCanvas) {
-            charts.timeline = new Chart(timelineCanvas, {
-                type: 'line',
-                data: { 
-                    labels: tlLabels, 
-                    datasets: [{ 
-                        label: 'Eventos', 
-                        data: tlValues, 
-                        borderColor: '#667eea', 
-                        backgroundColor: 'rgba(102, 126, 234, 0.2)',
-                        tension: 0.4,
-                        borderWidth: 3,
-                        pointBackgroundColor: '#667eea',
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 2,
-                        pointRadius: 4
-                    }] 
+    const timelineCanvas = document.getElementById('chartTimeline');
+    if (timelineCanvas) {
+        charts.timeline = new Chart(timelineCanvas, {
+            type: 'line',
+            data: { 
+                labels: tlLabels, 
+                datasets: [{ 
+                    label: 'Eventos', 
+                    data: tlValues, 
+                    borderColor: '#667eea', 
+                    backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                    tension: 0.4,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#667eea',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4
+                }] 
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false,
+                aspectRatio: 2,
+                plugins: { 
+                    legend: { 
+                        display: false 
+                    } 
                 },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    aspectRatio: 2,
-                    plugins: { 
-                        legend: { 
-                            display: false 
-                        } 
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#b8c5d6' },
+                        grid: { color: '#16213e' }
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { color: '#b8c5d6' },
-                            grid: { color: '#16213e' }
-                        },
-                        x: {
-                            ticks: { color: '#b8c5d6' },
-                            grid: { color: '#16213e' }
-                        }
+                    x: {
+                        ticks: { color: '#b8c5d6' },
+                        grid: { color: '#16213e' }
                     }
                 }
-            });
-        }
-    } else {
-        // Mostrar mensaje si no hay datos
-        const timelineCanvas = document.getElementById('chartTimeline');
-        if (timelineCanvas) {
-            const ctx = timelineCanvas.getContext('2d');
-            ctx.clearRect(0, 0, timelineCanvas.width, timelineCanvas.height);
-            ctx.fillStyle = '#b8c5d6';
-            ctx.font = '14px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('No hay datos de timeline disponibles', timelineCanvas.width / 2, timelineCanvas.height / 2);
-        }
+            }
+        });
     }
 
     // Protocolos
     const pd = chartData.proto_dist || [];
     const protocolsCanvas = document.getElementById('chartProtocols');
     if (protocolsCanvas) {
-        if (pd.length > 0) {
         charts.protocols = new Chart(protocolsCanvas, {
             type: 'doughnut',
             data: { 
-                labels: pd.map(x=>x.protocol || x.proto || 'Unknown'), 
+                labels: pd.map(x=>x.proto||x.protocol), 
                 datasets: [{ 
-                    data: pd.map(x=>x.count || 0), 
+                    data: pd.map(x=>x.count), 
                     backgroundColor: [
                         'rgba(102, 126, 234, 0.8)',
                         'rgba(118, 75, 162, 0.8)',
@@ -384,44 +367,28 @@ function renderCharts() {
                 }
             }
         });
-        } else {
-            // Mostrar mensaje si no hay datos
-            const ctx = protocolsCanvas.getContext('2d');
-            ctx.clearRect(0, 0, protocolsCanvas.width, protocolsCanvas.height);
-            ctx.fillStyle = '#b8c5d6';
-            ctx.font = '14px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('No hay datos de protocolos', protocolsCanvas.width / 2, protocolsCanvas.height / 2);
-        }
     }
 
     // Puertos
     const sp = chartData.top_src_ports || [];
     const dp = chartData.top_dest_ports || [];
     const portsCanvas = document.getElementById('chartPorts');
-    if (portsCanvas && (sp.length > 0 || dp.length > 0)) {
-        const allPorts = [...new Set([...sp.map(x=>x.src_port), ...dp.map(x=>x.dest_port)])].slice(0,10);
+    if (portsCanvas) {
         charts.ports = new Chart(portsCanvas, {
             type: 'bar',
             data: {
-                labels: allPorts,
+                labels: [...new Set([...sp.map(x=>x.src_port), ...dp.map(x=>x.dest_port)])].slice(0,10),
                 datasets: [
                     { 
                         label: 'Origen', 
-                        data: allPorts.map(port => {
-                            const found = sp.find(x => x.src_port === port);
-                            return found ? found.count : 0;
-                        }), 
+                        data: sp.map(x=>x.count), 
                         backgroundColor: 'rgba(102, 126, 234, 0.8)',
                         borderColor: '#667eea',
                         borderWidth: 1
                     },
                     { 
                         label: 'Destino', 
-                        data: allPorts.map(port => {
-                            const found = dp.find(x => x.dest_port === port);
-                            return found ? found.count : 0;
-                        }), 
+                        data: dp.map(x=>x.count), 
                         backgroundColor: 'rgba(79, 172, 254, 0.8)',
                         borderColor: '#4facfe',
                         borderWidth: 1
@@ -459,29 +426,22 @@ function renderCharts() {
     const si = chartData.top_src_ips || [];
     const di = chartData.top_dest_ips || [];
     const ipsCanvas = document.getElementById('chartIPs');
-    if (ipsCanvas && (si.length > 0 || di.length > 0)) {
-        const allIPs = [...new Set([...si.map(x=>x.src_ip), ...di.map(x=>x.dest_ip)])].slice(0,10);
+    if (ipsCanvas) {
         charts.ips = new Chart(ipsCanvas, {
             type: 'bar',
             data: {
-                labels: allIPs,
+                labels: [...new Set([...si.map(x=>x.src_ip), ...di.map(x=>x.dest_ip)])].slice(0,10),
                 datasets: [
                     { 
                         label: 'Origen', 
-                        data: allIPs.map(ip => {
-                            const found = si.find(x => x.src_ip === ip);
-                            return found ? found.count : 0;
-                        }), 
+                        data: si.map(x=>x.count), 
                         backgroundColor: 'rgba(67, 233, 123, 0.8)',
                         borderColor: '#43e97b',
                         borderWidth: 1
                     },
                     { 
                         label: 'Destino', 
-                        data: allIPs.map(ip => {
-                            const found = di.find(x => x.dest_ip === ip);
-                            return found ? found.count : 0;
-                        }), 
+                        data: di.map(x=>x.count), 
                         backgroundColor: 'rgba(56, 249, 215, 0.8)',
                         borderColor: '#38f9d7',
                         borderWidth: 1

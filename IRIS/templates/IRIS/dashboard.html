@@ -1,0 +1,273 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block title %}IRIS - Sistema de IA para Investigación Automática{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-secondary">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-brain"></i> IRIS - Intelligent Response and Investigation System
+                    </h3>
+                    <div class="card-tools">
+                        <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#runAnalysisModal">
+                            <i class="fas fa-play"></i> Ejecutar Análisis
+                        </button>
+                        <button type="button" class="btn btn-warning btn-sm" onclick="location.href='{% url 'iris:train_models' %}'">
+                            <i class="fas fa-graduation-cap"></i> Entrenar Modelos
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Estado del Sistema -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-chart-line fa-2x mb-2"></i>
+                                    <h5 class="card-title">Análisis Automático</h5>
+                                    <p class="card-text">
+                                        {% if config.auto_analysis_enabled %}
+                                            <span class="badge bg-success">ACTIVADO</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">DESACTIVADO</span>
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-clock fa-2x mb-2"></i>
+                                    <h5 class="card-title">Intervalo</h5>
+                                    <p class="card-text">{{ config.analysis_interval_hours }}h</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-danger text-white">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                                    <h5 class="card-title">Predicciones Pendientes</h5>
+                                    <p class="card-text">{{ pending_predictions|length }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-check-circle fa-2x mb-2"></i>
+                                    <h5 class="card-title">Incidentes Hoy</h5>
+                                    <p class="card-text">{{ total_incidents_today }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modelos Activos -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                             <div class="card bg-secondary">
+                                 <div class="card-header bg-primary text-white">
+                                     <h5 class="card-title mb-0">Modelos de IA Activos</h5>
+                                 </div>
+                                 <div class="card-body table-responsive">
+                                     <table class="table table-dark table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Modelo</th>
+                                                <th>Tipo</th>
+                                                <th>Versión</th>
+                                                <th>Precisión</th>
+                                                <th>Último Entrenamiento</th>
+                                                <th>Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for model in active_models %}
+                                            <tr>
+                                                <td class="text-light">{{ model.name }}</td>
+                                                <td class="text-light">{{ model.get_model_type_display }}</td>
+                                                <td class="text-light">{{ model.version }}</td>
+                                                <td class="text-light">{{ model.precision_score|floatformat:2 }}%</td>
+                                                <td class="text-light">{{ model.last_trained|date:"d/m/Y H:i" }}</td>
+                                                <td>
+                                                    {% if model.is_active %}
+                                                        <span class="badge bg-success">Activo</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">Inactivo</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="6" class="text-center text-muted">
+                                                    No hay modelos activos. <a href="{% url 'iris:train_models' %}">Entrenar modelos</a>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Incidentes Recientes Creados por IA -->
+                        <div class="col-md-6">
+                            <div class="card bg-secondary">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="card-title mb-0">Incidentes Creados por IA (Últimos 7 días)</h5>
+                                </div>
+                                <div class="card-body">
+                                    {% if ai_incidents %}
+                                        <div class="list-group">
+                                            {% for incident in ai_incidents %}
+                                            <div class="list-group-item bg-dark text-light">
+                                                <div class="d-flex w-100 justify-content-between">
+                                                    <h6 class="mb-1 text-white">{{ incident.nombre_incidente }}</h6>
+                                                    <small class="text-muted">{{ incident.fecha_hora|date:"d/m H:i" }}</small>
+                                                </div>
+                                                <p class="mb-1 text-light">{{ incident.descripcion|truncatechars:100 }}</p>
+                                                <small class="text-light">
+                                                    Estado: <span class="badge bg-{% if incident.estado_solucion == 'nuevo' %}primary{% elif incident.estado_solucion == 'investigacion' %}warning{% elif incident.estado_solucion == 'cerrado' %}success{% else %}info{% endif %}">{{ incident.get_estado_solucion_display }}</span>
+                                                    <a href="{% url 'iris:human_feedback' incident.id %}" class="text-info ms-2">Feedback</a>
+                                                </small>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <p class="text-light">No hay incidentes creados por IA en los últimos 7 días.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Predicciones Pendientes -->
+                        <div class="col-md-6">
+                            <div class="card bg-secondary">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="card-title mb-0">Predicciones Pendientes de Validación</h5>
+                                    <div class="card-tools">
+                                        <a href="{% url 'iris:iris_predictions' %}" class="btn btn-sm btn-outline-light">Ver Todas</a>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    {% if pending_predictions %}
+                                        <div class="list-group">
+                                            {% for prediction in pending_predictions %}
+                                            <div class="list-group-item bg-dark text-light">
+                                                <div class="d-flex w-100 justify-content-between">
+                                                    <h6 class="mb-1 text-white">{{ prediction.incident_type }}</h6>
+                                                    <small class="text-muted">{{ prediction.created_at|date:"d/m H:i" }}</small>
+                                                </div>
+                                                <p class="mb-1 text-light">{{ prediction.description|truncatechars:80 }}</p>
+                                                <small class="text-light">
+                                                    Confianza: {{ prediction.confidence_score|floatformat:2 }}
+                                                    <a href="{% url 'iris:validate_prediction' prediction.id %}" class="btn btn-sm btn-success ms-2">Validar</a>
+                                                    <button class="btn btn-sm btn-danger ms-1" onclick="rejectPrediction({{ prediction.id }})">Rechazar</button>
+                                                </small>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <p class="text-light">No hay predicciones pendientes de validación.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Análisis Recientes -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card bg-secondary">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="card-title mb-0">Análisis Recientes</h5>
+                                </div>
+                                <div class="card-body table-responsive">
+                                    <table class="table table-dark table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Tipo</th>
+                                                <th>Inicio</th>
+                                                <th>Duración</th>
+                                                <th>Logs Analizados</th>
+                                                <th>Incidentes Creados</th>
+                                                <th>Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for analysis in recent_analysis %}
+                                            <tr>
+                                                <td class="text-light">{{ analysis.get_analysis_type_display }}</td>
+                                                <td class="text-light">{{ analysis.start_time|date:"d/m H:i" }}</td>
+                                                <td class="text-light">{{ analysis.processing_time|floatformat:2 }}s</td>
+                                                <td class="text-light">{{ analysis.logs_analyzed }}</td>
+                                                <td class="text-light">{{ analysis.incidents_created }}</td>
+                                                <td>
+                                                    {% if analysis.success %}
+                                                        <span class="badge bg-success">Éxito</span>
+                                                    {% else %}
+                                                        <span class="badge bg-danger" title="{{ analysis.error_message }}">Error</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Ejecutar Análisis -->
+<div class="modal fade" id="runAnalysisModal" tabindex="-1" aria-labelledby="runAnalysisModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-secondary">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="runAnalysisModalLabel">Ejecutar Análisis de IA</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'iris:run_ai_analysis' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="hours_back" class="form-label">Horas hacia atrás para analizar:</label>
+                        <input type="number" class="form-control" id="hours_back" name="hours_back" value="24" min="1" max="168">
+                        <div class="form-text">Máximo 7 días (168 horas)</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Ejecutar Análisis</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function provideFeedback(incidentId) {
+    window.location.href = '{% url 'iris:human_feedback' 0 %}'.replace('0', incidentId);
+}
+
+function rejectPrediction(predictionId) {
+    if (confirm('¿Está seguro de que desea rechazar esta predicción?')) {
+        // Aquí iría la lógica para rechazar la predicción
+        alert('Funcionalidad de rechazo pendiente de implementar');
+    }
+}
+</script>
+
+{% endblock %}

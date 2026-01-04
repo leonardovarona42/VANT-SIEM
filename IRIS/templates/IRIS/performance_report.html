@@ -1,0 +1,238 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block title %}Reporte de Rendimiento - IRIS{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'admin-lte/plugins/chart.js/Chart.min.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-secondary">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-chart-line"></i> Reporte de Rendimiento del Sistema IRIS
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <!-- Estadísticas Generales -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="info-box bg-info">
+                                <span class="info-box-icon"><i class="fas fa-bullseye"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Precisión General</span>
+                                    <span class="info-box-number">{{ overall_accuracy|floatformat:1 }}%</span>
+                                    <div class="progress">
+                                        <div class="progress-bar" style="width: {{ overall_accuracy }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box bg-success">
+                                <span class="info-box-icon"><i class="fas fa-percentage"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Precisión (Precision)</span>
+                                    <span class="info-box-number">{{ overall_precision|floatformat:1 }}%</span>
+                                    <div class="progress">
+                                        <div class="progress-bar" style="width: {{ overall_precision }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box bg-warning">
+                                <span class="info-box-icon"><i class="fas fa-lightbulb"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Predicciones Totales</span>
+                                    <span class="info-box-number">{{ total_predictions }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box bg-danger">
+                                <span class="info-box-icon"><i class="fas fa-exclamation-triangle"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Incidentes Creados</span>
+                                    <span class="info-box-number">{{ total_incidents }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos -->
+                    <div class="row">
+                        <!-- Gráfico de Precisión -->
+                        <div class="col-md-6">
+                            <div class="card bg-secondary">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="card-title mb-0">Precisión del Sistema (30 días)</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="accuracyChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gráfico de Incidentes Creados -->
+                        <div class="col-md-6">
+                            <div class="card bg-secondary">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="card-title mb-0">Incidentes Creados por Día (30 días)</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="incidentsChart" width="400" height="200"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Métricas Detalladas -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card bg-secondary">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="card-title mb-0">Métricas Detalladas por Día</h5>
+                                </div>
+                                <div class="card-body table-responsive">
+                                    <table class="table table-dark table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>Precisión</th>
+                                                <th>Precisión (Precision)</th>
+                                                <th>Predicciones</th>
+                                                <th>Verdaderos Positivos</th>
+                                                <th>Falsos Positivos</th>
+                                                <th>Incidentes Creados</th>
+                                                <th>Tiempo Promedio (s)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for metric in metrics %}
+                                            <tr>
+                                                <td class="text-light">{{ metric.date|date:"d/m/Y" }}</td>
+                                                <td>
+                                                    <span class="badge bg-{% if metric.accuracy >= 0.8 %}success{% elif metric.accuracy >= 0.6 %}warning{% else %}danger{% endif %}">
+                                                        {{ metric.accuracy|floatformat:3 }}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-{% if metric.precision >= 0.8 %}success{% elif metric.precision >= 0.6 %}warning{% else %}danger{% endif %}">
+                                                        {{ metric.precision|floatformat:3 }}
+                                                    </span>
+                                                </td>
+                                                <td class="text-light">{{ metric.total_predictions }}</td>
+                                                <td class="text-light">{{ metric.true_positives }}</td>
+                                                <td class="text-light">{{ metric.false_positives }}</td>
+                                                <td class="text-light">{{ metric.incidents_created }}</td>
+                                                <td class="text-light">{{ metric.average_response_time|floatformat:2 }}</td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="8" class="text-center text-light">
+                                                    No hay datos de métricas disponibles para los últimos 30 días.
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <a href="{% url 'iris:iris_dashboard' %}" class="btn btn-primary">
+                            <i class="fas fa-arrow-left"></i> Volver al Dashboard
+                        </a>
+                        <button type="button" class="btn btn-success" onclick="exportData()">
+                            <i class="fas fa-download"></i> Exportar Datos
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'admin-lte/plugins/chart.js/Chart.min.js' %}"></script>
+<script>
+// Datos para los gráficos
+const dates = {{ dates|safe }};
+const accuracyData = {{ accuracy_data|safe }};
+const incidentsData = {{ incidents_created_data|safe }};
+
+// Gráfico de Precisión
+const accuracyCtx = document.getElementById('accuracyChart').getContext('2d');
+new Chart(accuracyCtx, {
+    type: 'line',
+    data: {
+        labels: dates,
+        datasets: [{
+            label: 'Precisión',
+            data: accuracyData,
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100
+            }
+        }
+    }
+});
+
+// Gráfico de Incidentes Creados
+const incidentsCtx = document.getElementById('incidentsChart').getContext('2d');
+new Chart(incidentsCtx, {
+    type: 'bar',
+    data: {
+        labels: dates,
+        datasets: [{
+            label: 'Incidentes Creados',
+            data: incidentsData,
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+function exportData() {
+    // Crear un CSV con los datos de métricas
+    let csv = 'Fecha,Precisión,Precision,Predicciones,Verdaderos Positivos,Falsos Positivos,Incidentes Creados,Tiempo Promedio\n';
+    
+    {% for metric in metrics %}
+    csv += '{{ metric.date|date:"Y-m-d" }},{{ metric.accuracy }},{{ metric.precision }},{{ metric.total_predictions }},{{ metric.true_positives }},{{ metric.false_positives }},{{ metric.incidents_created }},{{ metric.average_response_time }}\n';
+    {% endfor %}
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'iris_performance_report.csv';
+    a.click();
+    window.URL.revokeObjectURL(url);
+}
+</script>
+{% endblock %}
