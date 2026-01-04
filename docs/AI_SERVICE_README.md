@@ -1,8 +1,8 @@
-# Servicio Automático de Análisis de IA IRIS
+# Servicio IRIS-S.O.A.R
 
 ## 🚀 Descripción
 
-El **Servicio Automático de Análisis de IA IRIS** ejecuta análisis de ciberseguridad de forma automática y programada, sin necesidad de intervención manual. Utiliza APScheduler para ejecutar análisis SOAR completos según la configuración establecida.
+El **Servicio Automático de Análisis de IA IRIS** ejecuta análisis de ciberseguridad de forma automática y programada, sin necesidad de intervención manual. Utiliza APScheduler para ejecutar análisis inteligente SOAR completos según la configuración establecida.
 
 ## ⚙️ Características
 
@@ -50,7 +50,7 @@ En el dashboard de IRIS (`/siem/dashboard/`), ve a la configuración y:
 Ejecuta el servicio que se ejecuta indefinidamente:
 ```bash
 # Windows
-start_ai_service.bat
+python auto_ai_service.py
 
 # Linux/Mac
 python auto_ai_service.py
@@ -190,4 +190,3 @@ Todas las métricas están disponibles en el dashboard de IRIS bajo "Análisis R
 
 ---
 
-**¡El Servicio Automático de IA IRIS está listo para proteger tu infraestructura 24/7!** 🛡️🤖⚡
