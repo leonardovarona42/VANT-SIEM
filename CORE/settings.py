@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'collector.apps.CollectorConfig',
     'EVENT_M',
     'ids_ingest',
+    'IRIS',
 ]
 
 MIDDLEWARE = [
@@ -65,6 +66,7 @@ TEMPLATES = [
             BASE_DIR / "collector/templates",
             BASE_DIR / "EVENT_M/templates",
             BASE_DIR / "ids_ingest/templates",
+            BASE_DIR / "IRIS/templates",
         ],
         'APP_DIRS': True,
         'OPTIONS': {

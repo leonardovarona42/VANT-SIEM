@@ -81,4 +81,5 @@ Werkzeug==3.0.1
 xlsxwriter==3.2.5
 yarl==1.20.1
 pyinstaller==6.10.0
+APScheduler==3.10.4
 #pypiwin32==306

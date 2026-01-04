@@ -10370,5 +10370,1925 @@
     "target_id": null,
     "ip_address": null,
     "user_agent": null
+  },
+  {
+    "id": 462,
+    "timestamp": "2026-01-02T20:29:59.375959+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: hola...",
+    "details": {
+      "message_length": 4,
+      "response_length": 1736,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 463,
+    "timestamp": "2026-01-02T20:42:31.086943+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_REPORTE",
+    "description": "Usuario consultó reportes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/reportes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 464,
+    "timestamp": "2026-01-02T20:43:02.849309+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "AI_CHAT",
+    "description": "Consulta de chat IA: hola...",
+    "details": {
+      "message_length": 4,
+      "response_length": 1662,
+      "has_history": true
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 465,
+    "timestamp": "2026-01-02T20:52:16.677458+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_CATEGORIA",
+    "description": "Usuario consultó nueva exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/categoria/nueva/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 466,
+    "timestamp": "2026-01-02T21:16:37.855344+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario consultó login exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/login/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 467,
+    "timestamp": "2026-01-02T21:16:40.720775+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 468,
+    "timestamp": "2026-01-02T21:16:40.744945+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 469,
+    "timestamp": "2026-01-02T21:20:53.845901+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario leonardo.varona cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 470,
+    "timestamp": "2026-01-02T21:20:56.468533+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 471,
+    "timestamp": "2026-01-02T21:20:56.494428+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 472,
+    "timestamp": "2026-01-02T21:23:46.115245+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario consultó login exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/login/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 473,
+    "timestamp": "2026-01-02T21:23:52.449377+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 474,
+    "timestamp": "2026-01-02T21:23:52.474400+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 475,
+    "timestamp": "2026-01-02T21:26:43.119353+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "NOTIFICATION_ACCESS",
+    "description": "Usuario consultó notifications exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/notifications/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 476,
+    "timestamp": "2026-01-02T21:27:09.258773+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario consultó login exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/login/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 477,
+    "timestamp": "2026-01-02T21:27:11.626471+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 478,
+    "timestamp": "2026-01-02T21:27:11.652922+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 479,
+    "timestamp": "2026-01-02T21:27:23.576650+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario leonardo.varona cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 480,
+    "timestamp": "2026-01-02T21:27:26.492175+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 481,
+    "timestamp": "2026-01-02T21:27:26.517293+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 482,
+    "timestamp": "2026-01-02T21:29:03.333331+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_REPORTE",
+    "description": "Usuario consultó reportes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/reportes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 483,
+    "timestamp": "2026-01-02T21:29:06.988635+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó incidentes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidentes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 484,
+    "timestamp": "2026-01-02T21:57:49.500184+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario consultó login exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/login/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 485,
+    "timestamp": "2026-01-02T21:57:54.847685+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 486,
+    "timestamp": "2026-01-02T21:57:54.879246+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 487,
+    "timestamp": "2026-01-02T22:39:08.112452+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario consultó login exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/login/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 488,
+    "timestamp": "2026-01-02T22:39:12.674385+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 489,
+    "timestamp": "2026-01-02T22:39:12.712735+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 490,
+    "timestamp": "2026-01-02T22:39:40.286207+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario consultó login exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/login/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 491,
+    "timestamp": "2026-01-02T22:39:43.388760+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 492,
+    "timestamp": "2026-01-02T22:39:43.420528+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 493,
+    "timestamp": "2026-01-02T22:45:23.166904+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario consultó login exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/login/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 494,
+    "timestamp": "2026-01-02T22:45:25.684189+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 495,
+    "timestamp": "2026-01-02T22:45:25.709574+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 496,
+    "timestamp": "2026-01-02T22:46:55.855715+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario consultó login exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/login/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 497,
+    "timestamp": "2026-01-02T22:46:59.535194+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 498,
+    "timestamp": "2026-01-02T22:46:59.562426+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 499,
+    "timestamp": "2026-01-02T22:51:55.443579+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario consultó login exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/login/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 500,
+    "timestamp": "2026-01-02T22:51:58.132351+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 501,
+    "timestamp": "2026-01-02T22:51:58.158263+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 502,
+    "timestamp": "2026-01-02T23:54:24.364261+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_REPORTE",
+    "description": "Usuario consultó nuevo exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/reporte/nuevo/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 503,
+    "timestamp": "2026-01-02T23:54:32.106175+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_REPORTE",
+    "description": "Usuario consultó reportes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/reportes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 504,
+    "timestamp": "2026-01-02T23:54:38.994625+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_REPORTE",
+    "description": "Usuario consultó reportes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/reportes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 505,
+    "timestamp": "2026-01-02T23:54:39.704727+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_REPORTE",
+    "description": "Usuario consultó reportes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/reportes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 506,
+    "timestamp": "2026-01-02T23:54:40.088868+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_REPORTE",
+    "description": "Usuario consultó reportes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/reportes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 507,
+    "timestamp": "2026-01-02T23:54:40.438562+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_REPORTE",
+    "description": "Usuario consultó reportes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/reportes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 508,
+    "timestamp": "2026-01-02T23:54:44.621208+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_REPORTE",
+    "description": "Usuario consultó reportes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/reportes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 509,
+    "timestamp": "2026-01-02T23:54:52.273876+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó incidentes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidentes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 510,
+    "timestamp": "2026-01-02T23:58:21.146487+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó incidentes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidentes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 511,
+    "timestamp": "2026-01-02T23:58:28.212943+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó incidentes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidentes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 512,
+    "timestamp": "2026-01-02T23:58:42.598779+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó 151 exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidente/151/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 513,
+    "timestamp": "2026-01-03T03:38:37.250078+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó 151 exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidente/151/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 514,
+    "timestamp": "2026-01-03T03:50:51.007157+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó incidentes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidentes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 515,
+    "timestamp": "2026-01-03T03:51:15.262807+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó incidentes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidentes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 516,
+    "timestamp": "2026-01-03T03:51:46.065984+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó incidentes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidentes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 517,
+    "timestamp": "2026-01-03T03:51:46.401598+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó incidentes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidentes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 518,
+    "timestamp": "2026-01-03T03:51:47.741300+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó incidentes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidentes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 519,
+    "timestamp": "2026-01-03T03:51:49.231338+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó incidentes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidentes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 520,
+    "timestamp": "2026-01-03T03:52:09.533220+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó 151 exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidente/151/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 521,
+    "timestamp": "2026-01-03T03:52:13.856489+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó incidentes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidentes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 522,
+    "timestamp": "2026-01-03T03:52:17.482921+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó incidentes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidentes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 523,
+    "timestamp": "2026-01-03T03:52:18.277698+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó incidentes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidentes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 524,
+    "timestamp": "2026-01-03T03:52:26.183005+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó 151 exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidente/151/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 525,
+    "timestamp": "2026-01-03T04:37:30.892807+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó incidentes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidentes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 526,
+    "timestamp": "2026-01-03T04:37:34.548670+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó incidentes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidentes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 527,
+    "timestamp": "2026-01-03T04:37:35.770555+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó incidentes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidentes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 528,
+    "timestamp": "2026-01-03T04:37:36.932638+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó incidentes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidentes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 529,
+    "timestamp": "2026-01-03T04:37:40.746298+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó 151 exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidente/151/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 530,
+    "timestamp": "2026-01-03T04:37:48.043063+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_INCIDENTE",
+    "description": "Usuario consultó incidentes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/incidentes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 531,
+    "timestamp": "2026-01-03T05:21:59.992026+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_REPORTE",
+    "description": "Usuario consultó reportes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/reportes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 532,
+    "timestamp": "2026-01-03T05:22:04.267510+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_REPORTE",
+    "description": "Usuario consultó reportes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/reportes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 533,
+    "timestamp": "2026-01-03T05:22:13.322663+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_REPORTE",
+    "description": "Usuario consultó reportes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/reportes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 534,
+    "timestamp": "2026-01-03T05:22:17.811653+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_REPORTE",
+    "description": "Usuario consultó reportes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/reportes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 535,
+    "timestamp": "2026-01-03T05:22:21.616884+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "VIEW_REPORTE",
+    "description": "Usuario consultó reportes exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/eventos/reportes/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 536,
+    "timestamp": "2026-01-04T15:07:27.204916+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario consultó login exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/login/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 537,
+    "timestamp": "2026-01-04T15:07:30.124422+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 538,
+    "timestamp": "2026-01-04T15:07:30.151374+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 539,
+    "timestamp": "2026-01-04T15:25:42.007328+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario consultó login exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/login/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 540,
+    "timestamp": "2026-01-04T15:26:48.815227+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 541,
+    "timestamp": "2026-01-04T15:26:48.844620+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 542,
+    "timestamp": "2026-01-04T16:11:39.868466+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario consultó login exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/login/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 543,
+    "timestamp": "2026-01-04T16:11:44.342150+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 544,
+    "timestamp": "2026-01-04T16:11:44.370884+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36 Edg/143.0.0.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
   }
 ]

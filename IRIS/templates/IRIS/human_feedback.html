@@ -1,0 +1,72 @@
+{% extends 'dashboard.html' %}
+{% load static %}
+
+{% block title %}Feedback Humano - IRIS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-secondary">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-comment"></i> Feedback Humano para Incidente #{{ incident.id }}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <!-- Información del Incidente -->
+                    <div class="alert alert-info">
+                        <h5 class="text-dark">{{ incident.nombre_incidente }}</h5>
+                        <p class="text-dark"><strong>Descripción:</strong> {{ incident.descripcion }}</p>
+                        <p class="text-dark"><strong>Fecha:</strong> {{ incident.fecha_hora|date:"d/m/Y H:i" }}</p>
+                        <p class="text-dark"><strong>Estado:</strong> {{ incident.get_estado_solucion_display }}</p>
+                    </div>
+
+                    <!-- Formulario de Feedback -->
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="feedback_type" class="form-label">Tipo de Feedback:</label>
+                            <select class="form-select" id="feedback_type" name="feedback_type" required>
+                                {% for value, label in feedback_types %}
+                                <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="correct_classification" class="form-label">Clasificación Correcta (opcional):</label>
+                            <input type="text" class="form-control" id="correct_classification" name="correct_classification"
+                                   placeholder="Si el incidente fue mal clasificado, especifique la clasificación correcta">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="confidence_level" class="form-label">Nivel de Confianza:</label>
+                            <select class="form-select" id="confidence_level" name="confidence_level">
+                                <option value="1">1 - Muy Baja</option>
+                                <option value="2">2 - Baja</option>
+                                <option value="3" selected>3 - Media</option>
+                                <option value="4">4 - Alta</option>
+                                <option value="5">5 - Muy Alta</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="comments" class="form-label">Comentarios:</label>
+                            <textarea class="form-control" id="comments" name="comments" rows="4"
+                                      placeholder="Proporcione comentarios adicionales sobre el incidente o la predicción de IA"></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Registrar Feedback
+                        </button>
+                        <a href="{% url 'eventos:incidente-detail' pk=incident.id %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Volver al Incidente
+                        </a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

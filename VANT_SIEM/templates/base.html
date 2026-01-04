@@ -185,6 +185,65 @@
               <a
                 class="nav-link dropdown-toggle"
                 href="#"
+                id="irisDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                <i class="fas fa-brain me-2"></i>IRIS-S.O.A.R
+              </a>
+              <ul
+                class="dropdown-menu dropdown-menu-dark"
+                aria-labelledby="irisDropdown"
+              >
+                <li><h6 class="dropdown-header text-warning">Dashboard IA</h6></li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'iris:iris_dashboard' %}">
+                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard Principal
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'iris:live_ai_monitor' %}">
+                    <i class="fas fa-brain me-2"></i>Monitor Neuronal en Vivo
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li><h6 class="dropdown-header text-warning">Investigación</h6></li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'iris:iris_predictions' %}">
+                    <i class="fas fa-search me-2"></i>Predicciones Pendientes
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'iris:performance_report' %}">
+                    <i class="fas fa-chart-line me-2"></i>Reporte de Rendimiento
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li><h6 class="dropdown-header text-warning">Configuración</h6></li>
+                <li>
+                  <a class="dropdown-item" href="{% url 'iris:iris_configuration' %}">
+                    <i class="fas fa-sliders-h me-2"></i>Configuración del Sistema
+                  </a>
+                </li>
+                {% if request.user.is_superuser %}
+                <li>
+                  <a class="dropdown-item" href="#" onclick="runAIAnalysis()">
+                    <i class="fas fa-play me-2"></i>Ejecutar Análisis IA
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#" onclick="trainAIModels()">
+                    <i class="fas fa-graduation-cap me-2"></i>Entrenar Modelos
+                  </a>
+                </li>
+                {% endif %}
+              </ul>
+            </li>
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
                 id="analysisDropdown"
                 role="button"
                 data-bs-toggle="dropdown"
@@ -557,6 +616,24 @@
     </footer>
     <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'js/chart.umd.min.js' %}"></script>
+
+    <!-- Funciones IRIS -->
+    <script>
+    function runAIAnalysis() {
+        if (confirm('¿Ejecutar análisis automático de IA? Esto puede tomar varios minutos.')) {
+            // Redirigir al dashboard de IRIS con parámetro de análisis
+            window.location.href = '{% url 'iris:iris_dashboard' %}?action=run_analysis';
+        }
+    }
+
+    function trainAIModels() {
+        if (confirm('¿Entrenar modelos de IA? Esto puede tomar tiempo y recursos del sistema.')) {
+            // Redirigir al dashboard de IRIS con parámetro de entrenamiento
+            window.location.href = '{% url 'iris:iris_dashboard' %}?action=train_models';
+        }
+    }
+    </script>
+
     {% block extra_js %}{% endblock %}
   </body>
 </html>
