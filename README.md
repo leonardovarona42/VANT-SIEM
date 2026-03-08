@@ -1,30 +1,30 @@
 # VANT-SIEM
 
-VANT-SIEM es una plataforma de gestion de seguridad orientada a deteccion, analitica y respuesta operativa. Combina SIEM tradicional (eventos, alertas, investigacion) con un pipeline moderno de logs basado en OpenSearch para lograr visibilidad en tiempo casi real, trazabilidad y capacidad de escalado.
+VANT-SIEM es una plataforma de gestión de seguridad orientada a detección, analítica y respuesta operativa. Combina SIEM tradicional (eventos, alertas, investigación) con un pipeline moderno de logs basado en OpenSearch para lograr visibilidad en tiempo casi real, trazabilidad y capacidad de escalado.
 
 ## Objetivo del proyecto
 
 Entregar una plataforma unificada para:
 
-- centralizar eventos de seguridad de multiples fuentes,
+- centralizar eventos de seguridad de múltiples fuentes,
 - correlacionar y priorizar riesgos,
-- apoyar decisiones de respuesta con analitica y prediccion,
+- apoyar decisiones de respuesta con analítica y predicción,
 - fortalecer el aseguramiento operativo y la continuidad del servicio.
 
 ## Cualidades clave
 
-- Arquitectura desacoplada: separa la operacion SIEM de la ingesta de alto volumen.
+- Arquitectura desacoplada: separa la operación SIEM de la ingesta de alto volumen.
 - Escalabilidad operativa: microservicio de logs + agente multi-fuente.
 - Observabilidad completa: dashboards, Discovery, filtros por atributo y trazabilidad.
-- Integridad de datos: normalizacion, deduplicacion y persistencia en base dedicada.
-- Seguridad de transporte: soporte de TLS y autenticacion configurable.
+- Integridad de datos: normalización, deduplicación y persistencia en base dedicada.
+- Seguridad de transporte: soporte de TLS y autenticación configurable.
 
-## Servicios y modulos
+## Servicios y módulos
 
-- `CORE/`: configuracion y orquestacion Django.
-- `VANT_SIEM/`: nucleo SIEM (autenticacion, notificaciones, panel principal).
-- `EVENT_M/`: gestion de incidentes, reportes y seguimiento.
-- `IRIS/`: capacidades de analitica asistida y automatizacion.
+- `CORE/`: configuración y orquestación Django.
+- `VANT_SIEM/`: núcleo SIEM (autenticación, notificaciones, panel principal).
+- `EVENT_M/`: gestión de incidentes, reportes y seguimiento.
+- `IRIS/`: capacidades de analítica asistida y automatización.
 - `opensearch/`: microservicio de ingesta y agentes.
 - `opensearch_ui/`: dashboard de logs y Discovery avanzado.
 
@@ -34,30 +34,67 @@ Entregar una plataforma unificada para:
 
 - `opensearch/service`: recibe y persiste eventos en lotes.
 - `opensearch/agent`: recolecta logs de Snort, Suricata, Windows Event Logs, Samba AD y PostgreSQL.
-- `opensearch_ui`: visualizacion operativa y exploracion avanzada.
+- `opensearch_ui`: visualización operativa y exploración avanzada.
 
 Base de datos de logs: dedicada (`opensearch`) y separada de la BD principal del SIEM.
 
-## Analitica, prediccion y aseguramiento
+## Analítica, predicción y aseguramiento
 
-La plataforma integra capacidades para evolucionar de monitoreo reactivo a operacion preventiva:
+La plataforma integra capacidades para evolucionar de monitoreo reactivo a operación preventiva:
 
-- Analitica de comportamiento y tendencias temporales.
-- Priorizacion de eventos por severidad y contexto.
-- Correlacion entre fuentes heterogeneas.
-- Base para modelos predictivos de riesgo y saturacion operativa.
+- Analítica de comportamiento y tendencias temporales.
+- Priorización de eventos por severidad y contexto.
+- Correlación entre fuentes heterogéneas.
+- Base para modelos predictivos de riesgo y saturación operativa.
 - Evidencia auditable para cumplimiento, respuesta y mejora continua.
 
-## OpenSearch UI
+## OpenSearch UI - Dashboards y Visualizaciones
 
-- Dashboard: `/opensearch/`
-- Discovery: `/opensearch/discover/`
+### Dashboards Disponibles
+
+- **Dashboard Principal**: `/opensearch/` - Vista general de eventos
+- **Snort Dashboard V2**: `/opensearch/snort/v2/` - Dashboard especializado para Snort IDS con:
+  - Stats de alertas críticas, altas, medias y totales
+  - Gráficos de timeline de alertas
+  - Top mensajes de alerta
+  - Top IPs fuente y destino
+  - Tabla de alertas recientes
+  - Selector de rango de tiempo (5m, 15m, 1h, 6h, 24h, 7d, All)
+  - Estilo Kibana/Wazuh oscuro
+
+- **Discovery**: `/opensearch/discover/` - Exploración avanzada de logs
+
+### Constructor de Visualizaciones
+
+- **Acceso**: `/opensearch/visualizations/create/`
+- **Características**:
+  - Tipos de gráfico: Line, Bar, Area, Pie/Donut, Heatmap, Table, Metric, Gauge, Scatter, Radar
+  - Fuentes de datos: All Indices, Snort IDS, Suricata
+  - Configuración de métricas: Count, Average, Sum, Min, Max, Cardinality, Percentiles
+  - Buckets configurables: Date Histogram, Terms, Filters
+  - Opciones avanzadas de chart:
+    - Título del chart
+    - Posición de leyenda
+    - Líneas de grid
+    - Esquema de colores
+    - Stacking (para Bar/Area)
+    - Modo porcentaje
+    - Opacidad de relleno
+    - Radio de puntos
+    - Tensión de línea (curvas)
+    - Animaciones
+    - Etiquetas de datos
+  - Preview en tiempo real
+  - Guardar visualizaciones
+
+### Funcionalidades del Discovery
+
 - Filtros include/exclude por atributo.
-- Manejo de campos vacios `(empty)`.
-- Show/Hide dinamico de columnas.
+- Manejo de campos vacíos `(empty)`.
+- Show/Hide dinámico de columnas.
 - Timeline + tabla de eventos de alta densidad.
 
-## Inicio rapido
+## Inicio rápido
 
 1. Crear y activar entorno virtual.
 2. Instalar dependencias.
@@ -83,7 +120,7 @@ Agente OpenSearch (Windows):
 powershell -ExecutionPolicy Bypass -File .\dist\opensearch-agent-installer\package\Install-OpenSearchAgent.ps1 -RunNow
 ```
 
-## Documentacion
+## Documentación
 
 - `docs/README.md`
 - `docs/ARCHITECTURE.md`
@@ -92,3 +129,12 @@ powershell -ExecutionPolicy Bypass -File .\dist\opensearch-agent-installer\packa
 - `docs/OPENSEARCH_FEATURE.md`
 - `opensearch/README.md`
 - `opensearch_ui/README.md`
+
+## Tecnologías utilizadas
+
+- **Backend**: Django 5.x, Python 3.12
+- **Base de datos**: PostgreSQL, SQLite (dev)
+- **Logs**: OpenSearch, PostgreSQL (opensearch)
+- **Frontend**: Bootstrap 5, Chart.js, Font Awesome
+- **IA/ML**: scikit-learn, NumPy, Pandas
+- **Agentes**: Python (multi-plataforma)
