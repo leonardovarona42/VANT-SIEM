@@ -1,0 +1,2107 @@
+{% extends "dashboard.html" %}
+{% load static %}
+{% block title %}Visualization Builder | VANT-SIEM{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Kibana/Wazuh-inspired Visualization Builder */
+.kvb-wrapper {
+  display: flex;
+  min-height: calc(100vh - 56px);
+  background: #1a1a2e;
+  color: #e0e0e0;
+  position: relative;
+  z-index: 1;
+}
+
+.kvb-sidebar {
+  width: 260px;
+  min-width: 260px;
+  background: #16162a;
+  border-right: 1px solid #2d2d4a;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  position: relative;
+  z-index: 10;
+}
+
+.kvb-sidebar-header {
+  padding: 16px;
+  border-bottom: 1px solid #2d2d4a;
+  background: #0f0f1a;
+}
+
+.kvb-sidebar-header h5 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #00d4ff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kvb-nav-section {
+  padding: 12px 0;
+  border-bottom: 1px solid #2d2d4a;
+}
+
+.kvb-nav-section-title {
+  padding: 8px 16px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kvb-nav-item {
+  display: flex !important;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px !important;
+  color: #9ca3af !important;
+  text-decoration: none;
+  cursor: pointer !important;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+  pointer-events: auto !important;
+  user-select: none;
+  -webkit-user-select: none;
+  position: relative;
+  z-index: 100;
+}
+
+.kvb-nav-item:hover {
+  background: #1f1f3a !important;
+  color: #e0e0e0 !important;
+}
+
+.kvb-nav-item.active {
+  background: #1f1f3a !important;
+  color: #00d4ff !important;
+  border-left-color: #00d4ff !important;
+}
+
+.kvb-nav-item i {
+  width: 18px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.kvb-nav-item span {
+  font-size: 13px;
+}
+
+.kvb-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.kvb-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: #16162a;
+  border-bottom: 1px solid #2d2d4a;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.kvb-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.kvb-toolbar-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0;
+}
+
+.kvb-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kvb-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+.kvb-builder {
+  width: 400px;
+  min-width: 400px;
+  background: #16162a;
+  border-right: 1px solid #2d2d4a;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.kvb-preview {
+  flex: 1;
+  background: #0f0f1a;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.kvb-section {
+  margin-bottom: 24px;
+}
+
+.kvb-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: #1f1f3a;
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+  border: 1px solid #2d2d4a;
+  border-bottom: none;
+}
+
+.kvb-section-title h6 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #00d4ff;
+}
+
+.kvb-section-title i {
+  color: #6b7280;
+  transition: transform 0.2s;
+}
+
+.kvb-section.collapsed .kvb-section-title i {
+  transform: rotate(-90deg);
+}
+
+.kvb-section.collapsed .kvb-section-content {
+  display: none;
+}
+
+.kvb-section-content {
+  padding: 14px;
+  background: #1a1a2e;
+  border: 1px solid #2d2d4a;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+}
+
+.kvb-form-group {
+  margin-bottom: 14px;
+}
+
+.kvb-form-group:last-child {
+  margin-bottom: 0;
+}
+
+.kvb-form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+  margin-bottom: 6px;
+}
+
+.kvb-form-input,
+.kvb-form-select,
+.kvb-form-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: #0f0f1a;
+  border: 1px solid #2d2d4a;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.kvb-form-input:focus,
+.kvb-form-select:focus,
+.kvb-form-textarea:focus {
+  outline: none;
+  border-color: #00d4ff;
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+}
+
+.kvb-form-select {
+  cursor: pointer;
+}
+
+.kvb-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.kvb-form-row-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.kvb-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.kvb-btn-primary {
+  background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+  color: #000;
+}
+
+.kvb-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+}
+
+.kvb-btn-secondary {
+  background: #2d2d4a;
+  color: #e0e0e0;
+  border: 1px solid #3d3d5a;
+}
+
+.kvb-btn-secondary:hover {
+  background: #3d3d5a;
+}
+
+.kvb-btn-success {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #fff;
+}
+
+.kvb-btn-success:hover {
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.kvb-btn-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.kvb-metric-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: #1f1f3a;
+  border: 1px solid #2d2d4a;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.kvb-metric-info {
+  flex: 1;
+}
+
+.kvb-metric-label {
+  font-size: 11px;
+  color: #6b7280;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.kvb-metric-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.kvb-metric-value.positive {
+  color: #10b981;
+}
+
+.kvb-metric-value.negative {
+  color: #ef4444;
+}
+
+.kvb-metric-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 212, 255, 0.1);
+  border-radius: 8px;
+  color: #00d4ff;
+  font-size: 18px;
+}
+
+.kvb-agg-builder {
+  background: #0f0f1a;
+  border: 1px solid #2d2d4a;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.kvb-agg-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.kvb-agg-type {
+  font-size: 12px;
+  font-weight: 600;
+  color: #00d4ff;
+  text-transform: uppercase;
+}
+
+.kvb-agg-remove {
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.kvb-agg-remove:hover {
+  color: #f87171;
+}
+
+.kvb-add-agg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  background: transparent;
+  border: 2px dashed #2d2d4a;
+  border-radius: 8px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.kvb-add-agg:hover {
+  border-color: #00d4ff;
+  color: #00d4ff;
+  background: rgba(0, 212, 255, 0.05);
+}
+
+.kvb-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #2d2d4a;
+}
+
+.kvb-preview-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.kvb-preview-meta {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.kvb-chart-container {
+  flex: 1;
+  background: #16162a;
+  border: 1px solid #2d2d4a;
+  border-radius: 12px;
+  padding: 20px;
+  min-height: 400px;
+  position: relative;
+}
+
+.kvb-chart-canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.kvb-chart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #6b7280;
+}
+
+.kvb-chart-empty i {
+  font-size: 48px;
+  margin-bottom: 16px;
+  color: #2d2d4a;
+}
+
+.kvb-chart-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.kvb-chart-option {
+  padding: 6px 12px;
+  background: #2d2d4a;
+  border-radius: 20px;
+  font-size: 11px;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.kvb-chart-option:hover,
+.kvb-chart-option.active {
+  background: #00d4ff;
+  color: #000;
+}
+
+.kvb-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #0f0f1a;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.kvb-tab {
+  flex: 1;
+  padding: 10px 16px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.kvb-tab:hover {
+  color: #e0e0e0;
+}
+
+.kvb-tab.active {
+  background: #2d2d4a;
+  color: #00d4ff;
+}
+
+.kvb-panel {
+  background: #1f1f3a;
+  border: 1px solid #2d2d4a;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.kvb-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.kvb-panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.kvb-saved-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.kvb-saved-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #0f0f1a;
+  border: 1px solid #2d2d4a;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  transition: all 0.2s;
+}
+
+.kvb-saved-item:hover {
+  border-color: #00d4ff;
+}
+
+.kvb-saved-item-info {
+  flex: 1;
+}
+
+.kvb-saved-item-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.kvb-saved-item-meta {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.kvb-saved-item-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.kvb-saved-item-btn {
+  padding: 6px 10px;
+  font-size: 11px;
+  background: #2d2d4a;
+  border: none;
+  border-radius: 4px;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.kvb-saved-item-btn:hover {
+  background: #00d4ff;
+  color: #000;
+}
+
+.kvb-saved-item-btn.delete:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+.kvb-color-picker {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.kvb-color-option {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.kvb-color-option:hover,
+.kvb-color-option.active {
+  border-color: #fff;
+  transform: scale(1.1);
+}
+
+.kvb-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.kvb-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.kvb-switch-slider {
+  width: 40px;
+  height: 22px;
+  background: #2d2d4a;
+  border-radius: 11px;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.kvb-switch-slider:before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 2px;
+  top: 2px;
+  background: #fff;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.kvb-switch input:checked + .kvb-switch-slider {
+  background: #00d4ff;
+}
+
+.kvb-switch input:checked + .kvb-switch-slider:before {
+  transform: translateX(18px);
+}
+
+.kvb-interval-selector {
+  display: flex;
+  background: #0f0f1a;
+  border-radius: 6px;
+  padding: 4px;
+  gap: 2px;
+}
+
+.kvb-interval-btn {
+  padding: 6px 12px;
+  font-size: 11px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.kvb-interval-btn:hover {
+  color: #e0e0e0;
+}
+
+.kvb-interval-btn.active {
+  background: #2d2d4a;
+  color: #00d4ff;
+}
+
+.kvb-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.kvb-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #2d2d4a;
+  border-top-color: #00d4ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.kvb-error {
+  padding: 12px 16px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  color: #ef4444;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.kvb-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 14px 20px;
+  background: #1f1f3a;
+  border: 1px solid #2d2d4a;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 1000;
+  animation: slideIn 0.3s ease;
+}
+
+.kvb-toast.success {
+  border-color: #10b981;
+}
+
+.kvb-toast.error {
+  border-color: #ef4444;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.kvb-lens-icon {
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  font-size: 20px;
+  margin-right: 12px;
+}
+
+.kvb-bucket-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #0f0f1a;
+  border: 1px solid #2d2d4a;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.kvb-bucket-item-field {
+  flex: 1;
+  font-size: 13px;
+  color: #fff;
+}
+
+.kvb-bucket-item-agg {
+  font-size: 11px;
+  color: #00d4ff;
+  text-transform: uppercase;
+}
+
+.kvb-drag-handle {
+  cursor: grab;
+  color: #6b7280;
+}
+
+.kvb-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Scrollbar styling */
+.kvb-wrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.kvb-wrapper::-webkit-scrollbar-track {
+  background: #0f0f1a;
+}
+
+.kvb-wrapper::-webkit-scrollbar-thumb {
+  background: #2d2d4a;
+  border-radius: 4px;
+}
+
+.kvb-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #3d3d5a;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .kvb-layout {
+    grid-template-columns: 1fr;
+  }
+  .kvb-builder {
+    width: 100%;
+    min-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .kvb-sidebar {
+    display: none;
+  }
+  .kvb-form-row,
+  .kvb-form-row-3 {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="kvb-wrapper">
+  <!-- Sidebar Navigation -->
+  <aside class="kvb-sidebar">
+    <div class="kvb-sidebar-header">
+      <div style="display:flex;align-items:center;">
+        <div class="kvb-lens-icon">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <div>
+          <h5>Visualize</h5>
+          <p style="margin:0;font-size:11px;color:#6b7280;">VANT-SIEM Builder</p>
+        </div>
+      </div>
+    </div>
+    
+    <nav>
+      <div class="kvb-nav-section">
+        <div class="kvb-nav-section-title">Chart Types</div>
+        <div class="kvb-nav-item active" data-chart-type="line">
+          <i class="fas fa-chart-line"></i>
+          <span>Line Chart</span>
+        </div>
+        <div class="kvb-nav-item" data-chart-type="bar">
+          <i class="fas fa-chart-bar"></i>
+          <span>Bar Chart</span>
+        </div>
+        <div class="kvb-nav-item" data-chart-type="area">
+          <i class="fas fa-chart-area"></i>
+          <span>Area Chart</span>
+        </div>
+        <div class="kvb-nav-item" data-chart-type="pie">
+          <i class="fas fa-chart-pie"></i>
+          <span>Pie / Donut</span>
+        </div>
+        <div class="kvb-nav-item" data-chart-type="heatmap">
+          <i class="fas fa-th"></i>
+          <span>Heatmap</span>
+        </div>
+        <div class="kvb-nav-item" data-chart-type="table">
+          <i class="fas fa-table"></i>
+          <span>Data Table</span>
+        </div>
+        <div class="kvb-nav-item" data-chart-type="metric">
+          <i class="fas fa-hashtag"></i>
+          <span>Metric</span>
+        </div>
+        <div class="kvb-nav-item" data-chart-type="gauge">
+          <i class="fas fa-tachometer-alt"></i>
+          <span>Gauge</span>
+        </div>
+        <div class="kvb-nav-item" data-chart-type="doughnut">
+          <i class="fas fa-circle-notch"></i>
+          <span>Donut</span>
+        </div>
+        <div class="kvb-nav-item" data-chart-type="scatter">
+          <i class="fas fa-sign-in-alt"></i>
+          <span>Scatter</span>
+        </div>
+        <div class="kvb-nav-item" data-chart-type="radar">
+          <i class="fas fa-bullseye"></i>
+          <span>Radar</span>
+        </div>
+      </div>
+      
+      <div class="kvb-nav-section">
+        <div class="kvb-nav-section-title">Data Sources</div>
+        <div class="kvb-nav-item" data-source="all">
+          <i class="fas fa-database"></i>
+          <span>All Indices</span>
+        </div>
+        <div class="kvb-nav-item" data-source="snort">
+          <i class="fas fa-shield-alt"></i>
+          <span>Snort IDS</span>
+        </div>
+        <div class="kvb-nav-item" data-source="suricata">
+          <i class="fas fa-shield-virus"></i>
+          <span>Suricata</span>
+        </div>
+        <div class="kvb-nav-item" data-source="firewall">
+          <i class="fas fa-fire"></i>
+          <span>Firewall Logs</span>
+        </div>
+      </div>
+      
+      <div class="kvb-nav-section">
+        <div class="kvb-nav-section-title">Saved Objects</div>
+        <div class="kvb-nav-item" data-panel="saved-viz">
+          <i class="fas fa-save"></i>
+          <span>Visualizations</span>
+        </div>
+        <div class="kvb-nav-item" data-panel="saved-dash">
+          <i class="fas fa-th-large"></i>
+          <span>Dashboards</span>
+        </div>
+      </div>
+    </nav>
+  </aside>
+  
+  <!-- Main Content -->
+  <main class="kvb-main">
+    <!-- Toolbar -->
+    <div class="kvb-toolbar">
+      <div class="kvb-toolbar-left">
+        <h1 class="kvb-toolbar-title">
+          <i class="fas fa-chart-line" style="color:#00d4ff;margin-right:10px;"></i>
+          Visualization Builder
+        </h1>
+        <span id="currentVizType" style="padding:4px 12px;background:#2d2d4a;border-radius:20px;font-size:12px;color:#00d4ff;">
+          Line Chart
+        </span>
+      </div>
+      <div class="kvb-toolbar-right">
+        <div class="kvb-interval-selector">
+          <button class="kvb-interval-btn" data-interval="15m">15m</button>
+          <button class="kvb-interval-btn" data-interval="1h">1h</button>
+          <button class="kvb-interval-btn active" data-interval="24h">24h</button>
+          <button class="kvb-interval-btn" data-interval="7d">7d</button>
+          <button class="kvb-interval-btn" data-interval="30d">30d</button>
+        </div>
+        <select id="spaceSelect" class="kvb-form-select" style="width:auto;min-width:120px;">
+          <option value="personal">Personal</option>
+          <option value="soc">SOC</option>
+          <option value="network">Network</option>
+          <option value="security">Security</option>
+        </select>
+        <button id="refreshBtn" class="kvb-btn kvb-btn-secondary">
+          <i class="fas fa-sync-alt"></i>
+          Refresh
+        </button>
+      </div>
+    </div>
+    
+    <!-- Content Area -->
+    <div class="kvb-content">
+      <!-- Builder Panel -->
+      <div class="kvb-builder">
+        <!-- Data Section -->
+        <div class="kvb-section">
+          <div class="kvb-section-title" onclick="KVB.toggleSection(this)">
+            <h6><i class="fas fa-database" style="margin-right:8px;"></i>Data</h6>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+          <div class="kvb-section-content">
+            <div class="kvb-form-group">
+              <label class="kvb-form-label">Index Pattern</label>
+              <select id="indexPattern" class="kvb-form-select">
+                <option value="all">* (All indices)</option>
+                <option value="snort">snort-*</option>
+                <option value="suricata">suricata-*</option>
+                <option value="firewall">firewall-*</option>
+              </select>
+            </div>
+            <div class="kvb-form-group">
+              <label class="kvb-form-label">Time Field</label>
+              <select id="timeField" class="kvb-form-select">
+                <option value="event_time">event_time</option>
+                <option value="timestamp">timestamp</option>
+                <option value="@timestamp">@timestamp</option>
+              </select>
+            </div>
+            <div class="kvb-form-group">
+              <label class="kvb-form-label">Filter Query (KQL)</label>
+              <input id="kqlQuery" type="text" class="kvb-form-input" placeholder="message: "error" AND severity:>5">
+            </div>
+          </div>
+        </div>
+        
+        <!-- Metrics Section -->
+        <div class="kvb-section">
+          <div class="kvb-section-title" onclick="KVB.toggleSection(this)">
+            <h6><i class="fas fa-calculator" style="margin-right:8px;"></i>Metrics</h6>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+          <div class="kvb-section-content">
+            <div class="kvb-form-group">
+              <label class="kvb-form-label">Y-Axis (Metric)</label>
+              <select id="metricAgg" class="kvb-form-select">
+                <option value="count">Count</option>
+                <option value="avg">Average</option>
+                <option value="sum">Sum</option>
+                <option value="min">Minimum</option>
+                <option value="max">Maximum</option>
+                <option value="cardinality">Unique Count</option>
+                <option value="percentiles">Percentiles</option>
+              </select>
+            </div>
+            <div class="kvb-form-group" id="metricFieldGroup" style="display:none;">
+              <label class="kvb-form-label">Field</label>
+              <select id="metricField" class="kvb-form-select">
+                {% for f in available_fields %}
+                <option value="{{ f }}">{{ f }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="kvb-form-group">
+              <label class="kvb-form-label">Custom Label</label>
+              <input id="metricLabel" type="text" class="kvb-form-input" placeholder="Events Count">
+            </div>
+          </div>
+        </div>
+        
+        <!-- Buckets Section -->
+        <div class="kvb-section">
+          <div class="kvb-section-title" onclick="KVB.toggleSection(this)">
+            <h6><i class="fas fa-layer-group" style="margin-right:8px;"></i>Buckets</h6>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+          <div class="kvb-section-content">
+            <div id="bucketsContainer">
+              <!-- Buckets will be added here dynamically -->
+            </div>
+            <button class="kvb-add-agg" onclick="KVB.addBucket()">
+              <i class="fas fa-plus"></i>
+              Add Bucket
+            </button>
+          </div>
+        </div>
+        
+        <!-- Chart Options Section -->
+        <div class="kvb-section">
+          <div class="kvb-section-title" onclick="KVB.toggleSection(this)">
+            <h6><i class="fas fa-cog" style="margin-right:8px;"></i>Chart Options</h6>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+          <div class="kvb-section-content">
+            <div class="kvb-form-group">
+              <label class="kvb-form-label">Chart Title</label>
+              <input id="chartTitle" type="text" class="kvb-form-input" placeholder="My Visualization">
+            </div>
+            <div class="kvb-form-row">
+              <div class="kvb-form-group">
+                <label class="kvb-form-label">Legend Position</label>
+                <select id="legendPosition" class="kvb-form-select">
+                  <option value="top">Top</option>
+                  <option value="bottom">Bottom</option>
+                  <option value="left">Left</option>
+                  <option value="right">Right</option>
+                  <option value="none">Hidden</option>
+                </select>
+              </div>
+              <div class="kvb-form-group">
+                <label class="kvb-form-label">Grid Lines</label>
+                <select id="showGrid" class="kvb-form-select">
+                  <option value="true">Show</option>
+                  <option value="false">Hide</option>
+                </select>
+              </div>
+            </div>
+            <div class="kvb-form-group">
+              <label class="kvb-form-label">Color Scheme</label>
+              <div class="kvb-color-picker" id="colorPicker">
+                <div class="kvb-color-option active" data-color="#00d4ff" style="background:#00d4ff;"></div>
+                <div class="kvb-color-option" data-color="#10b981" style="background:#10b981;"></div>
+                <div class="kvb-color-option" data-color="#f59e0b" style="background:#f59e0b;"></div>
+                <div class="kvb-color-option" data-color="#ef4444" style="background:#ef4444;"></div>
+                <div class="kvb-color-option" data-color="#8b5cf6" style="background:#8b5cf6;"></div>
+                <div class="kvb-color-option" data-color="#ec4899" style="background:#ec4899;"></div>
+                <div class="kvb-color-option" data-color="#06b6d4" style="background:#06b6d4;"></div>
+                <div class="kvb-color-option" data-color="#84cc16" style="background:#84cc16;"></div>
+              </div>
+            </div>
+            <div class="kvb-form-group">
+              <label class="kvb-form-label">Stacking (for Bar/Area)</label>
+              <div style="display:flex;align-items:center;gap:16px;">
+                <label class="kvb-switch">
+                  <input type="checkbox" id="stacking">
+                  <span class="kvb-switch-slider"></span>
+                </label>
+                <span style="font-size:12px;color:#9ca3af;">Stack series</span>
+              </div>
+            </div>
+            <div class="kvb-form-group">
+              <label class="kvb-form-label">Percentage Mode</label>
+              <div style="display:flex;align-items:center;gap:16px;">
+                <label class="kvb-switch">
+                  <input type="checkbox" id="percentageMode">
+                  <span class="kvb-switch-slider"></span>
+                </label>
+                <span style="font-size:12px;color:#9ca3af;">Show as percentage</span>
+              </div>
+            </div>
+            <div class="kvb-form-group">
+              <label class="kvb-form-label">Fill Opacity</label>
+              <input type="range" id="fillOpacity" min="0" max="100" value="20" style="width:100%;">
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:#6b7280;">
+                <span>0%</span><span id="fillOpacityVal">20%</span><span>100%</span>
+              </div>
+            </div>
+            <div class="kvb-form-group">
+              <label class="kvb-form-label">Point Radius</label>
+              <input type="range" id="pointRadius" min="0" max="10" value="3" style="width:100%;">
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:#6b7280;">
+                <span>0</span><span id="pointRadiusVal">3</span><span>10</span>
+              </div>
+            </div>
+            <div class="kvb-form-group">
+              <label class="kvb-form-label">Line Tension (Curves)</label>
+              <input type="range" id="lineTension" min="0" max="100" value="40" style="width:100%;">
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:#6b7280;">
+                <span>Straight</span><span id="lineTensionVal">40%</span><span>Smooth</span>
+              </div>
+            </div>
+            <div class="kvb-form-group">
+              <label class="kvb-form-label">Animation</label>
+              <div style="display:flex;align-items:center;gap:16px;">
+                <label class="kvb-switch">
+                  <input type="checkbox" id="enableAnimation" checked>
+                  <span class="kvb-switch-slider"></span>
+                </label>
+                <span style="font-size:12px;color:#9ca3af;">Enable animations</span>
+              </div>
+            </div>
+            <div class="kvb-form-group">
+              <label class="kvb-form-label">Show Data Labels</label>
+              <div style="display:flex;align-items:center;gap:16px;">
+                <label class="kvb-switch">
+                  <input type="checkbox" id="showDataLabels">
+                  <span class="kvb-switch-slider"></span>
+                </label>
+                <span style="font-size:12px;color:#9ca3af;">Show values on chart</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Actions -->
+        <div style="display:flex;gap:10px;margin-top:20px;">
+          <button id="previewBtn" class="kvb-btn kvb-btn-primary" style="flex:1;">
+            <i class="fas fa-play"></i>
+            Update Preview
+          </button>
+          <button id="saveBtn" class="kvb-btn kvb-btn-success" style="flex:1;">
+            <i class="fas fa-save"></i>
+            Save
+          </button>
+        </div>
+        
+        <div id="builderError" class="kvb-error" style="display:none;"></div>
+        
+        <!-- Saved Visualizations -->
+        <div class="kvb-section" style="margin-top:24px;">
+          <div class="kvb-section-title" onclick="KVB.toggleSection(this)">
+            <h6><i class="fas fa-save" style="margin-right:8px;"></i>Saved Visualizations</h6>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+          <div class="kvb-section-content">
+            <div id="savedVizList" class="kvb-saved-list"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Preview Panel -->
+      <div class="kvb-preview">
+        <div class="kvb-preview-header">
+          <div>
+            <h3 class="kvb-preview-title" id="previewTitle">Preview</h3>
+            <p class="kvb-preview-meta" id="previewMeta">Configure your visualization and click Update Preview</p>
+          </div>
+          <div class="kvb-chart-options">
+            <span class="kvb-chart-option active" data-view="chart">Chart</span>
+            <span class="kvb-chart-option" data-view="data">Data</span>
+            <span class="kvb-chart-option" data-view="inspect">Inspect</span>
+          </div>
+        </div>
+        
+        <div class="kvb-chart-container" id="chartContainer">
+          <div class="kvb-chart-empty" id="chartEmpty">
+            <i class="fas fa-chart-line"></i>
+            <p style="font-size:14px;margin:0;">Configure your visualization</p>
+            <p style="font-size:12px;margin:8px 0 0;">Select chart type, metrics, and buckets from the builder panel</p>
+          </div>
+          <canvas id="vizCanvas" style="display:none;"></canvas>
+        </div>
+        
+        <!-- Data View -->
+        <div id="dataView" style="display:none;flex:1;overflow:auto;">
+          <table class="kvb-table" id="dataTable" style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Toast Container -->
+<div id="toastContainer"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script>
+/**
+ * KVB - Kibana/Wazuh-inspired Visualization Builder
+ * Advanced JavaScript component-level implementation
+ */
+const KVB = (function() {
+  // Private state
+  let _chart = null;
+  let _config = {
+    chartType: 'line',
+    source: 'all',
+    timeRange: '24h',
+    indexPattern: 'all',
+    timeField: 'event_time',
+    kqlQuery: '',
+    metricAgg: 'count',
+    metricField: '',
+    metricLabel: '',
+    buckets: [],
+    chartTitle: '',
+    legendPosition: 'top',
+    showGrid: true,
+    colors: ['#00d4ff'],
+    stacking: false,
+    percentageMode: false,
+    space: 'personal',
+    limit: 50
+  };
+  let _activeView = 'chart';
+  let _lastData = null;
+  
+  // DOM Elements
+  const elements = {};
+  
+  // Initialize
+  function init() {
+    console.log('[KVB] Starting initialization...');
+    try {
+      cacheElements();
+      console.log('[KVB] Elements cached, binding events...');
+      bindEvents();
+      console.log('[KVB] Events bound, loading saved viz...');
+      loadSavedViz();
+      updateMetricFieldVisibility();
+      console.log('[KVB] Visualization Builder fully initialized');
+    } catch(e) {
+      console.error('[KVB] Init error:', e);
+    }
+  }
+  
+  // Cache DOM elements
+  function cacheElements() {
+    elements.chartType = document.querySelectorAll('[data-chart-type]');
+    elements.source = document.querySelectorAll('[data-source]');
+    elements.intervalBtns = document.querySelectorAll('[data-interval]');
+    elements.spaceSelect = document.getElementById('spaceSelect');
+    elements.indexPattern = document.getElementById('indexPattern');
+    elements.timeField = document.getElementById('timeField');
+    elements.kqlQuery = document.getElementById('kqlQuery');
+    elements.metricAgg = document.getElementById('metricAgg');
+    elements.metricField = document.getElementById('metricField');
+    elements.metricFieldGroup = document.getElementById('metricFieldGroup');
+    elements.metricLabel = document.getElementById('metricLabel');
+    elements.bucketsContainer = document.getElementById('bucketsContainer');
+    elements.chartTitle = document.getElementById('chartTitle');
+    elements.legendPosition = document.getElementById('legendPosition');
+    elements.showGrid = document.getElementById('showGrid');
+    elements.stacking = document.getElementById('stacking');
+    elements.percentageMode = document.getElementById('percentageMode');
+    elements.colorPicker = document.getElementById('colorPicker');
+    elements.fillOpacity = document.getElementById('fillOpacity');
+    elements.fillOpacityVal = document.getElementById('fillOpacityVal');
+    elements.pointRadius = document.getElementById('pointRadius');
+    elements.pointRadiusVal = document.getElementById('pointRadiusVal');
+    elements.lineTension = document.getElementById('lineTension');
+    elements.lineTensionVal = document.getElementById('lineTensionVal');
+    elements.enableAnimation = document.getElementById('enableAnimation');
+    elements.showDataLabels = document.getElementById('showDataLabels');
+    elements.previewBtn = document.getElementById('previewBtn');
+    elements.saveBtn = document.getElementById('saveBtn');
+    elements.error = document.getElementById('builderError');
+    elements.chartContainer = document.getElementById('chartContainer');
+    elements.chartCanvas = document.getElementById('vizCanvas');
+    elements.chartEmpty = document.getElementById('chartEmpty');
+    elements.previewTitle = document.getElementById('previewTitle');
+    elements.previewMeta = document.getElementById('previewMeta');
+    elements.currentVizType = document.getElementById('currentVizType');
+    elements.savedVizList = document.getElementById('savedVizList');
+    elements.dataView = document.getElementById('dataView');
+    elements.dataTable = document.getElementById('dataTable');
+    elements.viewOptions = document.querySelectorAll('[data-view]');
+  }
+  
+  // Bind events - using event delegation for better reliability
+  function bindEvents() {
+    // Use event delegation on the sidebar
+    const sidebar = document.querySelector('.kvb-sidebar');
+    if (sidebar) {
+      sidebar.addEventListener('click', function(e) {
+        const navItem = e.target.closest('.kvb-nav-item');
+        if (!navItem) return;
+        
+        const chartType = navItem.dataset.chartType;
+        const source = navItem.dataset.source;
+        const panel = navItem.dataset.panel;
+        
+        if (chartType) {
+          setChartType(chartType);
+          document.querySelectorAll('[data-chart-type]').forEach(x => x.classList.remove('active'));
+          navItem.classList.add('active');
+        } else if (source) {
+          setSource(source);
+          document.querySelectorAll('[data-source]').forEach(x => x.classList.remove('active'));
+          navItem.classList.add('active');
+        } else if (panel === 'saved-viz') {
+          loadSavedViz();
+        } else if (panel === 'saved-dash') {
+          loadDashboards();
+        }
+      });
+    }
+    
+    // Time interval buttons
+    elements.intervalBtns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        setTimeRange(this.dataset.interval);
+        elements.intervalBtns.forEach(x => x.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+    
+    // Space selection
+    elements.spaceSelect.addEventListener('change', function() {
+      _config.space = this.value;
+      loadSavedViz();
+    });
+    
+    // Metric aggregation change
+    elements.metricAgg.addEventListener('change', updateMetricFieldVisibility);
+    
+    // Color picker
+    elements.colorPicker.querySelectorAll('.kvb-color-option').forEach(opt => {
+      opt.addEventListener('click', function() {
+        elements.colorPicker.querySelectorAll('.kvb-color-option').forEach(x => x.classList.remove('active'));
+        this.classList.add('active');
+        _config.colors = [this.dataset.color];
+        updateChartColors();
+      });
+    });
+    
+    // View options
+    elements.viewOptions.forEach(opt => {
+      opt.addEventListener('click', function() {
+        setView(this.dataset.view);
+        elements.viewOptions.forEach(x => x.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+    
+    // Preview button
+    elements.previewBtn.addEventListener('click', runPreview);
+    
+    // Save button
+    elements.saveBtn.addEventListener('click', saveVisualization);
+    
+    // Refresh button
+    document.getElementById('refreshBtn').addEventListener('click', runPreview);
+    
+    // Slider controls - update value displays
+    if (elements.fillOpacity) {
+      elements.fillOpacity.addEventListener('input', function() {
+        elements.fillOpacityVal.textContent = this.value + '%';
+      });
+    }
+    if (elements.pointRadius) {
+      elements.pointRadius.addEventListener('input', function() {
+        elements.pointRadiusVal.textContent = this.value;
+      });
+    }
+    if (elements.lineTension) {
+      elements.lineTension.addEventListener('input', function() {
+        elements.lineTensionVal.textContent = this.value + '%';
+      });
+    }
+  }
+  
+  // Update metric field visibility
+  function updateMetricFieldVisibility() {
+    const showField = ['avg', 'sum', 'min', 'max', 'cardinality', 'percentiles'].includes(_config.metricAgg);
+    elements.metricFieldGroup.style.display = showField ? 'block' : 'none';
+  }
+  
+  // Set chart type
+  function setChartType(type) {
+    _config.chartType = type;
+    elements.currentVizType.textContent = getChartTypeName(type);
+    updateChartIfExists();
+  }
+  
+  // Get chart type display name
+  function getChartTypeName(type) {
+    const names = {
+      line: 'Line Chart',
+      bar: 'Bar Chart',
+      area: 'Area Chart',
+      pie: 'Pie / Donut',
+      doughnut: 'Donut Chart',
+      heatmap: 'Heatmap',
+      table: 'Data Table',
+      metric: 'Metric',
+      gauge: 'Gauge',
+      scatter: 'Scatter Plot',
+      radar: 'Radar Chart'
+    };
+    return names[type] || type;
+  }
+  
+  // Set data source
+  function setSource(source) {
+    _config.source = source;
+    updateChartIfExists();
+  }
+  
+  // Set time range
+  function setTimeRange(range) {
+    _config.timeRange = range;
+    updateChartIfExists();
+  }
+  
+  // Set active view
+  function setView(view) {
+    _activeView = view;
+    elements.chartContainer.style.display = view === 'chart' ? 'block' : 'none';
+    elements.dataView.style.display = view === 'data' ? 'flex' : 'none';
+  }
+  
+  // Toggle section collapse
+  function toggleSection(header) {
+    const section = header.parentElement;
+    section.classList.toggle('collapsed');
+  }
+  
+  // Build payload from current config
+  function buildPayload() {
+    const bucketConfig = [];
+    elements.bucketsContainer.querySelectorAll('.kvb-bucket-item').forEach((item, idx) => {
+      bucketConfig.push({
+        agg: item.querySelector('.bucket-agg').value,
+        field: item.querySelector('.bucket-field').value,
+        size: parseInt(item.querySelector('.bucket-size').value || '10', 10),
+        order: item.querySelector('.bucket-order').value
+      });
+    });
+    
+    return {
+      viz_type: _config.chartType,
+      source: _config.source,
+      time_range: _config.timeRange,
+      index_pattern: elements.indexPattern.value,
+      time_field: elements.timeField.value,
+      query: elements.kqlQuery.value,
+      metric_agg: elements.metricAgg.value,
+      metric_field: elements.metricField.value,
+      metric_label: elements.metricLabel.value,
+      buckets: bucketConfig,
+      chart_title: elements.chartTitle.value,
+      legend_position: elements.legendPosition.value,
+      show_grid: elements.showGrid.value === 'true',
+      colors: _config.colors,
+      stacking: elements.stacking.checked,
+      percentage_mode: elements.percentageMode.checked,
+      fill_opacity: elements.fillOpacity ? parseInt(elements.fillOpacity.value) / 100 : 0.2,
+      point_radius: elements.pointRadius ? parseInt(elements.pointRadius.value) : 3,
+      line_tension: elements.lineTension ? parseInt(elements.lineTension.value) / 100 : 0.4,
+      enable_animation: elements.enableAnimation ? elements.enableAnimation.checked : true,
+      show_data_labels: elements.showDataLabels ? elements.showDataLabels.checked : false,
+      space: _config.space,
+      limit: _config.limit
+    };
+  }
+  
+  // Run preview
+  async function runPreview() {
+    showError('');
+    showLoading(true);
+    
+    try {
+      const payload = buildPayload();
+      const res = await fetch('{% url "opensearch-visualizations-preview" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCsrf()
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Preview failed');
+      }
+      
+      _lastData = data;
+      renderVisualization(data);
+      
+      elements.previewMeta.textContent = 'Updated: ' + new Date().toLocaleString();
+      if (elements.chartTitle.value) {
+        elements.previewTitle.textContent = elements.chartTitle.value;
+      }
+    } catch (err) {
+      showError(err.message || String(err));
+      elements.previewMeta.textContent = 'Preview error';
+    } finally {
+      showLoading(false);
+    }
+  }
+  
+  // Render visualization based on type
+  function renderVisualization(data) {
+    const type = data.viz_type || _config.chartType;
+    
+    if (type === 'table') {
+      renderTable(data.data);
+    } else if (type === 'metric') {
+      renderMetric(data.data);
+    } else {
+      renderChart(type, data.data);
+    }
+  }
+  
+  // Render chart
+  function renderChart(type, data) {
+    elements.chartEmpty.style.display = 'none';
+    elements.chartCanvas.style.display = 'block';
+    
+    const ctx = elements.chartCanvas.getContext('2d');
+    
+    if (_chart) {
+      _chart.destroy();
+    }
+    
+    const chartType = type === 'area' ? 'line' : (type === 'pie' ? 'doughnut' : type);
+    const isLineOrArea = type === 'line' || type === 'area';
+    
+    const labels = data.labels || [];
+    const values = data.values || [];
+    const datasets = data.datasets || [{ label: 'Events', data: values }];
+    
+    // Apply percentage mode if enabled
+    let finalDatasets = datasets;
+    if (_config.percentageMode && !isLineOrArea) {
+      const total = values.reduce((a, b) => a + b, 0);
+      finalDatasets = datasets.map(ds => ({
+        ...ds,
+        data: ds.data.map(v => ((v / total) * 100).toFixed(1))
+      }));
+    }
+    
+    const config = {
+      type: chartType,
+      data: {
+        labels: labels,
+        datasets: finalDatasets.map((ds, i) => ({
+          ...ds,
+          borderColor: _config.colors[i % _config.colors.length],
+          backgroundColor: type === 'pie' || type === 'doughnut' 
+            ? _config.colors 
+            : hexToRgba(_config.colors[i % _config.colors.length], isLineOrArea ? 0.1 : 0.8),
+          fill: type === 'area',
+          tension: isLineOrArea ? 0.4 : 0,
+          stepped: false,
+          barThickness: 20,
+          borderWidth: isLineOrArea ? 2 : 1
+        }))
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        plugins: {
+          legend: {
+            display: _config.chartType !== 'metric',
+            position: elements.legendPosition.value,
+            labels: {
+              color: '#9ca3af',
+              padding: 16,
+              usePointStyle: true
+            }
+          },
+          tooltip: {
+            backgroundColor: '#1f1f3a',
+            titleColor: '#fff',
+            bodyColor: '#9ca3af',
+            borderColor: '#2d2d4a',
+            borderWidth: 1,
+            padding: 12,
+            displayColors: true,
+            callbacks: {
+              label: function(context) {
+                let label = context.dataset.label || '';
+                if (label) {
+                  label += ': ';
+                }
+                if (_config.percentageMode && !isLineOrArea) {
+                  label += context.parsed.y + '%';
+                } else {
+                  label += context.parsed.y !== undefined ? context.parsed.y : context.parsed;
+                }
+                return label;
+              }
+            }
+          }
+        },
+        scales: _config.chartType !== 'pie' && _config.chartType !== 'doughnut' ? {
+          x: {
+            type: isLineOrArea ? 'time' : 'category',
+            time: {
+              unit: getTimeUnit(_config.timeRange),
+              displayFormats: {
+                hour: 'HH:mm',
+                day: 'MMM dd'
+              }
+            },
+            grid: {
+              color: _config.showGrid ? 'rgba(45, 45, 74, 0.5)' : 'transparent',
+              drawBorder: false
+            },
+            ticks: {
+              color: '#6b7280',
+              maxTicksLimit: 12
+            }
+          },
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: _config.showGrid ? 'rgba(45, 45, 74, 0.5)' : 'transparent',
+              drawBorder: false
+            },
+            ticks: {
+              color: '#6b7280',
+              callback: function(value) {
+                if (_config.percentageMode) {
+                  return value + '%';
+                }
+                return value;
+              }
+            }
+          }
+        } : undefined
+      }
+    };
+    
+    // Apply stacking
+    if (_config.stacking && (type === 'bar' || type === 'area')) {
+      config.options.scales.y.stacked = true;
+      config.options.scales.x.stacked = true;
+    }
+    
+    _chart = new Chart(ctx, config);
+  }
+  
+  // Render table
+  function renderTable(data) {
+    elements.chartEmpty.style.display = 'none';
+    elements.chartCanvas.style.display = 'none';
+    elements.dataView.style.display = 'flex';
+    _activeView = 'data';
+    
+    const columns = data.columns || [];
+    const rows = data.rows || [];
+    
+    const thead = elements.dataTable.querySelector('thead');
+    const tbody = elements.dataTable.querySelector('tbody');
+    
+    thead.innerHTML = '<tr>' + columns.map(c => 
+      '<th style="padding:10px;background:#1f1f3a;color:#00d4ff;border-bottom:2px solid #2d2d4a;text-align:left;">' + c + '</th>'
+    ).join('') + '</tr>';
+    
+    tbody.innerHTML = rows.map(row => 
+      '<tr>' + row.map(v => 
+        '<td style="padding:10px;border-bottom:1px solid #2d2d4a;color:#e0e0e0;">' + (v == null || v === '' ? '-' : v) + '</td>'
+      ).join('') + '</tr>'
+    ).join('');
+  }
+  
+  // Render metric
+  function renderMetric(data) {
+    elements.chartEmpty.style.display = 'none';
+    elements.chartCanvas.style.display = 'block';
+    
+    const ctx = elements.chartCanvas.getContext('2d');
+    
+    if (_chart) {
+      _chart.destroy();
+    }
+    
+    const value = data.value || 0;
+    const label = data.label || _config.metricLabel || 'Value';
+    
+    _chart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: [label, 'Remaining'],
+        datasets: [{
+          data: [value, Math.max(0, (value * 0.5))],
+          backgroundColor: [_config.colors[0], '#2d2d4a'],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '75%',
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            enabled: false
+          }
+        }
+      }
+    });
+  }
+  
+  // Update chart colors
+  function updateChartColors() {
+    if (_chart && _lastData) {
+      renderVisualization(_lastData);
+    }
+  }
+  
+  // Update existing chart
+  function updateChartIfExists() {
+    if (_chart || _lastData) {
+      runPreview();
+    }
+  }
+  
+  // Add bucket
+  function addBucket() {
+    const bucketHtml = `
+      <div class="kvb-bucket-item">
+        <i class="fas fa-grip-vertical kvb-drag-handle"></i>
+        <select class="kvb-form-select bucket-agg" style="width:120px;">
+          <option value="terms">Terms</option>
+          <option value="date_histogram">Date Histogram</option>
+          <option value="filter">Filter</option>
+          <option value="range">Range</option>
+        </select>
+        <select class="kvb-form-select bucket-field" style="flex:1;">
+          {% for f in available_fields %}
+          <option value="{{ f }}">{{ f }}</option>
+          {% endfor %}
+        </select>
+        <input type="number" class="kvb-form-input bucket-size" value="10" style="width:60px;" placeholder="Size">
+        <select class="kvb-form-select bucket-order" style="width:80px;">
+          <option value="desc">Descending</option>
+          <option value="asc">Ascending</option>
+        </select>
+        <i class="fas fa-times kvb-agg-remove" onclick="this.parentElement.remove();"></i>
+      </div>
+    `;
+    
+    const temp = document.createElement('div');
+    temp.innerHTML = bucketHtml;
+    elements.bucketsContainer.appendChild(temp.firstElementChild);
+  }
+  
+  // Load saved visualizations
+  async function loadSavedViz() {
+    try {
+      const res = await fetch('{% url "opensearch-visualizations-list" %}?space=' + encodeURIComponent(_config.space));
+      const data = await res.json();
+      
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Load failed');
+      }
+      
+      const items = data.items || [];
+      
+      if (!items.length) {
+        elements.savedVizList.innerHTML = '<div style="font-size:12px;color:#6b7280;text-align:center;padding:20px;">No saved visualizations yet</div>';
+        return;
+      }
+      
+      elements.savedVizList.innerHTML = items.map(item => `
+        <div class="kvb-saved-item">
+          <div class="kvb-saved-item-info">
+            <div class="kvb-saved-item-name">${item.name}</div>
+            <div class="kvb-saved-item-meta">${item.description || 'No description'} | ${item.config?.viz_type || 'line'}</div>
+          </div>
+          <div class="kvb-saved-item-actions">
+            <button class="kvb-saved-item-btn load-viz" data-id="${item.id}">Load</button>
+            <button class="kvb-saved-item-btn delete delete-viz" data-id="${item.id}">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+      
+      // Bind load events
+      elements.savedVizList.querySelectorAll('.load-viz').forEach(btn => {
+        btn.addEventListener('click', function() {
+          loadVisualization(this.dataset.id, items);
+        });
+      });
+      
+      // Bind delete events
+      elements.savedVizList.querySelectorAll('.delete-viz').forEach(btn => {
+        btn.addEventListener('click', function() {
+          deleteVisualization(this.dataset.id);
+        });
+      });
+    } catch (err) {
+      elements.savedVizList.innerHTML = '<div class="kvb-error">' + (err.message || String(err)) + '</div>';
+    }
+  }
+  
+  // Load dashboards
+  async function loadDashboards() {
+    try {
+      const res = await fetch('{% url "opensearch-dashboards-list" %}?space=' + encodeURIComponent(_config.space));
+      const data = await res.json();
+      
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Load dashboards failed');
+      }
+      
+      const items = data.items || [];
+      
+      if (!items.length) {
+        elements.savedVizList.innerHTML = '<div style="font-size:12px;color:#6b7280;text-align:center;padding:20px;">No saved dashboards yet</div>';
+        return;
+      }
+      
+      elements.savedVizList.innerHTML = items.map(item => `
+        <div class="kvb-saved-item">
+          <div class="kvb-saved-item-info">
+            <div class="kvb-saved-item-name">${item.name}</div>
+            <div class="kvb-saved-item-meta">${item.description || 'No description'}</div>
+          </div>
+          <div class="kvb-saved-item-actions">
+            <button class="kvb-saved-item-btn load-dash" data-id="${item.id}">Load</button>
+          </div>
+        </div>
+      `).join('');
+    } catch (err) {
+      elements.savedVizList.innerHTML = '<div class="kvb-error">' + (err.message || String(err)) + '</div>';
+    }
+  }
+  
+  // Load visualization
+  function loadVisualization(id, items) {
+    const item = items.find(x => x.id === id);
+    if (!item || !item.config) return;
+    
+    const cfg = item.config;
+    
+    // Update UI
+    setChartType(cfg.viz_type || 'line');
+    elements.chartType.forEach(x => {
+      x.classList.toggle('active', x.dataset.chartType === cfg.viz_type);
+    });
+    
+    elements.indexPattern.value = cfg.index_pattern || 'all';
+    elements.timeField.value = cfg.time_field || 'event_time';
+    elements.kqlQuery.value = cfg.query || '';
+    elements.metricAgg.value = cfg.metric_agg || 'count';
+    elements.metricField.value = cfg.metric_field || '';
+    elements.metricLabel.value = cfg.metric_label || '';
+    elements.chartTitle.value = item.name || '';
+    elements.legendPosition.value = cfg.legend_position || 'top';
+    elements.showGrid.value = cfg.show_grid !== false ? 'true' : 'false';
+    
+    // Update buckets
+    elements.bucketsContainer.innerHTML = '';
+    if (cfg.buckets && cfg.buckets.length) {
+      cfg.buckets.forEach(bucket => {
+        const bucketHtml = `
+          <div class="kvb-bucket-item">
+            <i class="fas fa-grip-vertical kvb-drag-handle"></i>
+            <select class="kvb-form-select bucket-agg" style="width:120px;">
+              <option value="${bucket.agg}" selected>${bucket.agg}</option>
+            </select>
+            <select class="kvb-form-select bucket-field" style="flex:1;">
+              <option value="${bucket.field}" selected>${bucket.field}</option>
+            </select>
+            <input type="number" class="kvb-form-input bucket-size" value="${bucket.size || 10}" style="width:60px;">
+            <select class="kvb-form-select bucket-order" style="width:80px;">
+              <option value="${bucket.order}" selected>${bucket.order === 'desc' ? 'Descending' : 'Ascending'}</option>
+            </select>
+            <i class="fas fa-times kvb-agg-remove" onclick="this.parentElement.remove();"></i>
+          </div>
+        `;
+        const temp = document.createElement('div');
+        temp.innerHTML = bucketHtml;
+        elements.bucketsContainer.appendChild(temp.firstElementChild);
+      });
+    }
+    
+    updateMetricFieldVisibility();
+    showToast('Visualization loaded: ' + item.name, 'success');
+  }
+  
+  // Delete visualization
+  async function deleteVisualization(id) {
+    if (!confirm('Delete this visualization?')) return;
+    
+    try {
+      const res = await fetch('{% url "opensearch-visualizations-delete" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCsrf()
+        },
+        body: JSON.stringify({ id: id })
+      });
+      
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Delete failed');
+      }
+      
+      loadSavedViz();
+      showToast('Visualization deleted', 'success');
+    } catch (err) {
+      showToast(err.message || String(err), 'error');
+    }
+  }
+  
+  // Save visualization
+  async function saveVisualization() {
+    const name = prompt('Visualization name:', elements.chartTitle.value || 'My Visualization');
+    if (!name) return;
+    
+    const description = prompt('Description (optional):') || '';
+    
+    try {
+      const res = await fetch('{% url "opensearch-visualizations-save" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCsrf()
+        },
+        body: JSON.stringify({
+          name: name,
+          description: description,
+          space: _config.space,
+          is_shared: false,
+          config: buildPayload()
+        })
+      });
+      
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Save failed');
+      }
+      
+      loadSavedViz();
+      showToast('Visualization saved: ' + name, 'success');
+    } catch (err) {
+      showToast(err.message || String(err), 'error');
+    }
+  }
+  
+  // Helper: Get CSRF token
+  function getCsrf() {
+    const name = 'csrftoken=';
+    const parts = document.cookie.split(';');
+    for (let i = 0; i < parts.length; i++) {
+      const c = parts[i].trim();
+      if (c.indexOf(name) === 0) return c.substring(name.length, c.length);
+    }
+    return '';
+  }
+  
+  // Helper: Get time unit
+  function getTimeUnit(range) {
+    const units = {
+      '15m': 'minute',
+      '1h': 'hour',
+      '24h': 'hour',
+      '7d': 'day',
+      '30d': 'week',
+      '90d': 'month'
+    };
+    return units[range] || 'hour';
+  }
+  
+  // Helper: Hex to RGBA
+  function hexToRgba(hex, alpha) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  
+  // Show error
+  function showError(msg) {
+    if (!msg) {
+      elements.error.style.display = 'none';
+      elements.error.textContent = '';
+      return;
+    }
+    elements.error.style.display = 'block';
+    elements.error.textContent = msg;
+  }
+  
+  // Show loading
+  function showLoading(show) {
+    if (show) {
+      elements.chartEmpty.innerHTML = '<div class="kvb-loading"><div class="kvb-spinner"></div></div>';
+      elements.chartEmpty.style.display = 'flex';
+      elements.chartCanvas.style.display = 'none';
+    } else {
+      elements.chartEmpty.style.display = 'none';
+    }
+  }
+  
+  // Show toast notification
+  function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = 'kvb-toast ' + type;
+    toast.innerHTML = `
+      <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+      <span>${message}</span>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.style.animation = 'slideIn 0.3s ease reverse';
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+  
+  // Public API
+  return {
+    init,
+    toggleSection,
+    addBucket,
+    runPreview,
+    setChartType,
+    setSource,
+    setTimeRange,
+    loadDashboards
+  };
+})();
+
+// Initialize on DOM ready
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('[KVB] DOM Ready, initializing...');
+  try {
+    KVB.init();
+    console.log('[KVB] Initialization complete');
+  } catch(e) {
+    console.error('[KVB] Initialization error:', e);
+  }
+});
+
+// Also try immediate initialization in case DOM is already ready
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  setTimeout(function() {
+    console.log('[KVB] Checking initialization...');
+    try {
+      if (typeof KVB !== 'undefined' && KVB.init) {
+        KVB.init();
+        console.log('[KVB] Late initialization complete');
+      }
+    } catch(e) {
+      console.error('[KVB] Late initialization error:', e);
+    }
+  }, 100);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,246 @@
+{% extends "dashboard.html" %}
+{% load static %}
+{% block title %}Snort IDS Dashboard | VANT-SIEM{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Snort Dashboard V2 - Kibana/Wazuh Style */
+.sdv2-wrapper { min-height: calc(100vh - 56px); background: #0d1117; color: #e6edf3; }
+.sdv2-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; background: linear-gradient(180deg, #161b22 0%, #0d1117 100%); border-bottom: 1px solid #30363d; }
+.sdv2-title { display: flex; align-items: center; gap: 12px; }
+.sdv2-title h2 { margin: 0; font-size: 22px; font-weight: 600; color: #f0f6fc; }
+.sdv2-logo { width: 40px; height: 40px; background: linear-gradient(135deg, #da3633 0%, #b62324 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 18px; }
+.sdv2-nav { display: flex; gap: 8px; }
+.sdv2-nav-item { padding: 8px 16px; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #8b949e; text-decoration: none; font-size: 13px; transition: all 0.2s; }
+.sdv2-nav-item:hover { background: #30363d; color: #f0f6fc; border-color: #8b949e; }
+.sdv2-nav-item.active { background: #238636; border-color: #238636; color: #fff; }
+.sdv2-toolbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; background: #161b22; border-bottom: 1px solid #30363d; }
+.sdv2-time-selector { display: flex; background: #0d1117; border-radius: 6px; padding: 4px; border: 1px solid #30363d; }
+.sdv2-time-btn { padding: 6px 14px; background: transparent; border: none; border-radius: 4px; color: #8b949e; font-size: 12px; cursor: pointer; transition: all 0.2s; }
+.sdv2-time-btn:hover { color: #f0f6fc; }
+.sdv2-time-btn.active { background: #30363d; color: #58a6ff; }
+.sdv2-filters { display: flex; gap: 10px; }
+.sdv2-search { position: relative; }
+.sdv2-search input { width: 250px; padding: 8px 12px 8px 36px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #f0f6fc; font-size: 13px; }
+.sdv2-search input:focus { outline: none; border-color: #58a6ff; }
+.sdv2-search i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #8b949e; }
+.sdv2-content { padding: 20px 24px; }
+.sdv2-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.sdv2-stat-card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 20px; display: flex; align-items: center; gap: 16px; }
+.sdv2-stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.sdv2-stat-icon.critical { background: rgba(218, 54, 51, 0.15); color: #da3633; }
+.sdv2-stat-icon.warning { background: rgba(210, 153, 34, 0.15); color: #d29922; }
+.sdv2-stat-icon.info { background: rgba(88, 166, 255, 0.15); color: #58a6ff; }
+.sdv2-stat-icon.total { background: rgba(139, 148, 158, 0.15); color: #8b949e; }
+.sdv2-stat-info h3 { margin: 0; font-size: 28px; font-weight: 700; color: #f0f6fc; }
+.sdv2-stat-info p { margin: 4px 0 0; font-size: 12px; color: #8b949e; }
+.sdv2-charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+.sdv2-chart-card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 20px; }
+.sdv2-chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.sdv2-chart-title { font-size: 14px; font-weight: 600; color: #f0f6fc; }
+.sdv2-chart-actions { display: flex; gap: 6px; }
+.sdv2-chart-btn { padding: 4px 10px; background: #21262d; border: 1px solid #30363d; border-radius: 4px; color: #8b949e; font-size: 11px; cursor: pointer; }
+.sdv2-chart-btn:hover { background: #30363d; color: #f0f6fc; }
+.sdv2-chart-canvas { height: 250px; }
+.sdv2-table-card { background: #161b22; border: 1px solid #30363d; border-radius: 12px; overflow: hidden; }
+.sdv2-table-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #30363d; }
+.sdv2-table-title { font-size: 14px; font-weight: 600; color: #f0f6fc; }
+.sdv2-table-count { font-size: 12px; color: #8b949e; }
+.sdv2-table { width: 100%; border-collapse: collapse; }
+.sdv2-table th { padding: 12px 16px; text-align: left; font-size: 11px; font-weight: 600; color: #8b949e; text-transform: uppercase; background: #0d1117; border-bottom: 1px solid #30363d; }
+.sdv2-table td { padding: 12px 16px; font-size: 13px; color: #e6edf3; border-bottom: 1px solid #21262d; }
+.sdv2-table tr:hover td { background: #0d1117; }
+.sdv2-severity { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.sdv2-severity.critical { background: rgba(218, 54, 51, 0.15); color: #da3633; }
+.sdv2-severity.high { background: rgba(210, 153, 34, 0.15); color: #d29922; }
+.sdv2-severity.medium { background: rgba(88, 166, 255, 0.15); color: #58a6ff; }
+.sdv2-severity.low { background: rgba(139, 148, 158, 0.15); color: #8b949e; }
+.sdv2-ip { font-family: monospace; color: #58a6ff; }
+.sdv2-empty { text-align: center; padding: 40px; color: #8b949e; }
+.sdv2-empty i { font-size: 48px; margin-bottom: 12px; opacity: 0.3; }
+.sdv2-refresh { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: #238636; border: none; border-radius: 6px; color: #fff; font-size: 13px; cursor: pointer; }
+.sdv2-refresh:hover { background: #2ea043; }
+@media (max-width: 1200px) { .sdv2-stats { grid-template-columns: repeat(2, 1fr); } .sdv2-charts-row { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sdv2-wrapper">
+  <div class="sdv2-header">
+    <div class="sdv2-title">
+      <div class="sdv2-logo"><i class="fas fa-shield-alt"></i></div>
+      <div><h2>Snort IDS</h2><p style="margin:0;font-size:12px;color:#8b949e;">Network Intrusion Detection</p></div>
+    </div>
+    <div class="sdv2-nav">
+      <a href="/opensearch/snort/v2/" class="sdv2-nav-item active"><i class="fas fa-chart-line"></i> Overview</a>
+      <a href="/opensearch/suricata/" class="sdv2-nav-item"><i class="fas fa-shield-virus"></i> Suricata</a>
+      <a href="/opensearch/config/" class="sdv2-nav-item"><i class="fas fa-cog"></i> Config</a>
+    </div>
+  </div>
+  <div class="sdv2-toolbar">
+    <div class="sdv2-time-selector">
+      <button class="sdv2-time-btn" data-time="5m">5m</button>
+      <button class="sdv2-time-btn" data-time="15m">15m</button>
+      <button class="sdv2-time-btn active" data-time="1h">1h</button>
+      <button class="sdv2-time-btn" data-time="6h">6h</button>
+      <button class="sdv2-time-btn" data-time="24h">24h</button>
+      <button class="sdv2-time-btn" data-time="7d">7d</button>
+      <button class="sdv2-time-btn" data-time="all">All</button>
+    </div>
+    <div class="sdv2-filters">
+      <button class="sdv2-refresh" onclick="refreshData()"><i class="fas fa-sync-alt"></i> Refresh</button>
+    </div>
+  </div>
+  <div class="sdv2-content">
+    <div class="sdv2-stats">
+      <div class="sdv2-stat-card">
+        <div class="sdv2-stat-icon critical"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="sdv2-stat-info"><h3 id="criticalCount">{{ stats.critical|default:0 }}</h3><p>Critical Alerts</p></div>
+      </div>
+      <div class="sdv2-stat-card">
+        <div class="sdv2-stat-icon warning"><i class="fas fa-exclamation-circle"></i></div>
+        <div class="sdv2-stat-info"><h3 id="highCount">{{ stats.high|default:0 }}</h3><p>High Priority</p></div>
+      </div>
+      <div class="sdv2-stat-card">
+        <div class="sdv2-stat-icon info"><i class="fas fa-info-circle"></i></div>
+        <div class="sdv2-stat-info"><h3 id="mediumCount">{{ stats.medium|default:0 }}</h3><p>Medium Priority</p></div>
+      </div>
+      <div class="sdv2-stat-card">
+        <div class="sdv2-stat-icon total"><i class="fas fa-list"></i></div>
+        <div class="sdv2-stat-info"><h3 id="totalCount">{{ stats.total|default:0 }}</h3><p>Total Events</p></div>
+      </div>
+    </div>
+    <div class="sdv2-charts-row">
+      <div class="sdv2-chart-card">
+        <div class="sdv2-chart-header"><h3 class="sdv2-chart-title">Alerts Over Time</h3></div>
+        <div class="sdv2-chart-canvas"><canvas id="timelineChart"></canvas></div>
+      </div>
+      <div class="sdv2-chart-card">
+        <div class="sdv2-chart-header"><h3 class="sdv2-chart-title">Top Messages</h3></div>
+        <div class="sdv2-chart-canvas"><canvas id="signaturesChart"></canvas></div>
+      </div>
+    </div>
+    <div class="sdv2-charts-row">
+      <div class="sdv2-chart-card">
+        <div class="sdv2-chart-header"><h3 class="sdv2-chart-title">Top Source IPs</h3></div>
+        <div class="sdv2-chart-canvas"><canvas id="srcIpChart"></canvas></div>
+      </div>
+      <div class="sdv2-chart-card">
+        <div class="sdv2-chart-header"><h3 class="sdv2-chart-title">Top Destination IPs</h3></div>
+        <div class="sdv2-chart-canvas"><canvas id="dstIpChart"></canvas></div>
+      </div>
+    </div>
+    <div class="sdv2-table-card">
+      <div class="sdv2-table-header">
+        <h3 class="sdv2-table-title">Recent Alerts</h3>
+        <span class="sdv2-table-count">{{ alerts.count|default:0 }} events</span>
+      </div>
+      <table class="sdv2-table">
+        <thead><tr><th>Time</th><th>Severity</th><th>Source IP</th><th>Destination IP</th><th>Protocol</th><th>Message</th></tr></thead>
+        <tbody>
+          {% for alert in alerts|slice:":20" %}
+          <tr>
+            <td>{{ alert.timestamp|date:"Y-m-d H:i:s" }}</td>
+            <td>
+              {% if alert.severity == 'Critical' %}<span class="sdv2-severity critical">Critical</span>
+              {% elif alert.severity == 'High' %}<span class="sdv2-severity high">High</span>
+              {% elif alert.severity == 'Medium' %}<span class="sdv2-severity medium">Medium</span>
+              {% else %}<span class="sdv2-severity low">Low</span>{% endif %}
+            </td>
+            <td><span class="sdv2-ip">{{ alert.src_ip }}</span></td>
+            <td><span class="sdv2-ip">{{ alert.dst_ip }}</span></td>
+            <td>{{ alert.protocol }}</td>
+            <td>{{ alert.message|truncatechars:50 }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6"><div class="sdv2-empty"><i class="fas fa-inbox"></i><p>No alerts found</p></div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Set active time button based on URL param
+  const urlParams = new URLSearchParams(window.location.search);
+  const currentTime = urlParams.get('time_range') || '1h';
+  document.querySelectorAll('.sdv2-time-btn').forEach(function(btn) {
+    if (btn.dataset.time === currentTime) {
+      btn.classList.add('active');
+    }
+  });
+  
+  document.querySelectorAll('.sdv2-time-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.sdv2-time-btn').forEach(function(b) { b.classList.remove('active'); });
+      this.classList.add('active');
+      refreshData();
+    });
+  });
+  initCharts();
+});
+
+function initCharts() {
+  var chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: 'rgba(48, 54, 61, 0.5)' }, ticks: { color: '#8b949e' } },
+      y: { grid: { color: 'rgba(48, 54, 61, 0.5)' }, ticks: { color: '#8b949e' }, beginAtZero: true }
+    }
+  };
+  
+  var timelineCtx = document.getElementById('timelineChart').getContext('2d');
+  new Chart(timelineCtx, {
+    type: 'line',
+    data: {
+      labels: {{ timeline_labels|safe }},
+      datasets: [{ label: 'Alerts', data: {{ timeline_data|safe }}, borderColor: '#58a6ff', backgroundColor: 'rgba(88, 166, 255, 0.1)', fill: true, tension: 0.4 }]
+    },
+    options: chartOptions
+  });
+  
+  var sigCtx = document.getElementById('signaturesChart').getContext('2d');
+  new Chart(sigCtx, {
+    type: 'doughnut',
+    data: {
+      labels: {{ sig_labels|safe }},
+      datasets: [{ data: {{ sig_data|safe }}, backgroundColor: ['#da3633', '#d29922', '#58a6ff', '#8b949e', '#238636'] }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#8b949e', padding: 10, font: { size: 11 } } } } }
+  });
+  
+  var srcCtx = document.getElementById('srcIpChart').getContext('2d');
+  new Chart(srcCtx, {
+    type: 'bar',
+    data: {
+      labels: {{ src_ip_labels|safe }},
+      datasets: [{ label: 'Count', data: {{ src_ip_data|safe }}, backgroundColor: '#da3633' }]
+    },
+    options: { ...chartOptions, indexAxis: 'y' }
+  });
+  
+  var dstCtx = document.getElementById('dstIpChart').getContext('2d');
+  new Chart(dstCtx, {
+    type: 'bar',
+    data: {
+      labels: {{ dst_ip_labels|safe }},
+      datasets: [{ label: 'Count', data: {{ dst_ip_data|safe }}, backgroundColor: '#d29922' }]
+    },
+    options: { ...chartOptions, indexAxis: 'y' }
+  });
+}
+
+function refreshData() {
+  var timeBtn = document.querySelector('.sdv2-time-btn.active');
+  var time = timeBtn ? timeBtn.dataset.time : '1h';
+  window.location.href = '/opensearch/snort/?time_range=' + time;
+}
+</script>
+{% endblock %}
