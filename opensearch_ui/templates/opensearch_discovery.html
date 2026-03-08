@@ -22,6 +22,14 @@
 .discover-toolbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 8px; }
 .discover-toolbar input, .discover-toolbar select { background: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 6px; padding: 8px; }
 .discover-toolbar .full { grid-column: span 2; }
+.discover-component-switch { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+.discover-profile-btn { border: 1px solid #334155; background: #0f172a; color: #cbd5e1; border-radius: 999px; padding: 4px 10px; font-size: 11px; cursor: pointer; }
+.discover-profile-btn.active { border-color: #22d3ee; color: #67e8f9; }
+.discover-profile-card { border: 1px solid #1f2937; background: #0b1528; border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; }
+.discover-profile-title { margin: 0; font-size: 13px; color: #e2e8f0; }
+.discover-profile-sub { margin: 4px 0 0 0; font-size: 12px; color: #94a3b8; }
+.discover-profile-fields { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
+.discover-profile-field { font-size: 10px; border: 1px solid #334155; border-radius: 999px; padding: 2px 7px; color: #cbd5e1; background: #0f172a; }
 .discover-filter-chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .discover-filter-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 999px; border: 1px solid #334155; background: #0f172a; font-size: 11px; color: #cbd5e1; }
 .discover-filter-chip.include { border-color: #22d3ee; }
@@ -98,6 +106,31 @@
       </div>
 
       <div class="discover-sidebar-section">
+        {% if source_profile == 'snort' %}
+        <div class="discover-sidebar-title">Snort Fields</div>
+        <ul class="discover-field-list">
+          {% for f in snort_profile_fields %}
+          {% if f in table_columns %}
+          <li>
+            <span>{{ f }}</span>
+            <button class="discover-field-action js-add-filter" type="button" data-mode="include" data-field="{{ f }}" data-value="*">+</button>
+          </li>
+          {% endif %}
+          {% endfor %}
+        </ul>
+        {% elif source_profile == 'suricata' %}
+        <div class="discover-sidebar-title">Suricata Fields</div>
+        <ul class="discover-field-list">
+          {% for f in suricata_profile_fields %}
+          {% if f in table_columns %}
+          <li>
+            <span>{{ f }}</span>
+            <button class="discover-field-action js-add-filter" type="button" data-mode="include" data-field="{{ f }}" data-value="*">+</button>
+          </li>
+          {% endif %}
+          {% endfor %}
+        </ul>
+        {% else %}
         <div class="discover-sidebar-title">Core Fields</div>
         <ul class="discover-field-list">
           {% for f in core_fields %}
@@ -107,25 +140,54 @@
           </li>
           {% endfor %}
         </ul>
+        {% endif %}
       </div>
 
       <div class="discover-sidebar-section">
-        <div class="discover-sidebar-title">Payload Fields</div>
+        <div class="discover-sidebar-title">{% if source_profile == 'all' %}Payload Fields{% else %}Extended Fields{% endif %}</div>
         <ul class="discover-field-list">
-          {% for f in payload_fields %}
+          {% for f in table_columns %}
+          {% if f not in core_fields and f not in snort_profile_fields and f not in suricata_profile_fields %}
           <li>
             <span>{{ f }}</span>
             <button class="discover-field-action js-add-filter" type="button" data-mode="include" data-field="{{ f }}" data-value="*">+</button>
           </li>
+          {% endif %}
           {% empty %}
-          <li>No payload fields in current filter</li>
+          <li>No additional fields in current filter</li>
           {% endfor %}
+          {% if source_profile == 'suricata' %}
+          {% for f in table_columns %}
+          {% if f in suricata_profile_fields and f not in core_fields %}
+          <li>
+            <span>{{ f }}</span>
+            <button class="discover-field-action js-add-filter" type="button" data-mode="include" data-field="{{ f }}" data-value="*">+</button>
+          </li>
+          {% endif %}
+          {% endfor %}
+          {% elif source_profile == 'snort' %}
+          {% for f in table_columns %}
+          {% if f in snort_profile_fields and f not in core_fields %}
+          <li>
+            <span>{{ f }}</span>
+            <button class="discover-field-action js-add-filter" type="button" data-mode="include" data-field="{{ f }}" data-value="*">+</button>
+          </li>
+          {% endif %}
+          {% endfor %}
+          {% endif %}
         </ul>
       </div>
     </aside>
 
     <section class="discover-main">
       <div class="discover-panel">
+        <div class="discover-component-switch">
+          <button type="button" class="discover-profile-btn js-profile-select {% if source_profile == 'all' %}active{% endif %}" data-source="all">All</button>
+          <button type="button" class="discover-profile-btn js-profile-select {% if source_profile == 'snort' %}active{% endif %}" data-source="snort">Snort</button>
+          <button type="button" class="discover-profile-btn js-profile-select {% if source_profile == 'suricata' %}active{% endif %}" data-source="suricata">Suricata</button>
+        </div>
+        <div class="discover-profile-card" id="profileComponentMount"></div>
+
         <form method="get" class="discover-toolbar">
           <select name="time_range">
             <option value="15m" {% if time_range == '15m' %}selected{% endif %}>Last 15m</option>
@@ -240,8 +302,48 @@
 
 {{ timeline|json_script:"discovery-timeline-data" }}
 {{ table_columns|json_script:"discovery-columns-data" }}
+{{ profile_components|json_script:"discovery-profile-components" }}
+{{ source_profile|json_script:"discovery-source-profile" }}
 <script>
 (function () {
+  function getCurrentSource() {
+    const sourceSelect = document.querySelector('select[name=\"source\"]');
+    return sourceSelect ? (sourceSelect.value || 'all') : 'all';
+  }
+
+  function setupProfileSwitcher() {
+    const sourceSelect = document.querySelector('select[name=\"source\"]');
+    const buttons = document.querySelectorAll('.js-profile-select');
+    if (!sourceSelect || !buttons.length) return;
+    buttons.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        sourceSelect.value = btn.getAttribute('data-source') || 'all';
+        const form = sourceSelect.closest('form');
+        if (form) form.submit();
+      });
+    });
+  }
+
+  function renderProfileComponent() {
+    const mount = document.getElementById('profileComponentMount');
+    const profileEl = document.getElementById('discovery-source-profile');
+    const mapEl = document.getElementById('discovery-profile-components');
+    if (!mount || !profileEl || !mapEl) return;
+    let profile = 'all';
+    let map = {};
+    try { profile = JSON.parse(profileEl.textContent || '\"all\"'); } catch (e) { profile = getCurrentSource(); }
+    try { map = JSON.parse(mapEl.textContent || '{}'); } catch (e) { map = {}; }
+    profile = getCurrentSource() || profile;
+    const cfg = map[profile] || map.all || { title: 'Discovery', subtitle: '', focus: [] };
+    const focus = Array.isArray(cfg.focus) ? cfg.focus : [];
+    mount.innerHTML =
+      '<h6 class=\"discover-profile-title\">' + cfg.title + '</h6>' +
+      '<p class=\"discover-profile-sub\">' + cfg.subtitle + '</p>' +
+      '<div class=\"discover-profile-fields\">' +
+      focus.map(function (f) { return '<span class=\"discover-profile-field\">' + f + '</span>'; }).join('') +
+      '</div>';
+  }
+
   function updateUrl(mutator) {
     const params = new URLSearchParams(window.location.search);
     mutator(params);
@@ -363,7 +465,7 @@
       columns = [];
     }
 
-    const storageKey = 'opensearch_discovery_visible_columns';
+    const storageKey = 'opensearch_discovery_visible_columns_' + getCurrentSource();
     let visible = {};
     try {
       visible = JSON.parse(localStorage.getItem(storageKey) || '{}');
@@ -430,6 +532,8 @@
   }
 
   window.addEventListener('load', function () {
+    setupProfileSwitcher();
+    renderProfileComponent();
     bindFilters();
     renderTimeline(0);
     setupColumnVisibility();

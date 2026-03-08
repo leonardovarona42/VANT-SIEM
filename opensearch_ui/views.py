@@ -2667,6 +2667,44 @@ def opensearch_discovery(request):
         'line',
     ]
     snort_extracted_set = set(snort_extracted_fields)
+    suricata_profile_fields = [
+        'event_time',
+        'severity',
+        'event_category',
+        'message',
+        'ingested_at',
+        'event_type',
+        'proto',
+        'src_ip',
+        'src_port',
+        'dst_ip',
+        'dst_port',
+        'app_proto',
+        'flow_id',
+        'in_iface',
+    ]
+    snort_profile_fields = [
+        'event_time',
+        'severity',
+        'event_category',
+        'message',
+        'ingested_at',
+        'line',
+        'signature',
+        'classification',
+        'priority',
+        'proto',
+        'src_ip',
+        'src_port',
+        'dst_ip',
+        'dst_port',
+        'gid',
+        'sid',
+        'rev',
+    ]
+    derived_filter_fields = snort_extracted_set | {
+        'event_type', 'dst_ip', 'dst_port', 'app_proto', 'flow_id', 'in_iface',
+    }
     core_filter_fields = set(core_fields)
 
     snort_line_re = re.compile(
@@ -2840,7 +2878,7 @@ def opensearch_discovery(request):
                         filters.append("COALESCE(raw_payload ->> %s, '') ILIKE %s")
                         params.extend([field, f"%{value}%"])
                     active_filters.append({'mode': 'include', 'field': field, 'value': value, 'token': token})
-                elif field in snort_extracted_set:
+                elif field in derived_filter_fields:
                     extracted_include_filters.append((field, value))
                     active_filters.append({'mode': 'include', 'field': field, 'value': value, 'token': token})
 
@@ -2860,14 +2898,24 @@ def opensearch_discovery(request):
                         filters.append("COALESCE(raw_payload ->> %s, '') NOT ILIKE %s")
                         params.extend([field, f"%{value}%"])
                     active_filters.append({'mode': 'exclude', 'field': field, 'value': value, 'token': token})
-                elif field in snort_extracted_set:
+                elif field in derived_filter_fields:
                     extracted_exclude_filters.append((field, value))
                     active_filters.append({'mode': 'exclude', 'field': field, 'value': value, 'token': token})
 
             where_sql = " AND ".join(filters)
-            table_columns = core_fields + payload_fields + [
-                f for f in snort_extracted_fields if f not in core_fields and f not in payload_fields
-            ]
+            if source == 'snort':
+                table_columns = snort_profile_fields
+            elif source == 'suricata':
+                table_columns = suricata_profile_fields
+            else:
+                include_snort_columns = False
+                cur.execute(f"SELECT COUNT(*) FROM os_events_raw WHERE {where_sql} AND source_type = 'snort'", params)
+                include_snort_columns = int(cur.fetchone()[0] or 0) > 0
+                table_columns = core_fields + payload_fields
+                if include_snort_columns:
+                    table_columns += [
+                        f for f in snort_extracted_fields if f not in core_fields and f not in payload_fields
+                    ]
 
             query_sql = f"""
                 SELECT
@@ -2931,8 +2979,27 @@ def opensearch_discovery(request):
                     # Defensive fallback: if signature is still empty, use message.
                     if (not payload.get('signature')) and str(base_map.get('message') or '').strip():
                         payload['signature'] = str(base_map.get('message')).strip()
+                elif source_type_value == 'suricata':
+                    alert_obj = payload.get('alert') if isinstance(payload.get('alert'), dict) else {}
+                    suricata_map = {
+                        'event_type': payload.get('event_type') or base_map.get('event_category'),
+                        'proto': payload.get('proto'),
+                        'src_ip': payload.get('src_ip'),
+                        'src_port': payload.get('src_port'),
+                        'dst_ip': payload.get('dest_ip') or payload.get('dst_ip'),
+                        'dst_port': payload.get('dest_port') or payload.get('dst_port'),
+                        'app_proto': payload.get('app_proto'),
+                        'flow_id': payload.get('flow_id'),
+                        'in_iface': payload.get('in_iface'),
+                        'signature': alert_obj.get('signature') if alert_obj else None,
+                        'classification': alert_obj.get('category') if alert_obj else None,
+                        'priority': alert_obj.get('severity') if alert_obj else None,
+                    }
+                    for key, val in suricata_map.items():
+                        if val is not None and str(val).strip() != '':
+                            payload[key] = val
 
-                extracted_map = {f: payload.get(f) for f in snort_extracted_fields}
+                extracted_map = {f: payload.get(f) for f in (derived_filter_fields | {'line'})}
                 include_ok = all(_value_matches(extracted_map.get(f), v) for f, v in extracted_include_filters)
                 exclude_ok = all(not _value_matches(extracted_map.get(f), v) for f, v in extracted_exclude_filters)
                 if not (include_ok and exclude_ok):
@@ -2940,7 +3007,12 @@ def opensearch_discovery(request):
 
                 row_cells = []
                 for col in table_columns:
-                    raw_value = payload.get(col) if col in payload_fields else base_map.get(col)
+                    if col in extracted_map and extracted_map.get(col) not in (None, ''):
+                        raw_value = extracted_map.get(col)
+                    elif col in payload_fields:
+                        raw_value = payload.get(col)
+                    else:
+                        raw_value = base_map.get(col)
                     is_empty = raw_value is None or str(raw_value).strip() == ''
                     if col in ('event_time', 'ingested_at') and raw_value:
                         display_value = raw_value.strftime('%Y-%m-%d %H:%M:%S')
@@ -3018,6 +3090,24 @@ def opensearch_discovery(request):
         db_error = str(exc)
 
     total_pages = (total + page_size - 1) // page_size if total else 1
+    source_profile = source if source in ('snort', 'suricata') else 'all'
+    profile_components = {
+        'all': {
+            'title': 'Unified Discovery',
+            'subtitle': 'Vista consolidada para analisis transversal entre fuentes.',
+            'focus': ['event_time', 'source_type', 'severity', 'event_category', 'message'],
+        },
+        'snort': {
+            'title': 'Snort Component',
+            'subtitle': 'Tabla especializada para firmas, clasificacion, prioridad y flujo de red.',
+            'focus': ['signature', 'classification', 'priority', 'proto', 'src_ip', 'dst_ip'],
+        },
+        'suricata': {
+            'title': 'Suricata Component',
+            'subtitle': 'Tabla especializada para event_type, flow/app_proto y telemetria de red.',
+            'focus': ['event_type', 'proto', 'src_ip', 'src_port', 'dst_ip', 'dst_port', 'flow_id'],
+        },
+    }
     base_qd = request.GET.copy()
     if 'page' in base_qd:
         base_qd.pop('page')
@@ -3036,9 +3126,13 @@ def opensearch_discovery(request):
         'category_options': category_options,
         'core_fields': core_fields,
         'payload_fields': payload_fields,
+        'snort_profile_fields': snort_profile_fields,
+        'suricata_profile_fields': suricata_profile_fields,
         'table_columns': table_columns,
         'active_filters': active_filters,
         'base_querystring': base_querystring,
+        'source_profile': source_profile,
+        'profile_components': profile_components,
         'timeline': timeline,
         'db_error': db_error,
     }
