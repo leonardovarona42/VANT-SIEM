@@ -28,7 +28,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib import messages
 from .models import (
     SnortLog, SuricataLog, IDSIngestConfig, IDSAlert, IDSStatistics,
-    SuricataEveAlert, SuricataFlow, SuricataStats, SuricataSystemLog
+    SuricataEveAlert, SuricataFlow, SuricataStats, SuricataSystemLog,
+    SavedVisualization, SavedDashboard
 )
 from .parsers import (
     parse_suricata_line, parse_snort_line, get_log_statistics, validate_log_line,
@@ -41,6 +42,86 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any
 
+
+def _serialize_saved_visualization(item):
+    return {
+        'id': item.id,
+        'name': item.name,
+        'description': item.description,
+        'space': item.space,
+        'is_shared': item.is_shared,
+        'config': item.config,
+        'created_at': item.created_at.isoformat() if item.created_at else None,
+        'updated_at': item.updated_at.isoformat() if item.updated_at else None,
+        'created_by': item.owner.username if item.owner_id else '',
+    }
+
+
+def _serialize_saved_dashboard(item):
+    return {
+        'id': item.id,
+        'name': item.name,
+        'description': item.description,
+        'space': item.space,
+        'is_shared': item.is_shared,
+        'layout': item.layout,
+        'created_at': item.created_at.isoformat() if item.created_at else None,
+        'updated_at': item.updated_at.isoformat() if item.updated_at else None,
+        'created_by': item.owner.username if item.owner_id else '',
+    }
+
+
+def _get_opensearch_pg_conn():
+    return psycopg2.connect(
+        host=os.getenv('OS_DB_HOST', 'localhost'),
+        port=int(os.getenv('OS_DB_PORT', '5432')),
+        dbname=os.getenv('OS_DB_NAME', 'opensearch'),
+        user=os.getenv('OS_DB_USER', 'postgres'),
+        password=os.getenv('OS_DB_PASSWORD', 'postgres'),
+    )
+
+
+def _build_viz_where(source, time_range, category, query):
+    range_map = {
+        '15m': timedelta(minutes=15),
+        '1h': timedelta(hours=1),
+        '24h': timedelta(hours=24),
+        '7d': timedelta(days=7),
+        '30d': timedelta(days=30),
+        '90d': timedelta(days=90),
+    }
+    since = timezone.now() - range_map.get(time_range, timedelta(days=7))
+    filters = ["event_time >= %s"]
+    params = [since]
+
+    if source and source != 'all':
+        filters.append("source_type = %s")
+        params.append(source)
+    if category:
+        filters.append("event_category = %s")
+        params.append(category)
+    if query:
+        filters.append("(message ILIKE %s OR event_category ILIKE %s OR host_name ILIKE %s OR source_name ILIKE %s)")
+        like = f"%{query}%"
+        params.extend([like, like, like, like])
+
+    return " AND ".join(filters), params
+
+
+def _field_sql(field):
+    core_fields = {
+        'id', 'source_type', 'source_name', 'host_name', 'event_time',
+        'severity', 'event_category', 'message', 'tags', 'ingested_at',
+    }
+    payload_allow = {
+        'event_type', 'proto', 'src_ip', 'src_port', 'dest_ip', 'dest_port', 'dst_ip', 'dst_port',
+        'app_proto', 'flow_id', 'in_iface', 'line', 'signature', 'classification', 'priority', 'gid', 'sid', 'rev',
+    }
+    if field in core_fields:
+        return f"COALESCE(CAST({field} AS TEXT), '')", []
+    if field in payload_allow:
+        return "COALESCE(raw_payload ->> %s, '')", [field]
+    return None, []
 
 
 def intelligence_dashboard(request):
@@ -595,6 +676,100 @@ def snort_dashboard(request):
     }
     
     return render(request, 'snort_dashboard.html', context)
+
+@login_required
+def snort_dashboard_v2(request):
+    """Snort Dashboard V2"""
+    from django.db.models import Count
+    from django.utils import timezone
+    from datetime import timedelta
+    import json
+    
+    time_range = request.GET.get('time_range', '1h')
+    now = timezone.now()
+    
+    # Handle 'all' option to show all data without time filter
+    if time_range == 'all':
+        start_time = None
+    elif time_range == '5m':
+        start_time = now - timedelta(minutes=5)
+    elif time_range == '15m':
+        start_time = now - timedelta(minutes=15)
+    elif time_range == '1h':
+        start_time = now - timedelta(hours=1)
+    elif time_range == '6h':
+        start_time = now - timedelta(hours=6)
+    elif time_range == '24h':
+        start_time = now - timedelta(hours=24)
+    elif time_range == '7d':
+        start_time = now - timedelta(days=7)
+    else:
+        start_time = now - timedelta(hours=1)
+    
+    # Filter logs based on time range
+    if start_time:
+        logs = SnortLog.objects.filter(timestamp__gte=start_time, timestamp__lte=now)
+    else:
+        logs = SnortLog.objects.all()
+    
+    # Severity is stored as strings: 'Critical', 'High', 'Medium', 'Low'
+    critical_count = logs.filter(severity='Critical').count()
+    high_count = logs.filter(severity='High').count()
+    medium_count = logs.filter(severity='Medium').count()
+    total_count = logs.count()
+    alerts = logs.order_by('-timestamp')[:50]
+    
+    # Timeline - adjust based on time range
+    timeline_labels = []
+    timeline_data = []
+    
+    if time_range == 'all':
+        # For "all" time, show last 7 days in daily buckets
+        for i in range(7):
+            d_start = now - timedelta(days=i+1)
+            d_end = now - timedelta(days=i)
+            count = SnortLog.objects.filter(timestamp__gte=d_start, timestamp__lt=d_end).count()
+            timeline_labels.insert(0, d_start.strftime('%m/%d'))
+            timeline_data.insert(0, count)
+    else:
+        # Show hourly buckets for shorter time ranges
+        for i in range(6):
+            h_start = now - timedelta(hours=i+1)
+            h_end = now - timedelta(hours=i)
+            count = logs.filter(timestamp__gte=h_start, timestamp__lt=h_end).count()
+            timeline_labels.insert(0, h_start.strftime('%H:00'))
+            timeline_data.insert(0, count)
+    
+    # Signatures (using message field)
+    sigs = list(logs.values('message').annotate(c=Count('id')).order_by('-c')[:5])
+    sig_labels = [s['message'][:50] if s['message'] else 'N/A' for s in sigs]
+    sig_data = [s['c'] for s in sigs]
+    
+    # IPs
+    src_ips = list(logs.values('src_ip').annotate(c=Count('id')).order_by('-c')[:10])
+    src_ip_labels = [s['src_ip'] for s in src_ips if s['src_ip']]
+    src_ip_data = [s['c'] for s in src_ips if s['src_ip']]
+    
+    dst_ips = list(logs.values('dst_ip').annotate(c=Count('id')).order_by('-c')[:10])
+    dst_ip_labels = [d['dst_ip'] for d in dst_ips if d['dst_ip']]
+    dst_ip_data = [d['c'] for d in dst_ips if d['dst_ip']]
+    
+    context = {
+        'stats': {'critical': critical_count, 'high': high_count, 'medium': medium_count, 'total': total_count},
+        'alerts': alerts,
+        'time_range': time_range,
+        'timeline_labels': json.dumps(timeline_labels),
+        'timeline_data': json.dumps(timeline_data),
+        'sig_labels': json.dumps(sig_labels),
+        'sig_data': json.dumps(sig_data),
+        'src_ip_labels': json.dumps(src_ip_labels),
+        'src_ip_data': json.dumps(src_ip_data),
+        'dst_ip_labels': json.dumps(dst_ip_labels),
+        'dst_ip_data': json.dumps(dst_ip_data)
+    }
+    return render(request, 'snort_dashboard_v2.html', context)
+
+
 
 def get_snort_chart_data(logs, start_time):
     """Generar datos para gráficos de Snort"""
@@ -3137,4 +3312,292 @@ def opensearch_discovery(request):
         'db_error': db_error,
     }
     return render(request, 'opensearch_discovery.html', context)
+
+
+@login_required
+def opensearch_create_visualizations(request):
+    """Base UI para creacion de visualizaciones personalizadas."""
+    presets = [
+        {'id': 'timeseries', 'name': 'Time Series', 'desc': 'Eventos por tiempo con agrupacion por campo.'},
+        {'id': 'bar', 'name': 'Bar Chart', 'desc': 'Top valores por campo (source, category, proto, host).'},
+        {'id': 'pie', 'name': 'Pie/Donut', 'desc': 'Distribucion porcentual por categoria o severidad.'},
+        {'id': 'table', 'name': 'Data Table', 'desc': 'Tabla agregada con filtros y ordenacion.'},
+        {'id': 'geo', 'name': 'Geo Map', 'desc': 'Visualizacion geografica cuando existan campos de ubicacion.'},
+    ]
+    available_fields = [
+        'source_type', 'source_name', 'host_name', 'event_category', 'severity',
+        'event_type', 'proto', 'src_ip', 'src_port', 'dest_ip', 'dest_port',
+        'app_proto', 'flow_id', 'in_iface', 'signature', 'classification', 'priority'
+    ]
+    return render(
+        request,
+        'opensearch_create_visualizations.html',
+        {'presets': presets, 'available_fields': available_fields},
+    )
+
+
+@login_required
+def opensearch_visualizations_list(request):
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Metodo no permitido'}, status=405)
+    space = (request.GET.get('space') or 'personal').strip()
+    qs = SavedVisualization.objects.filter(Q(owner=request.user, space=space) | Q(is_shared=True, space=space)).order_by('-updated_at')
+    items = [_serialize_saved_visualization(x) for x in qs[:300]]
+    return JsonResponse({'success': True, 'items': items, 'space': space})
+
+
+@login_required
+def opensearch_visualizations_save(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Metodo no permitido'}, status=405)
+    try:
+        payload = json.loads(request.body or '{}')
+        name = (payload.get('name') or '').strip()
+        config = payload.get('config') or {}
+        space = (payload.get('space') or 'personal').strip()
+        is_shared = bool(payload.get('is_shared', False))
+        viz_id = payload.get('id')
+        if not name:
+            return JsonResponse({'success': False, 'error': 'El nombre es obligatorio'}, status=400)
+        if viz_id:
+            obj = SavedVisualization.objects.filter(id=viz_id, owner=request.user).first()
+            if not obj:
+                return JsonResponse({'success': False, 'error': 'Visualizacion no encontrada'}, status=404)
+            obj.name = name
+            obj.description = (payload.get('description') or '').strip()
+            obj.config = config
+            obj.space = space
+            obj.is_shared = is_shared
+            obj.save(update_fields=['name', 'description', 'config', 'space', 'is_shared', 'updated_at'])
+        else:
+            obj = SavedVisualization.objects.create(
+                owner=request.user,
+                name=name,
+                description=(payload.get('description') or '').strip(),
+                config=config,
+                space=space,
+                is_shared=is_shared,
+            )
+        return JsonResponse({'success': True, 'item': _serialize_saved_visualization(obj)})
+    except Exception as exc:
+        return JsonResponse({'success': False, 'error': str(exc)}, status=500)
+
+
+@login_required
+def opensearch_visualizations_delete(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Metodo no permitido'}, status=405)
+    try:
+        payload = json.loads(request.body or '{}')
+        viz_id = payload.get('id')
+        if not viz_id:
+            return JsonResponse({'success': False, 'error': 'ID requerido'}, status=400)
+        obj = SavedVisualization.objects.filter(id=viz_id, owner=request.user).first()
+        if not obj:
+            return JsonResponse({'success': False, 'error': 'Visualizacion no encontrada'}, status=404)
+        obj.delete()
+        return JsonResponse({'success': True, 'message': 'Visualizacion eliminada'})
+    except Exception as exc:
+        return JsonResponse({'success': False, 'error': str(exc)}, status=500)
+
+
+@login_required
+def opensearch_dashboards_list(request):
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Metodo no permitido'}, status=405)
+    space = (request.GET.get('space') or 'personal').strip()
+    qs = SavedDashboard.objects.filter(Q(owner=request.user, space=space) | Q(is_shared=True, space=space)).order_by('-updated_at')
+    items = [_serialize_saved_dashboard(x) for x in qs[:200]]
+    return JsonResponse({'success': True, 'items': items, 'space': space})
+
+
+@login_required
+def opensearch_dashboards_save(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Metodo no permitido'}, status=405)
+    try:
+        payload = json.loads(request.body or '{}')
+        name = (payload.get('name') or '').strip()
+        if not name:
+            return JsonResponse({'success': False, 'error': 'El nombre es obligatorio'}, status=400)
+
+        dashboard_id = payload.get('id')
+        space = (payload.get('space') or 'personal').strip()
+        is_shared = bool(payload.get('is_shared', False))
+        layout = payload.get('layout') or {}
+
+        panel_ids = []
+        if isinstance(layout, dict):
+            panel_ids = layout.get('panel_ids') or []
+        valid_ids = set(
+            SavedVisualization.objects.filter(
+                Q(owner=request.user, id__in=panel_ids) | Q(is_shared=True, id__in=panel_ids)
+            ).values_list('id', flat=True)
+        )
+        if isinstance(layout, dict):
+            layout['panel_ids'] = [x for x in panel_ids if x in valid_ids]
+
+        if dashboard_id:
+            obj = SavedDashboard.objects.filter(id=dashboard_id, owner=request.user).first()
+            if not obj:
+                return JsonResponse({'success': False, 'error': 'Dashboard no encontrado'}, status=404)
+            obj.name = name
+            obj.description = (payload.get('description') or '').strip()
+            obj.space = space
+            obj.layout = layout
+            obj.is_shared = is_shared
+            obj.save(update_fields=['name', 'description', 'space', 'layout', 'is_shared', 'updated_at'])
+        else:
+            obj = SavedDashboard.objects.create(
+                owner=request.user,
+                name=name,
+                description=(payload.get('description') or '').strip(),
+                space=space,
+                layout=layout,
+                is_shared=is_shared,
+            )
+
+        return JsonResponse({'success': True, 'item': _serialize_saved_dashboard(obj)})
+    except Exception as exc:
+        return JsonResponse({'success': False, 'error': str(exc)}, status=500)
+
+
+@login_required
+def opensearch_visualizations_preview(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Metodo no permitido'}, status=405)
+    try:
+        payload = json.loads(request.body or '{}')
+        source = payload.get('source', 'all')
+        time_range = payload.get('time_range', '24h')
+        category = (payload.get('category') or '').strip()
+        query = (payload.get('query') or '').strip()
+        viz_type = (payload.get('viz_type') or 'timeseries').strip()
+        group_by = (payload.get('group_by') or '').strip()
+        limit = max(1, min(int(payload.get('limit') or 10), 100))
+        table_fields = payload.get('table_fields') or ['event_time', 'source_type', 'event_category', 'severity', 'message']
+
+        where_sql, params = _build_viz_where(source, time_range, category, query)
+        pg = _get_opensearch_pg_conn()
+        pg.autocommit = True
+        response = {'success': True, 'viz_type': viz_type, 'data': {}}
+
+        with pg.cursor() as cur:
+            if viz_type == 'timeseries':
+                bucket_unit, bucket_step = {
+                    '15m': ('minute', '1 minute'),
+                    '1h': ('minute', '5 minutes'),
+                    '24h': ('hour', '1 hour'),
+                    '7d': ('day', '1 day'),
+                    '30d': ('day', '1 day'),
+                    '90d': ('day', '1 day'),
+                }.get(time_range, ('hour', '1 hour'))
+
+                if group_by:
+                    group_sql, group_params = _field_sql(group_by)
+                    if group_sql:
+                        cur.execute(
+                            f"""
+                            WITH top_groups AS (
+                                SELECT {group_sql} AS g
+                                FROM os_events_raw
+                                WHERE {where_sql}
+                                GROUP BY g
+                                ORDER BY COUNT(*) DESC
+                                LIMIT 6
+                            )
+                            SELECT date_trunc(%s, event_time) AS bucket, {group_sql} AS grp, COUNT(*)
+                            FROM os_events_raw
+                            WHERE {where_sql}
+                              AND {group_sql} IN (SELECT g FROM top_groups)
+                            GROUP BY 1, 2
+                            ORDER BY 1, 2
+                            """,
+                            [bucket_unit] + group_params + params + group_params + params + group_params,
+                        )
+                        rows = cur.fetchall()
+                        labels = sorted({r[0].strftime('%Y-%m-%d %H:%M') for r in rows if r[0]})
+                        groups = sorted({r[1] or 'unknown' for r in rows})
+                        datasets = []
+                        for g in groups:
+                            data_map = {r[0].strftime('%Y-%m-%d %H:%M'): int(r[2]) for r in rows if (r[1] or 'unknown') == g}
+                            datasets.append({'label': g, 'data': [data_map.get(lb, 0) for lb in labels]})
+                        response['data'] = {'labels': labels, 'datasets': datasets}
+                    else:
+                        group_by = ''
+
+                if not group_by:
+                    cur.execute(
+                        f"""
+                        SELECT date_trunc(%s, event_time) AS bucket, COUNT(*)
+                        FROM os_events_raw
+                        WHERE {where_sql}
+                        GROUP BY 1
+                        ORDER BY 1
+                        """,
+                        [bucket_unit] + params,
+                    )
+                    rows = cur.fetchall()
+                    response['data'] = {
+                        'labels': [r[0].strftime('%Y-%m-%d %H:%M') for r in rows if r[0]],
+                        'datasets': [{'label': 'Events', 'data': [int(r[1]) for r in rows]}],
+                    }
+
+            elif viz_type in ('bar', 'pie', 'geo'):
+                if not group_by:
+                    group_by = 'event_category' if viz_type != 'geo' else 'src_ip'
+                group_sql, group_params = _field_sql(group_by)
+                if not group_sql and viz_type == 'geo':
+                    group_sql, group_params = _field_sql('src_ip')
+                if not group_sql:
+                    return JsonResponse({'success': False, 'error': 'Campo de agrupacion invalido'}, status=400)
+                cur.execute(
+                    f"""
+                    SELECT {group_sql} AS grp, COUNT(*)
+                    FROM os_events_raw
+                    WHERE {where_sql}
+                    GROUP BY grp
+                    ORDER BY COUNT(*) DESC
+                    LIMIT %s
+                    """,
+                    group_params + params + [limit],
+                )
+                rows = cur.fetchall()
+                response['data'] = {
+                    'labels': [r[0] or 'unknown' for r in rows],
+                    'values': [int(r[1]) for r in rows],
+                }
+
+            elif viz_type == 'table':
+                field_clauses = []
+                sql_params = []
+                clean_fields = []
+                for field in table_fields[:12]:
+                    expr, f_params = _field_sql(field)
+                    if expr:
+                        field_clauses.append(f"{expr} AS {field}")
+                        sql_params.extend(f_params)
+                        clean_fields.append(field)
+                if not field_clauses:
+                    field_clauses = ["event_time::text AS event_time", "source_type AS source_type", "message AS message"]
+                    clean_fields = ['event_time', 'source_type', 'message']
+                cur.execute(
+                    f"""
+                    SELECT {', '.join(field_clauses)}
+                    FROM os_events_raw
+                    WHERE {where_sql}
+                    ORDER BY event_time DESC
+                    LIMIT %s
+                    """,
+                    sql_params + params + [limit],
+                )
+                rows = cur.fetchall()
+                response['data'] = {'columns': clean_fields, 'rows': [list(r) for r in rows]}
+            else:
+                return JsonResponse({'success': False, 'error': 'Tipo de visualizacion no soportado'}, status=400)
+
+        pg.close()
+        return JsonResponse(response)
+    except Exception as exc:
+        return JsonResponse({'success': False, 'error': str(exc)}, status=500)
 
