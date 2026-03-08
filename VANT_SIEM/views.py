@@ -1468,7 +1468,7 @@ def ollama_chat(request):
 
         try:
             # Estadísticas de seguridad actuales
-            from ids_ingest.models import IDSAlert, SnortLog, SuricataEveAlert
+            from opensearch_ui.models import IDSAlert, SnortLog, SuricataEveAlert
             from EVENT_M.models import Reporte, Incidente
             from django.utils import timezone
             from django.db.models import Count
@@ -3792,7 +3792,7 @@ def ollama_send_report_email(request):
 def ollama_cross_reference(request):
     """Cruzar información inteligente en la base de datos usando IA"""
     from .ollama_service import ollama_service
-    from ids_ingest.models import SnortLog, SuricataEveAlert
+    from opensearch_ui.models import SnortLog, SuricataEveAlert
     from EVENT_M.models import Incidente, Reporte
     from django.contrib.auth.models import User
 
@@ -3917,4 +3917,5 @@ INSTRUCCIONES:
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
 

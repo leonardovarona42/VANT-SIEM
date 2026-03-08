@@ -476,6 +476,350 @@ function renderCharts() {
     }
 }
 
+// ============================================
+// KIBANA-LIKE CHART RENDERING
+// ============================================
+
+/**
+ * Render charts in Kibana style
+ */
+function renderKibanaCharts() {
+    const chartData = window.chartData || {};
+    
+    // Destroy existing charts
+    Object.values(charts).forEach(chart => {
+        if (chart) chart.destroy();
+    });
+    charts = {};
+    
+    // Kibana color palette
+    const kibanaColors = [
+        '#6092c0', '#54b399', '#d6bf57', '#da8b45', '#e74856',
+        '#9170b8', '#ca8b45', '#3c8dbc', '#00a65a', '#f39c12'
+    ];
+    
+    // Timeline Chart (Activity over Time)
+    const timelineCanvas = document.getElementById('chartTimeline');
+    if (timelineCanvas && chartData.timeline && chartData.timeline.length > 0) {
+        const tl = chartData.timeline;
+        charts.timeline = new Chart(timelineCanvas, {
+            type: 'line',
+            data: {
+                labels: tl.map(t => Object.values(t)[0]),
+                datasets: [{
+                    label: 'Events',
+                    data: tl.map(t => t.count),
+                    borderColor: '#6092c0',
+                    backgroundColor: 'rgba(96, 146, 192, 0.2)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 2,
+                    pointBackgroundColor: '#6092c0',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 1,
+                    pointRadius: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#e3e8f2' },
+                        ticks: { color: '#6a717d' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#6a717d' }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Event Types Pie Chart
+    const eventTypesCanvas = document.getElementById('chartEventTypes');
+    if (eventTypesCanvas && chartData.proto_dist && chartData.proto_dist.length > 0) {
+        const pd = chartData.proto_dist;
+        charts.eventTypes = new Chart(eventTypesCanvas, {
+            type: 'pie',
+            data: {
+                labels: pd.map(x => x.proto || x.protocol || 'Unknown'),
+                datasets: [{
+                    data: pd.map(x => x.count),
+                    backgroundColor: kibanaColors,
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: '#1a1a1a',
+                            font: { size: 12 },
+                            padding: 12
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Transport Protocols Donut Chart
+    const transportCanvas = document.getElementById('chartTransport');
+    if (transportCanvas && chartData.proto_dist && chartData.proto_dist.length > 0) {
+        const pd = chartData.proto_dist;
+        charts.transport = new Chart(transportCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: pd.map(x => x.proto || x.protocol || 'Unknown'),
+                datasets: [{
+                    data: pd.map(x => x.count),
+                    backgroundColor: kibanaColors,
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: '#1a1a1a',
+                            font: { size: 12 },
+                            padding: 12
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Network Protocols Chart
+    const networkCanvas = document.getElementById('chartNetwork');
+    if (networkCanvas && chartData.app_proto_dist && chartData.app_proto_dist.length > 0) {
+        const ap = chartData.app_proto_dist;
+        charts.network = new Chart(networkCanvas, {
+            type: 'doughnut',
+            data: {
+                labels: ap.map(x => x.app_proto || 'Unknown'),
+                datasets: [{
+                    data: ap.map(x => x.count),
+                    backgroundColor: kibanaColors,
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: '#1a1a1a',
+                            font: { size: 12 },
+                            padding: 12
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Top Ports Chart (Horizontal Bar)
+    const portsCanvas = document.getElementById('chartPorts');
+    if (portsCanvas && (chartData.top_src_ports || chartData.top_dest_ports)) {
+        const sp = chartData.top_src_ports || [];
+        const dp = chartData.top_dest_ports || [];
+        const allPorts = [...new Set([...sp.map(x=>x.src_port), ...dp.map(x=>x.dest_port)])].slice(0, 10);
+        
+        charts.ports = new Chart(portsCanvas, {
+            type: 'bar',
+            data: {
+                labels: allPorts.map(String),
+                datasets: [
+                    {
+                        label: 'Source',
+                        data: allPorts.map(port => {
+                            const found = sp.find(x => x.src_port === port);
+                            return found ? found.count : 0;
+                        }),
+                        backgroundColor: 'rgba(96, 146, 192, 0.8)',
+                        borderColor: '#6092c0',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Destination',
+                        data: allPorts.map(port => {
+                            const found = dp.find(x => x.dest_port === port);
+                            return found ? found.count : 0;
+                        }),
+                        backgroundColor: 'rgba(84, 179, 153, 0.8)',
+                        borderColor: '#54b399',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#1a1a1a' }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#e3e8f2' },
+                        ticks: { color: '#6a717d' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#6a717d' }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Top IPs Chart
+    const ipsCanvas = document.getElementById('chartIPs');
+    if (ipsCanvas && (chartData.top_src_ips || chartData.top_dest_ips)) {
+        const si = chartData.top_src_ips || [];
+        const di = chartData.top_dest_ips || [];
+        const allIPs = [...new Set([...si.map(x=>x.src_ip), ...di.map(x=>x.dest_ip)])].slice(0, 10);
+        
+        charts.ips = new Chart(ipsCanvas, {
+            type: 'bar',
+            data: {
+                labels: allIPs,
+                datasets: [
+                    {
+                        label: 'Source',
+                        data: allIPs.map(ip => {
+                            const found = si.find(x => x.src_ip === ip);
+                            return found ? found.count : 0;
+                        }),
+                        backgroundColor: 'rgba(214, 191, 87, 0.8)',
+                        borderColor: '#d6bf57',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Destination',
+                        data: allIPs.map(ip => {
+                            const found = di.find(x => x.dest_ip === ip);
+                            return found ? found.count : 0;
+                        }),
+                        backgroundColor: 'rgba(218, 139, 69, 0.8)',
+                        borderColor: '#da8b45',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#1a1a1a' }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#e3e8f2' },
+                        ticks: { color: '#6a717d' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: '#6a717d',
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                }
+            }
+        });
+    }
+}
+
+/**
+ * Update metric value with animation
+ */
+function updateMetricValue(elementId, newValue) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        const currentValue = parseInt(element.textContent) || 0;
+        if (newValue !== currentValue) {
+            element.style.transform = 'scale(1.1)';
+            element.style.transition = 'transform 0.3s ease';
+            element.textContent = newValue;
+            setTimeout(() => {
+                element.style.transform = 'scale(1)';
+            }, 300);
+        }
+    }
+}
+
+/**
+ * Update all dashboard metrics
+ */
+function updateDashboardMetrics(stats) {
+    updateMetricValue('total-events', stats.total || 0);
+    updateMetricValue('critical-events', stats.critical || 0);
+    updateMetricValue('high-events', stats.high || 0);
+    updateMetricValue('medium-events', stats.medium || 0);
+    updateMetricValue('low-events', stats.low || 0);
+    updateMetricValue('last-24h-events', stats.last_24h || 0);
+}
+
+/**
+ * Initialize Kibana-like dashboard
+ */
+function initKibanaDashboard() {
+    // Render charts if Chart.js is available
+    if (typeof Chart !== 'undefined') {
+        renderKibanaCharts();
+    }
+    
+    // Add panel interaction handlers
+    document.querySelectorAll('.kbnGridPanel').forEach(panel => {
+        panel.addEventListener('mouseenter', function() {
+            this.style.zIndex = '10';
+        });
+        panel.addEventListener('mouseleave', function() {
+            this.style.zIndex = '';
+        });
+    });
+    
+    // Initialize tooltips
+    document.querySelectorAll('[data-tooltip]').forEach(element => {
+        element.addEventListener('mouseenter', function() {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'euiToolTip';
+            tooltip.textContent = this.dataset.tooltip;
+            document.body.appendChild(tooltip);
+        });
+    });
+}
+
 // Inicialización
 document.addEventListener('DOMContentLoaded', function() {
     // Iniciar auto-actualización por defecto

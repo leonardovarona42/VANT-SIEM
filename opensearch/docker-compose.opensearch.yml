@@ -1,0 +1,44 @@
+services:
+  opensearch-db:
+    image: postgres:16
+    container_name: vant-opensearch-db
+    environment:
+      POSTGRES_DB: vant_opensearch
+      POSTGRES_USER: os_user
+      POSTGRES_PASSWORD: os_pass
+    ports:
+      - "5433:5432"
+    volumes:
+      - opensearch_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  opensearch-service:
+    image: python:3.13-slim
+    container_name: vant-opensearch-service
+    working_dir: /app
+    command: >
+      sh -c "pip install --no-cache-dir flask psycopg[binary] pyyaml &&
+             python service/app.py"
+    environment:
+      OS_SERVICE_HOST: 0.0.0.0
+      OS_SERVICE_PORT: 9201
+      OS_DB_HOST: opensearch-db
+      OS_DB_PORT: 5432
+      OS_DB_NAME: vant_opensearch
+      OS_DB_USER: os_user
+      OS_DB_PASSWORD: os_pass
+      OS_AUTH_MODE: none
+      OS_AUTH_USERNAME: ""
+      OS_AUTH_PASSWORD: ""
+      OS_AUTH_TOKEN: ""
+    ports:
+      - "9201:9201"
+    volumes:
+      - ./:/app
+    depends_on:
+      - opensearch-db
+    restart: unless-stopped
+
+volumes:
+  opensearch_pgdata:
+

@@ -11,7 +11,7 @@ from django.utils import timezone
 from django.db.models import Count, Q
 from django.conf import settings
 
-from ids_ingest.models import (
+from opensearch_ui.models import (
     SnortLog, SuricataEveAlert, SuricataFlow, SuricataStats, 
     IDSAlert, IDSStatistics
 )

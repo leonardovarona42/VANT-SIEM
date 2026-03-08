@@ -1,0 +1,115 @@
+{% extends "dashboard.html" %}
+{% load static %}
+{% block title %}OpenSearch Visual Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ids-dashboard.css' %}">
+<style>
+.opensearch-wrap { padding: 16px; background: #0f172a; min-height: 100vh; color: #e2e8f0; }
+.opensearch-cards { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 16px; }
+.opensearch-card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 14px; }
+.opensearch-card .k { color: #94a3b8; font-size: 12px; text-transform: uppercase; }
+.opensearch-card .v { font-size: 28px; font-weight: 700; color: #f8fafc; }
+.opensearch-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 16px; }
+.opensearch-panel { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; }
+.opensearch-table { width: 100%; border-collapse: collapse; }
+.opensearch-table th, .opensearch-table td { padding: 8px; border-bottom: 1px solid #334155; font-size: 12px; }
+.opensearch-toolbar { display: flex; gap: 8px; margin-bottom: 12px; }
+@media (max-width: 900px) { .opensearch-cards { grid-template-columns: repeat(2, minmax(0,1fr)); } .opensearch-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="opensearch-wrap">
+  <div class="opensearch-toolbar">
+    <form method="get">
+      <select name="time_range" class="ids-form-control-modern">
+        <option value="5m" {% if time_range == '5m' %}selected{% endif %}>Last 5m</option>
+        <option value="15m" {% if time_range == '15m' %}selected{% endif %}>Last 15m</option>
+        <option value="1h" {% if time_range == '1h' %}selected{% endif %}>Last 1h</option>
+        <option value="24h" {% if time_range == '24h' %}selected{% endif %}>Last 24h</option>
+        <option value="7d" {% if time_range == '7d' %}selected{% endif %}>Last 7d</option>
+      </select>
+      <select name="source" class="ids-form-control-modern">
+        <option value="all" {% if source == 'all' %}selected{% endif %}>All</option>
+        <option value="snort" {% if source == 'snort' %}selected{% endif %}>Snort</option>
+        <option value="suricata" {% if source == 'suricata' %}selected{% endif %}>Suricata</option>
+      </select>
+      <button class="ids-btn-modern" type="submit">Refresh</button>
+    </form>
+  </div>
+
+  {% if db_error %}
+  <div class="opensearch-panel" style="border-color:#ef4444;color:#fecaca;">Database error: {{ db_error }}</div>
+  {% endif %}
+
+  <div class="opensearch-cards">
+    <div class="opensearch-card"><div class="k">Total events</div><div class="v">{{ stats.total }}</div></div>
+    <div class="opensearch-card"><div class="k">Snort</div><div class="v">{{ stats.snort }}</div></div>
+    <div class="opensearch-card"><div class="k">Suricata</div><div class="v">{{ stats.suricata }}</div></div>
+    <div class="opensearch-card"><div class="k">Last event</div><div class="v" style="font-size:14px;">{{ stats.last_event|default:"-" }}</div></div>
+  </div>
+
+  <div class="opensearch-grid">
+    <div class="opensearch-panel">
+      <h4>Events Over Time</h4>
+      <canvas id="timelineChart" height="110"></canvas>
+    </div>
+    <div class="opensearch-panel">
+      <h4>Top Categories</h4>
+      <canvas id="categoryChart" height="110"></canvas>
+    </div>
+  </div>
+
+  <div class="opensearch-panel">
+    <h4>Latest Events</h4>
+    <div style="max-height: 420px; overflow:auto;">
+      <table class="opensearch-table">
+        <thead><tr><th>Time</th><th>Source</th><th>Category</th><th>Host</th><th>Message</th></tr></thead>
+        <tbody>
+        {% for e in latest_events %}
+        <tr>
+          <td>{{ e.event_time }}</td>
+          <td>{{ e.source_type }}</td>
+          <td>{{ e.event_category }}</td>
+          <td>{{ e.host_name }}</td>
+          <td>{{ e.message }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5">No data in selected range.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/chart.umd.min.js' %}"></script>
+<script>
+const chartData = {{ chart_data|safe }};
+const timelineCtx = document.getElementById('timelineChart');
+if (timelineCtx) {
+  new Chart(timelineCtx, {
+    type: 'line',
+    data: {
+      labels: chartData.timeline.map(x => x.bucket),
+      datasets: [{ label: 'Events', data: chartData.timeline.map(x => x.count), borderColor: '#60a5fa', backgroundColor: 'rgba(96,165,250,0.2)', fill: true }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } } }
+  });
+}
+const catCtx = document.getElementById('categoryChart');
+if (catCtx) {
+  new Chart(catCtx, {
+    type: 'bar',
+    data: {
+      labels: chartData.top_categories.map(x => x.category),
+      datasets: [{ label: 'Count', data: chartData.top_categories.map(x => x.count), backgroundColor: '#34d399' }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } } }
+  });
+}
+</script>
+{% endblock %}

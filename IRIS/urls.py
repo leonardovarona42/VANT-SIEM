@@ -26,4 +26,7 @@ urlpatterns = [
 
     # Live AI Activity Monitor
     path('live/', views.live_ai_monitor, name='live_ai_monitor'),
+
+    # Alert Management
+    path('acknowledge-alert/<int:alert_id>/', views.acknowledge_alert, name='acknowledge_alert'),
 ]

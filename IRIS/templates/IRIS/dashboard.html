@@ -25,16 +25,35 @@
                     <!-- Estado del Sistema -->
                     <div class="row mb-4">
                         <div class="col-md-3">
-                            <div class="card bg-info text-white">
+                            <div class="card {% if system_status.overall_health == 'healthy' %}bg-info{% elif system_status.overall_health == 'warning' %}bg-warning{% else %}bg-danger{% endif %} text-white">
                                 <div class="card-body text-center">
-                                    <i class="fas fa-chart-line fa-2x mb-2"></i>
-                                    <h5 class="card-title">Análisis Automático</h5>
+                                    <i class="fas fa-heartbeat fa-2x mb-2"></i>
+                                    <h5 class="card-title">Estado del Sistema</h5>
                                     <p class="card-text">
-                                        {% if config.auto_analysis_enabled %}
-                                            <span class="badge bg-success">ACTIVADO</span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">DESACTIVADO</span>
-                                        {% endif %}
+                                        <span class="badge bg-{% if system_status.overall_health == 'healthy' %}success{% elif system_status.overall_health == 'warning' %}warning{% else %}danger{% endif %}">
+                                            {{ system_status.overall_health|upper }}
+                                        </span>
+                                    </p>
+                                    {% if system_status.warnings or system_status.critical_issues %}
+                                        <small>
+                                            {% for warning in system_status.warnings %}
+                                                <div class="text-warning">{{ warning }}</div>
+                                            {% endfor %}
+                                            {% for issue in system_status.critical_issues %}
+                                                <div class="text-danger">{{ issue }}</div>
+                                            {% endfor %}
+                                        </small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-layer-group fa-2x mb-2"></i>
+                                    <h5 class="card-title">Fase de Adopción</h5>
+                                    <p class="card-text">
+                                        <span class="badge bg-light text-dark">{{ config.get_adoption_phase_display }}</span>
                                     </p>
                                 </div>
                             </div>
@@ -43,8 +62,15 @@
                             <div class="card bg-warning text-white">
                                 <div class="card-body text-center">
                                     <i class="fas fa-clock fa-2x mb-2"></i>
-                                    <h5 class="card-title">Intervalo</h5>
-                                    <p class="card-text">{{ config.analysis_interval_hours }}h</p>
+                                    <h5 class="card-title">Análisis Automático</h5>
+                                    <p class="card-text">
+                                        {% if config.auto_analysis_enabled %}
+                                            <span class="badge bg-success">ACTIVADO</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">DESACTIVADO</span>
+                                        {% endif %}
+                                        <br><small>{{ config.analysis_interval_hours }}h intervalo</small>
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -52,21 +78,132 @@
                             <div class="card bg-danger text-white">
                                 <div class="card-body text-center">
                                     <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
-                                    <h5 class="card-title">Predicciones Pendientes</h5>
-                                    <p class="card-text">{{ pending_predictions|length }}</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card bg-success text-white">
-                                <div class="card-body text-center">
-                                    <i class="fas fa-check-circle fa-2x mb-2"></i>
-                                    <h5 class="card-title">Incidentes Hoy</h5>
-                                    <p class="card-text">{{ total_incidents_today }}</p>
+                                    <h5 class="card-title">Alertas Activas</h5>
+                                    <p class="card-text">{{ active_alerts|length }}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Controles de Seguridad -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card bg-secondary">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="card-title mb-0">Circuit Breaker</h5>
+                                </div>
+                                <div class="card-body">
+                                    {% if circuit_breaker %}
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <strong>Estado:</strong>
+                                                <span class="badge bg-{% if circuit_breaker.state == 'closed' %}success{% elif circuit_breaker.state == 'half_open' %}warning{% else %}danger{% endif %} ms-2">
+                                                    {{ circuit_breaker.get_state_display }}
+                                                </span>
+                                            </div>
+                                            <div class="col-6">
+                                                <strong>Éxitos:</strong> {{ circuit_breaker.current_successes }}/{{ circuit_breaker.success_threshold }}
+                                            </div>
+                                        </div>
+                                        <div class="row mt-2">
+                                            <div class="col-6">
+                                                <strong>Fallos:</strong> {{ circuit_breaker.current_failures }}/{{ circuit_breaker.failure_threshold }}
+                                            </div>
+                                            <div class="col-6">
+                                                <strong>Último Fallo:</strong>
+                                                {% if circuit_breaker.last_failure_time %}
+                                                    {{ circuit_breaker.last_failure_time|date:"d/m H:i" }}
+                                                {% else %}
+                                                    Nunca
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <p class="text-muted">Circuit Breaker no configurado</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card bg-secondary">
+                                <div class="card-header bg-primary text-white">
+                                    <h5 class="card-title mb-0">Límites de Tasa</h5>
+                                </div>
+                                <div class="card-body table-responsive">
+                                    <table class="table table-dark table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Acción</th>
+                                                <th>Límite</th>
+                                                <th>Actual</th>
+                                                <th>Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for rate_limit in rate_limits %}
+                                            <tr>
+                                                <td class="text-light">{{ rate_limit.get_action_type_display }}</td>
+                                                <td class="text-light">{{ rate_limit.max_actions }}/{{ rate_limit.time_window_minutes }}min</td>
+                                                <td class="text-light">{{ rate_limit.current_count }}</td>
+                                                <td>
+                                                    {% if rate_limit.is_blocked %}
+                                                        <span class="badge bg-danger">Bloqueado</span>
+                                                    {% else %}
+                                                        <span class="badge bg-success">OK</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alertas Activas -->
+                    {% if active_alerts %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card bg-secondary">
+                                <div class="card-header bg-danger text-white">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-exclamation-triangle"></i> Alertas Activas
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        {% for alert in active_alerts %}
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card bg-dark border-{% if alert.priority == 'critical' %}danger{% elif alert.priority == 'high' %}warning{% else %}info{% endif %}">
+                                                <div class="card-body">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <div>
+                                                            <h6 class="card-title text-{% if alert.priority == 'critical' %}danger{% elif alert.priority == 'high' %}warning{% else %}info{% endif %}">
+                                                                {{ alert.title }}
+                                                            </h6>
+                                                            <p class="card-text text-light small">{{ alert.message|truncatechars:100 }}</p>
+                                                            <small class="text-muted">
+                                                                {{ alert.created_at|date:"d/m/Y H:i" }} -
+                                                                Prioridad: <span class="badge bg-{% if alert.priority == 'critical' %}danger{% elif alert.priority == 'high' %}warning{% else %}secondary{% endif %}">{{ alert.get_priority_display }}</span>
+                                                            </small>
+                                                        </div>
+                                                        <div>
+                                                            <button class="btn btn-sm btn-outline-success" onclick="acknowledgeAlert({{ alert.id }})">
+                                                                <i class="fas fa-check"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
 
                     <!-- Modelos Activos -->
                     <div class="row mb-4">
@@ -183,9 +320,9 @@
                         </div>
                     </div>
 
-                    <!-- Análisis Recientes -->
+                    <!-- Análisis Recientes y Logs de Auditoría -->
                     <div class="row mt-4">
-                        <div class="col-12">
+                        <div class="col-md-6">
                             <div class="card bg-secondary">
                                 <div class="card-header bg-primary text-white">
                                     <h5 class="card-title mb-0">Análisis Recientes</h5>
@@ -197,8 +334,7 @@
                                                 <th>Tipo</th>
                                                 <th>Inicio</th>
                                                 <th>Duración</th>
-                                                <th>Logs Analizados</th>
-                                                <th>Incidentes Creados</th>
+                                                <th>Incidentes</th>
                                                 <th>Estado</th>
                                             </tr>
                                         </thead>
@@ -208,7 +344,6 @@
                                                 <td class="text-light">{{ analysis.get_analysis_type_display }}</td>
                                                 <td class="text-light">{{ analysis.start_time|date:"d/m H:i" }}</td>
                                                 <td class="text-light">{{ analysis.processing_time|floatformat:2 }}s</td>
-                                                <td class="text-light">{{ analysis.logs_analyzed }}</td>
                                                 <td class="text-light">{{ analysis.incidents_created }}</td>
                                                 <td>
                                                     {% if analysis.success %}
@@ -224,7 +359,70 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="col-md-6">
+                            <div class="card bg-secondary">
+                                <div class="card-header bg-info text-white">
+                                    <h5 class="card-title mb-0">Logs de Auditoría Recientes</h5>
+                                </div>
+                                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                                    {% if recent_audit_logs %}
+                                        <div class="list-group list-group-flush">
+                                            {% for log in recent_audit_logs %}
+                                            <div class="list-group-item bg-dark text-light py-2">
+                                                <div class="d-flex w-100 justify-content-between">
+                                                    <small class="text-{% if log.severity == 'critical' %}danger{% elif log.severity == 'error' %}warning{% elif log.severity == 'warning' %}warning{% else %}info{% endif %}">
+                                                        {{ log.get_action_type_display }}
+                                                    </small>
+                                                    <small class="text-muted">{{ log.created_at|date:"d/m H:i" }}</small>
+                                                </div>
+                                                <p class="mb-1 small text-light">{{ log.description|truncatechars:60 }}</p>
+                                                {% if log.user %}
+                                                    <small class="text-muted">Usuario: {{ log.user.username }}</small>
+                                                {% endif %}
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <p class="text-light small">No hay logs de auditoría recientes.</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Estadísticas de Alertas -->
+                    {% if alerts_by_type %}
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card bg-secondary">
+                                <div class="card-header bg-warning text-white">
+                                    <h5 class="card-title mb-0">Estadísticas de Alertas (Última Semana)</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        {% for alert_stat in alerts_by_type %}
+                                        <div class="col-md-3 mb-3">
+                                            <div class="card bg-dark text-light">
+                                                <div class="card-body text-center">
+                                                    <h5 class="card-title text-warning">{{ alert_stat.count }}</h5>
+                                                    <p class="card-text">
+                                                        {% for choice in alert_type_choices %}
+                                                            {% if choice.0 == alert_stat.alert_type %}
+                                                                {{ choice.1 }}
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -264,10 +462,63 @@ function provideFeedback(incidentId) {
 
 function rejectPrediction(predictionId) {
     if (confirm('¿Está seguro de que desea rechazar esta predicción?')) {
-        // Aquí iría la lógica para rechazar la predicción
-        alert('Funcionalidad de rechazo pendiente de implementar');
+        // Enviar solicitud AJAX para rechazar la predicción
+        fetch('{% url 'iris:validate_prediction' 0 %}'.replace('0', predictionId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+            body: 'action=reject'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error al rechazar la predicción: ' + (data.error || 'Error desconocido'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al procesar la solicitud');
+        });
     }
 }
+
+function acknowledgeAlert(alertId) {
+    if (confirm('¿Marcar esta alerta como reconocida?')) {
+        fetch('/iris/acknowledge-alert/' + alertId + '/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error al reconocer la alerta');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al procesar la solicitud');
+        });
+    }
+}
+
+// Actualizar datos en tiempo real cada 30 segundos
+setInterval(function() {
+    // Aquí se podría implementar actualización automática de métricas
+    // Por ahora, solo recargamos si hay alertas críticas
+    const criticalAlerts = document.querySelectorAll('.border-danger');
+    if (criticalAlerts.length > 0) {
+        // No recargar automáticamente para evitar interrupciones
+        console.log('Alertas críticas activas - monitoreo continuo');
+    }
+}, 30000);
 </script>
 
 {% endblock %}

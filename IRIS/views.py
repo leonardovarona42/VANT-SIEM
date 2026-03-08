@@ -12,12 +12,80 @@ import json
 
 from .models import (
     AIModelConfig, AIPerformanceMetrics, HumanFeedback,
-    AIAnalysisLog, AIConfiguration, IncidentPrediction
+    AIAnalysisLog, AIConfiguration, IncidentPrediction,
+    AIRateLimit, AICircuitBreaker, AIAuditLog, AIAlert
 )
 from EVENT_M.models import Incidente
 from .ai_incident_investigator import AIIncidentInvestigator
+from django import forms
 
 logger = logging.getLogger(__name__)
+
+class AIConfigurationForm(forms.ModelForm):
+    """Formulario personalizado para configuración de IA"""
+
+    alert_email_recipients = forms.CharField(
+        required=False,
+        initial='[]',
+        widget=forms.Textarea(attrs={'rows': 3, 'placeholder': '["admin@example.com", "security@example.com"]'}),
+        help_text='Lista de direcciones de email en formato JSON para recibir alertas del sistema.'
+    )
+
+    class Meta:
+        model = AIConfiguration
+        fields = [
+            # Adoption Phase
+            'adoption_phase',
+
+            # Core Settings
+            'auto_analysis_enabled', 'analysis_interval_hours', 'anomaly_threshold',
+            'min_confidence_score',
+
+            # Rate Limiting and Safety
+            'max_incidents_per_hour', 'max_predictions_per_hour', 'circuit_breaker_threshold',
+            'circuit_breaker_enabled',
+
+            # Approval and Automation
+            'require_human_approval', 'auto_create_incidents', 'auto_apply_measures',
+
+            # Learning and Adaptation
+            'learning_enabled', 'feedback_retrain_threshold', 'adaptive_thresholds',
+
+            # Alerting and Monitoring
+            'enable_performance_alerts', 'enable_anomaly_alerts', 'alert_email_recipients',
+
+            # Advanced Features
+            'enable_deep_learning', 'enable_external_integrations', 'correlation_time_window'
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Asegurar valores iniciales para campos requeridos
+        if self.instance and self.instance.pk:
+            # Para campos que podrían estar vacíos, establecer valores por defecto
+            if not self.instance.max_incidents_per_hour:
+                self.instance.max_incidents_per_hour = 10
+            if not self.instance.max_predictions_per_hour:
+                self.instance.max_predictions_per_hour = 50
+            if not self.instance.feedback_retrain_threshold:
+                self.instance.feedback_retrain_threshold = 10
+
+            # Convertir lista de emails a JSON string para el formulario
+            if hasattr(self.instance, 'alert_email_recipients') and isinstance(self.instance.alert_email_recipients, list):
+                self.initial['alert_email_recipients'] = json.dumps(self.instance.alert_email_recipients)
+
+    def clean_alert_email_recipients(self):
+        """Validar y convertir el campo de emails"""
+        email_data = self.cleaned_data.get('alert_email_recipients', '').strip()
+        if email_data:
+            try:
+                email_list = json.loads(email_data)
+                if not isinstance(email_list, list):
+                    raise forms.ValidationError('Debe ser una lista de emails en formato JSON.')
+                return email_list
+            except json.JSONDecodeError:
+                raise forms.ValidationError('Formato JSON inválido para emails.')
+        return []
 
 class AIDashboardView(ListView):
     """Dashboard principal del sistema de IA"""
@@ -101,6 +169,32 @@ class AIDashboardView(ListView):
         # Total de incidentes hoy
         context['total_incidents_today'] = context['object_list'].count()
 
+        # Controles de seguridad
+        context['rate_limits'] = AIRateLimit.objects.all()
+        context['circuit_breaker'] = AICircuitBreaker.objects.filter(name='ai_incident_investigator').first()
+
+        # Alertas activas
+        context['active_alerts'] = AIAlert.objects.filter(
+            is_active=True,
+            resolved=False
+        ).order_by('-created_at')[:10]
+
+        # Logs de auditoría recientes
+        context['recent_audit_logs'] = AIAuditLog.objects.all().order_by('-created_at')[:20]
+
+        # Estadísticas de alertas por tipo
+        context['alerts_by_type'] = AIAlert.objects.filter(
+            created_at__gte=timezone.now() - timedelta(days=7)
+        ).values('alert_type').annotate(
+            count=Count('id')
+        ).order_by('-count')
+
+        # Opciones de tipos de alerta para el template
+        context['alert_type_choices'] = AIAlert._meta.get_field('alert_type').choices
+
+        # Estado del sistema
+        context['system_status'] = self.get_system_status()
+
         return context
 
     def render_to_response(self, context, **response_kwargs):
@@ -130,6 +224,49 @@ class AIDashboardView(ListView):
         else:
             # Return normal HTML response
             return super().render_to_response(context, **response_kwargs)
+
+    def get_system_status(self):
+            """Obtener estado general del sistema IRIS"""
+            status = {
+                'overall_health': 'healthy',
+                'warnings': [],
+                'critical_issues': []
+            }
+    
+            # Verificar circuit breaker
+            cb = AICircuitBreaker.objects.filter(name='ai_incident_investigator').first()
+            if cb and cb.state == 'open':
+                status['overall_health'] = 'critical'
+                status['critical_issues'].append('Circuit Breaker Abierto - Sistema bloqueado')
+    
+            # Verificar límites de tasa
+            blocked_limits = AIRateLimit.objects.filter(is_blocked=True)
+            if blocked_limits.exists():
+                status['overall_health'] = 'warning'
+                status['warnings'].append(f'{blocked_limits.count()} límites de tasa excedidos')
+    
+            # Verificar alertas críticas
+            critical_alerts = AIAlert.objects.filter(
+                priority='critical',
+                is_active=True,
+                resolved=False
+            )
+            if critical_alerts.exists():
+                status['overall_health'] = 'critical'
+                status['critical_issues'].append(f'{critical_alerts.count()} alertas críticas activas')
+    
+            # Verificar modelos activos
+            active_models = AIModelConfig.objects.filter(is_active=True).count()
+            if active_models == 0:
+                status['overall_health'] = 'warning'
+                status['warnings'].append('No hay modelos de IA activos')
+    
+            # Verificar configuración
+            config = AIConfiguration.objects.first()
+            if config and config.adoption_phase == 'passive':
+                status['warnings'].append('Sistema en modo pasivo - sin automatización')
+    
+            return status
 
 class AIAnalysisCreateView(CreateView):
     """Vista para ejecutar análisis de IA manualmente"""
@@ -297,33 +434,162 @@ def validate_prediction(request, prediction_id):
 class AIConfigurationUpdateView(UpdateView):
     """Configuración del sistema de IA"""
     model = AIConfiguration
+    form_class = AIConfigurationForm
     template_name = 'IRIS/configuration.html'
-    fields = [
-        'auto_analysis_enabled', 'analysis_interval_hours', 'anomaly_threshold',
-        'min_confidence_score', 'max_incidents_per_hour', 'require_human_approval',
-        'learning_enabled', 'feedback_retrain_threshold'
-    ]
     success_url = reverse_lazy('iris:iris_configuration')
 
+    def dispatch(self, request, *args, **kwargs):
+        print(f"DEBUG: AIConfigurationUpdateView dispatch called - method: {request.method}")
+        if request.method == 'POST':
+            print(f"DEBUG: POST data keys: {list(request.POST.keys())}")
+        return super().dispatch(request, *args, **kwargs)
+
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        # Forzar valores iniciales para campos requeridos
+        config = self.get_object()
+        print(f"DEBUG: Config object: {config}")
+        print(f"DEBUG: feedback_retrain_threshold value: {config.feedback_retrain_threshold}")
+
+        initial_data = {
+            'adoption_phase': config.adoption_phase or 'passive',
+            'auto_analysis_enabled': config.auto_analysis_enabled,
+            'analysis_interval_hours': config.analysis_interval_hours or 24,
+            'anomaly_threshold': config.anomaly_threshold or 0.1,
+            'min_confidence_score': config.min_confidence_score or 0.7,
+            'max_incidents_per_hour': config.max_incidents_per_hour or 10,
+            'max_predictions_per_hour': config.max_predictions_per_hour or 50,
+            'circuit_breaker_threshold': config.circuit_breaker_threshold or 0.3,
+            'circuit_breaker_enabled': config.circuit_breaker_enabled,
+            'require_human_approval': config.require_human_approval,
+            'auto_create_incidents': config.auto_create_incidents,
+            'auto_apply_measures': config.auto_apply_measures,
+            'learning_enabled': config.learning_enabled,
+            'feedback_retrain_threshold': config.feedback_retrain_threshold or 10,
+            'adaptive_thresholds': config.adaptive_thresholds,
+            'enable_performance_alerts': config.enable_performance_alerts,
+            'enable_anomaly_alerts': config.enable_anomaly_alerts,
+            'alert_email_recipients': json.dumps(config.alert_email_recipients or []),
+            'enable_deep_learning': config.enable_deep_learning,
+            'enable_external_integrations': config.enable_external_integrations,
+            'correlation_time_window': config.correlation_time_window or 30
+        }
+        print(f"DEBUG: Setting initial feedback_retrain_threshold: {initial_data['feedback_retrain_threshold']}")
+        form.initial = initial_data
+        return form
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Agregar opciones de campos para el template
+        context['adoption_phase_choices'] = AIConfiguration._meta.get_field('adoption_phase').choices
+        return context
+
     def get_object(self, queryset=None):
-        # Siempre devolver la primera configuración o crear una nueva
+        # Siempre devolver la primera configuración o crear una nueva con valores por defecto
         config = AIConfiguration.objects.first()
         if not config:
-            config = AIConfiguration.objects.create()
+            # Crear nueva configuración con todos los valores por defecto
+            config = AIConfiguration.objects.create(
+                adoption_phase='passive',
+                max_predictions_per_hour=50,
+                circuit_breaker_threshold=0.3,
+                circuit_breaker_enabled=True,
+                auto_create_incidents=False,
+                auto_apply_measures=False,
+                adaptive_thresholds=True,
+                enable_performance_alerts=True,
+                enable_anomaly_alerts=True,
+                alert_email_recipients=[],
+                enable_deep_learning=False,
+                enable_external_integrations=False,
+                correlation_time_window=30
+            )
+            print(f"DEBUG: Created new AIConfiguration: {config}")
+            logger.info("Created new AIConfiguration with default values")
+        else:
+            # Verificar y actualizar campos que puedan estar vacíos
+            updated = False
+            defaults = {
+                'adoption_phase': 'passive',
+                'max_predictions_per_hour': 50,
+                'circuit_breaker_threshold': 0.3,
+                'circuit_breaker_enabled': True,
+                'auto_create_incidents': False,
+                'auto_apply_measures': False,
+                'adaptive_thresholds': True,
+                'enable_performance_alerts': True,
+                'enable_anomaly_alerts': True,
+                'alert_email_recipients': [],
+                'enable_deep_learning': False,
+                'enable_external_integrations': False,
+                'correlation_time_window': 30
+            }
+
+            for field, default_value in defaults.items():
+                current_value = getattr(config, field, None)
+                if current_value is None or (isinstance(current_value, str) and current_value == ''):
+                    setattr(config, field, default_value)
+                    updated = True
+                    print(f"DEBUG: Updated field {field} to default value {default_value}")
+                    logger.info(f"Updated field {field} to default value {default_value}")
+
+            if updated:
+                config.save()
+                print(f"DEBUG: Saved updated config: {config}")
+                logger.info("Updated existing AIConfiguration with missing default values")
+
+        print(f"DEBUG: Returning config: {config}")
+        print(f"DEBUG: Config alert_email_recipients: {config.alert_email_recipients}")
         return config
 
     def form_valid(self, form):
-        # Procesar valores booleanos correctamente
-        boolean_fields = ['auto_analysis_enabled', 'require_human_approval', 'learning_enabled']
-        for field_name in boolean_fields:
-            if field_name in self.request.POST:
-                form.instance.__setattr__(field_name, True)
-            else:
-                form.instance.__setattr__(field_name, False)
+        print(f"DEBUG: Form instance: {form.instance}")
+        print(f"DEBUG: Form cleaned_data keys: {list(form.cleaned_data.keys())}")
+        print(f"DEBUG: alert_email_recipients value: {form.cleaned_data.get('alert_email_recipients')}")
 
-        response = super().form_valid(form)
-        messages.success(self.request, 'Configuración actualizada exitosamente.')
-        return response
+        # Guardar el formulario explícitamente
+        try:
+            self.object = form.save()
+            print(f"DEBUG: Configuration saved successfully: {self.object}")
+
+            # Log de auditoría
+            AIAuditLog.objects.create(
+                action_type='configuration_changed',
+                severity='info',
+                description='Configuración de IRIS actualizada por usuario',
+                user=self.request.user if self.request.user.is_authenticated else None,
+                metadata={
+                    'adoption_phase': self.object.adoption_phase,
+                    'auto_analysis_enabled': self.object.auto_analysis_enabled,
+                    'changes': 'Configuración actualizada'
+                }
+            )
+
+            messages.success(self.request, '✅ Configuración de IRIS guardada exitosamente. Los cambios han sido aplicados.')
+            return super().form_valid(form)
+
+        except Exception as e:
+            print(f"DEBUG: Error saving configuration: {str(e)}")
+            messages.error(self.request, f'❌ Error al guardar la configuración: {str(e)}')
+            return self.form_invalid(form)
+
+    def form_invalid(self, form):
+        # Log form errors for debugging
+        print(f"DEBUG: Form is invalid: {form.errors}")
+        print(f"DEBUG: Non-field errors: {form.non_field_errors()}")
+        logger.error(f"Form is invalid: {form.errors}")
+        logger.error(f"Non-field errors: {form.non_field_errors()}")
+        messages.error(self.request, f'❌ Errores en el formulario: {form.errors}')
+        return super().form_invalid(form)
+
+    def get(self, request, *args, **kwargs):
+        print("DEBUG: GET request to AIConfigurationUpdateView")
+        return super().get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        print("DEBUG: POST request to AIConfigurationUpdateView")
+        return super().post(request, *args, **kwargs)
 
 @login_required
 def performance_report(request):
@@ -473,3 +739,27 @@ def live_ai_monitor(request):
     }
 
     return render(request, 'IRIS/live.html', context)
+
+@login_required
+def acknowledge_alert(request, alert_id):
+    """Reconocer una alerta"""
+    if request.method == 'POST':
+        try:
+            alert = AIAlert.objects.get(id=alert_id)
+            alert.acknowledge(request.user)
+
+            # Log de auditoría
+            AIAuditLog.objects.create(
+                action_type='alert_acknowledged',
+                severity='info',
+                description=f'Alerta reconocida: {alert.title}',
+                user=request.user,
+                metadata={'alert_id': alert_id, 'alert_title': alert.title}
+            )
+
+            return JsonResponse({'success': True})
+        except AIAlert.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Alerta no encontrada'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)

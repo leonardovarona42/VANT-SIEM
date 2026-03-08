@@ -7,7 +7,7 @@ import logging
 
 from VANT_SIEM.ollama_service import ollama_service
 from VANT_SIEM.logging_system import event_logger
-from ids_ingest.models import IDSAlert, SnortLog, SuricataEveAlert
+from opensearch_ui.models import IDSAlert, SnortLog, SuricataEveAlert
 from EVENT_M.models import Area, Reporte, Responsable
 
 logger = logging.getLogger(__name__)

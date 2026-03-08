@@ -7,7 +7,7 @@ import django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'CORE.settings')
 django.setup()
 
-from ids_ingest.models import IDSIngestConfig
+from opensearch_ui.models import IDSIngestConfig
 
 # Restore original paths
 configs = IDSIngestConfig.objects.all()
