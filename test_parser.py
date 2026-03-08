@@ -7,7 +7,7 @@ import django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'CORE.settings')
 django.setup()
 
-from ids_ingest.parsers import parse_snort_line, parse_suricata_fast_log
+from opensearch_ui.parsers import parse_snort_line, parse_suricata_fast_log
 from datetime import datetime
 from django.utils import timezone
 

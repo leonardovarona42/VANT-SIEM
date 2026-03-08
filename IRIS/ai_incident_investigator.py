@@ -25,10 +25,16 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'CORE.settings')
 django.setup()
 
 from EVENT_M.models import Reporte, Incidente, Involucrado, Medida, MedidaIncidente, Area, Responsable, Servicio, InvolucradoIncidente
-from ids_ingest.models import SnortLog, SuricataEveAlert
-from IRIS.models import IncidentPrediction
+from opensearch_ui.models import SnortLog, SuricataEveAlert
+from IRIS.models import (
+    IncidentPrediction, AIConfiguration, AIRateLimit, AICircuitBreaker,
+    AIAuditLog, AIAlert, AIPerformanceMetrics
+)
 from django.utils import timezone
 from django.db.models import Count, Q
+from django.core.mail import send_mail
+from django.conf import settings
+import logging
 
 # Configuración de logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -59,7 +65,180 @@ class AIIncidentInvestigator:
             'false_negatives': 0
         }
 
+        # Configuración y controles de seguridad
+        self.config = self.get_ai_configuration()
+        self.circuit_breaker = self.get_or_create_circuit_breaker()
+        self.rate_limits = self.initialize_rate_limits()
+
         self.load_or_train_models()
+
+    def get_ai_configuration(self):
+        """Obtener configuración actual del sistema de IA"""
+        config = AIConfiguration.objects.first()
+        if not config:
+            config = AIConfiguration.objects.create()
+        return config
+
+    def get_or_create_circuit_breaker(self):
+        """Obtener o crear circuit breaker para el sistema de IA"""
+        cb, created = AICircuitBreaker.objects.get_or_create(
+            name='ai_incident_investigator',
+            defaults={
+                'failure_threshold': 5,
+                'recovery_timeout_seconds': 300,
+                'success_threshold': 3
+            }
+        )
+        return cb
+
+    def initialize_rate_limits(self):
+        """Inicializar límites de tasa para diferentes acciones"""
+        rate_limits = {}
+        actions = ['prediction_creation', 'incident_creation', 'measure_application', 'analysis_execution']
+
+        for action in actions:
+            rl, created = AIRateLimit.objects.get_or_create(
+                action_type=action,
+                time_window_minutes=60,
+                defaults={
+                    'max_actions': self.get_default_rate_limit(action)
+                }
+            )
+            rate_limits[action] = rl
+
+        return rate_limits
+
+    def get_default_rate_limit(self, action_type):
+        """Obtener límite por defecto para un tipo de acción"""
+        defaults = {
+            'prediction_creation': self.config.max_predictions_per_hour,
+            'incident_creation': self.config.max_incidents_per_hour,
+            'measure_application': 20,  # medidas por hora
+            'analysis_execution': 10    # análisis por hora
+        }
+        return defaults.get(action_type, 10)
+
+    def check_safety_controls(self):
+        """Verificar todos los controles de seguridad antes de ejecutar acciones"""
+        # Verificar circuit breaker
+        if not self.circuit_breaker.can_execute():
+            self.log_audit('circuit_breaker_triggered', 'critical',
+                          f'Circuit breaker abierto - bloqueando ejecución automática')
+            self.create_alert('circuit_breaker_open', 'high',
+                            'Circuit Breaker Abierto',
+                            'El sistema de IA está bloqueado por alta tasa de fallos')
+            return False
+
+        # Verificar fase de adopción
+        if self.config.adoption_phase == 'passive':
+            logger.info("Modo pasivo: solo generando predicciones")
+            return True  # Permitir predicciones pero no acciones automáticas
+
+        return True
+
+    def can_create_incident_automatically(self, confidence_score):
+        """Verificar si se puede crear incidente automáticamente basado en la fase de adopción"""
+        if self.config.adoption_phase == 'passive':
+            return False
+        elif self.config.adoption_phase == 'supervised':
+            return False  # Requiere validación humana
+        elif self.config.adoption_phase == 'semi_automated':
+            return confidence_score >= self.config.min_confidence_score
+        elif self.config.adoption_phase == 'full_automated':
+            return self.config.auto_create_incidents and confidence_score >= self.config.min_confidence_score
+
+        return False
+
+    def can_apply_measures_automatically(self):
+        """Verificar si se pueden aplicar medidas automáticamente"""
+        if self.config.adoption_phase in ['passive', 'supervised']:
+            return False
+        return self.config.auto_apply_measures
+
+    def check_rate_limit(self, action_type):
+        """Verificar límite de tasa para una acción"""
+        if action_type not in self.rate_limits:
+            return True
+
+        rate_limit = self.rate_limits[action_type]
+        if not rate_limit.can_perform_action():
+            self.log_audit('rate_limit_exceeded', 'warning',
+                          f'Límite de tasa excedido para {action_type}')
+            self.create_alert('rate_limit_exceeded', 'medium',
+                            f'Límite de Tasa Excedido: {action_type}',
+                            f'Se ha excedido el límite de {rate_limit.max_actions} acciones por hora para {action_type}')
+            return False
+
+        return True
+
+    def record_action(self, action_type):
+        """Registrar una acción realizada"""
+        if action_type in self.rate_limits:
+            self.rate_limits[action_type].record_action()
+
+    def log_audit(self, action_type, severity, description, user=None, incident=None, prediction=None, metadata=None):
+        """Registrar acción en el log de auditoría"""
+        try:
+            AIAuditLog.objects.create(
+                action_type=action_type,
+                severity=severity,
+                description=description,
+                user=user,
+                related_incident=incident,
+                related_prediction=prediction,
+                metadata=metadata or {}
+            )
+        except Exception as e:
+            logger.error(f"Error registrando auditoría: {str(e)}")
+
+    def create_alert(self, alert_type, priority, title, message, metadata=None):
+        """Crear una alerta del sistema"""
+        try:
+            alert = AIAlert.objects.create(
+                alert_type=alert_type,
+                priority=priority,
+                title=title,
+                message=message,
+                metadata=metadata or {}
+            )
+
+            # Enviar notificaciones por email si están configuradas
+            if self.config.alert_email_recipients:
+                self.send_alert_email(alert)
+
+            return alert
+        except Exception as e:
+            logger.error(f"Error creando alerta: {str(e)}")
+            return None
+
+    def send_alert_email(self, alert):
+        """Enviar alerta por email"""
+        try:
+            subject = f"IRIS Alert - {alert.get_priority_display()}: {alert.title}"
+            message = f"""
+IRIS Alert Notification
+
+Type: {alert.get_alert_type_display()}
+Priority: {alert.get_priority_display()}
+Title: {alert.title}
+
+Message:
+{alert.message}
+
+Time: {alert.created_at}
+
+Please check the IRIS dashboard for more details.
+            """
+
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                self.config.alert_email_recipients,
+                fail_silently=True
+            )
+        except Exception as e:
+            logger.error(f"Error enviando email de alerta: {str(e)}")
 
     def load_or_train_models(self):
         """Cargar modelos existentes o entrenar nuevos"""
@@ -259,67 +438,151 @@ class AIIncidentInvestigator:
         """Analizar logs recientes, generar predicciones y procesar amenazas automáticamente (SOAR completo)"""
         logger.info(f"Iniciando análisis SOAR completo de las últimas {hours_back} horas...")
 
-        since_time = timezone.now() - timedelta(hours=hours_back)
+        # Verificar controles de seguridad
+        if not self.check_safety_controls():
+            logger.warning("Controles de seguridad bloqueando ejecución")
+            return 0, 0
 
-        # Analizar logs de Snort
-        snort_logs = SnortLog.objects.filter(timestamp__gte=since_time)
-        suricata_alerts = SuricataEveAlert.objects.filter(timestamp__gte=since_time)
+        # Verificar límite de tasa para análisis
+        if not self.check_rate_limit('analysis_execution'):
+            logger.warning("Límite de tasa excedido para análisis")
+            return 0, 0
 
-        logger.info(f"Analizando {snort_logs.count()} logs Snort y {suricata_alerts.count()} alertas Suricata")
+        self.record_action('analysis_execution')
+        self.log_audit('analysis_executed', 'info',
+                      f'Análisis SOAR iniciado - últimas {hours_back} horas')
 
-        # Detectar anomalías
-        anomalies_snort = self.detect_anomalies(snort_logs, 'snort')
-        anomalies_suricata = self.detect_anomalies(suricata_alerts, 'suricata')
-
-        # Correlacionar eventos
-        potential_threats = self.correlate_events(anomalies_snort + anomalies_suricata)
-
-        # Fase 1: Generar predicciones
-        predictions_created = 0
-        high_confidence_threats = []
-
-        for threat_data in potential_threats:
-            prediction = self.create_prediction_from_analysis(threat_data)
-            if prediction:
-                predictions_created += 1
-                # Si la confianza es alta (> 0.8), marcar para investigación automática
-                if prediction.confidence_score >= 0.8:
-                    high_confidence_threats.append((prediction, threat_data))
-
-        logger.info(f"Predicciones generadas: {predictions_created}")
-        logger.info(f"Amenazas de alta confianza detectadas: {len(high_confidence_threats)}")
-
-        # Fase 2: Investigación y respuesta automática para amenazas de alta confianza
-        incidents_created = 0
-        for prediction, threat_data in high_confidence_threats:
-            try:
-                # Validar automáticamente la predicción
-                prediction.status = 'validated'
-                prediction.validated_at = timezone.now()
-                prediction.save()
-
-                # Crear incidente basado en la predicción validada
-                incident = self.create_incident_from_prediction(prediction, threat_data)
-                if incident:
-                    incidents_created += 1
-                    logger.info(f"Incidente creado automáticamente desde predicción: {incident.nombre_incidente}")
-
-            except Exception as e:
-                logger.error(f"Error procesando predicción de alta confianza: {str(e)}")
-
-        # Activar análisis automático si no está activado y el sistema está funcionando
         try:
-            from IRIS.models import AIConfiguration
-            config = AIConfiguration.objects.first()
-            if config and not config.auto_analysis_enabled:
-                config.auto_analysis_enabled = True
-                config.save()
-                logger.info("Análisis automático activado automáticamente por funcionamiento del sistema")
-        except Exception as e:
-            logger.warning(f"No se pudo activar análisis automático: {str(e)}")
+            since_time = timezone.now() - timedelta(hours=hours_back)
 
-        logger.info(f"Proceso SOAR completado - Predicciones: {predictions_created}, Incidentes: {incidents_created}")
-        return predictions_created, incidents_created
+            # Analizar logs de Snort
+            snort_logs = SnortLog.objects.filter(timestamp__gte=since_time)
+            suricata_alerts = SuricataEveAlert.objects.filter(timestamp__gte=since_time)
+
+            logger.info(f"Analizando {snort_logs.count()} logs Snort y {suricata_alerts.count()} alertas Suricata")
+
+            # Detectar anomalías
+            anomalies_snort = self.detect_anomalies(snort_logs, 'snort')
+            anomalies_suricata = self.detect_anomalies(suricata_alerts, 'suricata')
+
+            # Correlacionar eventos
+            potential_threats = self.correlate_events(anomalies_snort + anomalies_suricata)
+
+            # Fase 1: Generar predicciones
+            predictions_created = 0
+            high_confidence_threats = []
+
+            for threat_data in potential_threats:
+                if not self.check_rate_limit('prediction_creation'):
+                    logger.warning("Límite de tasa excedido para creación de predicciones")
+                    break
+
+                prediction = self.create_prediction_from_analysis(threat_data)
+                if prediction:
+                    predictions_created += 1
+                    self.record_action('prediction_creation')
+                    self.log_audit('prediction_created', 'info',
+                                 f'Predicción creada: {prediction.incident_type} (confianza: {prediction.confidence_score:.2f})',
+                                 prediction=prediction)
+
+                    # Evaluar si procesar automáticamente basado en fase de adopción
+                    if self.can_create_incident_automatically(prediction.confidence_score):
+                        high_confidence_threats.append((prediction, threat_data))
+
+            logger.info(f"Predicciones generadas: {predictions_created}")
+            logger.info(f"Amenazas de alta confianza detectadas: {len(high_confidence_threats)}")
+
+            # Fase 2: Investigación y respuesta automática para amenazas de alta confianza
+            incidents_created = 0
+            for prediction, threat_data in high_confidence_threats:
+                if not self.check_rate_limit('incident_creation'):
+                    logger.warning("Límite de tasa excedido para creación de incidentes")
+                    break
+
+                try:
+                    # Validar automáticamente la predicción
+                    prediction.status = 'validated'
+                    prediction.validated_at = timezone.now()
+                    prediction.save()
+
+                    self.log_audit('prediction_validated', 'info',
+                                 f'Predicción validada automáticamente: {prediction.incident_type}',
+                                 prediction=prediction)
+
+                    # Crear incidente basado en la predicción validada
+                    incident = self.create_incident_from_prediction(prediction, threat_data)
+                    if incident:
+                        incidents_created += 1
+                        self.record_action('incident_creation')
+                        self.log_audit('incident_auto_created', 'warning',
+                                     f'Incidente creado automáticamente: {incident.nombre_incidente}',
+                                     incident=incident, prediction=prediction)
+
+                        # Aplicar medidas automáticamente si está habilitado
+                        if self.can_apply_measures_automatically():
+                            self.apply_automated_response_measures(incident, prediction, threat_data)
+                            self.record_action('measure_application')
+                            self.log_audit('measure_auto_applied', 'warning',
+                                         f'Medidas aplicadas automáticamente al incidente {incident.id}',
+                                         incident=incident)
+
+                        logger.info(f"Incidente creado automáticamente desde predicción: {incident.nombre_incidente}")
+
+                except Exception as e:
+                    logger.error(f"Error procesando predicción de alta confianza: {str(e)}")
+                    self.circuit_breaker.record_failure()
+                    self.log_audit('system_error', 'error',
+                                 f'Error procesando predicción: {str(e)}', prediction=prediction)
+
+            # Registrar éxito en circuit breaker
+            self.circuit_breaker.record_success()
+
+            # Verificar rendimiento y crear alertas si es necesario
+            self.check_performance_and_alert()
+
+            logger.info(f"Proceso SOAR completado - Predicciones: {predictions_created}, Incidentes: {incidents_created}")
+            return predictions_created, incidents_created
+
+        except Exception as e:
+            logger.error(f"Error en análisis SOAR: {str(e)}")
+            self.circuit_breaker.record_failure()
+            self.log_audit('system_error', 'critical', f'Error crítico en análisis SOAR: {str(e)}')
+            self.create_alert('system_error', 'critical', 'Error en Análisis SOAR',
+                            f'Se produjo un error crítico durante el análisis: {str(e)}')
+            return 0, 0
+
+    def check_performance_and_alert(self):
+        """Verificar rendimiento del sistema y crear alertas si es necesario"""
+        try:
+            # Obtener métricas recientes
+            today = timezone.now().date()
+            recent_metrics = AIPerformanceMetrics.objects.filter(date=today).first()
+
+            if recent_metrics:
+                # Verificar tasa de falsos positivos
+                if recent_metrics.precision < 0.7 and self.config.enable_performance_alerts:
+                    self.create_alert(
+                        'high_false_positive_rate',
+                        'high',
+                        'Alta Tasa de Falsos Positivos Detectada',
+                        f'La precisión del sistema ha caído a {recent_metrics.precision:.1%}. '
+                        f'Considere revisar las predicciones y proporcionar feedback.',
+                        {'precision': recent_metrics.precision, 'date': str(today)}
+                    )
+
+                # Verificar rendimiento general
+                if recent_metrics.accuracy < 0.6 and self.config.enable_performance_alerts:
+                    self.create_alert(
+                        'performance_degraded',
+                        'medium',
+                        'Rendimiento del Sistema Degradado',
+                        f'La exactitud general ha caído a {recent_metrics.accuracy:.1%}. '
+                        f'Recomendado revisar configuración y re-entrenar modelos.',
+                        {'accuracy': recent_metrics.accuracy, 'date': str(today)}
+                    )
+
+        except Exception as e:
+            logger.error(f"Error verificando rendimiento: {str(e)}")
 
     def detect_anomalies(self, logs_queryset, log_type):
         """Detectar anomalías en un conjunto de logs"""
@@ -779,7 +1042,7 @@ IPs Detectadas: {', '.join(event_group['involved_ips'])}
             import traceback
             logger.error(traceback.format_exc())
 
-    def incorporate_human_feedback(self, incident_id, is_false_positive, correct_classification=None):
+    def incorporate_human_feedback(self, incident_id, is_false_positive, correct_classification=None, user=None):
         """Incorporar feedback humano para mejorar el modelo"""
         try:
             incidente = Incidente.objects.get(id=incident_id)
@@ -789,6 +1052,12 @@ IPs Detectadas: {', '.join(event_group['involved_ips'])}
                 # Marcar como cerrado sin medidas adicionales
                 incidente.estado_solucion = 'cerrado'
                 incidente.save()
+
+                self.log_audit('human_feedback_received', 'info',
+                             f'Feedback humano: falso positivo para incidente {incident_id}',
+                             user=user, incident=incidente,
+                             metadata={'feedback_type': 'false_positive'})
+
                 logger.info(f"Incidente {incident_id} marcado como falso positivo")
             else:
                 self.performance_metrics['true_positives'] += 1
@@ -798,13 +1067,24 @@ IPs Detectadas: {', '.join(event_group['involved_ips'])}
                     incidente.nombre_incidente = f'{correct_classification} - Corregido por humano'
                     incidente.save()
 
+                self.log_audit('human_feedback_received', 'info',
+                             f'Feedback humano: clasificación correcta para incidente {incident_id}',
+                             user=user, incident=incidente,
+                             metadata={'feedback_type': 'correct_classification',
+                                      'correct_classification': correct_classification})
+
             # Re-entrenar modelos periódicamente con nuevo feedback
             if sum(self.performance_metrics.values()) % 10 == 0:  # Cada 10 evaluaciones
                 logger.info("Re-entrenando modelos con feedback humano...")
                 self.train_models()
+                self.log_audit('model_trained', 'info',
+                             'Modelos re-entrenados automáticamente por feedback humano')
 
         except Incidente.DoesNotExist:
             logger.error(f"Incidente {incident_id} no encontrado")
+            self.log_audit('system_error', 'error',
+                         f'Error procesando feedback humano: incidente {incident_id} no encontrado',
+                         user=user, metadata={'incident_id': incident_id})
 
     def get_performance_report(self):
         """Obtener reporte de rendimiento del sistema de IA"""

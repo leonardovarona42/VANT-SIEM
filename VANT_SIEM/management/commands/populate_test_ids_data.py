@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from ids_ingest.models import SuricataEveAlert, SuricataFlow, SuricataStats, SuricataSystemLog, SuricataLog
+from opensearch_ui.models import SuricataEveAlert, SuricataFlow, SuricataStats, SuricataSystemLog, SuricataLog
 from datetime import timedelta
 import random
 

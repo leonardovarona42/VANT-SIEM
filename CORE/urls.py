@@ -18,7 +18,9 @@ urlpatterns = [
     path('siem/ids/', include('VANT_SIEM.urls')),  # alias para rutas IDS/servicios
     path('collector/', include('collector.urls')),  # URLs de Collector
     path('eventos/', include('EVENT_M.urls')),  # URLs de EVENT_M
-    path('ids-ingest/', include('ids_ingest.urls')),
+    path('opensearch/', include('opensearch_ui.urls')),
+    path('ids-ingest/', include('opensearch_ui.urls')),  # compatibilidad temporal
     path('iris/', include('IRIS.urls', namespace='iris')),  # URLs de IRIS - IA
     path('siem/dashboard/logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+

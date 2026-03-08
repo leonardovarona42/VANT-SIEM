@@ -9,7 +9,7 @@ from pathlib import Path
 # Add the project root to Python path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from ids_ingest.parsers import (
+from opensearch_ui.parsers import (
     get_log_statistics, parse_suricata_line, parse_snort_line,
     parse_suricata_eve_json, parse_suricata_fast_log,
     parse_snort_alert_full, parse_snort_csv_line
@@ -80,14 +80,14 @@ def test_snort_debian():
                 if line:
                     print(f"  Line {i+1}: {line[:100]}...")
                     try:
-                        from ids_ingest.parsers import SNORT_PATTERNS
+                        from opensearch_ui.parsers import SNORT_PATTERNS
                         parsed = None
                         for i, pattern in enumerate(SNORT_PATTERNS):
                             match = pattern.match(line)
                             if match:
                                 print(f"    Matched pattern {i}")
                                 try:
-                                    from ids_ingest.parsers import parse_timestamp
+                                    from opensearch_ui.parsers import parse_timestamp
                                     timestamp = parse_timestamp(match.group('timestamp'), 'snort')
                                     if timestamp:
                                         print(f"    Timestamp OK")

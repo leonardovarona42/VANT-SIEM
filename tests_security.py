@@ -24,7 +24,7 @@ from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.urls import reverse
 from VANT_SIEM.models import OllamaConfig
-from ids_ingest.models import IDSConfiguration, ThreatLog
+from opensearch_ui.models import IDSConfiguration, ThreatLog
 
 
 class SecurityTestSuite:

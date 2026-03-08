@@ -1,0 +1,49 @@
+agent:
+  id: "agent-001"
+  host_name: "windows-host-01"
+  interval_seconds: 10
+
+output:
+  endpoint: "http://127.0.0.1:9201/api/v1/events/bulk"
+  source_endpoint: "http://127.0.0.1:9201/api/v1/sources/upsert"
+  timeout_seconds: 10
+  auth:
+    mode: "none"   # none|basic|token
+    username: ""
+    password: ""
+    token: ""
+  tls:
+    enabled: false
+    verify: false
+    ca_cert: ""
+
+collectors:
+  snort:
+    enabled: false
+    path: "C:/snort/log/alert"
+    start_position: "end"   # beginning|end
+    max_lines_per_cycle: 400
+  suricata:
+    enabled: false
+    path: "C:/suricata/logs/eve.json"
+    start_position: "end"   # beginning|end
+    max_lines_per_cycle: 600
+  windows_eventlog:
+    enabled: false
+    channel: "Security"
+  postgres:
+    enabled: false
+    path: "C:/Program Files/PostgreSQL/16/data/log/postgresql.log"
+    start_position: "end"   # beginning|end
+    max_lines_per_cycle: 400
+  file_logs:
+    enabled: false
+    items:
+      - enabled: true
+        source_name: "samba-audit"
+        path: "/var/log/samba/audit.log"
+        event_category: "samba.audit"
+        severity: "info"
+        tags: ["samba", "ad", "audit"]
+        start_position: "end"   # beginning|end
+        max_lines_per_cycle: 400

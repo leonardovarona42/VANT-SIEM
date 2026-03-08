@@ -20,7 +20,7 @@ sys.path.append('.')
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'CORE.settings')
 django.setup()
 
-from ids_ingest.models import SnortLog, SuricataEveAlert
+from opensearch_ui.models import SnortLog, SuricataEveAlert
 from EVENT_M.models import Reporte, Incidente, Involucrado, Medida, MedidaIncidente, InvolucradoIncidente
 from django.utils import timezone
 from django.db.models import Count, Q, Avg, Max, Min

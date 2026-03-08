@@ -7,8 +7,8 @@ import django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'CORE.settings')
 django.setup()
 
-from ids_ingest.services import ingest_service
-from ids_ingest.models import IDSIngestConfig, SnortLog, SuricataEveAlert, SuricataLog
+from opensearch_ui.services import ingest_service
+from opensearch_ui.models import IDSIngestConfig, SnortLog, SuricataEveAlert, SuricataLog
 from django.utils import timezone
 from datetime import timedelta
 

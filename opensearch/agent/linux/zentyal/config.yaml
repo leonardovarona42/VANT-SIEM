@@ -1,0 +1,57 @@
+agent:
+  id: "agent-zentyal-ad-01"
+  host_name: "zentyal-ad"
+  interval_seconds: 10
+
+output:
+  endpoint: "http://127.0.0.1:9201/api/v1/events/bulk"
+  source_endpoint: "http://127.0.0.1:9201/api/v1/sources/upsert"
+  timeout_seconds: 10
+  auth:
+    mode: "none"   # none|basic|token
+    username: ""
+    password: ""
+    token: ""
+  tls:
+    enabled: false
+    verify: false
+    ca_cert: ""
+
+collectors:
+  snort:
+    enabled: false
+    path: "/var/log/snort/alert"
+    start_position: "end"
+    max_lines_per_cycle: 400
+  suricata:
+    enabled: false
+    path: "/var/log/suricata/eve.json"
+    start_position: "end"
+    max_lines_per_cycle: 600
+  windows_eventlog:
+    enabled: false
+    channel: "Security"
+  postgres:
+    enabled: false
+    path: "/var/log/postgresql/postgresql-16-main.log"
+    start_position: "end"
+    max_lines_per_cycle: 400
+  file_logs:
+    enabled: true
+    items:
+      - enabled: true
+        source_name: "samba-audit"
+        path: "/var/log/samba/audit.log"
+        event_category: "samba.audit"
+        severity: "info"
+        tags: ["samba", "ad", "zentyal", "audit"]
+        start_position: "end"
+        max_lines_per_cycle: 600
+      - enabled: true
+        source_name: "syslog"
+        path: "/var/log/syslog"
+        event_category: "linux.syslog"
+        severity: "info"
+        tags: ["linux", "syslog"]
+        start_position: "end"
+        max_lines_per_cycle: 300

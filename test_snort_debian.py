@@ -21,7 +21,7 @@ def test_snort_debian_parsing():
         '08/31-11:22:39.380969 [**] [1:382:11] "PROTOCOL-ICMP PING Windows" [**] [Classification: Misc activity] [Priority: 3] {ICMP} 172.23.48.1 -> 172.23.56.229'
     ]
 
-    from ids_ingest.parsers import SNORT_PATTERNS
+    from opensearch_ui.parsers import SNORT_PATTERNS
 
     for i, line in enumerate(test_lines, 1):
         print(f"Test Line {i}: {line[:80]}...")

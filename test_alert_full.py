@@ -38,7 +38,7 @@ TCP Options (1) => MSS: 1460"""
         )
         django.setup()
 
-    from ids_ingest.parsers import parse_snort_alert_block
+    from opensearch_ui.parsers import parse_snort_alert_block
 
     lines = alert_block.split('\n')
     result = parse_snort_alert_block(lines)

@@ -6,7 +6,7 @@ from django.dispatch import receiver
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
-from ids_ingest.models import IDSAlert
+from opensearch_ui.models import IDSAlert
 from .models import OllamaConfig
 from .ollama_service import ollama_service
 from .logging_system import event_logger

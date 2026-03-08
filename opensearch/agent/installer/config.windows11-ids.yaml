@@ -1,0 +1,38 @@
+agent:
+  id: "agent-ids-01"
+  host_name: "windows11-ids"
+  interval_seconds: 10
+
+output:
+  endpoint: "http://192.168.1.12:9201/api/v1/events/bulk"
+  source_endpoint: "http://192.168.1.12:9201/api/v1/sources/upsert"
+  timeout_seconds: 10
+  auth:
+    mode: "none"   # none|basic|token
+    username: ""
+    password: ""
+    token: ""
+  tls:
+    enabled: false
+    verify: false
+    ca_cert: ""
+
+collectors:
+  snort:
+    enabled: true
+    path: "C:/Snort/log/alerts.fast"
+    start_position: "end"
+    max_lines_per_cycle: 400
+  suricata:
+    enabled: true
+    path: "C:/suricata-log/eve.json"
+    start_position: "end"
+    max_lines_per_cycle: 600
+  windows_eventlog:
+    enabled: false
+    channel: "Security"
+  postgres:
+    enabled: false
+    path: "C:/Program Files/PostgreSQL/16/data/log/postgresql.log"
+    start_position: "end"
+    max_lines_per_cycle: 400
