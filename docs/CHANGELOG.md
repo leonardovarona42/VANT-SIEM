@@ -33,3 +33,25 @@
 ### Deprecated/Removed
 
 - `ids_ingest` marcado como legado y removido del flujo principal.
+
+## 2026-03-11 - Discovery + Visualizations + LDAP
+
+### Added
+
+- Autenticación LDAP configurable desde UI (bind, búsqueda, mapeo de atributos, auto‑creación).
+- Dependencia `ldap3` para soporte LDAP.
+- Descubrimiento (Discovery) con auto‑refresh sin recargar página.
+- Expansión de celdas y redimensionamiento de columnas en Discovery.
+- Builder de visualizaciones con fuentes dinámicas (source_type + conteo).
+- Sugerencias dinámicas en custom labels según campos disponibles.
+
+### Changed
+
+- Filtrado include/exclude aplicado en memoria para campos derivados/payload sin SQL crudo.
+- Paginación y total coherentes cuando hay filtros derivados.
+- Builder de visualizaciones sincroniza selección de fuente desde el menú lateral y el selector.
+
+### Fixed
+
+- StartTLS aplicado antes del bind para evitar errores de “ssl wrapping”.
+- Preview de visualizaciones para tipos `line/area/doughnut` mapeados a backend soportado.

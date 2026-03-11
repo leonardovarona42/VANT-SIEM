@@ -73,10 +73,10 @@ def _serialize_saved_dashboard(item):
 
 def _get_opensearch_pg_conn():
     return psycopg2.connect(
-        host=os.getenv('OS_DB_HOST', 'localhost'),
+        host=os.getenv('OS_DB_HOST', '127.0.0.1'),
         port=int(os.getenv('OS_DB_PORT', '5432')),
-        dbname=os.getenv('OS_DB_NAME', 'opensearch'),
-        user=os.getenv('OS_DB_USER', 'postgres'),
+        dbname=os.getenv('OS_DB_NAME', 'vant_opensearch'),
+        user=os.getenv('OS_DB_USER', 'testing'),
         password=os.getenv('OS_DB_PASSWORD', 'postgres'),
     )
 
@@ -101,16 +101,16 @@ def _build_viz_where(source, time_range, category, query):
         filters.append("event_category = %s")
         params.append(category)
     if query:
-        filters.append("(message ILIKE %s OR event_category ILIKE %s OR host_name ILIKE %s OR source_name ILIKE %s)")
+        filters.append("(message ILIKE %s OR event_category ILIKE %s OR host_name ILIKE %s OR host_ip ILIKE %s OR source_name ILIKE %s)")
         like = f"%{query}%"
-        params.extend([like, like, like, like])
+        params.extend([like, like, like, like, like])
 
     return " AND ".join(filters), params
 
 
 def _field_sql(field):
     core_fields = {
-        'id', 'source_type', 'source_name', 'host_name', 'event_time',
+        'id', 'source_type', 'source_name', 'host_name', 'host_ip', 'event_time',
         'severity', 'event_category', 'message', 'tags', 'ingested_at',
     }
     payload_allow = {
@@ -2678,10 +2678,10 @@ def opensearch_visual_dashboard(request):
     latest_events = []
     db_error = None
 
-    db_host = os.getenv('OS_DB_HOST', 'localhost')
+    db_host = os.getenv('OS_DB_HOST', '127.0.0.1')
     db_port = int(os.getenv('OS_DB_PORT', '5432'))
-    db_name = os.getenv('OS_DB_NAME', 'opensearch')
-    db_user = os.getenv('OS_DB_USER', 'postgres')
+    db_name = os.getenv('OS_DB_NAME', 'vant_opensearch')
+    db_user = os.getenv('OS_DB_USER', 'testing')
     db_password = os.getenv('OS_DB_PASSWORD', 'postgres')
 
     try:
@@ -2809,10 +2809,10 @@ def opensearch_discovery(request):
     }
     since = timezone.now() - range_map.get(time_range, timedelta(hours=24))
 
-    db_host = os.getenv('OS_DB_HOST', 'localhost')
+    db_host = os.getenv('OS_DB_HOST', '127.0.0.1')
     db_port = int(os.getenv('OS_DB_PORT', '5432'))
-    db_name = os.getenv('OS_DB_NAME', 'opensearch')
-    db_user = os.getenv('OS_DB_USER', 'postgres')
+    db_name = os.getenv('OS_DB_NAME', 'vant_opensearch')
+    db_user = os.getenv('OS_DB_USER', 'testing')
     db_password = os.getenv('OS_DB_PASSWORD', 'postgres')
 
     core_fields = [
@@ -2820,6 +2820,7 @@ def opensearch_discovery(request):
         'source_type',
         'source_name',
         'host_name',
+        'host_ip',
         'event_time',
         'severity',
         'event_category',
@@ -2962,9 +2963,9 @@ def opensearch_discovery(request):
         filters.append("event_category = %s")
         params.append(category)
     if query:
-        filters.append("(message ILIKE %s OR event_category ILIKE %s OR host_name ILIKE %s)")
+        filters.append("(message ILIKE %s OR event_category ILIKE %s OR host_name ILIKE %s OR host_ip ILIKE %s)")
         like = f"%{query}%"
-        params.extend([like, like, like])
+        params.extend([like, like, like, like])
 
     rows = []
     total = 0
@@ -2976,14 +2977,83 @@ def opensearch_discovery(request):
     active_filters = []
     db_error = None
     offset = (page - 1) * page_size
-    extracted_include_filters = []
-    extracted_exclude_filters = []
+    mem_include_filters = []
+    mem_exclude_filters = []
+
+    payload_field_re = re.compile(r'^[A-Za-z0-9_.-]{1,64}$')
 
     def _value_matches(field_value, filter_value):
         text = '' if field_value is None else str(field_value).strip()
         if filter_value == '__EMPTY__':
             return text == ''
         return filter_value.lower() in text.lower()
+
+    def _is_allowed_field(field):
+        if field in core_filter_fields:
+            return True
+        if field in derived_filter_fields or field == 'line':
+            return True
+        return bool(payload_field_re.match(field))
+
+    def _payload_lookup(payload, key):
+        if not key:
+            return None
+        if key in payload:
+            return payload.get(key)
+        if '.' not in key:
+            return payload.get(key)
+        cur = payload
+        for part in key.split('.'):
+            if not isinstance(cur, dict):
+                return None
+            cur = cur.get(part)
+        return cur
+
+    for field, value, token in parsed_include:
+        if not _is_allowed_field(field):
+            continue
+        mem_include_filters.append((field, value, token))
+        active_filters.append({'mode': 'include', 'field': field, 'value': value, 'token': token})
+
+    for field, value, token in parsed_exclude:
+        if not _is_allowed_field(field):
+            continue
+        mem_exclude_filters.append((field, value, token))
+        active_filters.append({'mode': 'exclude', 'field': field, 'value': value, 'token': token})
+
+    uses_filters = bool(mem_include_filters or mem_exclude_filters)
+
+    bucket_unit, bucket_step = {
+        '15m': ('minute', 1),
+        '1h': ('minute', 5),
+        '24h': ('hour', 1),
+        '7d': ('day', 1),
+        '30d': ('day', 1),
+    }.get(time_range, ('hour', 1))
+
+    def _floor_bucket(dt, unit, step):
+        if unit == 'minute':
+            minute = (dt.minute // step) * step
+            return dt.replace(minute=minute, second=0, microsecond=0)
+        if unit == 'hour':
+            hour = (dt.hour // step) * step
+            return dt.replace(hour=hour, minute=0, second=0, microsecond=0)
+        base = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        if step <= 1:
+            return base
+        offset = base.toordinal() % step
+        return base - timedelta(days=offset)
+
+    def _iter_buckets(start_dt, end_dt, unit, step):
+        cur = _floor_bucket(start_dt, unit, step)
+        while cur <= end_dt:
+            yield cur
+            if unit == 'minute':
+                cur = cur + timedelta(minutes=step)
+            elif unit == 'hour':
+                cur = cur + timedelta(hours=step)
+            else:
+                cur = cur + timedelta(days=step)
 
     try:
         pg = psycopg2.connect(
@@ -2993,7 +3063,8 @@ def opensearch_discovery(request):
             user=db_user,
             password=db_password,
         )
-        pg.autocommit = True
+        pg.autocommit = not uses_filters
+        fetched_rows = []
         with pg.cursor() as cur:
             cur.execute(
                 """
@@ -3037,46 +3108,6 @@ def opensearch_discovery(request):
             except Exception:
                 payload_fields = []
 
-            for field, value, token in parsed_include:
-                if field in core_filter_fields:
-                    if value == '__EMPTY__':
-                        filters.append(f"COALESCE(CAST({field} AS TEXT), '') = ''")
-                    else:
-                        filters.append(f"COALESCE(CAST({field} AS TEXT), '') ILIKE %s")
-                        params.append(f"%{value}%")
-                    active_filters.append({'mode': 'include', 'field': field, 'value': value, 'token': token})
-                elif field in payload_fields:
-                    if value == '__EMPTY__':
-                        filters.append("COALESCE(raw_payload ->> %s, '') = ''")
-                        params.append(field)
-                    else:
-                        filters.append("COALESCE(raw_payload ->> %s, '') ILIKE %s")
-                        params.extend([field, f"%{value}%"])
-                    active_filters.append({'mode': 'include', 'field': field, 'value': value, 'token': token})
-                elif field in derived_filter_fields:
-                    extracted_include_filters.append((field, value))
-                    active_filters.append({'mode': 'include', 'field': field, 'value': value, 'token': token})
-
-            for field, value, token in parsed_exclude:
-                if field in core_filter_fields:
-                    if value == '__EMPTY__':
-                        filters.append(f"COALESCE(CAST({field} AS TEXT), '') <> ''")
-                    else:
-                        filters.append(f"COALESCE(CAST({field} AS TEXT), '') NOT ILIKE %s")
-                        params.append(f"%{value}%")
-                    active_filters.append({'mode': 'exclude', 'field': field, 'value': value, 'token': token})
-                elif field in payload_fields:
-                    if value == '__EMPTY__':
-                        filters.append("COALESCE(raw_payload ->> %s, '') <> ''")
-                        params.append(field)
-                    else:
-                        filters.append("COALESCE(raw_payload ->> %s, '') NOT ILIKE %s")
-                        params.extend([field, f"%{value}%"])
-                    active_filters.append({'mode': 'exclude', 'field': field, 'value': value, 'token': token})
-                elif field in derived_filter_fields:
-                    extracted_exclude_filters.append((field, value))
-                    active_filters.append({'mode': 'exclude', 'field': field, 'value': value, 'token': token})
-
             where_sql = " AND ".join(filters)
             if source == 'snort':
                 table_columns = snort_profile_fields
@@ -3098,6 +3129,7 @@ def opensearch_discovery(request):
                     source_type,
                     source_name,
                     host_name,
+                    host_ip,
                     event_time,
                     severity,
                     event_category,
@@ -3110,156 +3142,187 @@ def opensearch_discovery(request):
                 ORDER BY event_time DESC
             """
 
-            uses_extracted_filters = bool(extracted_include_filters or extracted_exclude_filters)
-            if uses_extracted_filters:
-                max_scan = max(page * page_size * 6, 2000)
-                cur.execute(query_sql + " LIMIT %s", params + [max_scan])
-            else:
+            if not uses_filters:
                 cur.execute(f"SELECT COUNT(*) FROM os_events_raw WHERE {where_sql}", params)
                 total = int(cur.fetchone()[0] or 0)
                 cur.execute(query_sql + " LIMIT %s OFFSET %s", params + [page_size, offset])
+                fetched_rows = cur.fetchall()
 
-            fetched_rows = cur.fetchall()
-            candidate_rows = []
-            for record in fetched_rows:
-                payload = record[10] if isinstance(record[10], dict) else {}
-                if payload is None:
-                    payload = {}
+        def _process_record(record, apply_filters):
+            payload = record[11] if isinstance(record[11], dict) else {}
+            if payload is None:
+                payload = {}
 
-                base_map = {
-                    'id': record[0],
-                    'source_type': record[1],
-                    'source_name': record[2],
-                    'host_name': record[3],
-                    'event_time': record[4],
-                    'severity': record[5],
-                    'event_category': record[6],
-                    'message': record[7],
-                    'tags': record[8],
-                    'ingested_at': record[9],
-                }
-                source_type_value = str(base_map.get('source_type') or '').lower()
-                if source_type_value == 'snort':
-                    snort_line = payload.get('line') or base_map.get('message') or ''
-                    parsed_snort = _parse_snort_line(snort_line)
-                    if parsed_snort:
-                        # Keep parsed non-empty fields as source of truth for Discover columns.
-                        for key, val in parsed_snort.items():
-                            if val is not None and str(val).strip() != '':
-                                payload[key] = val
-                        if parsed_snort.get('signature'):
-                            base_map['message'] = parsed_snort['signature']
-                        if not payload.get('line') and snort_line:
-                            payload['line'] = snort_line
-                    # Defensive fallback: if signature is still empty, use message.
-                    if (not payload.get('signature')) and str(base_map.get('message') or '').strip():
-                        payload['signature'] = str(base_map.get('message')).strip()
-                elif source_type_value == 'suricata':
-                    alert_obj = payload.get('alert') if isinstance(payload.get('alert'), dict) else {}
-                    suricata_map = {
-                        'event_type': payload.get('event_type') or base_map.get('event_category'),
-                        'proto': payload.get('proto'),
-                        'src_ip': payload.get('src_ip'),
-                        'src_port': payload.get('src_port'),
-                        'dst_ip': payload.get('dest_ip') or payload.get('dst_ip'),
-                        'dst_port': payload.get('dest_port') or payload.get('dst_port'),
-                        'app_proto': payload.get('app_proto'),
-                        'flow_id': payload.get('flow_id'),
-                        'in_iface': payload.get('in_iface'),
-                        'signature': alert_obj.get('signature') if alert_obj else None,
-                        'classification': alert_obj.get('category') if alert_obj else None,
-                        'priority': alert_obj.get('severity') if alert_obj else None,
-                    }
-                    for key, val in suricata_map.items():
+            base_map = {
+                'id': record[0],
+                'source_type': record[1],
+                'source_name': record[2],
+                'host_name': record[3],
+                'host_ip': record[4],
+                'event_time': record[5],
+                'severity': record[6],
+                'event_category': record[7],
+                'message': record[8],
+                'tags': record[9],
+                'ingested_at': record[10],
+            }
+            source_type_value = str(base_map.get('source_type') or '').lower()
+            if source_type_value == 'snort':
+                snort_line = payload.get('line') or base_map.get('message') or ''
+                parsed_snort = _parse_snort_line(snort_line)
+                if parsed_snort:
+                    # Keep parsed non-empty fields as source of truth for Discover columns.
+                    for key, val in parsed_snort.items():
                         if val is not None and str(val).strip() != '':
                             payload[key] = val
+                    if parsed_snort.get('signature'):
+                        base_map['message'] = parsed_snort['signature']
+                    if not payload.get('line') and snort_line:
+                        payload['line'] = snort_line
+                # Defensive fallback: if signature is still empty, use message.
+                if (not payload.get('signature')) and str(base_map.get('message') or '').strip():
+                    payload['signature'] = str(base_map.get('message')).strip()
+            elif source_type_value == 'suricata':
+                alert_obj = payload.get('alert') if isinstance(payload.get('alert'), dict) else {}
+                suricata_map = {
+                    'event_type': payload.get('event_type') or base_map.get('event_category'),
+                    'proto': payload.get('proto'),
+                    'src_ip': payload.get('src_ip'),
+                    'src_port': payload.get('src_port'),
+                    'dst_ip': payload.get('dest_ip') or payload.get('dst_ip'),
+                    'dst_port': payload.get('dest_port') or payload.get('dst_port'),
+                    'app_proto': payload.get('app_proto'),
+                    'flow_id': payload.get('flow_id'),
+                    'in_iface': payload.get('in_iface'),
+                    'signature': alert_obj.get('signature') if alert_obj else None,
+                    'classification': alert_obj.get('category') if alert_obj else None,
+                    'priority': alert_obj.get('severity') if alert_obj else None,
+                }
+                for key, val in suricata_map.items():
+                    if val is not None and str(val).strip() != '':
+                        payload[key] = val
 
-                extracted_map = {f: payload.get(f) for f in (derived_filter_fields | {'line'})}
-                include_ok = all(_value_matches(extracted_map.get(f), v) for f, v in extracted_include_filters)
-                exclude_ok = all(not _value_matches(extracted_map.get(f), v) for f, v in extracted_exclude_filters)
+            extracted_map = {f: payload.get(f) for f in (derived_filter_fields | {'line'})}
+            if apply_filters:
+                def _get_field_value(field_name):
+                    if field_name in core_filter_fields:
+                        return base_map.get(field_name)
+                    if field_name in derived_filter_fields or field_name == 'line':
+                        return extracted_map.get(field_name)
+                    return _payload_lookup(payload, field_name)
+
+                include_ok = all(_value_matches(_get_field_value(f), v) for f, v, _ in mem_include_filters)
+                exclude_ok = all(not _value_matches(_get_field_value(f), v) for f, v, _ in mem_exclude_filters)
                 if not (include_ok and exclude_ok):
-                    continue
+                    return None, None
 
-                row_cells = []
-                for col in table_columns:
-                    if col in extracted_map and extracted_map.get(col) not in (None, ''):
-                        raw_value = extracted_map.get(col)
-                    elif col in payload_fields:
-                        raw_value = payload.get(col)
-                    else:
-                        raw_value = base_map.get(col)
-                    is_empty = raw_value is None or str(raw_value).strip() == ''
-                    if col in ('event_time', 'ingested_at') and raw_value:
-                        display_value = raw_value.strftime('%Y-%m-%d %H:%M:%S')
-                    elif isinstance(raw_value, list):
-                        display_value = ', '.join(str(v) for v in raw_value)
-                    elif isinstance(raw_value, dict):
-                        display_value = json.dumps(raw_value, ensure_ascii=True)
-                    elif raw_value is None:
-                        display_value = '-'
-                    else:
-                        display_value = str(raw_value)
+            row_cells = []
+            for col in table_columns:
+                if col in extracted_map and extracted_map.get(col) not in (None, ''):
+                    raw_value = extracted_map.get(col)
+                elif col in payload_fields:
+                    raw_value = payload.get(col)
+                else:
+                    raw_value = base_map.get(col)
+                is_empty = raw_value is None or str(raw_value).strip() == ''
+                if col in ('event_time', 'ingested_at') and raw_value:
+                    display_value = raw_value.strftime('%Y-%m-%d %H:%M:%S')
+                elif isinstance(raw_value, list):
+                    display_value = ', '.join(str(v) for v in raw_value)
+                elif isinstance(raw_value, dict):
+                    display_value = json.dumps(raw_value, ensure_ascii=True)
+                elif raw_value is None:
+                    display_value = '-'
+                else:
+                    display_value = str(raw_value)
 
-                    if len(display_value) > 220:
-                        display_value = f"{display_value[:220]}..."
+                if len(display_value) > 220:
+                    display_value = f"{display_value[:220]}..."
 
-                    row_cells.append(
-                        {
-                            'field': col,
-                            'display': display_value,
-                            'raw': str(raw_value)[:180] if raw_value is not None else '',
-                            'is_empty': is_empty,
-                        }
-                    )
-                candidate_rows.append({'cells': row_cells})
-
-            if uses_extracted_filters:
-                total = len(candidate_rows)
-                rows = candidate_rows[offset:offset + page_size]
-            else:
-                rows = candidate_rows
-
-            bucket_unit, bucket_step = {
-                '15m': ('minute', '1 minute'),
-                '1h': ('minute', '5 minutes'),
-                '24h': ('hour', '1 hour'),
-                '7d': ('day', '1 day'),
-                '30d': ('day', '1 day'),
-            }.get(time_range, ('hour', '1 hour'))
-
-            cur.execute(
-                f"""
-                WITH bounds AS (
-                    SELECT %s::timestamptz AS since_ts, NOW() AS now_ts
-                ),
-                series AS (
-                    SELECT generate_series(
-                        date_trunc(%s, since_ts),
-                        date_trunc(%s, now_ts),
-                        %s::interval
-                    ) AS bucket
-                    FROM bounds
-                ),
-                counts AS (
-                    SELECT date_trunc(%s, event_time) AS bucket, COUNT(*) AS cnt
-                    FROM os_events_raw
-                    WHERE {where_sql}
-                    GROUP BY 1
+                row_cells.append(
+                    {
+                        'field': col,
+                        'display': display_value,
+                        'raw': str(raw_value)[:180] if raw_value is not None else '',
+                        'full': '' if raw_value is None else str(raw_value),
+                        'is_empty': is_empty,
+                    }
                 )
-                SELECT series.bucket, COALESCE(counts.cnt, 0) AS cnt
-                FROM series
-                LEFT JOIN counts ON counts.bucket = series.bucket
-                ORDER BY series.bucket
-                """,
-                [since, bucket_unit, bucket_unit, bucket_step, bucket_unit] + params,
-            )
+            return {'cells': row_cells}, base_map.get('event_time')
+
+        if not uses_filters:
+            candidate_rows = []
+            for record in fetched_rows:
+                row, _event_time = _process_record(record, apply_filters=False)
+                if row:
+                    candidate_rows.append(row)
+            rows = candidate_rows
+            with pg.cursor() as cur:
+                cur.execute(
+                    f"""
+                    WITH bounds AS (
+                        SELECT %s::timestamptz AS since_ts, NOW() AS now_ts
+                    ),
+                    series AS (
+                        SELECT generate_series(
+                            date_trunc(%s, since_ts),
+                            date_trunc(%s, now_ts),
+                            %s::interval
+                        ) AS bucket
+                        FROM bounds
+                    ),
+                    counts AS (
+                        SELECT date_trunc(%s, event_time) AS bucket, COUNT(*) AS cnt
+                        FROM os_events_raw
+                        WHERE {where_sql}
+                        GROUP BY 1
+                    )
+                    SELECT series.bucket, COALESCE(counts.cnt, 0) AS cnt
+                    FROM series
+                    LEFT JOIN counts ON counts.bucket = series.bucket
+                    ORDER BY series.bucket
+                    """,
+                    [since, bucket_unit, bucket_unit, f"{bucket_step} {bucket_unit}", bucket_unit] + params,
+                )
+                timeline = [
+                    {
+                        't': r[0].strftime('%Y-%m-%d %H:%M') if r[0] else '',
+                        'count': int(r[1] or 0),
+                    }
+                    for r in cur.fetchall()
+                ]
+        else:
+            now_ts = timezone.now()
+            bucket_counts = {b: 0 for b in _iter_buckets(since, now_ts, bucket_unit, bucket_step)}
+            start_idx = offset
+            end_idx = offset + page_size
+            matched = 0
+            rows = []
+            with pg.cursor(name='discover_stream') as cur:
+                cur.itersize = 2000
+                cur.execute(query_sql, params)
+                for record in cur:
+                    row, event_time = _process_record(record, apply_filters=True)
+                    if row is None:
+                        continue
+                    if event_time:
+                        if timezone.is_naive(event_time):
+                            event_time = timezone.make_aware(event_time, timezone.get_current_timezone())
+                        bucket = _floor_bucket(event_time, bucket_unit, bucket_step)
+                        if bucket in bucket_counts:
+                            bucket_counts[bucket] += 1
+                    if matched >= start_idx and matched < end_idx:
+                        rows.append(row)
+                    matched += 1
+            total = matched
             timeline = [
                 {
-                    't': r[0].strftime('%Y-%m-%d %H:%M') if r[0] else '',
-                    'count': int(r[1] or 0),
+                    't': bucket.strftime('%Y-%m-%d %H:%M'),
+                    'count': int(count or 0),
                 }
-                for r in cur.fetchall()
+                for bucket, count in bucket_counts.items()
             ]
+
         pg.close()
     except Exception as exc:
         db_error = str(exc)
@@ -3324,15 +3387,80 @@ def opensearch_create_visualizations(request):
         {'id': 'table', 'name': 'Data Table', 'desc': 'Tabla agregada con filtros y ordenacion.'},
         {'id': 'geo', 'name': 'Geo Map', 'desc': 'Visualizacion geografica cuando existan campos de ubicacion.'},
     ]
-    available_fields = [
-        'source_type', 'source_name', 'host_name', 'event_category', 'severity',
-        'event_type', 'proto', 'src_ip', 'src_port', 'dest_ip', 'dest_port',
-        'app_proto', 'flow_id', 'in_iface', 'signature', 'classification', 'priority'
+    core_fields = [
+        'source_type', 'source_name', 'host_name', 'host_ip', 'event_time',
+        'event_category', 'severity', 'message', 'tags', 'ingested_at',
     ]
+    derived_fields = [
+        'event_type', 'proto', 'src_ip', 'src_port', 'dest_ip', 'dest_port',
+        'dst_ip', 'dst_port', 'app_proto', 'flow_id', 'in_iface',
+        'line', 'signature', 'classification', 'priority', 'gid', 'sid', 'rev',
+    ]
+    available_fields = core_fields + derived_fields
+    source_options = []
+    fields_by_source = {'all': available_fields.copy()}
+    db_error = None
+    try:
+        pg = _get_opensearch_pg_conn()
+        pg.autocommit = True
+        with pg.cursor() as cur:
+            cur.execute(
+                """
+                SELECT source_type, COUNT(*)
+                FROM os_events_raw
+                GROUP BY source_type
+                ORDER BY COUNT(*) DESC, source_type
+                """
+            )
+            source_options = [
+                {'value': (r[0] or '').strip(), 'count': int(r[1] or 0)}
+                for r in cur.fetchall() if (r[0] or '').strip()
+            ]
+            for s in source_options:
+                stype = s['value']
+                try:
+                    cur.execute(
+                        """
+                        SELECT k, COUNT(*)
+                        FROM os_events_raw e
+                        CROSS JOIN LATERAL jsonb_object_keys(
+                            COALESCE(e.raw_payload, '{}'::jsonb)
+                        ) AS k
+                        WHERE e.source_type = %s
+                        GROUP BY k
+                        ORDER BY COUNT(*) DESC, k
+                        LIMIT 60
+                        """,
+                        [stype],
+                    )
+                    payload_keys = [r[0] for r in cur.fetchall() if r[0]]
+                except Exception:
+                    payload_keys = []
+                merged = []
+                for f in core_fields + derived_fields + payload_keys:
+                    if f not in merged:
+                        merged.append(f)
+                fields_by_source[stype] = merged
+            if source_options:
+                all_fields = []
+                for s in source_options:
+                    for f in fields_by_source.get(s['value'], []):
+                        if f not in all_fields:
+                            all_fields.append(f)
+                fields_by_source['all'] = all_fields
+        pg.close()
+    except Exception as exc:
+        db_error = str(exc)
     return render(
         request,
         'opensearch_create_visualizations.html',
-        {'presets': presets, 'available_fields': available_fields},
+        {
+            'presets': presets,
+            'available_fields': available_fields,
+            'source_options': source_options,
+            'fields_by_source': fields_by_source,
+            'db_error': db_error,
+        },
     )
 
 
@@ -3473,9 +3601,18 @@ def opensearch_visualizations_preview(request):
         category = (payload.get('category') or '').strip()
         query = (payload.get('query') or '').strip()
         viz_type = (payload.get('viz_type') or 'timeseries').strip()
+        if viz_type in ('line', 'area'):
+            viz_type = 'timeseries'
+        if viz_type == 'doughnut':
+            viz_type = 'pie'
+        if viz_type in ('heatmap', 'gauge', 'scatter', 'radar'):
+            return JsonResponse({'success': False, 'error': 'Tipo de visualizacion no soportado'}, status=400)
         group_by = (payload.get('group_by') or '').strip()
         limit = max(1, min(int(payload.get('limit') or 10), 100))
         table_fields = payload.get('table_fields') or ['event_time', 'source_type', 'event_category', 'severity', 'message']
+        metric_agg = (payload.get('metric_agg') or 'count').strip()
+        metric_field = (payload.get('metric_field') or '').strip()
+        metric_label = (payload.get('metric_label') or '').strip()
 
         where_sql, params = _build_viz_where(source, time_range, category, query)
         pg = _get_opensearch_pg_conn()
@@ -3567,6 +3704,56 @@ def opensearch_visualizations_preview(request):
                     'labels': [r[0] or 'unknown' for r in rows],
                     'values': [int(r[1]) for r in rows],
                 }
+
+            elif viz_type == 'metric':
+                agg = metric_agg.lower()
+                if agg == 'count':
+                    cur.execute(
+                        f"""
+                        SELECT COUNT(*)
+                        FROM os_events_raw
+                        WHERE {where_sql}
+                        """,
+                        params,
+                    )
+                    value = int(cur.fetchone()[0] or 0)
+                else:
+                    expr, f_params = _field_sql(metric_field)
+                    if not expr:
+                        return JsonResponse({'success': False, 'error': 'Campo de metrica invalido'}, status=400)
+                    if agg not in ('avg', 'sum', 'min', 'max', 'cardinality'):
+                        return JsonResponse({'success': False, 'error': 'Metrica no soportada'}, status=400)
+                    agg_sql = {
+                        'avg': 'AVG',
+                        'sum': 'SUM',
+                        'min': 'MIN',
+                        'max': 'MAX',
+                        'cardinality': 'COUNT(DISTINCT',
+                    }.get(agg)
+                    if agg == 'cardinality':
+                        cur.execute(
+                            f"""
+                            SELECT COUNT(DISTINCT {expr})
+                            FROM os_events_raw
+                            WHERE {where_sql}
+                            """,
+                            f_params + params,
+                        )
+                    else:
+                        cur.execute(
+                            f"""
+                            SELECT {agg_sql}({expr})
+                            FROM os_events_raw
+                            WHERE {where_sql}
+                            """,
+                            f_params + params,
+                        )
+                    raw_val = cur.fetchone()[0]
+                    try:
+                        value = float(raw_val) if raw_val is not None else 0
+                    except Exception:
+                        value = 0
+                response['data'] = {'value': value, 'label': metric_label or metric_agg.upper()}
 
             elif viz_type == 'table':
                 field_clauses = []

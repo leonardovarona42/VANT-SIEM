@@ -1,0 +1,144 @@
+{% extends "dashboard.html" %}
+{% block title %}{% if action == 'create' %}Nueva Configuracion LDAP{% else %}Editar Configuracion LDAP{% endif %} | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4 text-info">{% if action == 'create' %}Nueva Configuracion LDAP{% else %}Editar Configuracion LDAP: {{ config.nombre }}{% endif %}</h2>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <div class="card bg-secondary">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <h5 class="text-info mb-3">Informacion del Servidor</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="nombre" class="form-label fw-bold text-info">Nombre de Configuracion</label>
+                            <input type="text" name="nombre" id="nombre" class="form-control" required value="{{ config.nombre|default:'' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="servidor" class="form-label fw-bold text-info">Servidor LDAP</label>
+                            <input type="text" name="servidor" id="servidor" class="form-control" placeholder="ldap://servidor.dominio.com" required value="{{ config.servidor|default:'' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="puerto" class="form-label fw-bold text-info">Puerto</label>
+                            <input type="number" name="puerto" id="puerto" class="form-control" value="{{ config.puerto|default:389 }}">
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check mt-4">
+                                <input type="checkbox" name="use_ssl" id="use_ssl" class="form-check-input" {% if config.use_ssl %}checked{% endif %}>
+                                <label for="use_ssl" class="form-check-label">Usar SSL/TLS</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check mt-4">
+                                <input type="checkbox" name="use_starttls" id="use_starttls" class="form-check-input" {% if config.use_starttls %}checked{% endif %}>
+                                <label for="use_starttls" class="form-check-label">Usar StartTLS</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="cert_path" class="form-label fw-bold text-info">Ruta del Certificado CA (opcional)</label>
+                        <input type="text" name="cert_path" id="cert_path" class="form-control" placeholder="/etc/ssl/certs/ca-certificates.crt" value="{{ config.cert_path|default:'' }}">
+                    </div>
+                    
+                    <h5 class="text-info mb-3 mt-4">Credenciales de Bind</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="bind_dn" class="form-label fw-bold text-info">DN del Usuario Bind (opcional)</label>
+                            <input type="text" name="bind_dn" id="bind_dn" class="form-control" placeholder="cn=admin,dc=ejemplo,dc=com" value="{{ config.bind_dn|default:'' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="bind_password" class="form-label fw-bold text-info">Contrasena Bind (opcional)</label>
+                            <input type="password" name="bind_password" id="bind_password" class="form-control" value="{{ config.bind_password|default:'' }}">
+                        </div>
+                    </div>
+                    
+                    <h5 class="text-info mb-3 mt-4">Configuracion de Busqueda</h5>
+                    <div class="mb-3">
+                        <label for="user_search_base" class="form-label fw-bold text-info">Base de Busqueda de Usuarios</label>
+                        <input type="text" name="user_search_base" id="user_search_base" class="form-control" placeholder="ou=users,dc=ejemplo,dc=com" required value="{{ config.user_search_base|default:'' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="user_search_filter" class="form-label fw-bold text-info">Filtro de Busqueda de Usuarios</label>
+                        <input type="text" name="user_search_filter" id="user_search_filter" class="form-control" value="{{ config.user_search_filter|default:'(uid={username})' }}">
+                        <div class="form-text">Use {username} como placeholder para el nombre de usuario</div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="group_search_base" class="form-label fw-bold text-info">Base de Busqueda de Grupos (opcional)</label>
+                            <input type="text" name="group_search_base" id="group_search_base" class="form-control" placeholder="ou=groups,dc=ejemplo,dc=com" value="{{ config.group_search_base|default:'' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="group_search_filter" class="form-label fw-bold text-info">Filtro de Busqueda de Grupos</label>
+                            <input type="text" name="group_search_filter" id="group_search_filter" class="form-control" value="{{ config.group_search_filter|default:'(member={user_dn})' }}">
+                        </div>
+                    </div>
+                    
+                    <h5 class="text-info mb-3 mt-4">Mapeo de Atributos</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label for="username_attr" class="form-label fw-bold text-info">Atributo Usuario</label>
+                            <input type="text" name="username_attr" id="username_attr" class="form-control" value="{{ config.username_attr|default:'uid' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="first_name_attr" class="form-label fw-bold text-info">Atributo Nombre</label>
+                            <input type="text" name="first_name_attr" id="first_name_attr" class="form-control" value="{{ config.first_name_attr|default:'givenName' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="last_name_attr" class="form-label fw-bold text-info">Atributo Apellido</label>
+                            <input type="text" name="last_name_attr" id="last_name_attr" class="form-control" value="{{ config.last_name_attr|default:'sn' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="email_attr" class="form-label fw-bold text-info">Atributo Email</label>
+                            <input type="text" name="email_attr" id="email_attr" class="form-control" value="{{ config.email_attr|default:'mail' }}">
+                        </div>
+                    </div>
+                    
+                    <h5 class="text-info mb-3 mt-4">Comportamiento</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input type="checkbox" name="is_active" id="is_active" class="form-check-input" {% if config.is_active or not config %}checked{% endif %}>
+                                <label for="is_active" class="form-check-label fw-bold text-info">Habilitar Autenticacion LDAP</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input type="checkbox" name="is_default" id="is_default" class="form-check-input" {% if config.is_default %}checked{% endif %}>
+                                <label for="is_default" class="form-check-label fw-bold text-info">Usar por Defecto</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input type="checkbox" name="auto_create_user" id="auto_create_user" class="form-check-input" {% if config.auto_create_user or not config %}checked{% endif %}>
+                                <label for="auto_create_user" class="form-check-label fw-bold text-info">Crear Usuario Automaticamente</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{% url 'ldap-config-list' %}" class="btn btn-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">{% if action == 'create' %}Crear Configuracion{% else %}Guardar Cambios{% endif %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
