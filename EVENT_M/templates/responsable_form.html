@@ -57,7 +57,12 @@
                     </div>
                     <div class="mb-3">
                         <label for="tipo" class="form-label fw-bold text-info">Tipo</label>
-                        <input type="text" name="tipo" id="tipo" class="form-control" required value="{{ form.tipo.value|default_if_none:'' }}" placeholder="Ej: Cuadro Centro, RSI, Admin">
+                        <select name="tipo" id="tipo" class="form-select" required>
+                            <option value="" disabled>Seleccione un tipo...</option>
+                            {% for value, label in form.tipo.field.choices %}
+                                <option value="{{ value }}" {% if form.tipo.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
                     <div class="mb-3">
                         <label for="descripcion" class="form-label fw-bold text-info">Descripción</label>

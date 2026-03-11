@@ -43,7 +43,7 @@
                             <select name="cuadro_centro" id="cuadro_centro" class="form-select" required>
                                 <option disabled selected>Seleccione un responsable...</option>
                                 {% for responsable in form.cuadro_centro.field.queryset %}
-                                    <option value="{{ responsable.id }}" {% if form.cuadro_centro.value == responsable.id|stringformat:"s" %}selected{% endif %}>{{ responsable.nombres }} {{ responsable.apellidos }}</option>
+                                    <option value="{{ responsable.id }}" {% if form.cuadro_centro.value|stringformat:"s" == responsable.id|stringformat:"s" %}selected{% endif %}>{{ responsable.nombres }} {{ responsable.apellidos }}</option>
                                 {% endfor %}
                             </select>
                             <button type="button" class="btn btn-outline-success fw-bold" data-bs-toggle="modal" data-bs-target="#crearResponsableModal" data-target="cuadro_centro" title="Crear nuevo responsable">
@@ -57,7 +57,7 @@
                             <select name="rsi" id="rsi" class="form-select" required>
                                 <option disabled selected>Seleccione un responsable...</option>
                                 {% for responsable in form.rsi.field.queryset %}
-                                    <option value="{{ responsable.id }}" {% if form.rsi.value == responsable.id|stringformat:"s" %}selected{% endif %}>{{ responsable.nombres }} {{ responsable.apellidos }}</option>
+                                    <option value="{{ responsable.id }}" {% if form.rsi.value|stringformat:"s" == responsable.id|stringformat:"s" %}selected{% endif %}>{{ responsable.nombres }} {{ responsable.apellidos }}</option>
                                 {% endfor %}
                             </select>
                             <button type="button" class="btn btn-outline-success fw-bold" data-bs-toggle="modal" data-bs-target="#crearResponsableModal" data-target="rsi" title="Crear nuevo responsable">
@@ -71,7 +71,7 @@
                             <select name="admin" id="admin" class="form-select" required>
                                 <option disabled selected>Seleccione un responsable...</option>
                                 {% for responsable in form.admin.field.queryset %}
-                                    <option value="{{ responsable.id }}" {% if form.admin.value == responsable.id|stringformat:"s" %}selected{% endif %}>{{ responsable.nombres }} {{ responsable.apellidos }}</option>
+                                    <option value="{{ responsable.id }}" {% if form.admin.value|stringformat:"s" == responsable.id|stringformat:"s" %}selected{% endif %}>{{ responsable.nombres }} {{ responsable.apellidos }}</option>
                                 {% endfor %}
                             </select>
                             <button type="button" class="btn btn-outline-success fw-bold" data-bs-toggle="modal" data-bs-target="#crearResponsableModal" data-target="admin" title="Crear nuevo responsable">

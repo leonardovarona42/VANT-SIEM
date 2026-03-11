@@ -1,5 +1,9 @@
 from django.contrib import admin
-from .models import IDSIngestConfig, SnortLog, SuricataLog, IDSAlert, IDSStatistics, SuricataEveAlert, SuricataFlow, SuricataStats, SuricataSystemLog
+from .models import (
+    IDSIngestConfig, SnortLog, SuricataLog, IDSAlert, IDSStatistics,
+    SuricataEveAlert, SuricataFlow, SuricataStats, SuricataSystemLog,
+    SavedVisualization, SavedDashboard
+)
 @admin.register(SuricataEveAlert)
 class SuricataEveAlertAdmin(admin.ModelAdmin):
     list_display = ['timestamp', 'event_type', 'src_ip', 'dest_ip', 'proto', 'signature_id', 'severity', 'category', 'action', 'created_at']
@@ -121,3 +125,21 @@ class IDSStatisticsAdmin(admin.ModelAdmin):
             'fields': ('created_at',)
         }),
     )
+
+
+@admin.register(SavedVisualization)
+class SavedVisualizationAdmin(admin.ModelAdmin):
+    list_display = ['id', 'name', 'space', 'owner', 'is_shared', 'updated_at']
+    list_filter = ['space', 'is_shared', 'updated_at']
+    search_fields = ['name', 'description', 'owner__username']
+    readonly_fields = ['created_at', 'updated_at']
+    ordering = ['-updated_at']
+
+
+@admin.register(SavedDashboard)
+class SavedDashboardAdmin(admin.ModelAdmin):
+    list_display = ['id', 'name', 'space', 'owner', 'is_shared', 'updated_at']
+    list_filter = ['space', 'is_shared', 'updated_at']
+    search_fields = ['name', 'description', 'owner__username']
+    readonly_fields = ['created_at', 'updated_at']
+    ordering = ['-updated_at']

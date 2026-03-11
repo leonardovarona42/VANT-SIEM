@@ -4,178 +4,178 @@
 {% block content %}
 <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
 <div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card bg-secondary">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="text-info mb-0">
-                        <i class="fas fa-envelope me-2"></i>Configuración de Correo
-                    </h3>
-                    <a href="{% url 'create-email-config' %}" class="btn btn-success">
-                        <i class="fas fa-plus me-2"></i>Nueva Configuración
-                    </a>
-                </div>
-                <div class="card-body">
-                    {% if configs %}
-                        <div class="table-responsive">
-                            <table class="table table-dark table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Nombre</th>
-                                        <th>Servidor SMTP</th>
-                                        <th>Puerto</th>
-                                        <th>Email Remitente</th>
-                                        <th>Estado</th>
-                                        <th>Creado por</th>
-                                        <th>Fecha Creación</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for config in configs %}
-                                    <tr class="{% if config.is_active %}table-success{% endif %}">
-                                        <td>
-                                            <strong>{{ config.name }}</strong>
-                                            {% if config.is_active %}
-                                                <span class="badge bg-success ms-2">Activa</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ config.smtp_server }}</td>
-                                        <td>{{ config.smtp_port }}</td>
-                                        <td>{{ config.from_email }}</td>
-                                        <td>
-                                            {% if config.use_tls %}
-                                                <span class="badge bg-info">TLS</span>
-                                            {% elif config.use_ssl %}
-                                                <span class="badge bg-warning">SSL</span>
-                                            {% else %}
-                                                <span class="badge bg-secondary">Sin cifrado</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ config.created_by.username }}</td>
-                                        <td>{{ config.created_at|date:"d/m/Y H:i" }}</td>
-                                        <td>
-                                            <div class="btn-group" role="group">
-                                                <button class="btn btn-sm btn-secondary"
-                                                    onclick="testConfig(event, {{ config.id }}, '{{ config.name|escapejs }}')"
-                                                    title="Probar Configuración">
-                                                    <i class="fas fa-paper-plane me-1"></i>Test
-                                                </button>
+ <div class="row">
+ <div class="col-12">
+ <div class="card bg-secondary">
+ <div class="card-header d-flex justify-content-between align-items-center">
+ <h3 class="text-info mb-0">
+ <i class="fas fa-envelope me-2"></i>Configuración de Correo
+ </h3>
+ <a href="{% url 'create-email-config' %}" class="btn btn-success">
+ <i class="fas fa-plus me-2"></i>Nueva Configuración
+ </a>
+ </div>
+ <div class="card-body">
+ {% if configs %}
+ <div class="table-responsive">
+ <table class="table table-dark table-hover">
+ <thead>
+ <tr>
+ <th>Nombre</th>
+ <th>Servidor SMTP</th>
+ <th>Puerto</th>
+ <th>Email Remitente</th>
+ <th>Estado</th>
+ <th>Creado por</th>
+ <th>Fecha Creación</th>
+ <th>Acciones</th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for config in configs %}
+ <tr class="{% if config.is_active %}table-success{% endif %}">
+ <td>
+ <strong>{{ config.name }}</strong>
+ {% if config.is_active %}
+ <span class="badge bg-success ms-2">Activa</span>
+ {% endif %}
+ </td>
+ <td>{{ config.smtp_server }}</td>
+ <td>{{ config.smtp_port }}</td>
+ <td>{{ config.from_email }}</td>
+ <td>
+ {% if config.use_tls %}
+ <span class="badge bg-info">TLS</span>
+ {% elif config.use_ssl %}
+ <span class="badge bg-warning">SSL</span>
+ {% else %}
+ <span class="badge bg-secondary">Sin cifrado</span>
+ {% endif %}
+ </td>
+ <td>{{ config.created_by.username }}</td>
+ <td>{{ config.created_at|date:"d/m/Y H:i" }}</td>
+ <td>
+ <div class="btn-group" role="group">
+ <button class="btn btn-sm btn-secondary"
+ onclick="testConfig(event, {{ config.id }}, '{{ config.name|escapejs }}')"
+ title="Probar Configuración">
+ <i class="fas fa-paper-plane me-1"></i>Test
+ </button>
 
-                                                <a class="btn btn-sm btn-outline-light me-2" href="{% url 'edit-email-config' config.id %}" title="Editar Configuración">
-                                                    <i class="fas fa-edit me-1"></i>Editar
-                                                </a>
+ <a class="btn btn-sm btn-outline-light me-2" href="{% url 'edit-email-config' config.id %}" title="Editar Configuración">
+ <i class="fas fa-edit me-1"></i>Editar
+ </a>
 
-                                                {% if not config.is_active %}
-                                                   <button class="btn btn-sm btn-primary"
-                                                        onclick="activateConfig(event, {{ config.id }}, '{{ config.name|escapejs }}')"
-                                                        title="Activar Configuración">
-                                                        <i class="fas fa-play"></i>
-                                                    </button>
-                                                {% else %}
-                                                    <span class="badge bg-success">Activa</span>
-                                                {% endif %}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    {% else %}
-                        <div class="text-center py-5">
-                            <i class="fas fa-envelope fa-3x text-muted mb-3"></i>
-                            <h5 class="text-muted">No hay configuraciones de correo</h5>
-                            <p class="text-muted">Crea tu primera configuración para comenzar a enviar alertas por correo</p>
-                            <a href="{% url 'create-email-config' %}" class="btn btn-success">
-                                <i class="fas fa-plus me-2"></i>Crear Configuración
-                            </a>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
+ {% if not config.is_active %}
+ <button class="btn btn-sm btn-primary"
+ onclick="activateConfig(event, {{ config.id }}, '{{ config.name|escapejs }}')"
+ title="Activar Configuración">
+ <i class="fas fa-play"></i>
+ </button>
+ {% else %}
+ <span class="badge bg-success">Activa</span>
+ {% endif %}
+ </div>
+ </td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ {% else %}
+ <div class="text-center py-5">
+ <i class="fas fa-envelope fa-3x text-muted mb-3"></i>
+ <h5 class="text-muted">No hay configuraciones de correo</h5>
+ <p class="text-muted">Crea tu primera configuración para comenzar a enviar alertas por correo</p>
+ <a href="{% url 'create-email-config' %}" class="btn btn-success">
+ <i class="fas fa-plus me-2"></i>Crear Configuración
+ </a>
+ </div>
+ {% endif %}
+ </div>
+ </div>
+ </div>
+ </div>
 </div>
 
 <script>
 function activateConfig(event, configId, configName) {
-    if (confirm(`¿Estás seguro de que quieres activar la configuración "${configName}"?`)) {
-        fetch(`/siem/dashboard/api/email-config/${configId}/activate/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                'Content-Type': 'application/json',
-            },
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                location.reload();
-            } else {
-                alert('Error: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error al activar la configuración');
-        });
-    }
+ if (confirm(`¿Estás seguro de que quieres activar la configuración "${configName}"?`)) {
+ fetch(`/siem/dashboard/api/email-config/${configId}/activate/`, {
+ method: 'POST',
+ headers: {
+ 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+ 'Content-Type': 'application/json',
+ },
+ })
+ .then(response => response.json())
+ .then(data => {
+ if (data.success) {
+ location.reload();
+ } else {
+ alert('Error: ' + data.error);
+ }
+ })
+ .catch(error => {
+ console.error('Error:', error);
+ alert('Error al activar la configuración');
+ });
+ }
 }
 
 function testConfig(event, configId, configName) {
-    if (confirm(`¿Enviar correo de prueba para la configuración "${configName}"?\n\nEsta operación puede tardar hasta 15 segundos.`)) {
-        // Mostrar loading con mejor feedback
-        const button = event.target.closest('button');
-        const originalHTML = button.innerHTML;
-        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Probando...';
-        button.disabled = true;
+ if (confirm(`¿Enviar correo de prueba para la configuración "${configName}"?\n\nEsta operación puede tardar hasta 15 segundos.`)) {
+ // Mostrar loading con mejor feedback
+ const button = event.target.closest('button');
+ const originalHTML = button.innerHTML;
+ button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Probando...';
+ button.disabled = true;
 
-        // Crear timeout para evitar esperas infinitas
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => {
-            controller.abort();
-            button.innerHTML = originalHTML;
-            button.disabled = false;
-            alert('⏰ Tiempo de espera agotado. Verifique la configuración de red y servidor SMTP.');
-        }, 15000); // 15 segundos timeout
+ // Crear timeout para evitar esperas infinitas
+ const controller = new AbortController();
+ const timeoutId = setTimeout(() => {
+ controller.abort();
+ button.innerHTML = originalHTML;
+ button.disabled = false;
+ alert('⏰ Tiempo de espera agotado. Verifique la configuración de red y servidor SMTP.');
+ }, 15000); // 15 segundos timeout
 
-        fetch(`/siem/dashboard/api/email-config/${configId}/test/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                'Content-Type': 'application/json',
-            },
-            signal: controller.signal
-        })
-        .then(response => {
-            clearTimeout(timeoutId);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            return response.json();
-        })
-        .then((data) => {
-            if (data.success) {
-                alert('✅ ' + data.message);
-            } else {
-                alert('❌ Error: ' + (data.error || data.message));
-            }
-        })
-        .catch(error => {
-            clearTimeout(timeoutId);
-            console.error('Error:', error);
-            if (error.name === 'AbortError') {
-                alert('⏰ La solicitud fue cancelada por timeout.');
-            } else {
-                alert('❌ Error al probar la configuración: ' + error.message);
-            }
-        })
-        .finally(() => {
-            button.innerHTML = originalHTML;
-            button.disabled = false;
-        });
-    }
+ fetch(`/siem/dashboard/api/email-config/${configId}/test/`, {
+ method: 'POST',
+ headers: {
+ 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+ 'Content-Type': 'application/json',
+ },
+ signal: controller.signal
+ })
+ .then(response => {
+ clearTimeout(timeoutId);
+ if (!response.ok) {
+ throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+ }
+ return response.json();
+ })
+ .then((data) => {
+ if (data.success) {
+ alert('✅ ' + data.message);
+ } else {
+ alert('❌ Error: ' + (data.error || data.message));
+ }
+ })
+ .catch(error => {
+ clearTimeout(timeoutId);
+ console.error('Error:', error);
+ if (error.name === 'AbortError') {
+ alert('⏰ La solicitud fue cancelada por timeout.');
+ } else {
+ alert('❌ Error al probar la configuración: ' + error.message);
+ }
+ })
+ .finally(() => {
+ button.innerHTML = originalHTML;
+ button.disabled = false;
+ });
+ }
 }
 
 </script>

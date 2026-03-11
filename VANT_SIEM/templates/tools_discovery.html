@@ -1,36 +1,36 @@
 {% extends 'dashboard.html' %}
 {% block content %}
 <div class="container">
-  <div class="row justify-content-center">
-    <div class="col-md-8">
-      <div class="card bg-secondary">
-        <div class="card-header"><h3 class="text-info mb-0"><i class="fas fa-project-diagram me-2"></i>Descubrimiento de Red</h3></div>
-        <div class="card-body">
-          <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-          <div class="mb-3">
-            <label for="cidr" class="form-label text-info">Rango CIDR</label>
-            <div class="input-group">
-              <input id="cidr" class="form-control" placeholder="Ej: 192.168.1.0/24">
-              <button class="btn btn-primary" onclick="runDisc()"><i class="fas fa-play me-1"></i>Ejecutar</button>
-            </div>
-            <div class="form-text">Se limita a 256 hosts para evitar saturación.</div>
-          </div>
-          <label class="form-label text-info">Hosts activos</label>
-          <div class="table-responsive">
-            <table class="table table-dark table-striped" id="tbl"><thead><tr><th>IP</th><th>MAC</th></tr></thead><tbody></tbody></table>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+ <div class="row justify-content-center">
+ <div class="col-md-8">
+ <div class="card bg-secondary">
+ <div class="card-header"><h3 class="text-info mb-0"><i class="fas fa-project-diagram me-2"></i>Descubrimiento de Red</h3></div>
+ <div class="card-body">
+ <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+ <div class="mb-3">
+ <label for="cidr" class="form-label text-info">Rango CIDR</label>
+ <div class="input-group">
+ <input id="cidr" class="form-control" placeholder="Ej: 192.168.1.0/24">
+ <button class="btn btn-primary" onclick="runDisc()"><i class="fas fa-play me-1"></i>Ejecutar</button>
+ </div>
+ <div class="form-text">Se limita a 256 hosts para evitar saturación.</div>
+ </div>
+ <label class="form-label text-info">Hosts activos</label>
+ <div class="table-responsive">
+ <table class="table table-dark table-striped" id="tbl"><thead><tr><th>IP</th><th>MAC</th></tr></thead><tbody></tbody></table>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
 </div>
 <script>
 async function runDisc(){
-  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-  const res = await fetch('{% url "api-tools-discovery" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}, body: new URLSearchParams({cidr: cidr.value.trim()})});
-  const data = await res.json();
-  const tb = document.querySelector('#tbl tbody'); tb.innerHTML='';
-  if (data.success){ (data.alive||[]).forEach(x=>{ const tr=document.createElement('tr'); tr.innerHTML = `<td>${x.ip}</td><td>${x.mac||''}</td>`; tb.appendChild(tr); }); } else { const tr=document.createElement('tr'); tr.innerHTML = `<td colspan=2 class='text-danger'>${data.error||'Error'}</td>`; tb.appendChild(tr); }
+ const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+ const res = await fetch('{% url "api-tools-discovery" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}, body: new URLSearchParams({cidr: cidr.value.trim()})});
+ const data = await res.json();
+ const tb = document.querySelector('#tbl tbody'); tb.innerHTML='';
+ if (data.success){ (data.alive||[]).forEach(x=>{ const tr=document.createElement('tr'); tr.innerHTML = `<td>${x.ip}</td><td>${x.mac||''}</td>`; tb.appendChild(tr); }); } else { const tr=document.createElement('tr'); tr.innerHTML = `<td colspan=2 class='text-danger'>${data.error||'Error'}</td>`; tb.appendChild(tr); }
 }
 </script>
 {% endblock %}

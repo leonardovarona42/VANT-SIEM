@@ -3,80 +3,80 @@
 
 {% block content %}
 <div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="text-info">
-                    <i class="fas fa-microscope me-2"></i>Análisis de Indicadores
-                </h2>
-                {% if request.user.is_superuser %}
-                <a href="{% url 'analysis-config' %}" class="btn btn-outline-light">
-                    <i class="fas fa-sliders-h me-2"></i>Configurar APIs
-                </a>
-                {% endif %}
-            </div>
-            <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-            <div class="row g-3">
-                <div class="col-md-4">
-                    <div class="card bg-secondary h-100">
-                        <div class="card-header"><strong class="text-info">IP (AbuseIPDB)</strong></div>
-                        <div class="card-body">
-                            <div class="input-group mb-2">
-                                <input id="ipInput" type="text" class="form-control" placeholder="8.8.8.8">
-                                <button class="btn btn-primary" onclick="runIP()"><i class="fas fa-search"></i></button>
-                            </div>
-                            <pre class="bg-dark text-light p-2 small" id="ipResult" style="min-height: 180px;">Resultado aquí…</pre>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card bg-secondary h-100">
-                        <div class="card-header"><strong class="text-info">Indicador (VirusTotal)</strong></div>
-                        <div class="card-body">
-                            <div class="input-group mb-2">
-                                <input id="indicatorInput" type="text" class="form-control" placeholder="URL / hash / dominio">
-                                <button class="btn btn-primary" onclick="runIndicator()"><i class="fas fa-search"></i></button>
-                            </div>
-                            <pre class="bg-dark text-light p-2 small" id="indicatorResult" style="min-height: 180px;">Resultado aquí…</pre>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card bg-secondary h-100">
-                        <div class="card-header"><strong class="text-info">MAC (MacVendors)</strong></div>
-                        <div class="card-body">
-                            <div class="input-group mb-2">
-                                <input id="macInput" type="text" class="form-control" placeholder="44:38:39:ff:ef:57">
-                                <button class="btn btn-primary" onclick="runMAC()"><i class="fas fa-search"></i></button>
-                            </div>
-                            <pre class="bg-dark text-light p-2 small" id="macResult" style="min-height: 180px;">Resultado aquí…</pre>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+ <div class="row">
+ <div class="col-12">
+ <div class="d-flex justify-content-between align-items-center mb-4">
+ <h2 class="text-info">
+ <i class="fas fa-microscope me-2"></i>Análisis de Indicadores
+ </h2>
+ {% if request.user.is_superuser %}
+ <a href="{% url 'analysis-config' %}" class="btn btn-outline-light">
+ <i class="fas fa-sliders-h me-2"></i>Configurar APIs
+ </a>
+ {% endif %}
+ </div>
+ <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+ <div class="row g-3">
+ <div class="col-md-4">
+ <div class="card bg-secondary h-100">
+ <div class="card-header"><strong class="text-info">IP (AbuseIPDB)</strong></div>
+ <div class="card-body">
+ <div class="input-group mb-2">
+ <input id="ipInput" type="text" class="form-control" placeholder="8.8.8.8">
+ <button class="btn btn-primary" onclick="runIP()"><i class="fas fa-search"></i></button>
+ </div>
+ <pre class="bg-dark text-light p-2 small" id="ipResult" style="min-height: 180px;">Resultado aquí…</pre>
+ </div>
+ </div>
+ </div>
+ <div class="col-md-4">
+ <div class="card bg-secondary h-100">
+ <div class="card-header"><strong class="text-info">Indicador (VirusTotal)</strong></div>
+ <div class="card-body">
+ <div class="input-group mb-2">
+ <input id="indicatorInput" type="text" class="form-control" placeholder="URL / hash / dominio">
+ <button class="btn btn-primary" onclick="runIndicator()"><i class="fas fa-search"></i></button>
+ </div>
+ <pre class="bg-dark text-light p-2 small" id="indicatorResult" style="min-height: 180px;">Resultado aquí…</pre>
+ </div>
+ </div>
+ </div>
+ <div class="col-md-4">
+ <div class="card bg-secondary h-100">
+ <div class="card-header"><strong class="text-info">MAC (MacVendors)</strong></div>
+ <div class="card-body">
+ <div class="input-group mb-2">
+ <input id="macInput" type="text" class="form-control" placeholder="44:38:39:ff:ef:57">
+ <button class="btn btn-primary" onclick="runMAC()"><i class="fas fa-search"></i></button>
+ </div>
+ <pre class="bg-dark text-light p-2 small" id="macResult" style="min-height: 180px;">Resultado aquí…</pre>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
 </div>
 <script>
 function j(v){return JSON.stringify(v, null, 2)}
 const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 async function runIP(){
-  const ip = document.getElementById('ipInput').value.trim();
-  const res = await fetch('{% url "analyze-ip" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}, body: new URLSearchParams({ip})});
-  const data = await res.json();
-  document.getElementById('ipResult').textContent = data.success ? j(data.data) : `Error: ${data.error}`;
+ const ip = document.getElementById('ipInput').value.trim();
+ const res = await fetch('{% url "analyze-ip" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}, body: new URLSearchParams({ip})});
+ const data = await res.json();
+ document.getElementById('ipResult').textContent = data.success ? j(data.data) : `Error: ${data.error}`;
 }
 async function runIndicator(){
-  const indicator = document.getElementById('indicatorInput').value.trim();
-  const res = await fetch('{% url "analyze-indicator" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}, body: new URLSearchParams({indicator})});
-  const data = await res.json();
-  document.getElementById('indicatorResult').textContent = data.success ? j(data.data) : `Error: ${data.error}`;
+ const indicator = document.getElementById('indicatorInput').value.trim();
+ const res = await fetch('{% url "analyze-indicator" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}, body: new URLSearchParams({indicator})});
+ const data = await res.json();
+ document.getElementById('indicatorResult').textContent = data.success ? j(data.data) : `Error: ${data.error}`;
 }
 async function runMAC(){
-  const mac = document.getElementById('macInput').value.trim();
-  const res = await fetch('{% url "analyze-mac" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}, body: new URLSearchParams({mac})});
-  const data = await res.json();
-  document.getElementById('macResult').textContent = data.success ? j(data.data) : `Error: ${data.error}`;
+ const mac = document.getElementById('macInput').value.trim();
+ const res = await fetch('{% url "analyze-mac" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}, body: new URLSearchParams({mac})});
+ const data = await res.json();
+ document.getElementById('macResult').textContent = data.success ? j(data.data) : `Error: ${data.error}`;
 }
 </script>
 {% endblock %}

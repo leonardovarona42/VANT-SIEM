@@ -1,628 +1,640 @@
 ﻿{% load static %}
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>{% block title %}VANT-SIEM{% endblock %}</title>
-    <link
-      rel="stylesheet"
-      href="{% static 'bootstrap/css/bootstrap.min.css' %}"
-    />
-    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}" />
-    {% block extra_css %}{% endblock %}
-  </head>
-  <body class="bg-dark text-light">
-    {% csrf_token %}
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-      <div class="container">
-        <a
-          class="navbar-brand d-flex align-items-center"
-          href="{% url 'dashboard' %}"
-        >
-          <img
-            src="{% static 'img/logo.png' %}"
-            alt="Logo"
-            class="logo-svg me-2"
-          />
-          <span class="fw-bold">VANT-SIEM</span>
-        </a>
-        <button
-          class="navbar-toggler"
-          type="button"
-          data-bs-toggle="collapse"
-          data-bs-target="#navbarNav"
-        >
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav ms-auto">
-            <!-- MenÃº principal: GestiÃ³n de Incidentes -->
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                id="gestionDropdown"
-                role="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-              >
-                GestiÃ³n de Incidentes
-              </a>
-              <ul
-                class="dropdown-menu dropdown-menu-dark"
-                aria-labelledby="gestionDropdown"
-              >
-                <li><h6 class="dropdown-header text-info">Reportes</h6></li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'reporte-create' %}"
-                    >Crear Reporte</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'reporte-list' %}"
-                    >Listado de Reportes</a
-                  >
-                </li>
-                <li><hr class="dropdown-divider" /></li>
-                <li><h6 class="dropdown-header text-info">Incidentes</h6></li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'incidente-create' %}"
-                    >Crear Incidente</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'incidente-list' %}"
-                    >Listado de Incidentes</a
-                  >
-                </li>
-                <li><hr class="dropdown-divider" /></li>
-                <li><h6 class="dropdown-header text-info">CatÃ¡logo</h6></li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'categoria-create' %}"
-                    >Crear CategorÃ­a</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'categoria-list' %}"
-                    >Listado de CategorÃ­as</a
-                  >
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{% url 'subcategoria-create' %}"
-                    >Crear SubcategorÃ­a</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'subcategoria-list' %}"
-                    >Listado de SubcategorÃ­as</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'servicio-create' %}"
-                    >Crear Servicio</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'servicio-list' %}"
-                    >Listado de Servicios</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'responsable-create' %}"
-                    >Crear Responsable</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'responsable-list' %}"
-                    >Listado de Responsables</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'area-create' %}"
-                    >Crear Ãrea</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'area-list' %}"
-                    >Listado de Ãreas</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'medida-create' %}"
-                    >Crear Medida</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'medida-list' %}"
-                    >Listado de Medidas</a
-                  >
-                </li>
-                <li><hr class="dropdown-divider" /></li>
-                <li><h6 class="dropdown-header text-info">Relaciones</h6></li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'involucrado-create' %}"
-                    >Crear Involucrado</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'involucrado-list' %}"
-                    >Listado de Involucrados</a
-                  >
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{% url 'involucradoincidente-create' %}"
-                    >Crear Involucrado Incidente</a
-                  >
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{% url 'involucradoincidente-list' %}"
-                    >Listado de Involucrados Incidente</a
-                  >
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{% url 'medidaincidente-create' %}"
-                    >Crear Medida Incidente</a
-                  >
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{% url 'medidaincidente-list' %}"
-                    >Listado de Medidas Incidente</a
-                  >
-                </li>
-              </ul>
-            </li>
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                id="irisDropdown"
-                role="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-              >
-                <i class="fas fa-brain me-2"></i>IRIS-S.O.A.R
-              </a>
-              <ul
-                class="dropdown-menu dropdown-menu-dark"
-                aria-labelledby="irisDropdown"
-              >
-                <li><h6 class="dropdown-header text-warning">Dashboard IA</h6></li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'iris:iris_dashboard' %}">
-                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard Principal
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'iris:live_ai_monitor' %}">
-                    <i class="fas fa-brain me-2"></i>Monitor Neuronal en Vivo
-                  </a>
-                </li>
-                <li><hr class="dropdown-divider" /></li>
-                <li><h6 class="dropdown-header text-warning">InvestigaciÃ³n</h6></li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'iris:iris_predictions' %}">
-                    <i class="fas fa-search me-2"></i>Predicciones Pendientes
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'iris:performance_report' %}">
-                    <i class="fas fa-chart-line me-2"></i>Reporte de Rendimiento
-                  </a>
-                </li>
-                <li><hr class="dropdown-divider" /></li>
-                <li><h6 class="dropdown-header text-warning">ConfiguraciÃ³n</h6></li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'iris:iris_configuration' %}">
-                    <i class="fas fa-sliders-h me-2"></i>ConfiguraciÃ³n del Sistema
-                  </a>
-                </li>
-                {% if request.user.is_superuser %}
-                <li>
-                  <a class="dropdown-item" href="#" onclick="runAIAnalysis()">
-                    <i class="fas fa-play me-2"></i>Ejecutar AnÃ¡lisis IA
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="#" onclick="trainAIModels()">
-                    <i class="fas fa-graduation-cap me-2"></i>Entrenar Modelos
-                  </a>
-                </li>
-                {% endif %}
-              </ul>
-            </li>
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                id="analysisDropdown"
-                role="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-              >
-                AnÃ¡lisis
-              </a>
-              <ul
-                class="dropdown-menu dropdown-menu-dark"
-                aria-labelledby="analysisDropdown"
-              >
-                <li><h6 class="dropdown-header text-info">Online</h6></li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'analysis-ip' %}"
-                    ><i class="fas fa-network-wired me-2"></i>IP (AbuseIPDB)</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'analysis-indicator' %}"
-                    ><i class="fas fa-search me-2"></i>Indicador (VirusTotal)</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'analysis-mac' %}"
-                    ><i class="fas fa-microchip me-2"></i>MAC (MacVendors)</a
-                  >
-                </li>
-                <li><hr class="dropdown-divider" /></li>
-                <li>
-                  <h6 class="dropdown-header text-info">Consultas locales</h6>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'local-search-ip' %}"
-                    ><i class="fas fa-database me-2"></i>Buscar IP en
-                    registros</a
-                  >
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{% url 'local-search-indicator' %}"
-                    ><i class="fas fa-database me-2"></i>Buscar Indicador en
-                    registros</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'local-search-mac' %}"
-                    ><i class="fas fa-database me-2"></i>Buscar MAC en
-                    registros</a
-                  >
-                </li>
-                <li><hr class="dropdown-divider" /></li>
-                <li><h6 class="dropdown-header text-info">Locales</h6></li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{% url 'analysis-internal-vt' %}"
-                    ><i class="fas fa-archive me-2"></i>HistÃ³rico VirusTotal</a
-                  >
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{% url 'analysis-internal-abuseipdb' %}"
-                    ><i class="fas fa-archive me-2"></i>HistÃ³rico AbuseIPDB</a
-                  >
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{% url 'analysis-internal-macvendors' %}"
-                    ><i class="fas fa-archive me-2"></i>HistÃ³rico MacVendors</a
-                  >
-                </li>
-                <li><hr class="dropdown-divider" /></li>
-                <li><h6 class="dropdown-header text-info">Reportes</h6></li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'report-vt' %}"
-                    ><i class="fas fa-chart-bar me-2"></i>Reporte VT</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'report-abuseipdb' %}"
-                    ><i class="fas fa-chart-bar me-2"></i>Reporte AbuseIPDB</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'report-macvendors' %}"
-                    ><i class="fas fa-chart-bar me-2"></i>Reporte MacVendors</a
-                  >
-                </li>
-              </ul>
-            </li>
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                id="idsDropdown"
-                role="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-              >
-                <i class="fas fa-shield-alt me-2"></i>Log Analytics and Network Security
-              </a>
-              <ul
-                class="dropdown-menu dropdown-menu-dark"
-                aria-labelledby="idsDropdown"
-              >
-                <li><h6 class="dropdown-header text-info">OpenSearch</h6></li>
-                <li>
-                  <a class="dropdown-item" href="/opensearch/discover/"
-                    ><i class="fas fa-search me-2"></i>Discovery</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'opensearch-visual-dashboard' %}"
-                    ><i class="fas fa-chart-line me-2"></i>Dashboard Visual</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'service-management' %}"
-                    ><i class="fas fa-server me-2"></i>GestiÃ³n del Servicio</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'ids-config' %}"
-                    ><i class="fas fa-cog me-2"></i>ConfiguraciÃ³n de Fuentes</a
-                  >
-                </li>
-              </ul>
-            </li>
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                id="toolsDropdown"
-                role="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-              >
-                Herramientas de Red
-              </a>
-              <ul
-                class="dropdown-menu dropdown-menu-dark"
-                aria-labelledby="toolsDropdown"
-              >
-                <li>
-                  <a class="dropdown-item" href="{% url 'tools-ping' %}"
-                    ><i class="fas fa-signal me-2"></i>Ping</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'tools-dns' %}"
-                    ><i class="fas fa-globe me-2"></i>ResoluciÃ³n DNS</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'tools-scan' %}"
-                    ><i class="fas fa-search me-2"></i>Escaneo de Puertos</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'tools-bruteforce' %}"
-                    ><i class="fas fa-lock me-2"></i>SimulaciÃ³n Fuerza Bruta</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'tools-traceroute' %}"
-                    ><i class="fas fa-route me-2"></i>Traceroute</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'tools-service-scan' %}"
-                    ><i class="fas fa-plug me-2"></i>Escaneo de Puertos y
-                    Servicios</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'tools-discovery' %}"
-                    ><i class="fas fa-project-diagram me-2"></i>Descubrimiento
-                    de Red</a
-                  >
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'tools-ipcalc' %}"
-                    ><i class="fas fa-calculator me-2"></i>Calculadora IP</a
-                  >
-                </li>
-                <li><hr class="dropdown-divider" /></li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{% url 'monitoring-services' %}"
-                    ><i class="fas fa-heartbeat me-2"></i>Monitoreo de
-                    Servicios</a
-                  >
-                </li>
-              </ul>
-            </li>
+ <head>
+ <meta charset="UTF-8" />
+ <title>{% block title %}VANT-SIEM{% endblock %}</title>
+ <link
+ rel="stylesheet"
+ href="{% static 'bootstrap/css/bootstrap.min.css' %}"
+ />
+ <link rel="stylesheet" href="{% static 'css/dashboard.css' %}" />
+ {% block extra_css %}{% endblock %}
+ </head>
+ <body class="bg-dark text-light">
+ {% csrf_token %}
+ <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+ <div class="container">
+ <a
+ class="navbar-brand d-flex align-items-center"
+ href="{% url 'dashboard' %}"
+ >
+ <img
+ src="{% static 'img/logo.png' %}"
+ alt="Logo"
+ class="logo-svg me-2"
+ />
+ <span class="fw-bold">VANT-SIEM</span>
+ </a>
+ <button
+ class="navbar-toggler"
+ type="button"
+ data-bs-toggle="collapse"
+ data-bs-target="#navbarNav"
+ >
+ <span class="navbar-toggler-icon"></span>
+ </button>
+ <div class="collapse navbar-collapse" id="navbarNav">
+ <ul class="navbar-nav ms-auto">
+ <!-- Menú principal: Gestión de Incidentes -->
+ <li class="nav-item dropdown">
+ <a
+ class="nav-link dropdown-toggle"
+ href="#"
+ id="gestionDropdown"
+ role="button"
+ data-bs-toggle="dropdown"
+ aria-expanded="false"
+ >
+ Gestión de Incidentes
+ </a>
+ <ul
+ class="dropdown-menu dropdown-menu-dark"
+ aria-labelledby="gestionDropdown"
+ >
+ <li><h6 class="dropdown-header text-info">Reportes</h6></li>
+ <li>
+ <a class="dropdown-item" href="{% url 'reporte-create' %}"
+ >Crear Reporte</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'reporte-list' %}"
+ >Listado de Reportes</a
+ >
+ </li>
+ <li><hr class="dropdown-divider" /></li>
+ <li><h6 class="dropdown-header text-info">Incidentes</h6></li>
+ <li>
+ <a class="dropdown-item" href="{% url 'incidente-create' %}"
+ >Crear Incidente</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'incidente-list' %}"
+ >Listado de Incidentes</a
+ >
+ </li>
+ <li><hr class="dropdown-divider" /></li>
+ <li><h6 class="dropdown-header text-info">Catálogo</h6></li>
+ <li>
+ <a class="dropdown-item" href="{% url 'categoria-create' %}"
+ >Crear Categoría</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'categoria-list' %}"
+ >Listado de Categorías</a
+ >
+ </li>
+ <li>
+ <a
+ class="dropdown-item"
+ href="{% url 'subcategoria-create' %}"
+ >Crear Subcategoría</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'subcategoria-list' %}"
+ >Listado de Subcategorías</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'servicio-create' %}"
+ >Crear Servicio</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'servicio-list' %}"
+ >Listado de Servicios</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'responsable-create' %}"
+ >Crear Responsable</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'responsable-list' %}"
+ >Listado de Responsables</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'area-create' %}"
+ >Crear Área</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'area-list' %}"
+ >Listado de Áreas</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'medida-create' %}"
+ >Crear Medida</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'medida-list' %}"
+ >Listado de Medidas</a
+ >
+ </li>
+ <li><hr class="dropdown-divider" /></li>
+ <li><h6 class="dropdown-header text-info">Relaciones</h6></li>
+ <li>
+ <a class="dropdown-item" href="{% url 'involucrado-create' %}"
+ >Crear Involucrado</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'involucrado-list' %}"
+ >Listado de Involucrados</a
+ >
+ </li>
+ <li>
+ <a
+ class="dropdown-item"
+ href="{% url 'involucradoincidente-create' %}"
+ >Crear Involucrado Incidente</a
+ >
+ </li>
+ <li>
+ <a
+ class="dropdown-item"
+ href="{% url 'involucradoincidente-list' %}"
+ >Listado de Involucrados Incidente</a
+ >
+ </li>
+ <li>
+ <a
+ class="dropdown-item"
+ href="{% url 'medidaincidente-create' %}"
+ >Crear Medida Incidente</a
+ >
+ </li>
+ <li>
+ <a
+ class="dropdown-item"
+ href="{% url 'medidaincidente-list' %}"
+ >Listado de Medidas Incidente</a
+ >
+ </li>
+ </ul>
+ </li>
+ <li class="nav-item dropdown">
+ <a
+ class="nav-link dropdown-toggle"
+ href="#"
+ id="irisDropdown"
+ role="button"
+ data-bs-toggle="dropdown"
+ aria-expanded="false"
+ >
+ <i class="fas fa-brain me-2"></i>IRIS-S.O.A.R
+ </a>
+ <ul
+ class="dropdown-menu dropdown-menu-dark"
+ aria-labelledby="irisDropdown"
+ >
+ <li><h6 class="dropdown-header text-warning">Dashboard IA</h6></li>
+ <li>
+ <a class="dropdown-item" href="{% url 'iris:iris_dashboard' %}">
+ <i class="fas fa-tachometer-alt me-2"></i>Dashboard Principal
+ </a>
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'iris:live_ai_monitor' %}">
+ <i class="fas fa-brain me-2"></i>Monitor Neuronal en Vivo
+ </a>
+ </li>
+ <li><hr class="dropdown-divider" /></li>
+ <li><h6 class="dropdown-header text-warning">Investigación</h6></li>
+ <li>
+ <a class="dropdown-item" href="{% url 'iris:iris_predictions' %}">
+ <i class="fas fa-search me-2"></i>Predicciones Pendientes
+ </a>
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'iris:performance_report' %}">
+ <i class="fas fa-chart-line me-2"></i>Reporte de Rendimiento
+ </a>
+ </li>
+ <li><hr class="dropdown-divider" /></li>
+ <li><h6 class="dropdown-header text-warning">Configuración</h6></li>
+ <li>
+ <a class="dropdown-item" href="{% url 'iris:iris_configuration' %}">
+ <i class="fas fa-sliders-h me-2"></i>Configuración del Sistema
+ </a>
+ </li>
+ {% if request.user.is_superuser %}
+ <li>
+ <a class="dropdown-item" href="#" onclick="runAIAnalysis()">
+ <i class="fas fa-play me-2"></i>Ejecutar Análisis IA
+ </a>
+ </li>
+ <li>
+ <a class="dropdown-item" href="#" onclick="trainAIModels()">
+ <i class="fas fa-graduation-cap me-2"></i>Entrenar Modelos
+ </a>
+ </li>
+ {% endif %}
+ </ul>
+ </li>
+ <li class="nav-item dropdown">
+ <a
+ class="nav-link dropdown-toggle"
+ href="#"
+ id="analysisDropdown"
+ role="button"
+ data-bs-toggle="dropdown"
+ aria-expanded="false"
+ >
+ Análisis
+ </a>
+ <ul
+ class="dropdown-menu dropdown-menu-dark"
+ aria-labelledby="analysisDropdown"
+ >
+ <li><h6 class="dropdown-header text-info">Online</h6></li>
+ <li>
+ <a class="dropdown-item" href="{% url 'analysis-ip' %}"
+ ><i class="fas fa-network-wired me-2"></i>IP (AbuseIPDB)</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'analysis-indicator' %}"
+ ><i class="fas fa-search me-2"></i>Indicador (VirusTotal)</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'analysis-mac' %}"
+ ><i class="fas fa-microchip me-2"></i>MAC (MacVendors)</a
+ >
+ </li>
+ <li><hr class="dropdown-divider" /></li>
+ <li>
+ <h6 class="dropdown-header text-info">Consultas locales</h6>
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'local-search-ip' %}"
+ ><i class="fas fa-database me-2"></i>Buscar IP en
+ registros</a
+ >
+ </li>
+ <li>
+ <a
+ class="dropdown-item"
+ href="{% url 'local-search-indicator' %}"
+ ><i class="fas fa-database me-2"></i>Buscar Indicador en
+ registros</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'local-search-mac' %}"
+ ><i class="fas fa-database me-2"></i>Buscar MAC en
+ registros</a
+ >
+ </li>
+ <li><hr class="dropdown-divider" /></li>
+ <li><h6 class="dropdown-header text-info">Locales</h6></li>
+ <li>
+ <a
+ class="dropdown-item"
+ href="{% url 'analysis-internal-vt' %}"
+ ><i class="fas fa-archive me-2"></i>Histórico VirusTotal</a
+ >
+ </li>
+ <li>
+ <a
+ class="dropdown-item"
+ href="{% url 'analysis-internal-abuseipdb' %}"
+ ><i class="fas fa-archive me-2"></i>Histórico AbuseIPDB</a
+ >
+ </li>
+ <li>
+ <a
+ class="dropdown-item"
+ href="{% url 'analysis-internal-macvendors' %}"
+ ><i class="fas fa-archive me-2"></i>Histórico MacVendors</a
+ >
+ </li>
+ <li><hr class="dropdown-divider" /></li>
+ <li><h6 class="dropdown-header text-info">Reportes</h6></li>
+ <li>
+ <a class="dropdown-item" href="{% url 'report-vt' %}"
+ ><i class="fas fa-chart-bar me-2"></i>Reporte VT</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'report-abuseipdb' %}"
+ ><i class="fas fa-chart-bar me-2"></i>Reporte AbuseIPDB</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'report-macvendors' %}"
+ ><i class="fas fa-chart-bar me-2"></i>Reporte MacVendors</a
+ >
+ </li>
+ </ul>
+ </li>
+ <li class="nav-item dropdown">
+ <a
+ class="nav-link dropdown-toggle"
+ href="#"
+ id="idsDropdown"
+ role="button"
+ data-bs-toggle="dropdown"
+ aria-expanded="false"
+ >
+ <i class="fas fa-shield-alt me-2"></i>Log Analytics and Network Security
+ </a>
+ <ul
+ class="dropdown-menu dropdown-menu-dark"
+ aria-labelledby="idsDropdown"
+ >
+ <li><h6 class="dropdown-header text-info">OpenSearch</h6></li>
+ <li>
+ <a class="dropdown-item" href="/opensearch/discover/"
+ ><i class="fas fa-search me-2"></i>Discovery</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'opensearch-visual-dashboard' %}"
+ ><i class="fas fa-chart-line me-2"></i>Dashboard Visual</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'service-management' %}"
+ ><i class="fas fa-server me-2"></i>Gestión del Servicio</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'ids-config' %}"
+ ><i class="fas fa-cog me-2"></i>Configuración de Fuentes</a
+ >
+ </li>
+ </ul>
+ </li>
+ <li class="nav-item dropdown">
+ <a
+ class="nav-link dropdown-toggle"
+ href="#"
+ id="toolsDropdown"
+ role="button"
+ data-bs-toggle="dropdown"
+ aria-expanded="false"
+ >
+ Herramientas de Red
+ </a>
+ <ul
+ class="dropdown-menu dropdown-menu-dark"
+ aria-labelledby="toolsDropdown"
+ >
+ <li>
+ <a class="dropdown-item" href="{% url 'tools-ping' %}"
+ ><i class="fas fa-signal me-2"></i>Ping</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'tools-dns' %}"
+ ><i class="fas fa-globe me-2"></i>Resolución DNS</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'tools-scan' %}"
+ ><i class="fas fa-search me-2"></i>Escaneo de Puertos</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'tools-bruteforce' %}"
+ ><i class="fas fa-lock me-2"></i>Simulación Fuerza Bruta</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'tools-traceroute' %}"
+ ><i class="fas fa-route me-2"></i>Traceroute</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'tools-service-scan' %}"
+ ><i class="fas fa-plug me-2"></i>Escaneo de Puertos y
+ Servicios</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'tools-discovery' %}"
+ ><i class="fas fa-project-diagram me-2"></i>Descubrimiento
+ de Red</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'tools-ipcalc' %}"
+ ><i class="fas fa-calculator me-2"></i>Calculadora IP</a
+ >
+ </li>
+ <li><hr class="dropdown-divider" /></li>
+ <li>
+ <a
+ class="dropdown-item"
+ href="{% url 'monitoring-services' %}"
+ ><i class="fas fa-heartbeat me-2"></i>Monitoreo de
+ Servicios</a
+ >
+ </li>
+ </ul>
+ </li>
 
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                id="settingsDropdown"
-                role="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-              >
-                <i class="fas fa-cog me-2"></i>Settings
-              </a>
-              <ul
-                class="dropdown-menu dropdown-menu-dark"
-                aria-labelledby="settingsDropdown"
-              >
-                <li>
-                  <h6 class="dropdown-header text-info">GestiÃ³n de Usuarios</h6>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'user-management' %}">
-                    <i class="fas fa-users me-2"></i>GestiÃ³n de Usuarios
-                  </a>
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{% url 'create-user-request' %}"
-                  >
-                    <i class="fas fa-user-plus me-2"></i>Crear Usuario
-                  </a>
-                </li>
+ <li class="nav-item dropdown">
+ <a
+ class="nav-link dropdown-toggle"
+ href="#"
+ id="settingsDropdown"
+ role="button"
+ data-bs-toggle="dropdown"
+ aria-expanded="false"
+ >
+ <i class="fas fa-cog me-2"></i>Settings
+ </a>
+ <ul
+ class="dropdown-menu dropdown-menu-dark"
+ aria-labelledby="settingsDropdown"
+ >
+ <li>
+ <h6 class="dropdown-header text-info">Gestión de Usuarios</h6>
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'user-management' %}">
+ <i class="fas fa-users me-2"></i>Gestión de Usuarios
+ </a>
+ </li>
+ <li>
+ <a
+ class="dropdown-item"
+ href="{% url 'create-user-request' %}"
+ >
+ <i class="fas fa-user-plus me-2"></i>Crear Usuario
+ </a>
+ </li>
 
-                <li><hr class="dropdown-divider" /></li>
-                <li>
-                  <h6 class="dropdown-header text-info">
-                    Notificaciones por Correo
-                  </h6>
-                </li>
-                {% if request.user.is_superuser %}
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{% url 'email-configuration' %}"
-                  >
-                    <i class="fas fa-envelope me-2"></i>ConfiguraciÃ³n de Correo
-                  </a>
-                </li>
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{% url 'email-alerts-management' %}"
-                  >
-                    <i class="fas fa-bell me-2"></i>Alertas por Usuario
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'email-logs' %}">
-                    <i class="fas fa-list-alt me-2"></i>Logs de Correos
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'notification-settings' %}">
-                    <i class="fas fa-bell me-2"></i>ConfiguraciÃ³n de Notificaciones
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'analysis-config' %}">
-                    <i class="fas fa-sliders-h me-2"></i>Configurar APIs de
-                    AnÃ¡lisis
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'monitoring-config' %}">
-                    <i class="fas fa-heartbeat me-2"></i>Configurar Monitoreo
-                  </a>
-                </li>
-                {% endif %} {% if request.user.is_superuser %}
-                <li>
-                  <a
-                    class="dropdown-item"
-                    href="{% url 'analysis-services-hub' %}"
-                  >
-                    <i class="fas fa-toolbox me-2"></i>Servicios internos de
-                    anÃ¡lisis
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'ids-config' %}">
-                    <i class="fas fa-sliders-h me-2"></i>Configurar IDS/IPS
-                  </a>
-                </li>
-                {% endif %}
+ <li><hr class="dropdown-divider" /></li>
+ <li>
+ <h6 class="dropdown-header text-info">
+ Notificaciones por Correo
+ </h6>
+ </li>
+ {% if request.user.is_superuser %}
+ <li>
+ <a
+ class="dropdown-item"
+ href="{% url 'email-configuration' %}"
+ >
+ <i class="fas fa-envelope me-2"></i>Configuración de Correo
+ </a>
+ </li>
+ <li>
+ <a
+ class="dropdown-item"
+ href="{% url 'email-alerts-management' %}"
+ >
+ <i class="fas fa-bell me-2"></i>Alertas por Usuario
+ </a>
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'email-logs' %}">
+ <i class="fas fa-list-alt me-2"></i>Logs de Correos
+ </a>
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'notification-settings' %}">
+ <i class="fas fa-bell me-2"></i>Configuración de Notificaciones
+ </a>
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'analysis-config' %}">
+ <i class="fas fa-sliders-h me-2"></i>Configurar APIs de
+ Análisis
+ </a>
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'monitoring-config' %}">
+ <i class="fas fa-heartbeat me-2"></i>Configurar Monitoreo
+ </a>
+ </li>
+ {% endif %} {% if request.user.is_superuser %}
+ <li>
+ <a
+ class="dropdown-item"
+ href="{% url 'analysis-services-hub' %}"
+ >
+ <i class="fas fa-toolbox me-2"></i>Servicios internos de
+ análisis
+ </a>
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'ids-config' %}">
+ <i class="fas fa-sliders-h me-2"></i>Configurar IDS/IPS
+ </a>
+ </li>
+ {% endif %}
 
-                <li><hr class="dropdown-divider" /></li>
-                <li><h6 class="dropdown-header text-info">Sistema</h6></li>
-                {% if request.user.is_superuser %}
-                <li>
-                  <a class="dropdown-item" href="{% url 'system-logs' %}">
-                    <i class="fas fa-file-alt me-2"></i>Logs del Sistema
-                  </a>
-                </li>
-                <li>
-                  <a class="dropdown-item" href="{% url 'logging-control' %}">
-                    <i class="fas fa-play-circle me-2"></i>Control de Logging
-                  </a>
-                </li>
-                {% endif %}
-              </ul>
-            </li>
+ <li><hr class="dropdown-divider" /></li>
+ <li><h6 class="dropdown-header text-info">Sistema</h6></li>
+ {% if request.user.is_superuser %}
+ <li>
+ <a class="dropdown-item" href="{% url 'system-logs' %}">
+ <i class="fas fa-file-alt me-2"></i>Logs del Sistema
+ </a>
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'logging-control' %}">
+ <i class="fas fa-play-circle me-2"></i>Control de Logging
+ </a>
+ </li>
+ {% endif %}
+ </ul>
+ </li>
 
-            <li class="nav-item position-relative">
-              <a
-                class="nav-link"
-                href="{% url 'notifications' %}"
-                id="notifications-link"
-              >
-                <i class="fas fa-bell me-2"></i>Notificaciones
-                <span
-                  class="badge bg-danger position-absolute top-0 start-100 translate-middle"
-                  id="notification-badge"
-                  style="display: none"
-                  >0</span
-                >
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="{% url 'logout' %}">Logout</a>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </nav>
-    {% if messages %}
-    <div class="container mt-3">
-      {% for message in messages %}
-      <div
-        class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show"
-        role="alert"
-      >
-        {{ message }}
-        <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="alert"
-          aria-label="Close"
-        ></button>
-      </div>
-      {% endfor %}
-    </div>
-    {% endif %}
-    <div class="container py-5">
-      {% block content %}{% endblock %}
-    </div>
-    <footer class="text-center mt-5 mb-3 text-secondary small">
-      &copy; 2025 Developed by LLVT | Email: leonardovarona42@gmail.com | Tel:
-      +53 58003511<br />
-      Todos los derechos reservados. VANT-SIEM &mdash; VersiÃ³n 1.0
-    </footer>
-    <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
-    <script src="{% static 'js/chart.umd.min.js' %}"></script>
+ <li class="nav-item position-relative">
+ <a
+ class="nav-link"
+ href="{% url 'notifications' %}"
+ id="notifications-link"
+ >
+ <i class="fas fa-bell me-2"></i>Notificaciones
+ <span
+ class="badge bg-danger position-absolute top-0 start-100 translate-middle"
+ id="notification-badge"
+ style="display: none"
+ >0</span
+ >
+ </a>
+ </li>
+ <li class="nav-item">
+ <a class="nav-link" href="{% url 'logout' %}">Logout</a>
+ </li>
+ </ul>
+ </div>
+ </div>
+ </nav>
+ {% if messages %}
+ <div class="container mt-3">
+ {% for message in messages %}
+ <div
+ class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show"
+ role="alert"
+ >
+ {{ message }}
+ <button
+ type="button"
+ class="btn-close"
+ data-bs-dismiss="alert"
+ aria-label="Close"
+ ></button>
+ </div>
+ {% endfor %}
+ </div>
+ {% endif %}
+ <div class="container py-5">
+ {% block content %}{% endblock %}
+ </div>
+ <footer class="text-center mt-5 mb-3 text-secondary small">
+ &copy; 2025 Developed by LLVT | Email: leonardovarona42@gmail.com | Tel:
+ +53 58003511<br />
+ Todos los derechos reservados. VANT-SIEM &mdash; Versión 1.0
+ </footer>
+ <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+ <script src="{% static 'js/chart.umd.min.js' %}"></script>
+ <script>
+   // Auto-dismiss messages after 5 seconds
+   document.addEventListener('DOMContentLoaded', function() {
+     setTimeout(function() {
+       var alerts = document.querySelectorAll('.alert');
+       alerts.forEach(function(alert) {
+         var bsAlert = new bootstrap.Alert(alert);
+         bsAlert.close();
+       });
+     }, 5000);
+   });
+ </script>
 
-    <!-- Funciones IRIS -->
-    <script>
-    function runAIAnalysis() {
-        if (confirm('Â¿Ejecutar anÃ¡lisis automÃ¡tico de IA? Esto puede tomar varios minutos.')) {
-            // Redirigir al dashboard de IRIS con parÃ¡metro de anÃ¡lisis
-            window.location.href = '{% url 'iris:iris_dashboard' %}?action=run_analysis';
-        }
-    }
+ <!-- Funciones IRIS -->
+ <script>
+ function runAIAnalysis() {
+ if (confirm('Â¿Ejecutar análisis automático de IA? Esto puede tomar varios minutos.')) {
+ // Redirigir al dashboard de IRIS con parámetro de análisis
+ window.location.href = '{% url 'iris:iris_dashboard' %}?action=run_analysis';
+ }
+ }
 
-    function trainAIModels() {
-        if (confirm('Â¿Entrenar modelos de IA? Esto puede tomar tiempo y recursos del sistema.')) {
-            // Redirigir al dashboard de IRIS con parÃ¡metro de entrenamiento
-            window.location.href = '{% url 'iris:iris_dashboard' %}?action=train_models';
-        }
-    }
-    </script>
+ function trainAIModels() {
+ if (confirm('Â¿Entrenar modelos de IA? Esto puede tomar tiempo y recursos del sistema.')) {
+ // Redirigir al dashboard de IRIS con parámetro de entrenamiento
+ window.location.href = '{% url 'iris:iris_dashboard' %}?action=train_models';
+ }
+ }
+ </script>
 
-    {% block extra_js %}{% endblock %}
-  </body>
+ {% block extra_js %}{% endblock %}
+ </body>
 </html>
 

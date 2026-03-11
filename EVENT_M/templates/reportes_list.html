@@ -45,7 +45,7 @@
                     <td>{{ reporte.area }}</td>
                     <td>{{ reporte.descripcion }}</td>
                     <td>{{ reporte.estado_solucion }}</td>
-                    <td>{{ reporte.fecha }}</td>
+                    <td>{{ reporte.fecha_hora|date:"d/m/Y H:i:s" }}</td>
                     <td>
                         <a href="{% url 'incidente-create' %}?reporte={{ reporte.id }}" class="btn btn-info btn-sm">Investigar</a>
                         <a href="{% url 'reporte-update' reporte.id %}" class="btn btn-warning btn-sm">Editar</a>

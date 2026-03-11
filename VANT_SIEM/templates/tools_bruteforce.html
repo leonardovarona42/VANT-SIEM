@@ -1,105 +1,105 @@
 {% extends 'dashboard.html' %}
 {% block content %}
 <div class="container">
-  <div class="row justify-content-center">
-    <div class="col-md-10">
-      <div class="card bg-secondary">
-        <div class="card-header"><h3 class="text-info mb-0"><i class="fas fa-lock me-2"></i>Simulación Fuerza Bruta (SSH)</h3></div>
-        <div class="card-body">
-          <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label text-info">Destino/IP o Host</label>
-              <input id="dest_ip" class="form-control" placeholder="192.168.1.10">
-            </div>
-            <div class="col-md-2">
-              <label class="form-label text-info">Puerto</label>
-              <input id="dest_port" type="number" class="form-control" value="22" min="1" max="65535">
-            </div>
-            <div class="col-md-4">
-              <label class="form-label text-info">Máximo intentos</label>
-              <input id="max_attempts" type="number" class="form-control" value="100" min="1" max="100000">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label text-info">Usuario único</label>
-              <input id="single_user" class="form-control" placeholder="root">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label text-info">Password única</label>
-              <input id="single_pass" class="form-control" placeholder="toor">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label text-info">Lista de usuarios (uno por línea)</label>
-              <textarea id="users_list" rows="6" class="form-control" placeholder="admin\nroot\nuser"></textarea>
-              <div class="form-text">Opcional: cargar archivo</div>
-              <input id="users_file" type="file" class="form-control form-control-sm" accept=".txt">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label text-info">Lista de passwords (una por línea)</label>
-              <textarea id="passes_list" rows="6" class="form-control" placeholder="123456\nadmin\npassword"></textarea>
-              <div class="form-text">Opcional: cargar archivo</div>
-              <input id="passes_file" type="file" class="form-control form-control-sm" accept=".txt">
-            </div>
-            <div class="col-12">
-              <label class="form-label text-info">Pares usuario:password (uno por línea)</label>
-              <textarea id="pairs_list" rows="6" class="form-control" placeholder="root:toor\nadmin:admin"></textarea>
-              <div class="form-text">Opcional: cargar archivo</div>
-              <input id="pairs_file" type="file" class="form-control form-control-sm" accept=".txt">
-            </div>
-            <div class="col-12">
-              <label class="form-label text-info">Credencial objetivo (usuario:password) para simular éxito</label>
-              <input id="target_cred" class="form-control" placeholder="admin:admin">
-            </div>
-            <div class="col-12">
-              <button class="btn btn-primary" onclick="runBF()"><i class="fas fa-play me-1"></i>Ejecutar Simulación</button>
-            </div>
-            <div class="col-12">
-              <label class="form-label text-info">Resultado</label>
-              <pre id="out" class="bg-dark text-light p-2 small"></pre>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+ <div class="row justify-content-center">
+ <div class="col-md-10">
+ <div class="card bg-secondary">
+ <div class="card-header"><h3 class="text-info mb-0"><i class="fas fa-lock me-2"></i>Simulación Fuerza Bruta (SSH)</h3></div>
+ <div class="card-body">
+ <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+ <div class="row g-3">
+ <div class="col-md-6">
+ <label class="form-label text-info">Destino/IP o Host</label>
+ <input id="dest_ip" class="form-control" placeholder="192.168.1.10">
+ </div>
+ <div class="col-md-2">
+ <label class="form-label text-info">Puerto</label>
+ <input id="dest_port" type="number" class="form-control" value="22" min="1" max="65535">
+ </div>
+ <div class="col-md-4">
+ <label class="form-label text-info">Máximo intentos</label>
+ <input id="max_attempts" type="number" class="form-control" value="100" min="1" max="100000">
+ </div>
+ <div class="col-md-6">
+ <label class="form-label text-info">Usuario único</label>
+ <input id="single_user" class="form-control" placeholder="root">
+ </div>
+ <div class="col-md-6">
+ <label class="form-label text-info">Password única</label>
+ <input id="single_pass" class="form-control" placeholder="toor">
+ </div>
+ <div class="col-md-6">
+ <label class="form-label text-info">Lista de usuarios (uno por línea)</label>
+ <textarea id="users_list" rows="6" class="form-control" placeholder="admin\nroot\nuser"></textarea>
+ <div class="form-text">Opcional: cargar archivo</div>
+ <input id="users_file" type="file" class="form-control form-control-sm" accept=".txt">
+ </div>
+ <div class="col-md-6">
+ <label class="form-label text-info">Lista de passwords (una por línea)</label>
+ <textarea id="passes_list" rows="6" class="form-control" placeholder="123456\nadmin\npassword"></textarea>
+ <div class="form-text">Opcional: cargar archivo</div>
+ <input id="passes_file" type="file" class="form-control form-control-sm" accept=".txt">
+ </div>
+ <div class="col-12">
+ <label class="form-label text-info">Pares usuario:password (uno por línea)</label>
+ <textarea id="pairs_list" rows="6" class="form-control" placeholder="root:toor\nadmin:admin"></textarea>
+ <div class="form-text">Opcional: cargar archivo</div>
+ <input id="pairs_file" type="file" class="form-control form-control-sm" accept=".txt">
+ </div>
+ <div class="col-12">
+ <label class="form-label text-info">Credencial objetivo (usuario:password) para simular éxito</label>
+ <input id="target_cred" class="form-control" placeholder="admin:admin">
+ </div>
+ <div class="col-12">
+ <button class="btn btn-primary" onclick="runBF()"><i class="fas fa-play me-1"></i>Ejecutar Simulación</button>
+ </div>
+ <div class="col-12">
+ <label class="form-label text-info">Resultado</label>
+ <pre id="out" class="bg-dark text-light p-2 small"></pre>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
 </div>
 <script>
 function readFileText(input){
-  return new Promise(resolve=>{
-    if (!input.files || !input.files[0]) return resolve('');
-    const r = new FileReader();
-    r.onload = () => resolve(r.result || '');
-    r.onerror = () => resolve('');
-    r.readAsText(input.files[0]);
-  });
+ return new Promise(resolve=>{
+ if (!input.files || !input.files[0]) return resolve('');
+ const r = new FileReader();
+ r.onload = () => resolve(r.result || '');
+ r.onerror = () => resolve('');
+ r.readAsText(input.files[0]);
+ });
 }
 async function runBF(){
-  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-  const usersTxt = document.getElementById('users_list').value;
-  const passesTxt = document.getElementById('passes_list').value;
-  const pairsTxt = document.getElementById('pairs_list').value;
-  const usersFileTxt = await readFileText(document.getElementById('users_file'));
-  const passesFileTxt = await readFileText(document.getElementById('passes_file'));
-  const pairsFileTxt = await readFileText(document.getElementById('pairs_file'));
-  const body = new URLSearchParams({
-    ip: document.getElementById('dest_ip').value.trim(),
-    port: document.getElementById('dest_port').value,
-    single_user: document.getElementById('single_user').value.trim(),
-    single_pass: document.getElementById('single_pass').value.trim(),
-    users_list: usersTxt + (usersFileTxt? ('\n'+usersFileTxt): ''),
-    passes_list: passesTxt + (passesFileTxt? ('\n'+passesFileTxt): ''),
-    pairs_list: pairsTxt + (pairsFileTxt? ('\n'+pairsFileTxt): ''),
-    target_cred: document.getElementById('target_cred').value.trim(),
-    max_attempts: document.getElementById('max_attempts').value,
-  });
-  const res = await fetch('{% url "api-tools-bruteforce" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}, body});
-  const data = await res.json();
-  const out = document.getElementById('out');
-  if (data.success){
-    out.textContent = data.found ? `Encontrado: "${data.matched}" en ${data.attempts} intentos (total combinaciones: ${data.total_combinations})` : `No encontrado en ${data.attempts} intentos (total combinaciones: ${data.total_combinations})`;
-  } else {
-    out.textContent = data.error || 'Error';
-  }
+ const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+ const usersTxt = document.getElementById('users_list').value;
+ const passesTxt = document.getElementById('passes_list').value;
+ const pairsTxt = document.getElementById('pairs_list').value;
+ const usersFileTxt = await readFileText(document.getElementById('users_file'));
+ const passesFileTxt = await readFileText(document.getElementById('passes_file'));
+ const pairsFileTxt = await readFileText(document.getElementById('pairs_file'));
+ const body = new URLSearchParams({
+ ip: document.getElementById('dest_ip').value.trim(),
+ port: document.getElementById('dest_port').value,
+ single_user: document.getElementById('single_user').value.trim(),
+ single_pass: document.getElementById('single_pass').value.trim(),
+ users_list: usersTxt + (usersFileTxt? ('\n'+usersFileTxt): ''),
+ passes_list: passesTxt + (passesFileTxt? ('\n'+passesFileTxt): ''),
+ pairs_list: pairsTxt + (pairsFileTxt? ('\n'+pairsFileTxt): ''),
+ target_cred: document.getElementById('target_cred').value.trim(),
+ max_attempts: document.getElementById('max_attempts').value,
+ });
+ const res = await fetch('{% url "api-tools-bruteforce" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}, body});
+ const data = await res.json();
+ const out = document.getElementById('out');
+ if (data.success){
+ out.textContent = data.found ? `Encontrado: "${data.matched}" en ${data.attempts} intentos (total combinaciones: ${data.total_combinations})` : `No encontrado en ${data.attempts} intentos (total combinaciones: ${data.total_combinations})`;
+ } else {
+ out.textContent = data.error || 'Error';
+ }
 }
 </script>
 {% endblock %}

@@ -651,3 +651,61 @@ class OllamaConfig(models.Model):
             logger.warning(f"Error obteniendo configuración Ollama activa: {e}")
             return None
 
+
+
+# ===== MODELO PARA CONFIGURACION LDAP =====
+
+class LDAPConfig(models.Model):
+    """Modelo para configurar la autenticación LDAP"""
+    
+    AUTHENTICATION_TYPE_CHOICES = [
+        ('simple', 'Simple'),
+        ('kerberos', 'Kerberos'),
+    ]
+    
+    SERVER_TYPE_CHOICES = [
+        ('active_directory', 'Active Directory'),
+        ('openldap', 'OpenLDAP'),
+        ('other', 'Otro'),
+    ]
+    
+    nombre = models.CharField(max_length=100, unique=True, help_text="Nombre identificador de la configuración")
+    servidor = models.CharField(max_length=255, help_text="Dirección del servidor LDAP (ej: ldap://servidor.dominio.com)")
+    puerto = models.IntegerField(default=389, help_text="Puerto del servidor LDAP")
+    use_ssl = models.BooleanField(default=False, help_text="Usar SSL/TLS")
+    use_starttls = models.BooleanField(default=False, help_text="Usar StartTLS")
+    cert_path = models.CharField(max_length=500, blank=True, null=True, help_text="Ruta al certificado CA (opcional)")
+    
+    # Bind
+    bind_dn = models.CharField(max_length=500, blank=True, null=True, help_text="DN del usuario para bind (ej: cn=admin,dc=ejemplo,dc=com)")
+    bind_password = models.CharField(max_length=255, blank=True, null=True, help_text="Contraseña del usuario bind")
+    
+    # search
+    user_search_base = models.CharField(max_length=500, help_text="Base de búsqueda de usuarios (ej: ou=users,dc=ejemplo,dc=com)")
+    user_search_filter = models.CharField(max_length=500, default='(uid={username})', help_text="Filtro de búsqueda de usuarios")
+    
+    # Group mapping
+    group_search_base = models.CharField(max_length=500, blank=True, null=True, help_text="Base de búsqueda de grupos")
+    group_search_filter = models.CharField(max_length=500, default='(member={user_dn})', help_text="Filtro de búsqueda de grupos")
+    
+    # Atributos
+    username_attr = models.CharField(max_length=100, default='uid', help_text="Atributo que contiene el nombre de usuario")
+    first_name_attr = models.CharField(max_length=100, default='givenName', help_text="Atributo para nombre")
+    last_name_attr = models.CharField(max_length=100, default='sn', help_text="Atributo para apellido")
+    email_attr = models.CharField(max_length=100, default='mail', help_text="Atributo para email")
+    
+    # Comportamiento
+    is_active = models.BooleanField(default=True, help_text="Habilitar autenticación LDAP")
+    is_default = models.BooleanField(default=False, help_text="Usar como método de autenticación por defecto")
+    auto_create_user = models.BooleanField(default=True, help_text="Crear usuario automáticamente si no existe")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Configuración LDAP"
+        verbose_name_plural = "Configuraciones LDAP"
+        ordering = ['-is_default', 'nombre']
+    
+    def __str__(self):
+        return f"{self.nombre} ({self.servidor})"

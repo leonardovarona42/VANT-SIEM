@@ -1,152 +1,152 @@
 {% extends 'dashboard.html' %}
 {% block content %}
 <div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card bg-secondary">
-                <div class="card-header">
-                    <h3 class="text-info mb-0"><i class="fas fa-heartbeat me-2"></i>Monitoreo de Servicios</h3>
-                </div>
-                <div class="card-body">
-                    <!-- Widgets de estadísticas -->
-                    <div class="row mb-4">
-                        <div class="col-md-3">
-                            <div class="card bg-dark text-center">
-                                <div class="card-body">
-                                    <h5 class="card-title text-info">Total Servicios</h5>
-                                    <h2 class="text-light">{{ stats.total }}</h2>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card bg-success text-center">
-                                <div class="card-body">
-                                    <h5 class="card-title text-white">Servicios Activos</h5>
-                                    <h2 class="text-white">{{ stats.arriba }}</h2>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card bg-danger text-center">
-                                <div class="card-body">
-                                    <h5 class="card-title text-white">Servicios Inactivos</h5>
-                                    <h2 class="text-white">{{ stats.abajo }}</h2>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="card bg-warning text-center">
-                                <div class="card-body">
-                                    <h5 class="card-title text-dark">Sin Monitoreo</h5>
-                                    <h2 class="text-dark">{{ stats.sin_monitoreo }}</h2>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+ <div class="row">
+ <div class="col-12">
+ <div class="card bg-secondary">
+ <div class="card-header">
+ <h3 class="text-info mb-0"><i class="fas fa-heartbeat me-2"></i>Monitoreo de Servicios</h3>
+ </div>
+ <div class="card-body">
+ <!-- Widgets de estadísticas -->
+ <div class="row mb-4">
+ <div class="col-md-3">
+ <div class="card bg-dark text-center">
+ <div class="card-body">
+ <h5 class="card-title text-info">Total Servicios</h5>
+ <h2 class="text-light">{{ stats.total }}</h2>
+ </div>
+ </div>
+ </div>
+ <div class="col-md-3">
+ <div class="card bg-success text-center">
+ <div class="card-body">
+ <h5 class="card-title text-white">Servicios Activos</h5>
+ <h2 class="text-white">{{ stats.arriba }}</h2>
+ </div>
+ </div>
+ </div>
+ <div class="col-md-3">
+ <div class="card bg-danger text-center">
+ <div class="card-body">
+ <h5 class="card-title text-white">Servicios Inactivos</h5>
+ <h2 class="text-white">{{ stats.abajo }}</h2>
+ </div>
+ </div>
+ </div>
+ <div class="col-md-3">
+ <div class="card bg-warning text-center">
+ <div class="card-body">
+ <h5 class="card-title text-dark">Sin Monitoreo</h5>
+ <h2 class="text-dark">{{ stats.sin_monitoreo }}</h2>
+ </div>
+ </div>
+ </div>
+ </div>
 
-                    <!-- Controles -->
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <button class="btn btn-primary" onclick="verificarServicios()">
-                                <i class="fas fa-sync me-1"></i>Verificar Ahora
-                            </button>
-                            <span class="ms-3 text-info">
-                                <i class="fas fa-clock me-1"></i>
-                                Intervalo: {{ config.intervalo_segundos }}s
-                                {% if config.activo %}
-                                    <span class="badge bg-success ms-1">Activo</span>
-                                {% else %}
-                                    <span class="badge bg-danger ms-1">Inactivo</span>
-                                {% endif %}
-                            </span>
-                        </div>
-                        <div class="col-md-6 text-end">
-                            <a href="{% url 'monitoring-config' %}" class="btn btn-outline-info">
-                                <i class="fas fa-cog me-1"></i>Configurar Monitoreo
-                            </a>
-                        </div>
-                    </div>
+ <!-- Controles -->
+ <div class="row mb-3">
+ <div class="col-md-6">
+ <button class="btn btn-primary" onclick="verificarServicios()">
+ <i class="fas fa-sync me-1"></i>Verificar Ahora
+ </button>
+ <span class="ms-3 text-info">
+ <i class="fas fa-clock me-1"></i>
+ Intervalo: {{ config.intervalo_segundos }}s
+ {% if config.activo %}
+ <span class="badge bg-success ms-1">Activo</span>
+ {% else %}
+ <span class="badge bg-danger ms-1">Inactivo</span>
+ {% endif %}
+ </span>
+ </div>
+ <div class="col-md-6 text-end">
+ <a href="{% url 'monitoring-config' %}" class="btn btn-outline-info">
+ <i class="fas fa-cog me-1"></i>Configurar Monitoreo
+ </a>
+ </div>
+ </div>
 
-                    <!-- Tabla de servicios -->
-                    <div class="table-responsive">
-                        <table class="table table-dark table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Servicio</th>
-                                    <th>IP/Host</th>
-                                    <th>Estado</th>
-                                    <th>Latencia</th>
-                                    <th>Última Verificación</th>
-                                    <th>Error</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="serviciosTable">
-                                {% for item in servicios_con_estado %}
-                                <tr>
-                                    <td>{{ item.servicio.nombre }}</td>
-                                    <td>{{ item.servicio.host }}</td>
-                                    <td>
-                                        {% if item.ultimo_estado %}
-                                            <span class="badge bg-success">Activo</span>
-                                        {% else %}
-                                            <span class="badge bg-danger">Inactivo</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if item.ultima_latencia %}
-                                            {{ item.ultima_latencia|floatformat:2 }} ms
-                                        {% else %}
-                                            -
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if item.ultima_verificacion %}
-                                            {{ item.ultima_verificacion|date:"d/m/Y H:i:s" }}
-                                        {% else %}
-                                            Nunca
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if item.error %}
-                                            <span class="text-danger" title="{{ item.error }}">{{ item.error|truncatechars:30 }}</span>
-                                        {% else %}
-                                            -
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <button class="btn btn-sm btn-outline-info" onclick="verHistorial({{ item.servicio.id }}, '{{ item.servicio.nombre }}')">
-                                            <i class="fas fa-chart-line"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="7" class="text-center text-muted">No hay servicios configurados para monitoreo</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+ <!-- Tabla de servicios -->
+ <div class="table-responsive">
+ <table class="table table-dark table-striped">
+ <thead>
+ <tr>
+ <th>Servicio</th>
+ <th>IP/Host</th>
+ <th>Estado</th>
+ <th>Latencia</th>
+ <th>Última Verificación</th>
+ <th>Error</th>
+ <th>Acciones</th>
+ </tr>
+ </thead>
+ <tbody id="serviciosTable">
+ {% for item in servicios_con_estado %}
+ <tr>
+ <td>{{ item.servicio.nombre }}</td>
+ <td>{{ item.servicio.host }}</td>
+ <td>
+ {% if item.ultimo_estado %}
+ <span class="badge bg-success">Activo</span>
+ {% else %}
+ <span class="badge bg-danger">Inactivo</span>
+ {% endif %}
+ </td>
+ <td>
+ {% if item.ultima_latencia %}
+ {{ item.ultima_latencia|floatformat:2 }} ms
+ {% else %}
+ -
+ {% endif %}
+ </td>
+ <td>
+ {% if item.ultima_verificacion %}
+ {{ item.ultima_verificacion|date:"d/m/Y H:i:s" }}
+ {% else %}
+ Nunca
+ {% endif %}
+ </td>
+ <td>
+ {% if item.error %}
+ <span class="text-danger" title="{{ item.error }}">{{ item.error|truncatechars:30 }}</span>
+ {% else %}
+ -
+ {% endif %}
+ </td>
+ <td>
+ <button class="btn btn-sm btn-outline-info" onclick="verHistorial({{ item.servicio.id }}, '{{ item.servicio.nombre }}')">
+ <i class="fas fa-chart-line"></i>
+ </button>
+ </td>
+ </tr>
+ {% empty %}
+ <tr>
+ <td colspan="7" class="text-center text-muted">No hay servicios configurados para monitoreo</td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
 </div>
 
 <!-- Modal para historial -->
 <div class="modal fade" id="historialModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content bg-dark">
-            <div class="modal-header">
-                <h5 class="modal-title text-info" id="historialModalTitle">Historial de Monitoreo</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <canvas id="historialChart" width="400" height="200"></canvas>
-            </div>
-        </div>
-    </div>
+ <div class="modal-dialog modal-lg">
+ <div class="modal-content bg-dark">
+ <div class="modal-header">
+ <h5 class="modal-title text-info" id="historialModalTitle">Historial de Monitoreo</h5>
+ <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+ </div>
+ <div class="modal-body">
+ <canvas id="historialChart" width="400" height="200"></canvas>
+ </div>
+ </div>
+ </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -154,97 +154,97 @@
 let historialChart = null;
 
 async function verificarServicios() {
-    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    try {
-        const response = await fetch('{% url "monitoring-check-api" %}', {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': csrftoken,
-                'Content-Type': 'application/x-www-form-urlencoded',
-            }
-        });
-        
-        const data = await response.json();
-        if (data.success) {
-            location.reload();
-        } else {
-            alert('Error al verificar servicios: ' + (data.error || 'Error desconocido'));
-        }
-    } catch (error) {
-        alert('Error de conexión: ' + error.message);
-    }
+ const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+ try {
+ const response = await fetch('{% url "monitoring-check-api" %}', {
+ method: 'POST',
+ headers: {
+ 'X-CSRFToken': csrftoken,
+ 'Content-Type': 'application/x-www-form-urlencoded',
+ }
+ });
+ 
+ const data = await response.json();
+ if (data.success) {
+ location.reload();
+ } else {
+ alert('Error al verificar servicios: ' + (data.error || 'Error desconocido'));
+ }
+ } catch (error) {
+ alert('Error de conexión: ' + error.message);
+ }
 }
 
 async function verHistorial(servicioId, servicioNombre) {
-    try {
-        const response = await fetch(`{% url "monitoring-history-api" 0 %}`.replace('0', servicioId));
-        const data = await response.json();
-        
-        if (data.success) {
-            document.getElementById('historialModalTitle').textContent = `Historial de ${servicioNombre}`;
-            
-            const ctx = document.getElementById('historialChart').getContext('2d');
-            
-            if (historialChart) {
-                historialChart.destroy();
-            }
-            
-            historialChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: data.labels,
-                    datasets: [{
-                        label: 'Latencia (ms)',
-                        data: data.latencia,
-                        borderColor: 'rgb(75, 192, 192)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        tension: 0.1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                color: 'white'
-                            },
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            }
-                        },
-                        x: {
-                            ticks: {
-                                color: 'white'
-                            },
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            labels: {
-                                color: 'white'
-                            }
-                        }
-                    }
-                }
-            });
-            
-            new bootstrap.Modal(document.getElementById('historialModal')).show();
-        } else {
-            alert('Error al obtener historial: ' + (data.error || 'Error desconocido'));
-        }
-    } catch (error) {
-        alert('Error de conexión: ' + error.message);
-    }
+ try {
+ const response = await fetch(`{% url "monitoring-history-api" 0 %}`.replace('0', servicioId));
+ const data = await response.json();
+ 
+ if (data.success) {
+ document.getElementById('historialModalTitle').textContent = `Historial de ${servicioNombre}`;
+ 
+ const ctx = document.getElementById('historialChart').getContext('2d');
+ 
+ if (historialChart) {
+ historialChart.destroy();
+ }
+ 
+ historialChart = new Chart(ctx, {
+ type: 'line',
+ data: {
+ labels: data.labels,
+ datasets: [{
+ label: 'Latencia (ms)',
+ data: data.latencia,
+ borderColor: 'rgb(75, 192, 192)',
+ backgroundColor: 'rgba(75, 192, 192, 0.2)',
+ tension: 0.1
+ }]
+ },
+ options: {
+ responsive: true,
+ scales: {
+ y: {
+ beginAtZero: true,
+ ticks: {
+ color: 'white'
+ },
+ grid: {
+ color: 'rgba(255, 255, 255, 0.1)'
+ }
+ },
+ x: {
+ ticks: {
+ color: 'white'
+ },
+ grid: {
+ color: 'rgba(255, 255, 255, 0.1)'
+ }
+ }
+ },
+ plugins: {
+ legend: {
+ labels: {
+ color: 'white'
+ }
+ }
+ }
+ }
+ });
+ 
+ new bootstrap.Modal(document.getElementById('historialModal')).show();
+ } else {
+ alert('Error al obtener historial: ' + (data.error || 'Error desconocido'));
+ }
+ } catch (error) {
+ alert('Error de conexión: ' + error.message);
+ }
 }
 
 // Auto-refresh cada 30 segundos si el monitoreo está activo
 {% if config.activo %}
 setInterval(() => {
-    verificarServicios();
+ verificarServicios();
 }, 30000);
 {% endif %}
 </script>

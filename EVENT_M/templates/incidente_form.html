@@ -45,7 +45,7 @@
                             <select name="reporte" id="reporte" class="form-select" required>
                                 <option disabled {% if not reporte_prefijado %}selected{% endif %}>Seleccione un reporte...</option>
                                 {% for rep in reportes %}
-                                    <option value="{{ rep.id }}" {% if reporte_prefijado == rep.id or form.reporte.value == rep.id|stringformat:"s" %}selected{% endif %}>{{ rep.descripcion }}</option>
+                                    <option value="{{ rep.id }}" {% if reporte_prefijado == rep.id or form.reporte.value|stringformat:"s" == rep.id|stringformat:"s" %}selected{% endif %}>{{ rep.descripcion }}</option>
                                 {% endfor %}
                             </select>
                         {% endif %}

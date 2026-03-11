@@ -41,7 +41,7 @@
                         <select name="categoria" id="categoria" class="form-select" required>
                             <option disabled selected>Seleccione una categoría...</option>
                             {% for categoria in form.categoria.field.queryset %}
-                                <option value="{{ categoria.id }}" {% if form.categoria.value == categoria.id|stringformat:"s" %}selected{% endif %}>{{ categoria.nombre }}</option>
+                                <option value="{{ categoria.id }}" {% if form.categoria.value|stringformat:"s" == categoria.id|stringformat:"s" %}selected{% endif %}>{{ categoria.nombre }}</option>
                             {% endfor %}
                         </select>
                     </div>

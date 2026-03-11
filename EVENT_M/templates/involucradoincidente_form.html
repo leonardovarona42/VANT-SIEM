@@ -28,7 +28,7 @@
                         <select name="incidente" id="incidente" class="form-select" required>
                             <option disabled selected>Seleccione un incidente...</option>
                             {% for incidente in form.incidente.field.queryset %}
-                                <option value="{{ incidente.id }}" {% if form.incidente.value == incidente.id|stringformat:"s" %}selected{% endif %}>{{ incidente.nombre_incidente }} ({{ incidente.codigo_incidente }})</option>
+                                <option value="{{ incidente.id }}" {% if form.incidente.value|stringformat:"s" == incidente.id|stringformat:"s" %}selected{% endif %}>{{ incidente.nombre_incidente }} ({{ incidente.codigo_incidente }})</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -37,7 +37,7 @@
                         <select name="involucrado" id="involucrado" class="form-select" required>
                             <option disabled selected>Seleccione un involucrado...</option>
                             {% for involucrado in form.involucrado.field.queryset %}
-                                <option value="{{ involucrado.id }}" {% if form.involucrado.value == involucrado.id|stringformat:"s" %}selected{% endif %}>{{ involucrado.nombres }} {{ involucrado.apellidos }} ({{ involucrado.usuario }})</option>
+                                <option value="{{ involucrado.id }}" {% if form.involucrado.value|stringformat:"s" == involucrado.id|stringformat:"s" %}selected{% endif %}>{{ involucrado.nombres }} {{ involucrado.apellidos }} ({{ involucrado.usuario }})</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -46,7 +46,7 @@
                         <select name="medida_impuesta" id="medida_impuesta" class="form-select" required>
                             <option disabled selected>Seleccione una medida...</option>
                             {% for medida in form.medida_impuesta.field.queryset %}
-                                <option value="{{ medida.id }}" {% if form.medida_impuesta.value == medida.id|stringformat:"s" %}selected{% endif %}>{{ medida.nombre }}</option>
+                                <option value="{{ medida.id }}" {% if form.medida_impuesta.value|stringformat:"s" == medida.id|stringformat:"s" %}selected{% endif %}>{{ medida.nombre }}</option>
                             {% endfor %}
                         </select>
                     </div>

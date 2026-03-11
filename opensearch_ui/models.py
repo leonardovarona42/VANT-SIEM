@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.conf import settings
 import hashlib
 import json
 
@@ -366,3 +367,47 @@ class IDSStatistics(models.Model):
     
     def __str__(self):
         return f"{self.ids_type.upper()} Stats - {self.date}"
+
+
+class SavedVisualization(models.Model):
+    """Visualizacion reusable creada desde OpenSearch UI."""
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='saved_visualizations')
+    space = models.CharField(max_length=64, default='personal', db_index=True)
+    name = models.CharField(max_length=120)
+    description = models.TextField(blank=True, default='')
+    config = models.JSONField(default=dict)
+    is_shared = models.BooleanField(default=False, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+        indexes = [
+            models.Index(fields=['owner', 'space', 'updated_at']),
+            models.Index(fields=['space', 'is_shared', 'updated_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({self.space})"
+
+
+class SavedDashboard(models.Model):
+    """Dashboard compuesto por paneles (visualizaciones guardadas)."""
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='saved_dashboards')
+    space = models.CharField(max_length=64, default='personal', db_index=True)
+    name = models.CharField(max_length=120)
+    description = models.TextField(blank=True, default='')
+    layout = models.JSONField(default=dict)
+    is_shared = models.BooleanField(default=False, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+        indexes = [
+            models.Index(fields=['owner', 'space', 'updated_at']),
+            models.Index(fields=['space', 'is_shared', 'updated_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({self.space})"

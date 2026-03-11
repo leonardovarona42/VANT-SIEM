@@ -30,12 +30,17 @@ class Servicio(models.Model):
         return self.nombre
 
 class Responsable(models.Model):
+    TIPO_CHOICES = [
+        ('Cuadro Centro', 'Cuadro Centro'),
+        ('RSI', 'RSI'),
+        ('Admin', 'Administrador'),
+    ]
     nombres = models.CharField(max_length=200)
     apellidos = models.CharField(max_length=200)
     email = models.EmailField()
     telefono_particular = models.CharField(max_length=20)
     telefono_corp = models.CharField(max_length=20)
-    tipo = models.CharField(max_length=200)
+    tipo = models.CharField(max_length=200, choices=TIPO_CHOICES, default='Cuadro Centro')
     descripcion = models.TextField()
 
     def __str__(self):
