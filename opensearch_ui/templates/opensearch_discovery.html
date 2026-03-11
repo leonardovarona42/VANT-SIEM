@@ -47,10 +47,38 @@
 .discover-col-chip.off { opacity: .45; border-color: #475569; }
 .discover-table-wrap { max-height: 62vh; overflow-x: auto; overflow-y: auto; border: 1px solid #1f2937; border-radius: 8px; }
 .discover-table { width: max-content; min-width: 100%; border-collapse: collapse; table-layout: fixed; }
-.discover-table th, .discover-table td { min-width: 180px; max-width: 340px; padding: 8px 10px; border-bottom: 1px solid #1f2937; border-right: 1px solid #1f2937; font-size: 12px; vertical-align: top; }
+.discover-table th, .discover-table td { min-width: 160px; max-width: 520px; padding: 8px 10px; border-bottom: 1px solid #1f2937; border-right: 1px solid #1f2937; font-size: 12px; vertical-align: top; }
 .discover-table th { position: sticky; top: 0; background: #0f172a; z-index: 3; color: #cbd5e1; }
+.discover-table th { position: sticky; }
+.discover-table th { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.discover-table th .col-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  background: linear-gradient(to right, transparent, rgba(34, 211, 238, 0.25));
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+.discover-table th:hover .col-resizer { opacity: 1; }
+.discover-table th.is-resizing { user-select: none; }
 .discover-cell { position: relative; min-height: 24px; padding-right: 48px; }
-.discover-cell-value { white-space: normal; word-break: break-word; color: #e2e8f0; }
+.discover-cell-value {
+  white-space: normal;
+  word-break: break-word;
+  color: #e2e8f0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  max-height: 4.8em;
+}
+.discover-cell.is-expanded .discover-cell-value {
+  -webkit-line-clamp: unset;
+  max-height: none;
+}
 .discover-cell-actions { position: absolute; top: 0; right: 0; display: flex; gap: 4px; opacity: .18; transition: opacity .18s ease; }
 .discover-table td:hover .discover-cell-actions { opacity: 1; }
 .discover-cell-actions button, .discover-field-action {
@@ -74,6 +102,7 @@
 }
 .cell-filter-btn.include-btn { border-color: #155e75; color: #67e8f9; }
 .cell-filter-btn.exclude-btn { border-color: #7f1d1d; color: #fecdd3; }
+.cell-expand-btn { border-color: #1f2937; color: #cbd5e1; }
 .discover-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
 .is-hidden-col { display: none !important; }
 .discover-table-wrap::-webkit-scrollbar, .discover-source-list::-webkit-scrollbar, .discover-field-list::-webkit-scrollbar, .discover-columns-list::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -257,7 +286,7 @@
             <thead>
               <tr>
                 {% for col in table_columns %}
-                <th data-col-index="{{ forloop.counter0 }}">{{ col }}</th>
+                <th data-col-index="{{ forloop.counter0 }}"><span class="col-label">{{ col }}</span><span class="col-resizer" data-col-index="{{ forloop.counter0 }}"></span></th>
                 {% endfor %}
               </tr>
             </thead>
@@ -266,11 +295,12 @@
               <tr>
                 {% for cell in row.cells %}
                 <td data-col-index="{{ forloop.counter0 }}">
-                  <div class="discover-cell">
+                  <div class="discover-cell" data-full="{{ cell.full|escape }}" data-display="{{ cell.display|escape }}">
                     <div class="discover-cell-value">{{ cell.display }}</div>
                     <div class="discover-cell-actions">
                       <button class="js-add-filter cell-filter-btn include-btn" title="Include filter" aria-label="Include filter" type="button" data-mode="include" data-field="{{ cell.field }}" data-value="{{ cell.raw|escape }}">+</button>
                       <button class="js-add-filter cell-filter-btn exclude-btn" title="Exclude filter" aria-label="Exclude filter" type="button" data-mode="exclude" data-field="{{ cell.field }}" data-value="{{ cell.raw|escape }}">-</button>
+                      <button class="js-toggle-cell cell-filter-btn cell-expand-btn" title="Expand/collapse" aria-label="Expand/collapse" type="button">↕</button>
                     </div>
                   </div>
                 </td>
@@ -397,6 +427,23 @@
     document.querySelectorAll('.js-remove-filter').forEach(function (btn) {
       btn.addEventListener('click', function () {
         removeFilter(btn.getAttribute('data-mode'), btn.getAttribute('data-token'));
+      });
+    });
+  }
+
+  function bindCellToggles(root) {
+    (root || document).querySelectorAll('.js-toggle-cell').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        const cell = btn.closest('.discover-cell');
+        if (!cell) return;
+        const valueNode = cell.querySelector('.discover-cell-value');
+        const isExpanded = cell.classList.toggle('is-expanded');
+        if (valueNode) {
+          const full = cell.getAttribute('data-full') || '';
+          const display = cell.getAttribute('data-display') || '';
+          valueNode.textContent = isExpanded ? full : display;
+        }
       });
     });
   }
@@ -535,9 +582,107 @@
     setupProfileSwitcher();
     renderProfileComponent();
     bindFilters();
+    bindCellToggles(document);
     renderTimeline(0);
     setupColumnVisibility();
+    setupColumnResize();
   });
+
+  function setupColumnResize() {
+    const table = document.querySelector('.discover-table');
+    if (!table) return;
+    let active = null;
+
+    function setColWidth(idx, widthPx) {
+      const minW = 120;
+      const maxW = 720;
+      const width = Math.max(minW, Math.min(maxW, widthPx));
+      table.querySelectorAll('[data-col-index=\"' + idx + '\"]').forEach(function (el) {
+        el.style.width = width + 'px';
+      });
+    }
+
+    function onMove(e) {
+      if (!active) return;
+      const diff = e.clientX - active.startX;
+      setColWidth(active.idx, active.startWidth + diff);
+    }
+
+    function onUp() {
+      if (!active) return;
+      document.body.classList.remove('is-resizing');
+      if (active.th) active.th.classList.remove('is-resizing');
+      active = null;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    }
+
+    table.querySelectorAll('.col-resizer').forEach(function (handle) {
+      handle.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        const idx = handle.getAttribute('data-col-index');
+        const th = table.querySelector('th[data-col-index=\"' + idx + '\"]');
+        if (!th) return;
+        const rect = th.getBoundingClientRect();
+        active = {
+          idx: idx,
+          startX: e.clientX,
+          startWidth: rect.width,
+          th: th
+        };
+        document.body.classList.add('is-resizing');
+        th.classList.add('is-resizing');
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+      });
+    });
+  }
+
+  function refreshDiscovery() {
+    const tableWrap = document.querySelector('.discover-table-wrap');
+    const scrollTop = tableWrap ? tableWrap.scrollTop : 0;
+    const scrollLeft = tableWrap ? tableWrap.scrollLeft : 0;
+    fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function (res) { return res.text(); })
+      .then(function (html) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        const newTbody = doc.querySelector('.discover-table tbody');
+        const curTbody = document.querySelector('.discover-table tbody');
+        if (newTbody && curTbody) {
+          curTbody.innerHTML = newTbody.innerHTML;
+          bindFilters();
+          bindCellToggles(curTbody);
+        }
+
+        const newFooter = doc.querySelector('.discover-footer');
+        const curFooter = document.querySelector('.discover-footer');
+        if (newFooter && curFooter) {
+          curFooter.innerHTML = newFooter.innerHTML;
+        }
+
+        const newSourceList = doc.querySelector('.discover-source-list');
+        const curSourceList = document.querySelector('.discover-source-list');
+        if (newSourceList && curSourceList) {
+          curSourceList.innerHTML = newSourceList.innerHTML;
+        }
+
+        const newTimeline = doc.getElementById('discovery-timeline-data');
+        const curTimeline = document.getElementById('discovery-timeline-data');
+        if (newTimeline && curTimeline) {
+          curTimeline.textContent = newTimeline.textContent || '[]';
+          renderTimeline(0);
+        }
+
+        if (tableWrap) {
+          tableWrap.scrollTop = scrollTop;
+          tableWrap.scrollLeft = scrollLeft;
+        }
+      })
+      .catch(function () {});
+  }
+
+  setInterval(refreshDiscovery, 10000);
 })();
 </script>
 {% endblock %}

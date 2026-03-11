@@ -12,7 +12,7 @@ from django.urls import reverse_lazy
 from django.contrib.auth.hashers import make_password
 from django.db import transaction
 from django.utils import timezone
-from .models import Notification, UserPermission, UserApprovalRequest, NotificationPreference, EmailConfiguration, EmailAlert, EmailLog, AnalysisAPIConfig, NotificationSettings, NotificationChannel, NotificationTemplate, NotificationLog, NotificationQueue, OllamaConfig
+from .models import Notification, UserPermission, UserApprovalRequest, NotificationPreference, EmailConfiguration, EmailAlert, EmailLog, AnalysisAPIConfig, NotificationSettings, NotificationChannel, NotificationTemplate, NotificationLog, NotificationQueue, OllamaConfig, LDAPConfig
 from .logging_system import event_logger
 from .email_service import send_user_alert, send_system_alert
 from .enhanced_notification_service import enhanced_notification_service
@@ -26,6 +26,12 @@ import subprocess
 import ipaddress
 import shutil
 import os
+import ssl
+# Optional LDAP support (activated via LDAPConfig)
+try:
+    from ldap3 import Server, Connection, ALL, Tls, SUBTREE
+except Exception:
+    Server = Connection = Tls = SUBTREE = None
 # IDS features removed per user request
 
 def find_command_path(command):
@@ -53,6 +59,115 @@ def find_command_path(command):
 
     return None
 
+
+def _ldap_authenticate(username, password):
+    if not username or not password:
+        return None, 'Credenciales incompletas'
+    if Server is None or Connection is None:
+        return None, 'LDAP no disponible (instala ldap3)'
+
+    config = LDAPConfig.objects.filter(is_active=True).order_by('-is_default', '-updated_at').first()
+    if not config:
+        return None, 'LDAP deshabilitado'
+
+    use_ssl = bool(config.use_ssl)
+    tls = None
+    if use_ssl or config.use_starttls:
+        if config.cert_path:
+            tls = Tls(
+                ca_certs_file=config.cert_path,
+                validate=ssl.CERT_REQUIRED,
+                version=ssl.PROTOCOL_TLS_CLIENT,
+            )
+        else:
+            tls = Tls(validate=ssl.CERT_NONE, version=ssl.PROTOCOL_TLS_CLIENT)
+
+    server = Server(config.servidor, port=int(config.puerto or 389), use_ssl=use_ssl, tls=tls, get_info=ALL)
+
+    # Bind to search user (handle StartTLS before bind)
+    try:
+        conn = Connection(server, user=config.bind_dn or None, password=config.bind_password or None, auto_bind=False)
+        conn.open()
+        if config.use_starttls and not use_ssl:
+            conn.start_tls()
+        conn.bind()
+    except Exception as exc:
+        return None, f'LDAP bind fallido: {exc}'
+
+    search_filter = (config.user_search_filter or '(uid={username})').replace('{username}', username)
+    try:
+        conn.search(
+            search_base=config.user_search_base,
+            search_filter=search_filter,
+            search_scope=SUBTREE,
+            attributes=[
+                config.username_attr,
+                config.first_name_attr,
+                config.last_name_attr,
+                config.email_attr,
+            ],
+        )
+    except Exception as exc:
+        return None, f'LDAP search fallido: {exc}'
+
+    if not conn.entries:
+        return None, 'Usuario LDAP no encontrado'
+
+    entry = conn.entries[0]
+    user_dn = entry.entry_dn
+
+    # Bind as user to verify password
+    try:
+        user_conn = Connection(server, user=user_dn, password=password, auto_bind=False)
+        user_conn.open()
+        if config.use_starttls and not use_ssl:
+            user_conn.start_tls()
+        user_conn.bind()
+    except Exception:
+        return None, 'Credenciales LDAP inválidas'
+
+    # Map attributes
+    def _get_attr(name, fallback=''):
+        try:
+            val = entry[name].value
+            return val or fallback
+        except Exception:
+            return fallback
+
+    mapped_username = _get_attr(config.username_attr, username) or username
+    first_name = _get_attr(config.first_name_attr, '')
+    last_name = _get_attr(config.last_name_attr, '')
+    email = _get_attr(config.email_attr, '')
+
+    user = User.objects.filter(username=mapped_username).first()
+    if not user:
+        if not config.auto_create_user:
+            return None, 'Usuario no existe en el sistema'
+        user = User.objects.create(
+            username=mapped_username,
+            first_name=first_name or '',
+            last_name=last_name or '',
+            email=email or '',
+            is_active=True,
+        )
+        user.set_unusable_password()
+        user.save(update_fields=['password'])
+    else:
+        updated = False
+        if first_name and user.first_name != first_name:
+            user.first_name = first_name
+            updated = True
+        if last_name and user.last_name != last_name:
+            user.last_name = last_name
+            updated = True
+        if email and user.email != email:
+            user.email = email
+            updated = True
+        if updated:
+            user.save(update_fields=['first_name', 'last_name', 'email'])
+
+    return user, None
+
 # Vista principal del dashboard
 @login_required
 def dashboard_view(request):
@@ -64,8 +179,14 @@ def login_view(request):
         username = request.POST.get('username')
         password = request.POST.get('password')
         
-        from django.contrib.auth import authenticate
-        user = authenticate(request, username=username, password=password)
+        user = None
+        ldap_error = None
+        ldap_cfg = LDAPConfig.objects.filter(is_active=True).order_by('-is_default', '-updated_at').first()
+        if ldap_cfg:
+            user, ldap_error = _ldap_authenticate(username, password)
+        if user is None:
+            from django.contrib.auth import authenticate
+            user = authenticate(request, username=username, password=password)
         
         if user is not None:
             # Verificar permiso de autenticación (excepción: superusuario)
@@ -77,6 +198,10 @@ def login_view(request):
                     return render(request, 'login.html')
             
             login(request, user)
+            # Limpiar mensajes de errores de login anteriores
+            storage = messages.get_messages(request)
+            for _ in storage:
+                pass  # Consumir los mensajes para limpiarlos
             # Log del login
             event_logger.log_event(
                 user=user,
@@ -93,7 +218,10 @@ def login_view(request):
                 description=f'Intento de login fallido para usuario: {username}',
                 details={'ip_address': request.META.get('REMOTE_ADDR')}
             )
-            messages.error(request, 'Credenciales inválidas')
+            if ldap_cfg and ldap_error:
+                messages.error(request, ldap_error)
+            else:
+                messages.error(request, 'Credenciales inválidas')
     
     return render(request, 'login.html')
 
@@ -108,6 +236,46 @@ def logout_view(request):
         description=f'Usuario {user.username if user.is_authenticated else "Anonymous"} cerró sesión'
     )
     return redirect('login')
+
+# Vista para cambiar contrasena
+@login_required
+def password_change_view(request):
+    if request.method == 'POST':
+        old_password = request.POST.get('old_password')
+        new_password1 = request.POST.get('new_password1')
+        new_password2 = request.POST.get('new_password2')
+        
+        user = request.user
+        
+        # Verificar contrasena actual
+        if not user.check_password(old_password):
+            messages.error(request, 'La contrasena actual es incorrecta.')
+            return render(request, 'password_change.html')
+        
+        # Verificar que las nuevas contrasenas coincidan
+        if new_password1 != new_password2:
+            messages.error(request, 'Las nuevas contrasenas no coinciden.')
+            return render(request, 'password_change.html')
+        
+        # Verificar longitud minima
+        if len(new_password1) < 8:
+            messages.error(request, 'La contrasena debe tener al menos 8 caracteres.')
+            return render(request, 'password_change.html')
+        
+        # Cambiar la contrasena
+        user.set_password(new_password1)
+        user.save()
+        
+        # Actualizar la sesion para mantener al usuario logueado
+        from django.contrib.auth import update_session_auth_hash
+        update_session_auth_hash(request, user)
+        
+        messages.success(request, 'Contrasena cambiada exitosamente.')
+        return redirect('dashboard')
+    
+    return render(request, 'password_change.html')
+
+
 
 # ==================== GESTIÓN DE USUARIOS ====================
 
@@ -3919,3 +4087,112 @@ INSTRUCCIONES:
         return JsonResponse({'success': False, 'error': str(e)})
 
 
+
+
+# ===== VISTAS PARA CONFIGURACION LDAP =====
+
+@login_required
+def ldap_config_list(request):
+    """Lista todas las configuraciones LDAP"""
+    if not request.user.is_superuser:
+        messages.error(request, 'No tienes permisos para acceder a esta sección')
+        return redirect('dashboard')
+    
+    configs = LDAPConfig.objects.all()
+    return render(request, 'ldap_config_list.html', {'configs': configs})
+
+
+@login_required
+def ldap_config_create(request):
+    """Crea una nueva configuración LDAP"""
+    if not request.user.is_superuser:
+        messages.error(request, 'No tienes permisos para acceder a esta sección')
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        form_data = {
+            'nombre': request.POST.get('nombre'),
+            'servidor': request.POST.get('servidor'),
+            'puerto': request.POST.get('puerto', 389),
+            'use_ssl': request.POST.get('use_ssl') == 'on',
+            'use_starttls': request.POST.get('use_starttls') == 'on',
+            'cert_path': request.POST.get('cert_path') or None,
+            'bind_dn': request.POST.get('bind_dn') or None,
+            'bind_password': request.POST.get('bind_password') or None,
+            'user_search_base': request.POST.get('user_search_base'),
+            'user_search_filter': request.POST.get('user_search_filter') or '(uid={username})',
+            'group_search_base': request.POST.get('group_search_base') or None,
+            'group_search_filter': request.POST.get('group_search_filter') or '(member={user_dn})',
+            'username_attr': request.POST.get('username_attr') or 'uid',
+            'first_name_attr': request.POST.get('first_name_attr') or 'givenName',
+            'last_name_attr': request.POST.get('last_name_attr') or 'sn',
+            'email_attr': request.POST.get('email_attr') or 'mail',
+            'is_active': request.POST.get('is_active') == 'on',
+            'is_default': request.POST.get('is_default') == 'on',
+            'auto_create_user': request.POST.get('auto_create_user') == 'on',
+        }
+        
+        config = LDAPConfig.objects.create(**form_data)
+        messages.success(request, f'Configuración LDAP "{config.nombre}" creada exitosamente.')
+        return redirect('ldap-config-list')
+    
+    return render(request, 'ldap_config_form.html', {'action': 'create'})
+
+
+@login_required
+def ldap_config_edit(request, config_id):
+    """Edita una configuración LDAP existente"""
+    if not request.user.is_superuser:
+        messages.error(request, 'No tienes permisos para acceder a esta sección')
+        return redirect('dashboard')
+    
+    try:
+        config = LDAPConfig.objects.get(id=config_id)
+    except LDAPConfig.DoesNotExist:
+        messages.error(request, 'Configuración no encontrada')
+        return redirect('ldap-config-list')
+    
+    if request.method == 'POST':
+        config.nombre = request.POST.get('nombre')
+        config.servidor = request.POST.get('servidor')
+        config.puerto = request.POST.get('puerto', 389)
+        config.use_ssl = request.POST.get('use_ssl') == 'on'
+        config.use_starttls = request.POST.get('use_starttls') == 'on'
+        config.cert_path = request.POST.get('cert_path') or None
+        config.bind_dn = request.POST.get('bind_dn') or None
+        config.bind_password = request.POST.get('bind_password') or None
+        config.user_search_base = request.POST.get('user_search_base')
+        config.user_search_filter = request.POST.get('user_search_filter') or '(uid={username})'
+        config.group_search_base = request.POST.get('group_search_base') or None
+        config.group_search_filter = request.POST.get('group_search_filter') or '(member={user_dn})'
+        config.username_attr = request.POST.get('username_attr') or 'uid'
+        config.first_name_attr = request.POST.get('first_name_attr') or 'givenName'
+        config.last_name_attr = request.POST.get('last_name_attr') or 'sn'
+        config.email_attr = request.POST.get('email_attr') or 'mail'
+        config.is_active = request.POST.get('is_active') == 'on'
+        config.is_default = request.POST.get('is_default') == 'on'
+        config.auto_create_user = request.POST.get('auto_create_user') == 'on'
+        config.save()
+        
+        messages.success(request, f'Configuración LDAP "{config.nombre}" actualizada exitosamente.')
+        return redirect('ldap-config-list')
+    
+    return render(request, 'ldap_config_form.html', {'action': 'edit', 'config': config})
+
+
+@login_required
+def ldap_config_delete(request, config_id):
+    """Elimina una configuración LDAP"""
+    if not request.user.is_superuser:
+        messages.error(request, 'No tienes permisos para acceder a esta sección')
+        return redirect('dashboard')
+    
+    try:
+        config = LDAPConfig.objects.get(id=config_id)
+        nombre = config.nombre
+        config.delete()
+        messages.success(request, f'Configuración LDAP "{nombre}" eliminada exitosamente.')
+    except LDAPConfig.DoesNotExist:
+        messages.error(request, 'Configuración no encontrada')
+    
+    return redirect('ldap-config-list')

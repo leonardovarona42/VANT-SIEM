@@ -83,6 +83,14 @@
   color: #00d4ff !important;
   border-left-color: #00d4ff !important;
 }
+.kvb-nav-disabled {
+  opacity: 0.45;
+  cursor: not-allowed !important;
+}
+.kvb-nav-disabled:hover {
+  background: transparent !important;
+  color: #9ca3af !important;
+}
 
 .kvb-nav-item i {
   width: 18px;
@@ -867,7 +875,7 @@
           <i class="fas fa-chart-pie"></i>
           <span>Pie / Donut</span>
         </div>
-        <div class="kvb-nav-item" data-chart-type="heatmap">
+        <div class="kvb-nav-item kvb-nav-disabled" data-chart-type="heatmap" title="Not supported yet">
           <i class="fas fa-th"></i>
           <span>Heatmap</span>
         </div>
@@ -879,7 +887,7 @@
           <i class="fas fa-hashtag"></i>
           <span>Metric</span>
         </div>
-        <div class="kvb-nav-item" data-chart-type="gauge">
+        <div class="kvb-nav-item kvb-nav-disabled" data-chart-type="gauge" title="Not supported yet">
           <i class="fas fa-tachometer-alt"></i>
           <span>Gauge</span>
         </div>
@@ -887,11 +895,11 @@
           <i class="fas fa-circle-notch"></i>
           <span>Donut</span>
         </div>
-        <div class="kvb-nav-item" data-chart-type="scatter">
+        <div class="kvb-nav-item kvb-nav-disabled" data-chart-type="scatter" title="Not supported yet">
           <i class="fas fa-sign-in-alt"></i>
           <span>Scatter</span>
         </div>
-        <div class="kvb-nav-item" data-chart-type="radar">
+        <div class="kvb-nav-item kvb-nav-disabled" data-chart-type="radar" title="Not supported yet">
           <i class="fas fa-bullseye"></i>
           <span>Radar</span>
         </div>
@@ -903,18 +911,12 @@
           <i class="fas fa-database"></i>
           <span>All Indices</span>
         </div>
-        <div class="kvb-nav-item" data-source="snort">
+        {% for s in source_options %}
+        <div class="kvb-nav-item" data-source="{{ s.value|escape }}">
           <i class="fas fa-shield-alt"></i>
-          <span>Snort IDS</span>
+          <span>{{ s.value }} ({{ s.count }})</span>
         </div>
-        <div class="kvb-nav-item" data-source="suricata">
-          <i class="fas fa-shield-virus"></i>
-          <span>Suricata</span>
-        </div>
-        <div class="kvb-nav-item" data-source="firewall">
-          <i class="fas fa-fire"></i>
-          <span>Firewall Logs</span>
-        </div>
+        {% endfor %}
       </div>
       
       <div class="kvb-nav-section">
@@ -943,6 +945,7 @@
         <span id="currentVizType" style="padding:4px 12px;background:#2d2d4a;border-radius:20px;font-size:12px;color:#00d4ff;">
           Line Chart
         </span>
+        <span id="chartTypeHint" style="font-size:11px;color:#6b7280;"></span>
       </div>
       <div class="kvb-toolbar-right">
         <div class="kvb-interval-selector">
@@ -967,6 +970,9 @@
     
     <!-- Content Area -->
     <div class="kvb-content">
+      {% if db_error %}
+      <div class="kvb-error" style="margin:12px 20px;">{{ db_error }}</div>
+      {% endif %}
       <!-- Builder Panel -->
       <div class="kvb-builder">
         <!-- Data Section -->
@@ -977,20 +983,18 @@
           </div>
           <div class="kvb-section-content">
             <div class="kvb-form-group">
-              <label class="kvb-form-label">Index Pattern</label>
+              <label class="kvb-form-label">Data Source</label>
               <select id="indexPattern" class="kvb-form-select">
-                <option value="all">* (All indices)</option>
-                <option value="snort">snort-*</option>
-                <option value="suricata">suricata-*</option>
-                <option value="firewall">firewall-*</option>
+                <option value="all">All sources</option>
+                {% for s in source_options %}
+                <option value="{{ s.value|escape }}">{{ s.value }} ({{ s.count }})</option>
+                {% endfor %}
               </select>
             </div>
             <div class="kvb-form-group">
               <label class="kvb-form-label">Time Field</label>
               <select id="timeField" class="kvb-form-select">
                 <option value="event_time">event_time</option>
-                <option value="timestamp">timestamp</option>
-                <option value="@timestamp">@timestamp</option>
               </select>
             </div>
             <div class="kvb-form-group">
@@ -1021,15 +1025,12 @@
             </div>
             <div class="kvb-form-group" id="metricFieldGroup" style="display:none;">
               <label class="kvb-form-label">Field</label>
-              <select id="metricField" class="kvb-form-select">
-                {% for f in available_fields %}
-                <option value="{{ f }}">{{ f }}</option>
-                {% endfor %}
-              </select>
+              <select id="metricField" class="kvb-form-select"></select>
             </div>
             <div class="kvb-form-group">
               <label class="kvb-form-label">Custom Label</label>
-              <input id="metricLabel" type="text" class="kvb-form-input" placeholder="Events Count">
+              <input id="metricLabel" type="text" class="kvb-form-input" placeholder="Events Count" list="metricLabelList">
+              <datalist id="metricLabelList"></datalist>
             </div>
           </div>
         </div>
@@ -1224,6 +1225,7 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ fields_by_source|json_script:"kvb-fields-map" }}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 <script>
@@ -1252,13 +1254,41 @@ const KVB = (function() {
     stacking: false,
     percentageMode: false,
     space: 'personal',
-    limit: 50
+    limit: 50,
+    fillOpacity: 0.2,
+    pointRadius: 3,
+    lineTension: 0.4,
+    enableAnimation: true
   };
   let _activeView = 'chart';
   let _lastData = null;
+  const _fieldsBySource = JSON.parse(document.getElementById('kvb-fields-map')?.textContent || '{}');
   
   // DOM Elements
   const elements = {};
+
+  function getFieldsForSource(source) {
+    if (!source) return _fieldsBySource.all || [];
+    return _fieldsBySource[source] || _fieldsBySource.all || [];
+  }
+
+  function refreshFieldOptions(source) {
+    const fields = getFieldsForSource(source);
+    if (elements.metricField) {
+      elements.metricField.innerHTML = fields.map(f => `<option value="${f}">${f}</option>`).join('');
+    }
+    const labelList = document.getElementById('metricLabelList');
+    if (labelList) {
+      const suggested = ['Events', 'Total Events', 'Alerts', 'Detections', 'Matches'];
+      const options = suggested.concat(fields.filter(f => !suggested.includes(f)));
+      labelList.innerHTML = options.map(f => `<option value="${f}"></option>`).join('');
+    }
+    elements.bucketsContainer.querySelectorAll('.bucket-field').forEach(sel => {
+      const current = sel.value;
+      sel.innerHTML = fields.map(f => `<option value="${f}">${f}</option>`).join('');
+      if (current && fields.includes(current)) sel.value = current;
+    });
+  }
   
   // Initialize
   function init() {
@@ -1269,6 +1299,7 @@ const KVB = (function() {
       bindEvents();
       console.log('[KVB] Events bound, loading saved viz...');
       loadSavedViz();
+      refreshFieldOptions(_config.source);
       updateMetricFieldVisibility();
       console.log('[KVB] Visualization Builder fully initialized');
     } catch(e) {
@@ -1313,6 +1344,7 @@ const KVB = (function() {
     elements.previewTitle = document.getElementById('previewTitle');
     elements.previewMeta = document.getElementById('previewMeta');
     elements.currentVizType = document.getElementById('currentVizType');
+    elements.chartTypeHint = document.getElementById('chartTypeHint');
     elements.savedVizList = document.getElementById('savedVizList');
     elements.dataView = document.getElementById('dataView');
     elements.dataTable = document.getElementById('dataTable');
@@ -1327,6 +1359,7 @@ const KVB = (function() {
       sidebar.addEventListener('click', function(e) {
         const navItem = e.target.closest('.kvb-nav-item');
         if (!navItem) return;
+        if (navItem.classList.contains('kvb-nav-disabled')) return;
         
         const chartType = navItem.dataset.chartType;
         const source = navItem.dataset.source;
@@ -1340,6 +1373,7 @@ const KVB = (function() {
           setSource(source);
           document.querySelectorAll('[data-source]').forEach(x => x.classList.remove('active'));
           navItem.classList.add('active');
+          if (elements.indexPattern) elements.indexPattern.value = source;
         } else if (panel === 'saved-viz') {
           loadSavedViz();
         } else if (panel === 'saved-dash') {
@@ -1363,8 +1397,22 @@ const KVB = (function() {
       loadSavedViz();
     });
     
+    // Data source selection (Index Pattern)
+    elements.indexPattern.addEventListener('change', function() {
+      const src = this.value || 'all';
+      _config.indexPattern = src;
+      setSource(src);
+      document.querySelectorAll('[data-source]').forEach(x => x.classList.remove('active'));
+      const match = document.querySelector('[data-source=\"' + src + '\"]');
+      if (match) match.classList.add('active');
+    });
+    
     // Metric aggregation change
-    elements.metricAgg.addEventListener('change', updateMetricFieldVisibility);
+    elements.metricAgg.addEventListener('change', function() {
+      _config.metricAgg = elements.metricAgg.value;
+      updateMetricFieldVisibility();
+      updateChartIfExists();
+    });
     
     // Color picker
     elements.colorPicker.querySelectorAll('.kvb-color-option').forEach(opt => {
@@ -1393,21 +1441,56 @@ const KVB = (function() {
     
     // Refresh button
     document.getElementById('refreshBtn').addEventListener('click', runPreview);
+
+    // Chart option controls
+    elements.legendPosition.addEventListener('change', function() {
+      _config.legendPosition = this.value;
+      updateChartIfExists();
+    });
+    elements.showGrid.addEventListener('change', function() {
+      _config.showGrid = this.value === 'true';
+      updateChartIfExists();
+    });
+    elements.stacking.addEventListener('change', function() {
+      _config.stacking = this.checked;
+      updateChartIfExists();
+    });
+    elements.percentageMode.addEventListener('change', function() {
+      _config.percentageMode = this.checked;
+      updateChartIfExists();
+    });
     
     // Slider controls - update value displays
     if (elements.fillOpacity) {
       elements.fillOpacity.addEventListener('input', function() {
         elements.fillOpacityVal.textContent = this.value + '%';
+        _config.fillOpacity = parseInt(this.value, 10) / 100;
+        updateChartIfExists();
       });
     }
     if (elements.pointRadius) {
       elements.pointRadius.addEventListener('input', function() {
         elements.pointRadiusVal.textContent = this.value;
+        _config.pointRadius = parseInt(this.value, 10);
+        updateChartIfExists();
       });
     }
     if (elements.lineTension) {
       elements.lineTension.addEventListener('input', function() {
         elements.lineTensionVal.textContent = this.value + '%';
+        _config.lineTension = parseInt(this.value, 10) / 100;
+        updateChartIfExists();
+      });
+    }
+    if (elements.enableAnimation) {
+      elements.enableAnimation.addEventListener('change', function() {
+        _config.enableAnimation = this.checked;
+        updateChartIfExists();
+      });
+    }
+    if (elements.showDataLabels) {
+      elements.showDataLabels.addEventListener('change', function() {
+        updateChartIfExists();
       });
     }
   }
@@ -1422,6 +1505,24 @@ const KVB = (function() {
   function setChartType(type) {
     _config.chartType = type;
     elements.currentVizType.textContent = getChartTypeName(type);
+    if (elements.chartTypeHint) {
+      elements.chartTypeHint.textContent = type === 'doughnut' ? 'Preview uses pie backend' : '';
+    }
+    if (type === 'table') {
+      setView('data');
+      elements.viewOptions.forEach(x => x.classList.remove('active'));
+      const dataBtn = document.querySelector('[data-view="data"]');
+      if (dataBtn) dataBtn.classList.add('active');
+      document.querySelectorAll('[data-view="chart"]').forEach(btn => { btn.style.display = 'none'; });
+      document.querySelectorAll('[data-view="data"]').forEach(btn => { btn.style.display = 'inline-flex'; });
+    } else {
+      setView('chart');
+      elements.viewOptions.forEach(x => x.classList.remove('active'));
+      const chartBtn = document.querySelector('[data-view="chart"]');
+      if (chartBtn) chartBtn.classList.add('active');
+      document.querySelectorAll('[data-view="chart"]').forEach(btn => { btn.style.display = 'inline-flex'; });
+      document.querySelectorAll('[data-view="data"]').forEach(btn => { btn.style.display = 'none'; });
+    }
     updateChartIfExists();
   }
   
@@ -1446,6 +1547,7 @@ const KVB = (function() {
   // Set data source
   function setSource(source) {
     _config.source = source;
+    refreshFieldOptions(source);
     updateChartIfExists();
   }
   
@@ -1479,6 +1581,8 @@ const KVB = (function() {
         order: item.querySelector('.bucket-order').value
       });
     });
+    const firstBucket = bucketConfig.length ? bucketConfig[0] : null;
+    const groupBy = firstBucket && firstBucket.agg === 'terms' ? firstBucket.field : '';
     
     return {
       viz_type: _config.chartType,
@@ -1491,6 +1595,7 @@ const KVB = (function() {
       metric_field: elements.metricField.value,
       metric_label: elements.metricLabel.value,
       buckets: bucketConfig,
+      group_by: groupBy,
       chart_title: elements.chartTitle.value,
       legend_position: elements.legendPosition.value,
       show_grid: elements.showGrid.value === 'true',
@@ -1593,17 +1698,19 @@ const KVB = (function() {
           borderColor: _config.colors[i % _config.colors.length],
           backgroundColor: type === 'pie' || type === 'doughnut' 
             ? _config.colors 
-            : hexToRgba(_config.colors[i % _config.colors.length], isLineOrArea ? 0.1 : 0.8),
+            : hexToRgba(_config.colors[i % _config.colors.length], isLineOrArea ? _config.fillOpacity : 0.8),
           fill: type === 'area',
-          tension: isLineOrArea ? 0.4 : 0,
+          tension: isLineOrArea ? _config.lineTension : 0,
           stepped: false,
           barThickness: 20,
-          borderWidth: isLineOrArea ? 2 : 1
+          borderWidth: isLineOrArea ? 2 : 1,
+          pointRadius: isLineOrArea ? _config.pointRadius : 0
         }))
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        animation: _config.enableAnimation ? undefined : false,
         interaction: {
           mode: 'index',
           intersect: false
@@ -1770,6 +1877,7 @@ const KVB = (function() {
   
   // Add bucket
   function addBucket() {
+    const fields = getFieldsForSource(_config.source);
     const bucketHtml = `
       <div class="kvb-bucket-item">
         <i class="fas fa-grip-vertical kvb-drag-handle"></i>
@@ -1780,9 +1888,7 @@ const KVB = (function() {
           <option value="range">Range</option>
         </select>
         <select class="kvb-form-select bucket-field" style="flex:1;">
-          {% for f in available_fields %}
-          <option value="{{ f }}">{{ f }}</option>
-          {% endfor %}
+          ${fields.map(f => `<option value="${f}">${f}</option>`).join('')}
         </select>
         <input type="number" class="kvb-form-input bucket-size" value="10" style="width:60px;" placeholder="Size">
         <select class="kvb-form-select bucket-order" style="width:80px;">
@@ -1895,6 +2001,7 @@ const KVB = (function() {
     });
     
     elements.indexPattern.value = cfg.index_pattern || 'all';
+    setSource(elements.indexPattern.value || 'all');
     elements.timeField.value = cfg.time_field || 'event_time';
     elements.kqlQuery.value = cfg.query || '';
     elements.metricAgg.value = cfg.metric_agg || 'count';

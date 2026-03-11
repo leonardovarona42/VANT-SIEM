@@ -68,8 +68,8 @@ La plataforma integra capacidades para evolucionar de monitoreo reactivo a opera
 
 - **Acceso**: `/opensearch/visualizations/create/`
 - **Características**:
-  - Tipos de gráfico: Line, Bar, Area, Pie/Donut, Heatmap, Table, Metric, Gauge, Scatter, Radar
-  - Fuentes de datos: All Indices, Snort IDS, Suricata
+  - Tipos de gráfico: Line, Bar, Area, Pie/Donut, Table, Metric
+  - Fuentes de datos: dinámicas desde `source_type` (All + fuentes reales con conteo)
   - Configuración de métricas: Count, Average, Sum, Min, Max, Cardinality, Percentiles
   - Buckets configurables: Date Histogram, Terms, Filters
   - Opciones avanzadas de chart:
@@ -86,6 +86,7 @@ La plataforma integra capacidades para evolucionar de monitoreo reactivo a opera
     - Etiquetas de datos
   - Preview en tiempo real
   - Guardar visualizaciones
+  - Custom labels con sugerencias dinámicas por fuente/atributos
 
 ### Funcionalidades del Discovery
 
@@ -93,6 +94,20 @@ La plataforma integra capacidades para evolucionar de monitoreo reactivo a opera
 - Manejo de campos vacíos `(empty)`.
 - Show/Hide dinámico de columnas.
 - Timeline + tabla de eventos de alta densidad.
+- Auto refresh sin recargar página.
+- Expansión de celdas y redimensionamiento de columnas.
+
+## Autenticación LDAP
+
+El sistema soporta autenticación LDAP mediante configuraciones en UI:
+
+- Soporta SSL/TLS o StartTLS.
+- Bind DN opcional.
+- Búsqueda de usuarios con placeholder `{username}`.
+- Mapeo de atributos (usuario, nombre, apellido, email).
+- Auto‑creación de usuario en el sistema (opcional).
+
+La autenticación LDAP se activa cuando existe una configuración marcada como `is_active` (y `is_default` preferente).
 
 ## Inicio rápido
 
