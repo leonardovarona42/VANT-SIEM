@@ -3,50 +3,50 @@
 
 {% block content %}
 <div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card bg-secondary">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="text-info mb-0"><i class="fas fa-sliders-h me-2"></i>Configurar APIs de Análisis</h3>
-                    <a href="{% url 'analysis-ip' %}" class="btn btn-outline-light btn-sm"><i class="fas fa-arrow-left me-1"></i>Volver</a>
-                </div>
-                <div class="card-body">
-                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                    <div class="mb-3">
-                        <label class="form-label text-info">VirusTotal API Key</label>
-                        <input id="vtKey" type="text" class="form-control" value="{{ cfg.virustotal_api_key|default:'' }}" placeholder="x-apikey">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-info">AbuseIPDB API Key</label>
-                        <input id="abuseKey" type="text" class="form-control" value="{{ cfg.abuseipdb_api_key|default:'' }}" placeholder="Key">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-info">MacVendors API Key (opcional)</label>
-                        <input id="macKey" type="text" class="form-control" value="{{ cfg.macvendors_api_key|default:'' }}" placeholder="API key si aplica">
-                    </div>
-                    <div class="text-end">
-                        <button class="btn btn-success" onclick="saveKeys()"><i class="fas fa-save me-2"></i>Guardar</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+ <div class="row justify-content-center">
+ <div class="col-md-8">
+ <div class="card bg-secondary">
+ <div class="card-header d-flex justify-content-between align-items-center">
+ <h3 class="text-info mb-0"><i class="fas fa-sliders-h me-2"></i>Configurar APIs de Análisis</h3>
+ <a href="{% url 'analysis-ip' %}" class="btn btn-outline-light btn-sm"><i class="fas fa-arrow-left me-1"></i>Volver</a>
+ </div>
+ <div class="card-body">
+ <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+ <div class="mb-3">
+ <label class="form-label text-info">VirusTotal API Key</label>
+ <input id="vtKey" type="text" class="form-control" value="{{ cfg.virustotal_api_key|default:'' }}" placeholder="x-apikey">
+ </div>
+ <div class="mb-3">
+ <label class="form-label text-info">AbuseIPDB API Key</label>
+ <input id="abuseKey" type="text" class="form-control" value="{{ cfg.abuseipdb_api_key|default:'' }}" placeholder="Key">
+ </div>
+ <div class="mb-3">
+ <label class="form-label text-info">MacVendors API Key (opcional)</label>
+ <input id="macKey" type="text" class="form-control" value="{{ cfg.macvendors_api_key|default:'' }}" placeholder="API key si aplica">
+ </div>
+ <div class="text-end">
+ <button class="btn btn-success" onclick="saveKeys()"><i class="fas fa-save me-2"></i>Guardar</button>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
 </div>
 <script>
 async function saveKeys(){
-  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-  const body = new URLSearchParams({
-    virustotal_api_key: document.getElementById('vtKey').value.trim(),
-    abuseipdb_api_key: document.getElementById('abuseKey').value.trim(),
-    macvendors_api_key: document.getElementById('macKey').value.trim(),
-  });
-  const res = await fetch('{% url "analysis-config-save" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}, body});
-  const data = await res.json();
-  if (data.success) {
-    alert('APIs guardadas');
-  } else {
-    alert('Error: ' + (data.error || 'No se pudo guardar'));
-  }
+ const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+ const body = new URLSearchParams({
+ virustotal_api_key: document.getElementById('vtKey').value.trim(),
+ abuseipdb_api_key: document.getElementById('abuseKey').value.trim(),
+ macvendors_api_key: document.getElementById('macKey').value.trim(),
+ });
+ const res = await fetch('{% url "analysis-config-save" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}, body});
+ const data = await res.json();
+ if (data.success) {
+ alert('APIs guardadas');
+ } else {
+ alert('Error: ' + (data.error || 'No se pudo guardar'));
+ }
 }
 </script>
 {% endblock %}

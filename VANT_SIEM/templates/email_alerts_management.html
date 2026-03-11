@@ -4,275 +4,275 @@
 {% block content %}
 <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
 <div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card bg-secondary">
-                <div class="card-header">
-                    <h3 class="text-info mb-0">
-                        <i class="fas fa-bell me-2"></i>Gestión de Alertas por Correo
-                    </h3>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="card bg-dark">
-                                <div class="card-header">
-                                    <h5 class="text-warning mb-0">Seleccionar Usuario</h5>
-                                </div>
-                                <div class="card-body">
-                                    <select class="form-select" id="userSelect" onchange="loadUserAlerts()">
-                                        <option value="">Selecciona un usuario...</option>
-                                        {% for user in users %}
-                                            <option value="{{ user.id }}">{{ user.username }} ({{ user.email }})</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-8">
-                            <div class="card bg-dark">
-                                <div class="card-header">
-                                    <h5 class="text-warning mb-0 d-flex align-items-center justify-content-between">Configuración de Alertas
-                                        <span>
-                                            <button class="btn btn-sm btn-outline-light me-2" onclick="markAllAlerts(true)"><i class="fas fa-check-double me-1"></i>Marcar todas</button>
-                                            <button class="btn btn-sm btn-outline-light" onclick="markAllAlerts(false)"><i class="fas fa-ban me-1"></i>Desmarcar todas</button>
-                                        </span>
-                                    </h5>
-                                </div>
-                                <div class="card-body">
-                                    <div id="alertsContainer">
-                                        <div class="text-center text-muted py-4">
-                                            <i class="fas fa-user fa-2x mb-3"></i>
-                                            <p>Selecciona un usuario para configurar sus alertas</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+ <div class="row">
+ <div class="col-12">
+ <div class="card bg-secondary">
+ <div class="card-header">
+ <h3 class="text-info mb-0">
+ <i class="fas fa-bell me-2"></i>Gestión de Alertas por Correo
+ </h3>
+ </div>
+ <div class="card-body">
+ <div class="row">
+ <div class="col-md-4">
+ <div class="card bg-dark">
+ <div class="card-header">
+ <h5 class="text-warning mb-0">Seleccionar Usuario</h5>
+ </div>
+ <div class="card-body">
+ <select class="form-select" id="userSelect" onchange="loadUserAlerts()">
+ <option value="">Selecciona un usuario...</option>
+ {% for user in users %}
+ <option value="{{ user.id }}">{{ user.username }} ({{ user.email }})</option>
+ {% endfor %}
+ </select>
+ </div>
+ </div>
+ </div>
+ <div class="col-md-8">
+ <div class="card bg-dark">
+ <div class="card-header">
+ <h5 class="text-warning mb-0 d-flex align-items-center justify-content-between">Configuración de Alertas
+ <span>
+ <button class="btn btn-sm btn-outline-light me-2" onclick="markAllAlerts(true)"><i class="fas fa-check-double me-1"></i>Marcar todas</button>
+ <button class="btn btn-sm btn-outline-light" onclick="markAllAlerts(false)"><i class="fas fa-ban me-1"></i>Desmarcar todas</button>
+ </span>
+ </h5>
+ </div>
+ <div class="card-body">
+ <div id="alertsContainer">
+ <div class="text-center text-muted py-4">
+ <i class="fas fa-user fa-2x mb-3"></i>
+ <p>Selecciona un usuario para configurar sus alertas</p>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
 </div>
 
 <script>
 function loadUserAlerts() {
-    const userId = document.getElementById('userSelect').value;
-    const container = document.getElementById('alertsContainer');
-    
-    if (!userId) {
-        container.innerHTML = `
-            <div class="text-center text-muted py-4">
-                <i class="fas fa-user fa-2x mb-3"></i>
-                <p>Selecciona un usuario para configurar sus alertas</p>
-            </div>
-        `;
-        return;
-    }
-    
-    // Mostrar loading
-    container.innerHTML = `
-        <div class="text-center py-4">
-            <div class="spinner-border text-info" role="status">
-                <span class="visually-hidden">Cargando...</span>
-            </div>
-            <p class="mt-2">Cargando alertas del usuario...</p>
-        </div>
-    `;
-    
-    // Cargar alertas reales desde el servidor
-    fetch(`/siem/dashboard/api/email-alert/user/?user_id=${userId}`)
-        .then(resp => resp.json())
-        .then(payload => {
-            if (!payload.success) throw new Error(payload.error || 'Error al cargar alertas');
-            const alerts = payload.alerts;
-            window.currentAlertTypes = alerts.map(a => [a.alert_type, a.label]);
-            const descriptions = {
-                'USER_CREATE_REQUEST': 'Aviso cuando alguien solicita crear un nuevo usuario.',
-                'USER_APPROVED': 'Confirmación cuando un usuario ha sido aprobado.',
-                'USER_REJECTED': 'Aviso cuando se rechaza una solicitud de usuario.',
-                'INCIDENT_CREATED': 'Alerta cuando se crea un incidente.',
-                'INCIDENT_UPDATED': 'Aviso de cambios en un incidente.',
-                'REPORT_CREATED': 'Alerta cuando se registra un nuevo reporte.',
-                'REPORT_UPDATED': 'Aviso de cambios en un reporte.',
-                'SECURITY_EVENT': 'Eventos de seguridad relevantes en el sistema.',
-                'SYSTEM_ERROR': 'Errores del sistema que requieren atención.',
-                'BACKUP_COMPLETED': 'Confirmación de respaldo completado.',
-                'BACKUP_FAILED': 'Fallo en proceso de respaldo.',
-                'MAINTENANCE_SCHEDULED': 'Mantenimientos programados del sistema.',
-                'LOGIN_FAILED': 'Intentos de inicio de sesión fallidos.',
-                'PERMISSION_CHANGED': 'Cambios en permisos de usuarios.'
-            };
-            let html = '<div class="row">';
-            alerts.forEach(a => {
-                const value = a.alert_type;
-                const label = a.label;
-                const desc = descriptions[value] || '';
-                html += `
-                    <div class="col-md-6 mb-3">
-                        <div class="card bg-secondary">
-                            <div class="card-body">
-                                <h6 class="text-info mb-1">${label}</h6>
-                                <p class="text-muted small mb-3">${desc}</p>
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="checkbox" id="enabled_${value}" ${a.enabled ? 'checked' : ''}
-                                           onchange="updateAlert('${value}', 'enabled', this.checked)">
-                                    <label class="form-check-label text-light" for="enabled_${value}">
-                                        Habilitar alerta
-                                    </label>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label text-light small">Prioridad:</label>
-                                    <select class="form-select form-select-sm" id="priority_${value}" 
-                                            onchange="updateAlert('${value}', 'priority', this.value)">
-                                        <option value="LOW" ${a.priority === 'LOW' ? 'selected' : ''}>Baja</option>
-                                        <option value="MEDIUM" ${a.priority === 'MEDIUM' ? 'selected' : ''}>Media</option>
-                                        <option value="HIGH" ${a.priority === 'HIGH' ? 'selected' : ''}>Alta</option>
-                                        <option value="CRITICAL" ${a.priority === 'CRITICAL' ? 'selected' : ''}>Crítica</option>
-                                    </select>
-                                </div>
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="checkbox" id="immediate_${value}" ${a.send_immediately ? 'checked' : ''}
-                                           onchange="updateAlert('${value}', 'send_immediately', this.checked)">
-                                    <label class="form-check-label text-light" for="immediate_${value}">
-                                        Enviar inmediatamente
-                                    </label>
-                                </div>
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="checkbox" id="daily_${value}" ${a.send_daily_summary ? 'checked' : ''}
-                                           onchange="updateAlert('${value}', 'send_daily_summary', this.checked)">
-                                    <label class="form-check-label text-light" for="daily_${value}">
-                                        Incluir en resumen diario
-                                    </label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="weekly_${value}" ${a.send_weekly_summary ? 'checked' : ''}
-                                           onchange="updateAlert('${value}', 'send_weekly_summary', this.checked)">
-                                    <label class="form-check-label text-light" for="weekly_${value}">
-                                        Incluir en resumen semanal
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            html += '</div>';
-            container.innerHTML = html;
-        })
-        .catch(err => {
-            container.innerHTML = `
-                <div class="text-center text-danger py-4">
-                    <i class="fas fa-triangle-exclamation fa-2x mb-3"></i>
-                    <p>${err.message}</p>
-                </div>
-            `;
-        });
+ const userId = document.getElementById('userSelect').value;
+ const container = document.getElementById('alertsContainer');
+ 
+ if (!userId) {
+ container.innerHTML = `
+ <div class="text-center text-muted py-4">
+ <i class="fas fa-user fa-2x mb-3"></i>
+ <p>Selecciona un usuario para configurar sus alertas</p>
+ </div>
+ `;
+ return;
+ }
+ 
+ // Mostrar loading
+ container.innerHTML = `
+ <div class="text-center py-4">
+ <div class="spinner-border text-info" role="status">
+ <span class="visually-hidden">Cargando...</span>
+ </div>
+ <p class="mt-2">Cargando alertas del usuario...</p>
+ </div>
+ `;
+ 
+ // Cargar alertas reales desde el servidor
+ fetch(`/siem/dashboard/api/email-alert/user/?user_id=${userId}`)
+ .then(resp => resp.json())
+ .then(payload => {
+ if (!payload.success) throw new Error(payload.error || 'Error al cargar alertas');
+ const alerts = payload.alerts;
+ window.currentAlertTypes = alerts.map(a => [a.alert_type, a.label]);
+ const descriptions = {
+ 'USER_CREATE_REQUEST': 'Aviso cuando alguien solicita crear un nuevo usuario.',
+ 'USER_APPROVED': 'Confirmación cuando un usuario ha sido aprobado.',
+ 'USER_REJECTED': 'Aviso cuando se rechaza una solicitud de usuario.',
+ 'INCIDENT_CREATED': 'Alerta cuando se crea un incidente.',
+ 'INCIDENT_UPDATED': 'Aviso de cambios en un incidente.',
+ 'REPORT_CREATED': 'Alerta cuando se registra un nuevo reporte.',
+ 'REPORT_UPDATED': 'Aviso de cambios en un reporte.',
+ 'SECURITY_EVENT': 'Eventos de seguridad relevantes en el sistema.',
+ 'SYSTEM_ERROR': 'Errores del sistema que requieren atención.',
+ 'BACKUP_COMPLETED': 'Confirmación de respaldo completado.',
+ 'BACKUP_FAILED': 'Fallo en proceso de respaldo.',
+ 'MAINTENANCE_SCHEDULED': 'Mantenimientos programados del sistema.',
+ 'LOGIN_FAILED': 'Intentos de inicio de sesión fallidos.',
+ 'PERMISSION_CHANGED': 'Cambios en permisos de usuarios.'
+ };
+ let html = '<div class="row">';
+ alerts.forEach(a => {
+ const value = a.alert_type;
+ const label = a.label;
+ const desc = descriptions[value] || '';
+ html += `
+ <div class="col-md-6 mb-3">
+ <div class="card bg-secondary">
+ <div class="card-body">
+ <h6 class="text-info mb-1">${label}</h6>
+ <p class="text-muted small mb-3">${desc}</p>
+ <div class="form-check mb-2">
+ <input class="form-check-input" type="checkbox" id="enabled_${value}" ${a.enabled ? 'checked' : ''}
+ onchange="updateAlert('${value}', 'enabled', this.checked)">
+ <label class="form-check-label text-light" for="enabled_${value}">
+ Habilitar alerta
+ </label>
+ </div>
+ <div class="mb-2">
+ <label class="form-label text-light small">Prioridad:</label>
+ <select class="form-select form-select-sm" id="priority_${value}" 
+ onchange="updateAlert('${value}', 'priority', this.value)">
+ <option value="LOW" ${a.priority === 'LOW' ? 'selected' : ''}>Baja</option>
+ <option value="MEDIUM" ${a.priority === 'MEDIUM' ? 'selected' : ''}>Media</option>
+ <option value="HIGH" ${a.priority === 'HIGH' ? 'selected' : ''}>Alta</option>
+ <option value="CRITICAL" ${a.priority === 'CRITICAL' ? 'selected' : ''}>Crítica</option>
+ </select>
+ </div>
+ <div class="form-check mb-2">
+ <input class="form-check-input" type="checkbox" id="immediate_${value}" ${a.send_immediately ? 'checked' : ''}
+ onchange="updateAlert('${value}', 'send_immediately', this.checked)">
+ <label class="form-check-label text-light" for="immediate_${value}">
+ Enviar inmediatamente
+ </label>
+ </div>
+ <div class="form-check mb-2">
+ <input class="form-check-input" type="checkbox" id="daily_${value}" ${a.send_daily_summary ? 'checked' : ''}
+ onchange="updateAlert('${value}', 'send_daily_summary', this.checked)">
+ <label class="form-check-label text-light" for="daily_${value}">
+ Incluir en resumen diario
+ </label>
+ </div>
+ <div class="form-check">
+ <input class="form-check-input" type="checkbox" id="weekly_${value}" ${a.send_weekly_summary ? 'checked' : ''}
+ onchange="updateAlert('${value}', 'send_weekly_summary', this.checked)">
+ <label class="form-check-label text-light" for="weekly_${value}">
+ Incluir en resumen semanal
+ </label>
+ </div>
+ </div>
+ </div>
+ </div>
+ `;
+ });
+ html += '</div>';
+ container.innerHTML = html;
+ })
+ .catch(err => {
+ container.innerHTML = `
+ <div class="text-center text-danger py-4">
+ <i class="fas fa-triangle-exclamation fa-2x mb-3"></i>
+ <p>${err.message}</p>
+ </div>
+ `;
+ });
 }
 
 function updateAlert(alertType, field, value) {
-    const userId = document.getElementById('userSelect').value;
-    
-    if (!userId) {
-        alert('Por favor selecciona un usuario primero');
-        return;
-    }
-    
-    const data = {
-        user_id: userId,
-        alert_type: alertType,
-        [field]: value
-    };
-    
-    // Obtener todos los valores del formulario
-    const enabled = document.getElementById(`enabled_${alertType}`)?.checked || false;
-    const priority = document.getElementById(`priority_${alertType}`)?.value || 'MEDIUM';
-    const send_immediately = document.getElementById(`immediate_${alertType}`)?.checked || false;
-    const send_daily_summary = document.getElementById(`daily_${alertType}`)?.checked || false;
-    const send_weekly_summary = document.getElementById(`weekly_${alertType}`)?.checked || false;
-    
-    const fullData = {
-        user_id: userId,
-        alert_type: alertType,
-        enabled: enabled,
-        priority: priority,
-        send_immediately: send_immediately,
-        send_daily_summary: send_daily_summary,
-        send_weekly_summary: send_weekly_summary
-    };
-    
-    fetch('/siem/dashboard/api/email-alert/update/', {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams(fullData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Mostrar mensaje de éxito temporal
-            showToast('success', data.message);
-        } else {
-            showToast('error', 'Error: ' + data.error);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showToast('error', 'Error al actualizar la alerta');
-    });
+ const userId = document.getElementById('userSelect').value;
+ 
+ if (!userId) {
+ alert('Por favor selecciona un usuario primero');
+ return;
+ }
+ 
+ const data = {
+ user_id: userId,
+ alert_type: alertType,
+ [field]: value
+ };
+ 
+ // Obtener todos los valores del formulario
+ const enabled = document.getElementById(`enabled_${alertType}`)?.checked || false;
+ const priority = document.getElementById(`priority_${alertType}`)?.value || 'MEDIUM';
+ const send_immediately = document.getElementById(`immediate_${alertType}`)?.checked || false;
+ const send_daily_summary = document.getElementById(`daily_${alertType}`)?.checked || false;
+ const send_weekly_summary = document.getElementById(`weekly_${alertType}`)?.checked || false;
+ 
+ const fullData = {
+ user_id: userId,
+ alert_type: alertType,
+ enabled: enabled,
+ priority: priority,
+ send_immediately: send_immediately,
+ send_daily_summary: send_daily_summary,
+ send_weekly_summary: send_weekly_summary
+ };
+ 
+ fetch('/siem/dashboard/api/email-alert/update/', {
+ method: 'POST',
+ headers: {
+ 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+ 'Content-Type': 'application/x-www-form-urlencoded',
+ },
+ body: new URLSearchParams(fullData)
+ })
+ .then(response => response.json())
+ .then(data => {
+ if (data.success) {
+ // Mostrar mensaje de éxito temporal
+ showToast('success', data.message);
+ } else {
+ showToast('error', 'Error: ' + data.error);
+ }
+ })
+ .catch(error => {
+ console.error('Error:', error);
+ showToast('error', 'Error al actualizar la alerta');
+ });
 }
 
 function markAllAlerts(enable) {
-    const userId = document.getElementById('userSelect').value;
-    if (!userId) {
-        alert('Selecciona un usuario primero');
-        return;
-    }
-    const types = (window.currentAlertTypes || []).map(t => t[0]);
-    types.forEach(value => {
-        const checkbox = document.getElementById(`enabled_${value}`);
-        if (checkbox) {
-            checkbox.checked = enable;
-        }
-        // Enviar actualización completa para cada tipo
-        updateAlert(value, 'enabled', enable);
-    });
+ const userId = document.getElementById('userSelect').value;
+ if (!userId) {
+ alert('Selecciona un usuario primero');
+ return;
+ }
+ const types = (window.currentAlertTypes || []).map(t => t[0]);
+ types.forEach(value => {
+ const checkbox = document.getElementById(`enabled_${value}`);
+ if (checkbox) {
+ checkbox.checked = enable;
+ }
+ // Enviar actualización completa para cada tipo
+ updateAlert(value, 'enabled', enable);
+ });
 }
 
 function showToast(type, message) {
-    const toastContainer = document.getElementById('toastContainer') || createToastContainer();
-    
-    const toast = document.createElement('div');
-    toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0`;
-    toast.setAttribute('role', 'alert');
-    toast.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">${message}</div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-    `;
-    
-    toastContainer.appendChild(toast);
-    
-    const bsToast = new bootstrap.Toast(toast);
-    bsToast.show();
-    
-    // Remover el toast después de que se oculte
-    toast.addEventListener('hidden.bs.toast', () => {
-        toast.remove();
-    });
+ const toastContainer = document.getElementById('toastContainer') || createToastContainer();
+ 
+ const toast = document.createElement('div');
+ toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0`;
+ toast.setAttribute('role', 'alert');
+ toast.innerHTML = `
+ <div class="d-flex">
+ <div class="toast-body">${message}</div>
+ <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+ </div>
+ `;
+ 
+ toastContainer.appendChild(toast);
+ 
+ const bsToast = new bootstrap.Toast(toast);
+ bsToast.show();
+ 
+ // Remover el toast después de que se oculte
+ toast.addEventListener('hidden.bs.toast', () => {
+ toast.remove();
+ });
 }
 
 function createToastContainer() {
-    const container = document.createElement('div');
-    container.id = 'toastContainer';
-    container.className = 'toast-container position-fixed top-0 end-0 p-3';
-    container.style.zIndex = '9999';
-    document.body.appendChild(container);
-    return container;
+ const container = document.createElement('div');
+ container.id = 'toastContainer';
+ container.className = 'toast-container position-fixed top-0 end-0 p-3';
+ container.style.zIndex = '9999';
+ document.body.appendChild(container);
+ return container;
 }
 </script>
 {% endblock %}

@@ -7,6 +7,7 @@ urlpatterns = [
     path('', views.dashboard_view, name='dashboard'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
+    path('password-change/', views.password_change_view, name='password-change'),
     
     # Gestión de usuarios
     path('users/', views.user_management, name='user-management'),
@@ -157,5 +158,10 @@ urlpatterns = [
     # Configuración de Ollama
     path('settings/ollama/', views.ollama_config, name='ollama-config'),
     path('api/settings/ollama/save/', views.ollama_config_save, name='ollama-config-save'),
-]
 
+    # Configuracion LDAP
+    path('settings/ldap/', views.ldap_config_list, name='ldap-config-list'),
+    path('settings/ldap/create/', views.ldap_config_create, name='ldap-config-create'),
+    path('settings/ldap/edit/<int:config_id>/', views.ldap_config_edit, name='ldap-config-edit'),
+    path('settings/ldap/delete/<int:config_id>/', views.ldap_config_delete, name='ldap-config-delete'),
+]

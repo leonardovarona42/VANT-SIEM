@@ -1,4 +1,5 @@
 import argparse
+import socket
 import sys
 import time
 from pathlib import Path
@@ -39,9 +40,54 @@ def build_collectors(cfg):
     return collectors
 
 
+def _detect_host():
+    hostname = socket.gethostname()
+    ip = ""
+    try:
+        ip = socket.gethostbyname(hostname)
+    except Exception:
+        ip = ""
+    if ip.startswith("127.") or not ip:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                s.connect(("8.8.8.8", 80))
+                ip = s.getsockname()[0]
+        except Exception:
+            ip = ""
+    return hostname, ip
+
+
+def _ensure_host_fields(event, host_name, host_ip):
+    if not event.get("host_name"):
+        event["host_name"] = host_name
+    raw = event.get("raw_payload")
+    if raw is None or not isinstance(raw, dict):
+        raw = {}
+    if host_name and "host_name" not in raw:
+        raw["host_name"] = host_name
+    if host_ip and "host_ip" not in raw:
+        raw["host_ip"] = host_ip
+    event["raw_payload"] = raw
+    return event
+
+
 def run(config_path):
     cfg = load_cfg(config_path)
     agent_cfg = cfg.get("agent", {})
+    host_name, host_ip = _detect_host()
+    placeholder_hosts = {
+        "debian-host",
+        "ubuntu-host",
+        "windows-host-01",
+        "windows-server-ad",
+        "windows11-ids",
+        "zentyal-ad",
+    }
+    configured_host = (agent_cfg.get("host_name") or "").strip()
+    if (not configured_host) or (configured_host.lower() in placeholder_hosts):
+        agent_cfg["host_name"] = host_name
+    if host_ip and not agent_cfg.get("host_ip"):
+        agent_cfg["host_ip"] = host_ip
     out = OutputClient(cfg.get("output", {}))
     collectors = build_collectors(cfg)
     interval = int(agent_cfg.get("interval_seconds", 10))
@@ -55,7 +101,11 @@ def run(config_path):
                     "source_type": c.source_type,
                     "host_name": agent_cfg.get("host_name", ""),
                     "enabled": True,
-                    "meta": c.cfg,
+                    "meta": {
+                        **(c.cfg or {}),
+                        "host_name": agent_cfg.get("host_name", ""),
+                        "host_ip": agent_cfg.get("host_ip", ""),
+                    },
                 }
             )
         except Exception as exc:
@@ -65,10 +115,14 @@ def run(config_path):
         batch = []
         for collector in collectors:
             try:
-                batch.extend(collector.collect())
+                events = collector.collect()
+                for ev in events:
+                    _ensure_host_fields(ev, agent_cfg.get("host_name", ""), agent_cfg.get("host_ip", ""))
+                batch.extend(events)
             except Exception as exc:
                 batch.append(
-                    {
+                    _ensure_host_fields(
+                        {
                         "source_type": "agent",
                         "source_name": "agent-runtime",
                         "host_name": agent_cfg.get("host_name", ""),
@@ -78,7 +132,10 @@ def run(config_path):
                         "message": f"collector {collector.source_type} failed: {exc}",
                         "raw_payload": {},
                         "tags": ["agent", "error"],
-                    }
+                        },
+                        agent_cfg.get("host_name", ""),
+                        agent_cfg.get("host_ip", ""),
+                    )
                 )
         try:
             out.send_events(batch)

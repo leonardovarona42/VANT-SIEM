@@ -5,109 +5,109 @@
 <!-- Critical CSS for positioning (fallback) -->
 <style>
 #chatWidget {
-  position: fixed !important;
-  bottom: 20px !important;
-  right: 20px !important;
-  width: 350px !important;
-  height: 500px !important;
-  display: none !important;
-  z-index: 1050 !important;
-  background: #1a1a1a !important;
-  border: 1px solid #333 !important;
-  border-radius: 12px !important;
+ position: fixed !important;
+ bottom: 20px !important;
+ right: 20px !important;
+ width: 350px !important;
+ height: 500px !important;
+ display: none !important;
+ z-index: 1050 !important;
+ background: #1a1a1a !important;
+ border: 1px solid #333 !important;
+ border-radius: 12px !important;
 }
 
 #chatToggleBtn {
-  position: fixed !important;
-  bottom: 20px !important;
-  right: 20px !important;
-  width: 60px !important;
-  height: 60px !important;
-  border-radius: 50% !important;
-  display: flex !important;
-  z-index: 1049 !important;
+ position: fixed !important;
+ bottom: 20px !important;
+ right: 20px !important;
+ width: 60px !important;
+ height: 60px !important;
+ border-radius: 50% !important;
+ display: flex !important;
+ z-index: 1049 !important;
 }
 </style>
 
 <div id="chatWidget" class="chat-widget">
-  <div class="chat-header">
-    <div class="d-flex align-items-center">
-      <i class="fas fa-brain me-2 text-info"></i>
-      <span>VANT-AI</span>
-    </div>
-    <button
-      class="btn btn-sm btn-close-white chat-close-btn"
-      id="chatCloseBtn"
-      aria-label="Cerrar chat"
-      title="Cerrar chat"
-    >
-      <i class="fas fa-times"></i>
-    </button>
-  </div>
+ <div class="chat-header">
+ <div class="d-flex align-items-center">
+ <i class="fas fa-brain me-2 text-info"></i>
+ <span>VANT-AI</span>
+ </div>
+ <button
+ class="btn btn-sm btn-close-white chat-close-btn"
+ id="chatCloseBtn"
+ aria-label="Cerrar chat"
+ title="Cerrar chat"
+ >
+ <i class="fas fa-times"></i>
+ </button>
+ </div>
 
-  <div class="chat-messages" id="chatMessages">
-    <div class="message bot-message">
-      <div class="message-avatar"></div>
-      <div class="message-content">
-        <div class="message-text">
-          ¡Hola! Soy VANT-AI, tu asistente inteligente de ciberseguridad.
-          ¿En qué puedo ayudarte con el análisis de seguridad?
-        </div>
-        <div class="message-time">{{ now|date:"H:i" }}</div>
-      </div>
-    </div>
-  </div>
+ <div class="chat-messages" id="chatMessages">
+ <div class="message bot-message">
+ <div class="message-avatar"></div>
+ <div class="message-content">
+ <div class="message-text">
+ ¡Hola! Soy VANT-AI, tu asistente inteligente de ciberseguridad.
+ ¿En qué puedo ayudarte con el análisis de seguridad?
+ </div>
+ <div class="message-time">{{ now|date:"H:i" }}</div>
+ </div>
+ </div>
+ </div>
 
-  <div class="chat-input-area">
-    <div class="input-group">
-      <textarea
-        class="form-control"
-        id="chatInput"
-        placeholder="Escribe tu consulta..."
-        maxlength="{{ chat_config.max_message_length|default:1000 }}"
-        rows="1"
-        aria-label="Mensaje de chat"
-      ></textarea>
-      <button
-        class="btn btn-info"
-        onclick="chatWidget.sendMessage()"
-        id="sendButton"
-        disabled
-        aria-label="Enviar mensaje"
-      >
-        <i class="fas fa-paper-plane"></i>
-      </button>
-    </div>
-    <div class="input-hint">
-      <small class="text-muted">
-        <i class="fas fa-info-circle me-1"></i>
-        Presiona Enter para enviar, Shift+Enter para nueva línea
-      </small>
-    </div>
-  </div>
+ <div class="chat-input-area">
+ <div class="input-group">
+ <textarea
+ class="form-control"
+ id="chatInput"
+ placeholder="Escribe tu consulta..."
+ maxlength="{{ chat_config.max_message_length|default:1000 }}"
+ rows="1"
+ aria-label="Mensaje de chat"
+ ></textarea>
+ <button
+ class="btn btn-info"
+ onclick="chatWidget.sendMessage()"
+ id="sendButton"
+ disabled
+ aria-label="Enviar mensaje"
+ >
+ <i class="fas fa-paper-plane"></i>
+ </button>
+ </div>
+ <div class="input-hint">
+ <small class="text-muted">
+ <i class="fas fa-info-circle me-1"></i>
+ Presiona Enter para enviar, Shift+Enter para nueva línea
+ </small>
+ </div>
+ </div>
 
-  <div class="chat-status" id="chatStatus">
-    <small class="text-muted">
-      <i class="fas fa-circle text-success me-1"></i>
-      Conectado
-    </small>
-  </div>
+ <div class="chat-status" id="chatStatus">
+ <small class="text-muted">
+ <i class="fas fa-circle text-success me-1"></i>
+ Conectado
+ </small>
+ </div>
 </div>
 
 <!-- Botón flotante para abrir chat -->
 <button
-  class="chat-toggle-btn"
-  id="chatToggleBtn"
-  aria-label="Abrir chat con VANT-AI"
-  title="Abrir chat con VANT-AI"
+ class="chat-toggle-btn"
+ id="chatToggleBtn"
+ aria-label="Abrir chat con VANT-AI"
+ title="Abrir chat con VANT-AI"
 >
-  <span
-    class="notification-badge"
-    id="chatNotificationBadge"
-    style="display: none"
-    aria-label="Mensajes no leídos"
-    >0</span
-  >
+ <span
+ class="notification-badge"
+ id="chatNotificationBadge"
+ style="display: none"
+ aria-label="Mensajes no leídos"
+ >0</span
+ >
 </button>
 
 <script src="{% static 'js/chat-widget.js' %}"></script>

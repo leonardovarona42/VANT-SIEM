@@ -2,27 +2,27 @@
 {% load static %}
 {% block content %}
 <div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-10">
-            <div class="card bg-secondary">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="text-info mb-0"><i class="fas fa-network-wired me-2"></i>Análisis de IP (AbuseIPDB)</h3>
-                    <a href="{% url 'dashboard' %}" class="btn btn-outline-light btn-sm"><i class="fas fa-home me-1"></i>Dashboard</a>
-                </div>
-                <div class="card-body">
-                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                    <div class="input-group mb-3">
-                        <input id="ipInput" type="text" class="form-control" placeholder="8.8.8.8">
-                        <button class="btn btn-primary" onclick="runIP()"><i class="fas fa-search me-1"></i>Analizar</button>
-                        <button class="btn btn-outline-light" onclick="toggleRaw()"><i class="fas fa-code me-1"></i>Raw JSON</button>
-                        <button class="btn btn-success" onclick="saveLocalAbuse()"><i class="fas fa-save me-1"></i>Guardar</button>
-                    </div>
-                    <div id="niceResult" class="table-responsive mb-3" style="display:none;"></div>
-                    <pre class="bg-dark text-light p-2 small" id="ipResult" style="min-height: 260px; display:none;">Resultado aquí…</pre>
-                </div>
-            </div>
-        </div>
-    </div>
+ <div class="row justify-content-center">
+ <div class="col-md-10">
+ <div class="card bg-secondary">
+ <div class="card-header d-flex justify-content-between align-items-center">
+ <h3 class="text-info mb-0"><i class="fas fa-network-wired me-2"></i>Análisis de IP (AbuseIPDB)</h3>
+ <a href="{% url 'dashboard' %}" class="btn btn-outline-light btn-sm"><i class="fas fa-home me-1"></i>Dashboard</a>
+ </div>
+ <div class="card-body">
+ <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+ <div class="input-group mb-3">
+ <input id="ipInput" type="text" class="form-control" placeholder="8.8.8.8">
+ <button class="btn btn-primary" onclick="runIP()"><i class="fas fa-search me-1"></i>Analizar</button>
+ <button class="btn btn-outline-light" onclick="toggleRaw()"><i class="fas fa-code me-1"></i>Raw JSON</button>
+ <button class="btn btn-success" onclick="saveLocalAbuse()"><i class="fas fa-save me-1"></i>Guardar</button>
+ </div>
+ <div id="niceResult" class="table-responsive mb-3" style="display:none;"></div>
+ <pre class="bg-dark text-light p-2 small" id="ipResult" style="min-height: 260px; display:none;">Resultado aquí…</pre>
+ </div>
+ </div>
+ </div>
+ </div>
 </div>
 <script>
 let lastAbuse = null; let lastAbuseStatus = 200;
@@ -31,70 +31,70 @@ function esc(s){ return (s==null?'-':String(s)).replace(/[&<>]/g, c=>({'&':'&amp
 function kvRow(k,v){ return `<tr><th class="text-info" style="width:260px;">${esc(k)}</th><td>${v}</td></tr>`; }
 function badge(label,cls){ return `<span class="badge bg-${cls}">${esc(label)}</span>`; }
 function buildNiceTable(payload){
-  try{
-    const d = (payload && payload.data) || {};
-    const rows = [];
-    rows.push(kvRow('IP', esc(d.ipAddress||'-')));
-    rows.push(kvRow('Pública', d.isPublic? badge('Sí','success'):badge('No','secondary')));
-    rows.push(kvRow('Whitelist', d.isWhitelisted? badge('Sí','info'):badge('No','secondary')));
-    rows.push(kvRow('Versión', esc(d.ipVersion||'-')));
-    rows.push(kvRow('Score de Abuso', `<strong>${esc(d.abuseConfidenceScore??0)}</strong>`));
-    rows.push(kvRow('País', esc(d.countryCode||'-')));
-    rows.push(kvRow('Uso', esc(d.usageType||'-')));
-    rows.push(kvRow('ISP', esc(d.isp||'-')));
-    rows.push(kvRow('Dominio', esc(d.domain||'-')));
-    rows.push(kvRow('Hostnames', (d.hostnames&&d.hostnames.length)? `<ul class="m-0">${d.hostnames.map(h=>`<li class="small">${esc(h)}</li>`).join('')}</ul>` : '-'));
-    rows.push(kvRow('TOR', d.isTor? badge('Sí','warning'):badge('No','secondary')));
-    rows.push(kvRow('Reportes Totales', esc(d.totalReports||0)));
-    rows.push(kvRow('Usuarios Únicos', esc(d.numDistinctUsers||0)));
-    rows.push(kvRow('Último Reporte', esc(d.lastReportedAt||'-')));
-    const html = `<table class="table table-dark table-striped align-middle">${rows.join('')}</table>`;
-    return html;
-  }catch(e){
-    return `<div class="alert alert-danger">Error formateando resultado: ${esc(e.message||e)}</div>`;
-  }
+ try{
+ const d = (payload && payload.data) || {};
+ const rows = [];
+ rows.push(kvRow('IP', esc(d.ipAddress||'-')));
+ rows.push(kvRow('Pública', d.isPublic? badge('Sí','success'):badge('No','secondary')));
+ rows.push(kvRow('Whitelist', d.isWhitelisted? badge('Sí','info'):badge('No','secondary')));
+ rows.push(kvRow('Versión', esc(d.ipVersion||'-')));
+ rows.push(kvRow('Score de Abuso', `<strong>${esc(d.abuseConfidenceScore??0)}</strong>`));
+ rows.push(kvRow('País', esc(d.countryCode||'-')));
+ rows.push(kvRow('Uso', esc(d.usageType||'-')));
+ rows.push(kvRow('ISP', esc(d.isp||'-')));
+ rows.push(kvRow('Dominio', esc(d.domain||'-')));
+ rows.push(kvRow('Hostnames', (d.hostnames&&d.hostnames.length)? `<ul class="m-0">${d.hostnames.map(h=>`<li class="small">${esc(h)}</li>`).join('')}</ul>` : '-'));
+ rows.push(kvRow('TOR', d.isTor? badge('Sí','warning'):badge('No','secondary')));
+ rows.push(kvRow('Reportes Totales', esc(d.totalReports||0)));
+ rows.push(kvRow('Usuarios Únicos', esc(d.numDistinctUsers||0)));
+ rows.push(kvRow('Último Reporte', esc(d.lastReportedAt||'-')));
+ const html = `<table class="table table-dark table-striped align-middle">${rows.join('')}</table>`;
+ return html;
+ }catch(e){
+ return `<div class="alert alert-danger">Error formateando resultado: ${esc(e.message||e)}</div>`;
+ }
 }
 function toggleRaw(){
-  const pre = document.getElementById('ipResult');
-  const nice = document.getElementById('niceResult');
-  const showPre = pre.style.display==='none';
-  pre.style.display = showPre? 'block':'none';
-  nice.style.display = showPre? 'none':'block';
+ const pre = document.getElementById('ipResult');
+ const nice = document.getElementById('niceResult');
+ const showPre = pre.style.display==='none';
+ pre.style.display = showPre? 'block':'none';
+ nice.style.display = showPre? 'none':'block';
 }
 async function runIP(){
-  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-  const ip = document.getElementById('ipInput').value.trim();
-  const res = await fetch('{% url "analyze-ip" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}, body: new URLSearchParams({ip})});
-  lastAbuseStatus = res.status;
-  const data = await res.json();
-  const pre = document.getElementById('ipResult');
-  const nice = document.getElementById('niceResult');
-  if (data.success){
-    lastAbuse = data.data;
-    pre.textContent = j(data.data);
-    nice.innerHTML = buildNiceTable(data.data);
-    nice.style.display = 'block';
-    pre.style.display = 'none';
-  } else {
-    lastAbuse = null;
-    pre.textContent = `Error: ${data.error}`;
-    pre.style.display = 'block';
-    nice.style.display = 'none';
-  }
+ const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+ const ip = document.getElementById('ipInput').value.trim();
+ const res = await fetch('{% url "analyze-ip" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}, body: new URLSearchParams({ip})});
+ lastAbuseStatus = res.status;
+ const data = await res.json();
+ const pre = document.getElementById('ipResult');
+ const nice = document.getElementById('niceResult');
+ if (data.success){
+ lastAbuse = data.data;
+ pre.textContent = j(data.data);
+ nice.innerHTML = buildNiceTable(data.data);
+ nice.style.display = 'block';
+ pre.style.display = 'none';
+ } else {
+ lastAbuse = null;
+ pre.textContent = `Error: ${data.error}`;
+ pre.style.display = 'block';
+ nice.style.display = 'none';
+ }
 }
 async function saveLocalAbuse(){
-  if (!lastAbuse){ alert('No hay datos para guardar'); return; }
-  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-  const ip = document.getElementById('ipInput').value.trim();
-  const body = new URLSearchParams({
-    ip,
-    data: JSON.stringify(lastAbuse),
-    status_code: String(lastAbuseStatus),
-    csrfmiddlewaretoken: csrftoken,
-  });
-  const res = await fetch('{% url "save-abuseipdb-record" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken, 'X-Requested-With':'XMLHttpRequest'}, body});
-  const payload = await res.json();
-  alert(payload.success? 'Guardado en histórico' : ('Error: '+(payload.error||'falló')));
+ if (!lastAbuse){ alert('No hay datos para guardar'); return; }
+ const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+ const ip = document.getElementById('ipInput').value.trim();
+ const body = new URLSearchParams({
+ ip,
+ data: JSON.stringify(lastAbuse),
+ status_code: String(lastAbuseStatus),
+ csrfmiddlewaretoken: csrftoken,
+ });
+ const res = await fetch('{% url "save-abuseipdb-record" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken, 'X-Requested-With':'XMLHttpRequest'}, body});
+ const payload = await res.json();
+ alert(payload.success? 'Guardado en histórico' : ('Error: '+(payload.error||'falló')));
 }
 </script>
 {% endblock %}

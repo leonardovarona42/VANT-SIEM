@@ -22,7 +22,7 @@
                             <label for="area" class="form-label">Área</label>
                             <select name="area" id="area" class="form-control" required>
                                 {% for area in areas %}
-                                    <option value="{{ area.id }}" {% if form.area.value == area.id|stringformat:"s" %}selected{% endif %}>{{ area.nombre }}</option>
+                                    <option value="{{ area.id }}" {% if form.area.value|stringformat:"s" == area.id|stringformat:"s" %}selected{% endif %}>{{ area.nombre }}</option>
                                 {% endfor %}
                             </select>
                         </div>

@@ -28,7 +28,7 @@
                         <select name="incidente" id="incidente" class="form-select" required>
                             <option disabled selected>Seleccione un incidente...</option>
                             {% for incidente in form.incidente.field.queryset %}
-                                <option value="{{ incidente.id }}" {% if form.incidente.value == incidente.id|stringformat:"s" %}selected{% endif %}>{{ incidente.nombre_incidente }} ({{ incidente.codigo_incidente }})</option>
+                                <option value="{{ incidente.id }}" {% if form.incidente.value|stringformat:"s" == incidente.id|stringformat:"s" %}selected{% endif %}>{{ incidente.nombre_incidente }} ({{ incidente.codigo_incidente }})</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -38,7 +38,7 @@
                             <select name="medida" id="medida" class="form-select" required>
                                 <option disabled selected>Seleccione una medida...</option>
                                 {% for medida in form.medida.field.queryset %}
-                                    <option value="{{ medida.id }}" {% if form.medida.value == medida.id|stringformat:"s" %}selected{% endif %}>{{ medida.nombre }}</option>
+                                    <option value="{{ medida.id }}" {% if form.medida.value|stringformat:"s" == medida.id|stringformat:"s" %}selected{% endif %}>{{ medida.nombre }}</option>
                                 {% endfor %}
                             </select>
                             <button type="button" class="btn btn-outline-success fw-bold" data-bs-toggle="modal" data-bs-target="#crearMedidaModal" data-target="medida" title="Crear nueva medida">
@@ -52,7 +52,7 @@
                             <select name="responsable" id="responsable" class="form-select" required>
                                 <option disabled selected>Seleccione un responsable...</option>
                                 {% for responsable in form.responsable.field.queryset %}
-                                    <option value="{{ responsable.id }}" {% if form.responsable.value == responsable.id|stringformat:"s" %}selected{% endif %}>{{ responsable.nombres }} {{ responsable.apellidos }}</option>
+                                    <option value="{{ responsable.id }}" {% if form.responsable.value|stringformat:"s" == responsable.id|stringformat:"s" %}selected{% endif %}>{{ responsable.nombres }} {{ responsable.apellidos }}</option>
                                 {% endfor %}
                             </select>
                             <button type="button" class="btn btn-outline-success fw-bold" data-bs-toggle="modal" data-bs-target="#crearResponsableModal" data-target="responsable" title="Crear nuevo responsable">

@@ -2,27 +2,27 @@
 {% load static %}
 {% block content %}
 <div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card bg-secondary">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h3 class="text-info mb-0"><i class="fas fa-microchip me-2"></i>Análisis de MAC (MacVendors)</h3>
-                    <a href="{% url 'dashboard' %}" class="btn btn-outline-light btn-sm"><i class="fas fa-home me-1"></i>Dashboard</a>
-                </div>
-                <div class="card-body">
-                    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-                    <div class="input-group mb-3">
-                        <input id="macInput" type="text" class="form-control" placeholder="44:38:39:ff:ef:57">
-                        <button class="btn btn-primary" onclick="runMAC()"><i class="fas fa-search me-1"></i>Analizar</button>
-                        <button class="btn btn-outline-light" onclick="toggleRaw()"><i class="fas fa-code me-1"></i>Raw JSON</button>
-                        <button class="btn btn-success" onclick="saveLocalMAC()"><i class="fas fa-save me-1"></i>Guardar</button>
-                    </div>
-                    <div id="niceResult" class="table-responsive mb-3" style="display:none;"></div>
-                    <pre class="bg-dark text-light p-2 small" id="macResult" style="min-height: 200px; display:none;">Resultado aquí…</pre>
-                </div>
-            </div>
-        </div>
-    </div>
+ <div class="row justify-content-center">
+ <div class="col-md-8">
+ <div class="card bg-secondary">
+ <div class="card-header d-flex justify-content-between align-items-center">
+ <h3 class="text-info mb-0"><i class="fas fa-microchip me-2"></i>Análisis de MAC (MacVendors)</h3>
+ <a href="{% url 'dashboard' %}" class="btn btn-outline-light btn-sm"><i class="fas fa-home me-1"></i>Dashboard</a>
+ </div>
+ <div class="card-body">
+ <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+ <div class="input-group mb-3">
+ <input id="macInput" type="text" class="form-control" placeholder="44:38:39:ff:ef:57">
+ <button class="btn btn-primary" onclick="runMAC()"><i class="fas fa-search me-1"></i>Analizar</button>
+ <button class="btn btn-outline-light" onclick="toggleRaw()"><i class="fas fa-code me-1"></i>Raw JSON</button>
+ <button class="btn btn-success" onclick="saveLocalMAC()"><i class="fas fa-save me-1"></i>Guardar</button>
+ </div>
+ <div id="niceResult" class="table-responsive mb-3" style="display:none;"></div>
+ <pre class="bg-dark text-light p-2 small" id="macResult" style="min-height: 200px; display:none;">Resultado aquí…</pre>
+ </div>
+ </div>
+ </div>
+ </div>
 </div>
 <script>
 let lastMAC = null; let lastMACStatus = 200;
@@ -30,59 +30,59 @@ function j(v){return JSON.stringify(v, null, 2)}
 function esc(s){ return (s==null?'-':String(s)).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
 function kvRow(k,v){ return `<tr><th class="text-info" style="width:220px;">${esc(k)}</th><td>${v}</td></tr>`; }
 function buildNiceTable(payload){
-  try{
-    const d = (payload && payload.data) || payload || {};
-    const rows = [];
-    rows.push(kvRow('MAC', esc(document.getElementById('macInput').value.trim()||'-')));
-    rows.push(kvRow('Fabricante', `<strong>${esc(d.vendor||'-')}</strong>`));
-    return `<table class="table table-dark table-striped align-middle">${rows.join('')}</table>`;
-  }catch(e){
-    return `<div class="alert alert-danger">Error formateando resultado: ${esc(e.message||e)}</div>`;
-  }
+ try{
+ const d = (payload && payload.data) || payload || {};
+ const rows = [];
+ rows.push(kvRow('MAC', esc(document.getElementById('macInput').value.trim()||'-')));
+ rows.push(kvRow('Fabricante', `<strong>${esc(d.vendor||'-')}</strong>`));
+ return `<table class="table table-dark table-striped align-middle">${rows.join('')}</table>`;
+ }catch(e){
+ return `<div class="alert alert-danger">Error formateando resultado: ${esc(e.message||e)}</div>`;
+ }
 }
 function toggleRaw(){
-  const pre = document.getElementById('macResult');
-  const nice = document.getElementById('niceResult');
-  const showPre = pre.style.display==='none';
-  pre.style.display = showPre? 'block':'none';
-  nice.style.display = showPre? 'none':'block';
+ const pre = document.getElementById('macResult');
+ const nice = document.getElementById('niceResult');
+ const showPre = pre.style.display==='none';
+ pre.style.display = showPre? 'block':'none';
+ nice.style.display = showPre? 'none':'block';
 }
 async function runMAC(){
-  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-  const mac = document.getElementById('macInput').value.trim();
-  const res = await fetch('{% url "analyze-mac" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}, body: new URLSearchParams({mac})});
-  lastMACStatus = res.status;
-  const data = await res.json();
-  const pre = document.getElementById('macResult');
-  const nice = document.getElementById('niceResult');
-  if (data.success){
-    lastMAC = data.data;
-    pre.textContent = j(data.data);
-    nice.innerHTML = buildNiceTable(data.data);
-    nice.style.display = 'block';
-    pre.style.display = 'none';
-  } else {
-    lastMAC = null;
-    pre.textContent = `Error: ${data.error}`;
-    pre.style.display = 'block';
-    nice.style.display = 'none';
-  }
+ const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+ const mac = document.getElementById('macInput').value.trim();
+ const res = await fetch('{% url "analyze-mac" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}, body: new URLSearchParams({mac})});
+ lastMACStatus = res.status;
+ const data = await res.json();
+ const pre = document.getElementById('macResult');
+ const nice = document.getElementById('niceResult');
+ if (data.success){
+ lastMAC = data.data;
+ pre.textContent = j(data.data);
+ nice.innerHTML = buildNiceTable(data.data);
+ nice.style.display = 'block';
+ pre.style.display = 'none';
+ } else {
+ lastMAC = null;
+ pre.textContent = `Error: ${data.error}`;
+ pre.style.display = 'block';
+ nice.style.display = 'none';
+ }
 }
 async function saveLocalMAC(){
-  if (!lastMAC){ alert('No hay datos para guardar'); return; }
-  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-  const mac = document.getElementById('macInput').value.trim();
-  const vendor = (lastMAC && lastMAC.vendor) || '';
-  const body = new URLSearchParams({
-    mac,
-    vendor,
-    data: JSON.stringify(lastMAC),
-    status_code: String(lastMACStatus),
-    csrfmiddlewaretoken: csrftoken,
-  });
-  const res = await fetch('{% url "save-macvendors-record" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken, 'X-Requested-With':'XMLHttpRequest'}, body});
-  const payload = await res.json();
-  alert(payload.success? 'Guardado en histórico' : ('Error: '+(payload.error||'falló')));
+ if (!lastMAC){ alert('No hay datos para guardar'); return; }
+ const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+ const mac = document.getElementById('macInput').value.trim();
+ const vendor = (lastMAC && lastMAC.vendor) || '';
+ const body = new URLSearchParams({
+ mac,
+ vendor,
+ data: JSON.stringify(lastMAC),
+ status_code: String(lastMACStatus),
+ csrfmiddlewaretoken: csrftoken,
+ });
+ const res = await fetch('{% url "save-macvendors-record" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken, 'X-Requested-With':'XMLHttpRequest'}, body});
+ const payload = await res.json();
+ alert(payload.success? 'Guardado en histórico' : ('Error: '+(payload.error||'falló')));
 }
 </script>
 {% endblock %}

@@ -3,201 +3,201 @@
 
 {% block content %}
 <div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="text-info">
-                    <i class="fas fa-users me-2"></i>Gestión de Usuarios
-                </h2>
-                <a href="{% url 'create-user-request' %}" class="btn btn-success">
-                    <i class="fas fa-plus me-2"></i>Crear Usuario
-                </a>
-            </div>
+ <div class="row">
+ <div class="col-12">
+ <div class="d-flex justify-content-between align-items-center mb-4">
+ <h2 class="text-info">
+ <i class="fas fa-users me-2"></i>Gestión de Usuarios
+ </h2>
+ <a href="{% url 'create-user-request' %}" class="btn btn-success">
+ <i class="fas fa-plus me-2"></i>Crear Usuario
+ </a>
+ </div>
 
-            <!-- Pestañas -->
-            <ul class="nav nav-tabs" id="userTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab">
-                        <i class="fas fa-users me-2"></i>Usuarios Activos
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="requests-tab" data-bs-toggle="tab" data-bs-target="#requests" type="button" role="tab">
-                        <i class="fas fa-clock me-2"></i>Solicitudes Pendientes
-                        {% if pending_requests.count > 0 %}
-                            <span class="badge bg-warning ms-2">{{ pending_requests.count }}</span>
-                        {% endif %}
-                    </button>
-                </li>
-            </ul>
+ <!-- Pestañas -->
+ <ul class="nav nav-tabs" id="userTabs" role="tablist">
+ <li class="nav-item" role="presentation">
+ <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab">
+ <i class="fas fa-users me-2"></i>Usuarios Activos
+ </button>
+ </li>
+ <li class="nav-item" role="presentation">
+ <button class="nav-link" id="requests-tab" data-bs-toggle="tab" data-bs-target="#requests" type="button" role="tab">
+ <i class="fas fa-clock me-2"></i>Solicitudes Pendientes
+ {% if pending_requests.count > 0 %}
+ <span class="badge bg-warning ms-2">{{ pending_requests.count }}</span>
+ {% endif %}
+ </button>
+ </li>
+ </ul>
 
-            <div class="tab-content" id="userTabsContent">
-                <!-- Tab de Usuarios Activos -->
-                <div class="tab-pane fade show active" id="users" role="tabpanel">
-                    <div class="card bg-secondary mt-3">
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-dark table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>Usuario</th>
-                                            <th>Email</th>
-                                            <th>Nombre Completo</th>
-                                            <th>Staff</th>
-                                            <th>Superusuario</th>
-                                            <th>Último Acceso</th>
-                                            <th>Fecha Registro</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for user in users %}
-                                        <tr>
-                                            <td>
-                                                <strong>{{ user.username }}</strong>
-                                            </td>
-                                            <td>{{ user.email }}</td>
-                                            <td>{{ user.first_name }} {{ user.last_name }}</td>
-                                            <td>
-                                                {% if user.is_staff %}
-                                                    <span class="badge bg-success">Sí</span>
-                                                {% else %}
-                                                    <span class="badge bg-secondary">No</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                {% if user.is_superuser %}
-                                                    <span class="badge bg-danger">Sí</span>
-                                                {% else %}
-                                                    <span class="badge bg-secondary">No</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                {% if user.last_login %}
-                                                    {{ user.last_login|date:"d/m/Y H:i" }}
-                                                {% else %}
-                                                    <span class="text-muted">Nunca</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>{{ user.date_joined|date:"d/m/Y H:i" }}</td>
-                                            <td>
-                                                <a href="{% url 'user-permissions' user.id %}" class="btn btn-sm btn-info" title="Gestionar Permisos">
-                                                    <i class="fas fa-cog"></i>
-                                                </a>
-                                            </td>
-                                        </tr>
-                                        {% empty %}
-                                        <tr>
-                                            <td colspan="8" class="text-center text-muted">No hay usuarios registrados</td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+ <div class="tab-content" id="userTabsContent">
+ <!-- Tab de Usuarios Activos -->
+ <div class="tab-pane fade show active" id="users" role="tabpanel">
+ <div class="card bg-secondary mt-3">
+ <div class="card-body">
+ <div class="table-responsive">
+ <table class="table table-dark table-hover">
+ <thead>
+ <tr>
+ <th>Usuario</th>
+ <th>Email</th>
+ <th>Nombre Completo</th>
+ <th>Staff</th>
+ <th>Superusuario</th>
+ <th>Último Acceso</th>
+ <th>Fecha Registro</th>
+ <th>Acciones</th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for user in users %}
+ <tr>
+ <td>
+ <strong>{{ user.username }}</strong>
+ </td>
+ <td>{{ user.email }}</td>
+ <td>{{ user.first_name }} {{ user.last_name }}</td>
+ <td>
+ {% if user.is_staff %}
+ <span class="badge bg-success">Sí</span>
+ {% else %}
+ <span class="badge bg-secondary">No</span>
+ {% endif %}
+ </td>
+ <td>
+ {% if user.is_superuser %}
+ <span class="badge bg-danger">Sí</span>
+ {% else %}
+ <span class="badge bg-secondary">No</span>
+ {% endif %}
+ </td>
+ <td>
+ {% if user.last_login %}
+ {{ user.last_login|date:"d/m/Y H:i" }}
+ {% else %}
+ <span class="text-muted">Nunca</span>
+ {% endif %}
+ </td>
+ <td>{{ user.date_joined|date:"d/m/Y H:i" }}</td>
+ <td>
+ <a href="{% url 'user-permissions' user.id %}" class="btn btn-sm btn-info" title="Gestionar Permisos">
+ <i class="fas fa-cog"></i>
+ </a>
+ </td>
+ </tr>
+ {% empty %}
+ <tr>
+ <td colspan="8" class="text-center text-muted">No hay usuarios registrados</td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+ </div>
 
-                <!-- Tab de Solicitudes Pendientes -->
-                <div class="tab-pane fade" id="requests" role="tabpanel">
-                    <div class="card bg-secondary mt-3">
-                        <div class="card-body">
-                            {% if pending_requests %}
-                                <div class="table-responsive">
-                                    <table class="table table-dark table-hover">
-                                        <thead>
-                                            <tr>
-                                                <th>Solicitante</th>
-                                                <th>Usuario Solicitado</th>
-                                                <th>Email</th>
-                                                <th>Nombre Completo</th>
-                                                <th>Permisos Solicitados</th>
-                                                <th>Fecha Solicitud</th>
-                                                <th>Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for request in pending_requests %}
-                                            <tr>
-                                                <td>
-                                                    <strong>{{ request.requested_by.username }}</strong>
-                                                </td>
-                                                <td>
-                                                    <strong>{{ request.username }}</strong>
-                                                </td>
-                                                <td>{{ request.email }}</td>
-                                                <td>{{ request.first_name }} {{ request.last_name }}</td>
-                                                <td>
-                                                    {% if request.details.requested_permissions %}
-                                                        <div class="d-flex flex-wrap gap-1">
-                                                            {% for perm in request.details.requested_permissions %}
-                                                                <span class="badge bg-info">{{ perm|title }}</span>
-                                                            {% endfor %}
-                                                        </div>
-                                                    {% else %}
-                                                        <span class="badge bg-secondary">Sin permisos específicos</span>
-                                                    {% endif %}
-                                                </td>
-                                                <td>{{ request.created_at|date:"d/m/Y H:i" }}</td>
-                                                <td>
-                                                    <div class="btn-group" role="group">
-                                                        <form method="post" action="{% url 'approve-user-request' request.id %}" class="d-inline">
-                                                            {% csrf_token %}
-                                                            <button type="submit" class="btn btn-sm btn-success" title="Aprobar Usuario">
-                                                                <i class="fas fa-check"></i>
-                                                            </button>
-                                                        </form>
-                                                        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal{{ request.id }}" title="Rechazar Usuario">
-                                                            <i class="fas fa-times"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            {% else %}
-                                <div class="text-center text-muted py-4">
-                                    <i class="fas fa-inbox fa-3x mb-3"></i>
-                                    <p>No hay solicitudes pendientes</p>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+ <!-- Tab de Solicitudes Pendientes -->
+ <div class="tab-pane fade" id="requests" role="tabpanel">
+ <div class="card bg-secondary mt-3">
+ <div class="card-body">
+ {% if pending_requests %}
+ <div class="table-responsive">
+ <table class="table table-dark table-hover">
+ <thead>
+ <tr>
+ <th>Solicitante</th>
+ <th>Usuario Solicitado</th>
+ <th>Email</th>
+ <th>Nombre Completo</th>
+ <th>Permisos Solicitados</th>
+ <th>Fecha Solicitud</th>
+ <th>Acciones</th>
+ </tr>
+ </thead>
+ <tbody>
+ {% for request in pending_requests %}
+ <tr>
+ <td>
+ <strong>{{ request.requested_by.username }}</strong>
+ </td>
+ <td>
+ <strong>{{ request.username }}</strong>
+ </td>
+ <td>{{ request.email }}</td>
+ <td>{{ request.first_name }} {{ request.last_name }}</td>
+ <td>
+ {% if request.details.requested_permissions %}
+ <div class="d-flex flex-wrap gap-1">
+ {% for perm in request.details.requested_permissions %}
+ <span class="badge bg-info">{{ perm|title }}</span>
+ {% endfor %}
+ </div>
+ {% else %}
+ <span class="badge bg-secondary">Sin permisos específicos</span>
+ {% endif %}
+ </td>
+ <td>{{ request.created_at|date:"d/m/Y H:i" }}</td>
+ <td>
+ <div class="btn-group" role="group">
+ <form method="post" action="{% url 'approve-user-request' request.id %}" class="d-inline">
+ {% csrf_token %}
+ <button type="submit" class="btn btn-sm btn-success" title="Aprobar Usuario">
+ <i class="fas fa-check"></i>
+ </button>
+ </form>
+ <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal{{ request.id }}" title="Rechazar Usuario">
+ <i class="fas fa-times"></i>
+ </button>
+ </div>
+ </td>
+ </tr>
+ {% endfor %}
+ </tbody>
+ </table>
+ </div>
+ {% else %}
+ <div class="text-center text-muted py-4">
+ <i class="fas fa-inbox fa-3x mb-3"></i>
+ <p>No hay solicitudes pendientes</p>
+ </div>
+ {% endif %}
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
 </div>
 
 <!-- Modales de Rechazo -->
 {% for request in pending_requests %}
 <div class="modal fade" id="rejectModal{{ request.id }}" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content bg-dark">
-            <div class="modal-header">
-                <h5 class="modal-title text-danger">
-                    <i class="fas fa-exclamation-triangle me-2"></i>Rechazar Usuario
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form method="post" action="{% url 'reject-user-request' request.id %}">
-                {% csrf_token %}
-                <div class="modal-body">
-                    <p>¿Estás seguro de que deseas rechazar la solicitud de usuario <strong>{{ request.username }}</strong>?</p>
-                    <div class="mb-3">
-                        <label for="reason{{ request.id }}" class="form-label">Motivo del rechazo (opcional):</label>
-                        <textarea class="form-control" id="reason{{ request.id }}" name="reason" rows="3" placeholder="Explica el motivo del rechazo..."></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-danger">Rechazar Usuario</button>
-                </div>
-            </form>
-        </div>
-    </div>
+ <div class="modal-dialog">
+ <div class="modal-content bg-dark">
+ <div class="modal-header">
+ <h5 class="modal-title text-danger">
+ <i class="fas fa-exclamation-triangle me-2"></i>Rechazar Usuario
+ </h5>
+ <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+ </div>
+ <form method="post" action="{% url 'reject-user-request' request.id %}">
+ {% csrf_token %}
+ <div class="modal-body">
+ <p>¿Estás seguro de que deseas rechazar la solicitud de usuario <strong>{{ request.username }}</strong>?</p>
+ <div class="mb-3">
+ <label for="reason{{ request.id }}" class="form-label">Motivo del rechazo (opcional):</label>
+ <textarea class="form-control" id="reason{{ request.id }}" name="reason" rows="3" placeholder="Explica el motivo del rechazo..."></textarea>
+ </div>
+ </div>
+ <div class="modal-footer">
+ <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+ <button type="submit" class="btn btn-danger">Rechazar Usuario</button>
+ </div>
+ </form>
+ </div>
+ </div>
 </div>
 {% endfor %}
 {% endblock %}

@@ -3,108 +3,108 @@
 
 {% block content %}
 <div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="text-info">
-                    <i class="fas fa-bell me-2"></i>Notificaciones
-                </h2>
-                <div>
-                    <button class="btn btn-outline-light me-2" onclick="markAllAsRead()">
-                        <i class="fas fa-check-double me-2"></i>Marcar Todas como Leídas
-                    </button>
-                    <a href="{% url 'dashboard' %}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard
-                    </a>
-                </div>
-            </div>
+ <div class="row">
+ <div class="col-12">
+ <div class="d-flex justify-content-between align-items-center mb-4">
+ <h2 class="text-info">
+ <i class="fas fa-bell me-2"></i>Notificaciones
+ </h2>
+ <div>
+ <button class="btn btn-outline-light me-2" onclick="markAllAsRead()">
+ <i class="fas fa-check-double me-2"></i>Marcar Todas como Leídas
+ </button>
+ <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+ <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard
+ </a>
+ </div>
+ </div>
 
-            <div class="card bg-secondary">
-                <div class="card-body">
-                    {% if notifications %}
-                        <div class="list-group">
-                            {% for notification in notifications %}
-                            <div class="list-group-item list-group-item-action bg-dark border-secondary {% if not notification.is_read %}border-start border-4 border-warning{% endif %}" 
-                                 onclick="markAsRead({{ notification.id }})">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <div class="flex-grow-1">
-                                        <h5 class="mb-1 {% if not notification.is_read %}text-warning{% else %}text-light{% endif %}">
-                                            <i class="fas fa-{% if notification.event_type == 'USER_CREATE_REQUEST' %}user-plus{% elif notification.event_type == 'USER_APPROVAL_REQUEST' %}user-check{% elif notification.event_type == 'CRITICAL_OPERATION' %}exclamation-triangle{% elif notification.event_type == 'SYSTEM_ALERT' %}bell{% elif notification.event_type == 'SECURITY_EVENT' %}shield-alt{% else %}info-circle{% endif %} me-2"></i>
-                                            {{ notification.title }}
-                                        </h5>
-                                        <p class="mb-1 text-light">{{ notification.message }}</p>
-                                        <small class="text-muted">
-                                            <i class="fas fa-clock me-1"></i>
-                                            {{ notification.created_at|date:"d/m/Y H:i:s" }}
-                                            {% if notification.is_read and notification.read_at %}
-                                                | <i class="fas fa-check me-1"></i>Leída: {{ notification.read_at|date:"d/m/Y H:i:s" }}
-                                            {% endif %}
-                                        </small>
-                                    </div>
-                                    <div class="ms-3">
-                                        {% if not notification.is_read %}
-                                            <span class="badge bg-warning">Nueva</span>
-                                        {% endif %}
-                                        <span class="badge bg-info">{{ notification.get_event_type_display }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="text-center text-muted py-5">
-                            <i class="fas fa-bell-slash fa-4x mb-3"></i>
-                            <h4>No hay notificaciones</h4>
-                            <p>No tienes notificaciones pendientes en este momento.</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
+ <div class="card bg-secondary">
+ <div class="card-body">
+ {% if notifications %}
+ <div class="list-group">
+ {% for notification in notifications %}
+ <div class="list-group-item list-group-item-action bg-dark border-secondary {% if not notification.is_read %}border-start border-4 border-warning{% endif %}" 
+ onclick="markAsRead({{ notification.id }})">
+ <div class="d-flex w-100 justify-content-between">
+ <div class="flex-grow-1">
+ <h5 class="mb-1 {% if not notification.is_read %}text-warning{% else %}text-light{% endif %}">
+ <i class="fas fa-{% if notification.event_type == 'USER_CREATE_REQUEST' %}user-plus{% elif notification.event_type == 'USER_APPROVAL_REQUEST' %}user-check{% elif notification.event_type == 'CRITICAL_OPERATION' %}exclamation-triangle{% elif notification.event_type == 'SYSTEM_ALERT' %}bell{% elif notification.event_type == 'SECURITY_EVENT' %}shield-alt{% else %}info-circle{% endif %} me-2"></i>
+ {{ notification.title }}
+ </h5>
+ <p class="mb-1 text-light">{{ notification.message }}</p>
+ <small class="text-muted">
+ <i class="fas fa-clock me-1"></i>
+ {{ notification.created_at|date:"d/m/Y H:i:s" }}
+ {% if notification.is_read and notification.read_at %}
+ | <i class="fas fa-check me-1"></i>Leída: {{ notification.read_at|date:"d/m/Y H:i:s" }}
+ {% endif %}
+ </small>
+ </div>
+ <div class="ms-3">
+ {% if not notification.is_read %}
+ <span class="badge bg-warning">Nueva</span>
+ {% endif %}
+ <span class="badge bg-info">{{ notification.get_event_type_display }}</span>
+ </div>
+ </div>
+ </div>
+ {% endfor %}
+ </div>
+ {% else %}
+ <div class="text-center text-muted py-5">
+ <i class="fas fa-bell-slash fa-4x mb-3"></i>
+ <h4>No hay notificaciones</h4>
+ <p>No tienes notificaciones pendientes en este momento.</p>
+ </div>
+ {% endif %}
+ </div>
+ </div>
+ </div>
+ </div>
 </div>
 
 <script>
 function markAsRead(notificationId) {
-    fetch(`/siem/dashboard/notifications/${notificationId}/read/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': '{{ csrf_token }}',
-            'X-Requested-With': 'XMLHttpRequest',
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Recargar la página para actualizar el estado
-            location.reload();
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-    });
+ fetch(`/siem/dashboard/notifications/${notificationId}/read/`, {
+ method: 'POST',
+ headers: {
+ 'X-CSRFToken': '{{ csrf_token }}',
+ 'X-Requested-With': 'XMLHttpRequest',
+ }
+ })
+ .then(response => response.json())
+ .then(data => {
+ if (data.success) {
+ // Recargar la página para actualizar el estado
+ location.reload();
+ }
+ })
+ .catch(error => {
+ console.error('Error:', error);
+ });
 }
 
 function markAllAsRead() {
-    if (confirm('¿Estás seguro de que deseas marcar todas las notificaciones como leídas?')) {
-        fetch('/siem/dashboard/notifications/mark-all-read/', {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
-                'X-Requested-With': 'XMLHttpRequest',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Recargar la página para actualizar el estado
-                location.reload();
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-        });
-    }
+ if (confirm('¿Estás seguro de que deseas marcar todas las notificaciones como leídas?')) {
+ fetch('/siem/dashboard/notifications/mark-all-read/', {
+ method: 'POST',
+ headers: {
+ 'X-CSRFToken': '{{ csrf_token }}',
+ 'X-Requested-With': 'XMLHttpRequest',
+ }
+ })
+ .then(response => response.json())
+ .then(data => {
+ if (data.success) {
+ // Recargar la página para actualizar el estado
+ location.reload();
+ }
+ })
+ .catch(error => {
+ console.error('Error:', error);
+ });
+ }
 }
 </script>
 {% endblock %}

@@ -42,15 +42,16 @@ def save_events(events):
                 cur.execute(
                     """
                     INSERT INTO os_events_raw (
-                        source_type, source_name, host_name, event_time, severity,
+                        source_type, source_name, host_name, host_ip, event_time, severity,
                         event_category, message, raw_payload, tags
                     )
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb)
                     """,
                     (
                         ev.get("source_type"),
                         ev.get("source_name"),
                         ev.get("host_name"),
+                        ev.get("raw_payload", {}).get("host_ip"),
                         ev.get("event_time"),
                         ev.get("severity"),
                         ev.get("event_category"),

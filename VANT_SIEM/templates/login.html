@@ -2,115 +2,135 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>VANT-SIEM | Vigilance And Neutralization of Threats - SIEM</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- bootstrap 5 local css para ajustar el redondeo del logo -->
-    <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.min.css' %}">
-    <link rel="stylesheet" href="{% static 'css/login.css' %}">
-    <style>
-        body {
-            background: radial-gradient(circle at 20% 30%, #00c3ff22 0%, #0f2027 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .login-card {
-            background: rgba(20, 30, 48, 0.98);
-            border-radius: 1.5rem;
-            box-shadow: 0 8px 32px 0 rgba(0,195,255,0.15);
-            padding: 2.5rem 2rem;
-            width: 370px;
-            animation: fadeIn 1s;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(40px);}
-            to { opacity: 1; transform: translateY(0);}
-        }
-        .logo-svg {
-            display: block;
-            margin: 0 auto 1rem auto;
-            width: 100px;      
-            height: 100px;     
-            border-radius: 50%;
-            object-fit: cover;
-        }
-        .app-title {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #00c3ff;
-            letter-spacing: 2px;
-            text-align: center;
-            margin-bottom: 0.5rem;
-            text-shadow: 0 0 8px #00c3ff88;
-        }
-        .app-desc {
-            color: #b0bec5;
-            font-size: 1rem;
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        
-        .form-label {
-            color: #b0bec5;
-            font-weight: 500;
-        }
-        .form-control {
-            background-color: #232b36 !important;
-            color: #fff !important;
-            border: 1px solid #00c3ff !important;
-            border-radius: 0.5rem;
-            box-shadow: 0 2px 8px #00c3ff22;
-        }
-        .form-control:focus {
-            border-color: #00c3ff !important;
-            box-shadow: 0 0 8px #00c3ff88;
-            background-color: #1a232a !important;
-        }
-        ::placeholder {
-            color: #b0bec5 !important;
-            opacity: 1;
-        }
-       
-        .btn-primary {
-            background: linear-gradient(90deg, #00c3ff, #0072ff);
-            border: none;
-            font-weight: bold;
-            box-shadow: 0 2px 8px #00c3ff44;
-            transition: background 0.2s;
-        }
-        .btn-primary:hover {
-            background: linear-gradient(90deg, #0072ff, #00c3ff);
-        }
-        .footer {
-            margin-top: 2rem;
-            color: #78909c;
-            font-size: 0.9rem;
-            text-align: center;
-        }
-    </style>
-    
-</head>
-<body>
-    <div class="login-card">
-        <img src="{% static 'img/logo.png' %}" alt="VANT-SIEM Logo" class="logo-svg" />
-        <div class="app-title">VANT-SIEM</div>
-        <div class="app-desc">Vigilance And Neutralization of Threats<br>Security Information & Event Management</div>
-        <form method="post" class="w-100">
-            {% csrf_token %}
-            <div class="mb-3">
-                <label for="username" class="form-label">Username</label>
-                <input type="text" name="username" id="username" class="form-control form-control-lg" placeholder="Enter your username" required autofocus>
-            </div>
-            <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
-                <input type="password" name="password" id="password" class="form-control form-control-lg" placeholder="Enter your password" required>
-            </div>
-            <button type="submit" class="btn btn-primary btn-lg w-100">Login</button>
-        </form>
-        <div class="footer">© 2025 VANT-SIEM. All rights reserved.</div>
-    </div>
-    <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
-</body>
+  <meta charset="UTF-8">
+  <title>VANT-SIEM | Vigilance And Neutralization of Threats - SIEM</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- bootstrap 5 local css para ajustar el redondeo del logo -->
+  <link rel="stylesheet" href="{% static 'bootstrap/css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/login.css' %}">
+  <style>
+  body {
+  background: radial-gradient(circle at 20% 30%, #00c3ff22 0%, #0f2027 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  }
+  .login-card {
+  background: rgba(20, 30, 48, 0.98);
+  border-radius: 1.5rem;
+  box-shadow: 0 8px 32px 0 rgba(0,195,255,0.15);
+  padding: 2.5rem 2rem;
+  width: 370px;
+  animation: fadeIn 1s;
+  }
+  @keyframes fadeIn {
+  from { opacity: 0; transform: translateY(40px);}
+  to { opacity: 1; transform: translateY(0);}
+  }
+  .logo-svg {
+  display: block;
+  margin: 0 auto 1rem auto;
+  width: 100px; 
+  height: 100px; 
+  border-radius: 50%;
+  object-fit: cover;
+  }
+  .app-title {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #00c3ff;
+  letter-spacing: 2px;
+  text-align: center;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 0 8px #00c3ff88;
+  }
+  .app-desc {
+  color: #b0bec5;
+  font-size: 1rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  }
+  
+  .form-label {
+  color: #b0bec5;
+  font-weight: 500;
+  }
+  .form-control {
+  background-color: #232b36 !important;
+  color: #fff !important;
+  border: 1px solid #00c3ff !important;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px #00c3ff22;
+  }
+  .form-control:focus {
+  border-color: #00c3ff !important;
+  box-shadow: 0 0 8px #00c3ff88;
+  background-color: #1a232a !important;
+  }
+  ::placeholder {
+  color: #b0bec5 !important;
+  opacity: 1;
+  }
+  
+  .btn-primary {
+  background: linear-gradient(90deg, #00c3ff, #0072ff);
+  border: none;
+  font-weight: bold;
+  box-shadow: 0 2px 8px #00c3ff44;
+  transition: background 0.2s;
+  }
+  .btn-primary:hover {
+  background: linear-gradient(90deg, #0072ff, #00c3ff);
+  }
+  .footer {
+  margin-top: 2rem;
+  color: #78909c;
+  font-size: 0.9rem;
+  text-align: center;
+  }
+  </style>
+  
+ </head>
+ <body>
+  <div class="login-card">
+  {% if messages %}
+  {% for message in messages %}
+  <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+   {{ message }}
+   <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  </div>
+  {% endfor %}
+  {% endif %}
+  <img src="{% static 'img/logo.png' %}" alt="VANT-SIEM Logo" class="logo-svg" />
+  <div class="app-title">VANT-SIEM</div>
+  <div class="app-desc">Vigilance And Neutralization of Threats<br>Security Information & Event Management</div>
+  <form method="post" class="w-100">
+  {% csrf_token %}
+  <div class="mb-3">
+   <label for="username" class="form-label">Username</label>
+   <input type="text" name="username" id="username" class="form-control form-control-lg" placeholder="Enter your username" required autofocus>
+  </div>
+  <div class="mb-3">
+   <label for="password" class="form-label">Password</label>
+   <input type="password" name="password" id="password" class="form-control form-control-lg" placeholder="Enter your password" required>
+  </div>
+  <button type="submit" class="btn btn-primary btn-lg w-100">Login</button>
+  </form>
+  <div class="footer">© 2025 VANT-SIEM. All rights reserved.</div>
+  </div>
+  <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+  <script>
+    // Auto-dismiss messages after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(function() {
+        var alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+          var bsAlert = new bootstrap.Alert(alert);
+          bsAlert.close();
+        });
+      }, 5000);
+    });
+  </script>
+ </body>
 </html>

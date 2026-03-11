@@ -1,42 +1,42 @@
 {% extends 'dashboard.html' %}
 {% block content %}
 <div class="container">
-  <div class="row justify-content-center">
-    <div class="col-md-8">
-      <div class="card bg-secondary">
-        <div class="card-header"><h3 class="text-info mb-0"><i class="fas fa-calculator me-2"></i>Calculadora IP</h3></div>
-        <div class="card-body">
-          <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-          <div class="input-group mb-3">
-            <input id="cidr" class="form-control" placeholder="192.168.1.0/24">
-            <button class="btn btn-primary" onclick="runCalc()"><i class="fas fa-equals me-1"></i>Calcular</button>
-          </div>
-          <table class="table table-dark table-striped" id="tbl" style="display:none;">
-            <tbody>
-              <tr><th class="text-info">Red</th><td id="network"></td></tr>
-              <tr><th class="text-info">Broadcast</th><td id="broadcast"></td></tr>
-              <tr><th class="text-info">Prefijo</th><td id="prefix"></td></tr>
-              <tr><th class="text-info">Total direcciones</th><td id="total"></td></tr>
-              <tr><th class="text-info">Primer host</th><td id="first_host"></td></tr>
-              <tr><th class="text-info">Último host</th><td id="last_host"></td></tr>
-            </tbody>
-          </table>
-          <div id="err" class="text-danger"></div>
-        </div>
-      </div>
-    </div>
-  </div>
+ <div class="row justify-content-center">
+ <div class="col-md-8">
+ <div class="card bg-secondary">
+ <div class="card-header"><h3 class="text-info mb-0"><i class="fas fa-calculator me-2"></i>Calculadora IP</h3></div>
+ <div class="card-body">
+ <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+ <div class="input-group mb-3">
+ <input id="cidr" class="form-control" placeholder="192.168.1.0/24">
+ <button class="btn btn-primary" onclick="runCalc()"><i class="fas fa-equals me-1"></i>Calcular</button>
+ </div>
+ <table class="table table-dark table-striped" id="tbl" style="display:none;">
+ <tbody>
+ <tr><th class="text-info">Red</th><td id="network"></td></tr>
+ <tr><th class="text-info">Broadcast</th><td id="broadcast"></td></tr>
+ <tr><th class="text-info">Prefijo</th><td id="prefix"></td></tr>
+ <tr><th class="text-info">Total direcciones</th><td id="total"></td></tr>
+ <tr><th class="text-info">Primer host</th><td id="first_host"></td></tr>
+ <tr><th class="text-info">Último host</th><td id="last_host"></td></tr>
+ </tbody>
+ </table>
+ <div id="err" class="text-danger"></div>
+ </div>
+ </div>
+ </div>
+ </div>
 </div>
 <script>
 async function runCalc(){
-  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-  const res = await fetch('{% url "api-tools-ipcalc" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}, body: new URLSearchParams({cidr: cidr.value.trim()})});
-  const data = await res.json();
-  const tbl = document.getElementById('tbl'); const err=document.getElementById('err');
-  if (data.success){
-    err.textContent=''; tbl.style.display='table';
-    network.textContent=data.network; broadcast.textContent=data.broadcast; prefix.textContent=data.prefix; total.textContent=data.total; first_host.textContent=data.first_host; last_host.textContent=data.last_host;
-  } else { tbl.style.display='none'; err.textContent = data.error || 'Error'; }
+ const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+ const res = await fetch('{% url "api-tools-ipcalc" %}', {method:'POST', headers:{'X-CSRFToken': csrftoken}, body: new URLSearchParams({cidr: cidr.value.trim()})});
+ const data = await res.json();
+ const tbl = document.getElementById('tbl'); const err=document.getElementById('err');
+ if (data.success){
+ err.textContent=''; tbl.style.display='table';
+ network.textContent=data.network; broadcast.textContent=data.broadcast; prefix.textContent=data.prefix; total.textContent=data.total; first_host.textContent=data.first_host; last_host.textContent=data.last_host;
+ } else { tbl.style.display='none'; err.textContent = data.error || 'Error'; }
 }
 </script>
 {% endblock %}
