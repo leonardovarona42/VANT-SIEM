@@ -1,7 +1,9 @@
 import argparse
+import logging
 import socket
 import sys
 import time
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 import yaml
@@ -71,9 +73,49 @@ def _ensure_host_fields(event, host_name, host_ip):
     return event
 
 
+def _configure_logging(agent_cfg):
+    level_name = str(agent_cfg.get("log_level", "INFO")).upper()
+    level = getattr(logging, level_name, logging.INFO)
+    log_file = agent_cfg.get("log_file")
+    if not log_file:
+        # Default to /var/log on Linux, executable dir otherwise.
+        if sys.platform.startswith("linux"):
+            log_file = "/var/log/vant-siem/agent.log"
+        else:
+            log_file = str(Path(sys.executable).resolve().parent / "agent.log")
+
+    log_dir = Path(log_file).parent
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    logger = logging.getLogger("vant-siem-agent")
+    logger.setLevel(level)
+
+    fmt = logging.Formatter(
+        "%(asctime)s %(levelname)s %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    # File handler with rotation
+    max_bytes = int(agent_cfg.get("log_max_bytes", 10 * 1024 * 1024))
+    backup_count = int(agent_cfg.get("log_backup_count", 5))
+    file_handler = RotatingFileHandler(log_file, maxBytes=max_bytes, backupCount=backup_count)
+    file_handler.setFormatter(fmt)
+    file_handler.setLevel(level)
+    logger.addHandler(file_handler)
+
+    # Also log to stdout for systemd/journald
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setFormatter(fmt)
+    stream_handler.setLevel(level)
+    logger.addHandler(stream_handler)
+
+    return logger
+
+
 def run(config_path):
     cfg = load_cfg(config_path)
     agent_cfg = cfg.get("agent", {})
+    logger = _configure_logging(agent_cfg)
     host_name, host_ip = _detect_host()
     placeholder_hosts = {
         "debian-host",
@@ -91,6 +133,12 @@ def run(config_path):
     out = OutputClient(cfg.get("output", {}))
     collectors = build_collectors(cfg)
     interval = int(agent_cfg.get("interval_seconds", 10))
+    log_every = int(agent_cfg.get("log_every_cycles", 60))
+    cycle = 0
+
+    logger.info("agent.starting host=%s ip=%s interval=%ss collectors=%s",
+                agent_cfg.get("host_name", ""), agent_cfg.get("host_ip", ""),
+                interval, ",".join([c.source_type for c in collectors]) or "none")
 
     # register/upsert enabled sources
     for c in collectors:
@@ -109,9 +157,10 @@ def run(config_path):
                 }
             )
         except Exception as exc:
-            print(f"[agent] upsert_source failed for {c.source_type}: {exc}", file=sys.stderr)
+            logger.warning("upsert_source failed source=%s error=%s", c.source_type, exc)
 
     while True:
+        cycle += 1
         batch = []
         for collector in collectors:
             try:
@@ -120,6 +169,7 @@ def run(config_path):
                     _ensure_host_fields(ev, agent_cfg.get("host_name", ""), agent_cfg.get("host_ip", ""))
                 batch.extend(events)
             except Exception as exc:
+                logger.exception("collector failed source=%s", collector.source_type)
                 batch.append(
                     _ensure_host_fields(
                         {
@@ -139,9 +189,11 @@ def run(config_path):
                 )
         try:
             out.send_events(batch)
+            if log_every > 0 and (cycle % log_every == 0):
+                logger.info("cycle ok events=%s collectors=%s", len(batch), len(collectors))
         except Exception as exc:
             # Keep agent running even if output endpoint is down.
-            print(f"[agent] send_events failed: {exc}", file=sys.stderr)
+            logger.error("send_events failed error=%s batch=%s", exc, len(batch))
         time.sleep(interval)
 
 
