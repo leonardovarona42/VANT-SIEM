@@ -371,30 +371,50 @@
  >
  </li>
  <li>
- <a class="dropdown-item" href="{% url 'opensearch-create-visualizations' %}"
+ <a class="dropdown-item" href="{% url 'snort-security-dashboard' %}"
+ ><i class="fas fa-shield-alt me-2"></i>Snort Security Dashboard</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'suricata-security-dashboard' %}"
+ ><i class="fas fa-shield-virus me-2"></i>Suricata Security Dashboard</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'domain-audit-dashboard' %}"
+  ><i class="fas fa-network-wired me-2"></i>Active Directory Dashboard</a
+  >
+  </li>
+ <li>
+ <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1" title="En construcción"
  ><i class="fas fa-plus-circle me-2"></i>Create Visualizations</a
  >
  </li>
  <li>
- <a class="dropdown-item" href="{% url 'opensearch-visual-dashboard' %}"
+ <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1" title="En construcción"
  ><i class="fas fa-chart-line me-2"></i>Dashboard Visual OpenSearch</a
  >
  </li>
  <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-warning">IDS/IPS Dashboards</h6></li>
+ <li><h6 class="dropdown-header text-warning">Active Directory</h6></li>
  <li>
- <a class="dropdown-item" href="{% url 'snort-dashboard-v2' %}"
- ><i class="fas fa-shield-alt me-2"></i>Snort IDS V2 (New)</a
+ <a class="dropdown-item" href="{% url 'ad-executive-dashboard' %}"
+ ><i class="fas fa-chart-pie me-2"></i>Risk Overview</a
  >
  </li>
  <li>
- <a class="dropdown-item" href="{% url 'snort-dashboard' %}"
- ><i class="fas fa-bug me-2"></i>Snort IDS (Classic)</a
+ <a class="dropdown-item" href="{% url 'ad-identity-dashboard' %}"
+ ><i class="fas fa-user-shield me-2"></i>Identity & Access Hygiene</a
  >
  </li>
  <li>
- <a class="dropdown-item" href="{% url 'suricata-dashboard' %}"
- ><i class="fas fa-shield-virus me-2"></i>Suricata</a
+ <a class="dropdown-item" href="{% url 'ad-change-dashboard' %}"
+ ><i class="fas fa-user-edit me-2"></i>Change & Configuration Audit</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'ad-triage-dashboard' %}"
+ ><i class="fas fa-radar me-2"></i>Incident Triage (SOC)</a
  >
  </li>
  <li>
@@ -1440,4 +1460,3 @@
  </script>
  </body>
 </html>
-

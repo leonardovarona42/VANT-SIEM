@@ -6,6 +6,8 @@ urlpatterns = [
     # Dashboards principales
     path('visual/', views.opensearch_visual_dashboard, name='opensearch-visual-dashboard'),
     path('discover/', views.opensearch_discovery, name='opensearch-discovery'),
+    path('snort/security/', views.snort_security_dashboard, name='snort-security-dashboard'),
+    path('suricata/security/', views.suricata_security_dashboard, name='suricata-security-dashboard'),
     path('visualizations/create/', views.opensearch_create_visualizations, name='opensearch-create-visualizations'),
     path('visualizations/preview/', views.opensearch_visualizations_preview, name='opensearch-visualizations-preview'),
     path('visualizations/save/', views.opensearch_visualizations_save, name='opensearch-visualizations-save'),
@@ -20,6 +22,13 @@ urlpatterns = [
     path('snort/details/<int:log_id>/', views.snort_log_details, name='snort-log-details'),
     path('suricata/', views.suricata_dashboard, name='suricata-dashboard'),
     path('suricata/api/', views.suricata_dashboard_api, name='suricata-dashboard-api'),
+    # Domain Audit Dashboard
+    path('domain-audit/', views.domain_audit_dashboard, name='domain-audit-dashboard'),
+    path('domain-audit/api/', views.domain_audit_dashboard_api, name='domain-audit-dashboard-api'),
+    path('active-directory/executive/', views.ad_executive_dashboard, name='ad-executive-dashboard'),
+    path('active-directory/identity/', views.ad_identity_hygiene_dashboard, name='ad-identity-dashboard'),
+    path('active-directory/changes/', views.ad_change_audit_dashboard, name='ad-change-dashboard'),
+    path('active-directory/triage/', views.ad_soc_triage_dashboard, name='ad-triage-dashboard'),
     # Configuración
     path('config/', views.ids_config, name='ids-config'),
     path('config/test/<int:config_id>/', views.test_config, name='test-config'),

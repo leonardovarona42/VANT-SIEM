@@ -2,6 +2,11 @@ agent:
   id: "agent-001"
   host_name: "windows-host-01"
   interval_seconds: 10
+  log_level: "INFO"
+  log_file: "/var/log/vant-siem/agent.log"
+  log_max_bytes: 10485760
+  log_backup_count: 5
+  log_every_cycles: 60
 
 output:
   endpoint: "http://127.0.0.1:9201/api/v1/events/bulk"

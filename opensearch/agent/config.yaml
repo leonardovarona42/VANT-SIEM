@@ -40,10 +40,66 @@ collectors:
     enabled: true
     items:
       - enabled: true
-        source_name: "samba-audit"
-        path: "/var/log/samba/audit.log"
-        event_category: "samba.audit"
+        source_name: "samba-auth"
+        path: "/var/log/samba/01_autenticaciones.log"
+        event_category: "samba.auth"
         severity: "info"
-        tags: ["samba", "ad", "audit"]
+        tags: ["samba", "ad", "audit", "auth"]
+        start_position: "end"   # beginning|end
+        max_lines_per_cycle: 400
+      - enabled: true
+        source_name: "samba-user-mod"
+        path: "/var/log/samba/02_modificaciones_usuarios.log"
+        event_category: "samba.user.modify"
+        severity: "info"
+        tags: ["samba", "ad", "audit", "user", "modify"]
+        start_position: "end"   # beginning|end
+        max_lines_per_cycle: 400
+      - enabled: true
+        source_name: "samba-password-change"
+        path: "/var/log/samba/03_cambios_contrasenas.log"
+        event_category: "samba.password"
+        severity: "info"
+        tags: ["samba", "ad", "audit", "password"]
+        start_position: "end"   # beginning|end
+        max_lines_per_cycle: 400
+      - enabled: true
+        source_name: "samba-auth-fail"
+        path: "/var/log/samba/04_intentos_fallidos.log"
+        event_category: "samba.auth.fail"
+        severity: "warning"
+        tags: ["samba", "ad", "audit", "auth", "failed"]
+        start_position: "end"   # beginning|end
+        max_lines_per_cycle: 400
+      - enabled: true
+        source_name: "samba-group-change"
+        path: "/var/log/samba/05_cambios_grupos.log"
+        event_category: "samba.group"
+        severity: "info"
+        tags: ["samba", "ad", "audit", "group"]
+        start_position: "end"   # beginning|end
+        max_lines_per_cycle: 400
+      - enabled: true
+        source_name: "samba-domain-policy"
+        path: "/var/log/samba/06_politicas_dominio.log"
+        event_category: "samba.domain.policy"
+        severity: "info"
+        tags: ["samba", "ad", "audit", "policy"]
+        start_position: "end"   # beginning|end
+        max_lines_per_cycle: 400
+      - enabled: true
+        source_name: "samba-ldap"
+        path: "/var/log/samba/07_operaciones_ldap.log"
+        event_category: "samba.ldap"
+        severity: "info"
+        tags: ["samba", "ad", "audit", "ldap"]
+        start_position: "end"   # beginning|end
+        max_lines_per_cycle: 400
+      - enabled: true
+        source_name: "samba-kerberos"
+        path: "/var/log/samba/08_tickets_kerberos.log"
+        event_category: "samba.kerberos"
+        severity: "info"
+        tags: ["samba", "ad", "audit", "kerberos"]
         start_position: "end"   # beginning|end
         max_lines_per_cycle: 400

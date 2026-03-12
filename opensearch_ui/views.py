@@ -2,6 +2,7 @@ import json
 import os
 import logging
 import re
+from collections import Counter
 from datetime import datetime, timedelta
 from typing import Dict, Any
 
@@ -2195,6 +2196,700 @@ def suricata_dashboard_api(request):
     })
 
 @login_required
+def domain_audit_dashboard(request):
+    """Dashboard de auditoría de dominio/LDAP basado en logs ingestado por agentes."""
+    context = _build_domain_audit_context(request)
+    return render(request, 'domain_audit_dashboard.html', context)
+
+
+@login_required
+def ad_executive_dashboard(request):
+    """Resumen ejecutivo de riesgos en Active Directory."""
+    context = _build_domain_audit_context(request)
+    return render(request, 'ad_executive_dashboard.html', context)
+
+
+@login_required
+def ad_identity_hygiene_dashboard(request):
+    """Higiene de identidades y accesos en Active Directory."""
+    context = _build_domain_audit_context(request)
+    return render(request, 'ad_identity_hygiene.html', context)
+
+
+@login_required
+def ad_change_audit_dashboard(request):
+    """Auditoría de cambios en Active Directory."""
+    context = _build_domain_audit_context(request)
+    return render(request, 'ad_change_audit.html', context)
+
+
+@login_required
+def ad_soc_triage_dashboard(request):
+    """Triage SOC para Active Directory."""
+    context = _build_domain_audit_context(request)
+    return render(request, 'ad_soc_triage.html', context)
+
+
+@login_required
+def domain_audit_dashboard_api(request):
+    """API endpoint para actualizaciones AJAX del dashboard de auditoría de dominio"""
+    context = _build_domain_audit_context(request)
+    return JsonResponse({'success': True, **context})
+
+
+def _build_domain_audit_context(request):
+    time_range = request.GET.get('time_range', '24h')
+    query = request.GET.get('q', '').strip()
+    try:
+        page = max(int(request.GET.get('page', '1') or '1'), 1)
+    except (TypeError, ValueError):
+        page = 1
+    page_size = 100
+    include_tokens = request.GET.getlist('f')
+    exclude_tokens = request.GET.getlist('nf')
+
+    range_map = {
+        '15m': timedelta(minutes=15),
+        '1h': timedelta(hours=1),
+        '24h': timedelta(hours=24),
+        '7d': timedelta(days=7),
+        '30d': timedelta(days=30),
+    }
+    since = timezone.now() - range_map.get(time_range, timedelta(hours=24))
+
+    core_fields = [
+        'event_time',
+        'source_type',
+        'source_name',
+        'host_name',
+        'host_ip',
+        'severity',
+        'event_category',
+        'message',
+        'tags',
+    ]
+    domain_fields = [
+        'user',
+        'account',
+        'target',
+        'ou',
+        'auth_pair',
+        'service',
+        'event_id',
+        'action',
+        'result',
+        'auth_method',
+        'logon_type',
+        'src_ip',
+        'src_port',
+        'dst_ip',
+        'dst_port',
+        'workstation',
+        'domain',
+        'service',
+        'line',
+        'path',
+        'raw_json',
+    ]
+    table_columns = [
+        'event_time',
+        'source_name',
+        'host_name',
+        'user',
+        'target',
+        'ou',
+        'event_id',
+        'action',
+        'result',
+        'src_ip',
+        'dst_ip',
+        'service',
+        'event_category',
+        'severity',
+        'message',
+    ]
+    allowed_fields = set(core_fields + domain_fields)
+
+    parsed_include = []
+    parsed_exclude = []
+    for token in include_tokens:
+        if ':' in token:
+            field, value = token.split(':', 1)
+            field = field.strip()
+            value = value.strip()
+            if field and value:
+                parsed_include.append((field, value, token))
+    for token in exclude_tokens:
+        if ':' in token:
+            field, value = token.split(':', 1)
+            field = field.strip()
+            value = value.strip()
+            if field and value:
+                parsed_exclude.append((field, value, token))
+
+    def _value_matches(field_value, filter_value):
+        text = '' if field_value is None else str(field_value).strip()
+        if filter_value == '__EMPTY__':
+            return text == ''
+        return filter_value.lower() in text.lower()
+
+    def _payload_lookup(payload, key):
+        if not key:
+            return None
+        if key in payload:
+            return payload.get(key)
+        if '.' not in key:
+            return payload.get(key)
+        cur = payload
+        for part in key.split('.'):
+            if not isinstance(cur, dict):
+                return None
+            cur = cur.get(part)
+        return cur
+
+    user_keys = [
+        'user', 'username', 'account', 'account_name', 'user_name', 'subject',
+        'target_user', 'target_user_name', 'principal', 'user_id',
+    ]
+    action_keys = ['action', 'operation', 'event_action', 'activity', 'op', 'event_type']
+    result_keys = ['result', 'status', 'outcome', 'success', 'failure', 'auth_result']
+    event_id_keys = ['event_id', 'eventid', 'id', 'eventId']
+    auth_keys = ['auth_method', 'authentication', 'auth', 'logon_type']
+
+    ip_re = re.compile(r'(?:\d{1,3}\.){3}\d{1,3}')
+
+    def _find_first(payload, keys):
+        for k in keys:
+            val = _payload_lookup(payload, k)
+            if val not in (None, '', 'null', 'None'):
+                return val
+        return None
+
+    def _parse_dn(dn):
+        if not dn:
+            return {'cn': None, 'ou': None, 'domain': None}
+        parts = [p.strip() for p in str(dn).split(',') if p.strip()]
+        cn = None
+        ous = []
+        dcs = []
+        for p in parts:
+            up = p.upper()
+            if up.startswith('CN=') and cn is None:
+                cn = p[3:]
+            elif up.startswith('OU='):
+                ous.append(p[3:])
+            elif up.startswith('DC='):
+                dcs.append(p[3:])
+        ou = ' / '.join(ous) if ous else None
+        domain = '.'.join(dcs) if dcs else None
+        if not ou:
+            for p in parts:
+                if p.upper() == 'CN=USERS':
+                    ou = 'Users'
+                    break
+        return {'cn': cn, 'ou': ou, 'domain': domain}
+
+    def _safe_json(text):
+        if not text:
+            return None
+        raw = str(text).strip()
+        if not raw.startswith('{'):
+            return None
+        try:
+            return json.loads(raw)
+        except Exception:
+            return None
+
+    authz_re = re.compile(
+        r'(?P<status>Successful|Failed)\s+AuthZ:\s+\[(?P<service>[^\]]+)\]\s+'
+        r'user\s+\[(?P<domain>[^\]]+)\]\\\[(?P<user>[^\]]+)\].*?'
+        r'Remote host\s+\[(?P<src>[^\]]+)\]\s+local host\s+\[(?P<dst>[^\]]+)\]'
+    )
+    dsdb_re = re.compile(
+        r'DSDB Change\s+\[(?P<action>[^\]]+)\].*?status\s+\[(?P<status>[^\]]+)\].*?DN\s+\[(?P<dn>[^\]]+)\]'
+    )
+    bind_re = re.compile(r'Bind(?:Simple|SASL)?\\s+dn:\\s+(?P<dn>.+)', re.IGNORECASE)
+
+    def _is_noise_event(base_map, derived):
+        msg = (base_map.get('message') or '').lower()
+        category = (base_map.get('event_category') or '').lower()
+        if derived.get('user') or derived.get('action') or derived.get('result') or derived.get('target'):
+            return False
+        noisy_markers = [
+            'debug_lookup_classname',
+            'samba_kcc',
+            'kccsrv_samba_kcc',
+            'samba_runcmd_io_handler',
+            'initialising global parameters',
+        ]
+        if any(n in msg for n in noisy_markers):
+            return True
+        if category in ('samba.perhost', 'samba.wb', 'samba.winbind', 'samba.winbindd'):
+            return True
+        return False
+
+    def _derive_domain_fields(base_map, payload):
+        derived = {}
+        msg = base_map.get('message') or ''
+
+        raw_json = _safe_json(msg)
+        if raw_json and isinstance(raw_json, dict):
+            if 'Authorization' in raw_json:
+                auth = raw_json.get('Authorization') or {}
+                domain = auth.get('domain') or ''
+                account = auth.get('account') or ''
+                user = f"{domain}\\{account}" if domain and account else (account or domain)
+                derived['user'] = user or None
+                derived['action'] = 'Authorization'
+                derived['result'] = 'Success'
+                derived['auth_method'] = auth.get('authType')
+                derived['service'] = auth.get('serviceDescription')
+                derived['src_ip'] = auth.get('remoteAddress')
+                derived['dst_ip'] = auth.get('localAddress')
+                derived['target'] = auth.get('logonServer') or base_map.get('host_name')
+            elif 'Authentication' in raw_json:
+                auth = raw_json.get('Authentication') or {}
+                domain = auth.get('domain') or ''
+                account = auth.get('account') or ''
+                user = f"{domain}\\{account}" if domain and account else (account or domain)
+                derived['user'] = user or None
+                derived['action'] = 'Authentication'
+                derived['result'] = auth.get('status') or auth.get('result')
+                derived['auth_method'] = auth.get('authType') or auth.get('mechanism')
+                derived['service'] = auth.get('serviceDescription')
+                derived['src_ip'] = auth.get('remoteAddress')
+                derived['dst_ip'] = auth.get('localAddress')
+                derived['target'] = auth.get('logonServer') or base_map.get('host_name')
+
+        match = authz_re.search(msg)
+        if match:
+            gd = match.groupdict()
+            derived['user'] = f"{gd.get('domain')}\\{gd.get('user')}" if gd.get('domain') else gd.get('user')
+            derived['action'] = 'Authorization'
+            derived['result'] = 'Success' if gd.get('status') == 'Successful' else 'Failed'
+            derived['service'] = gd.get('service')
+            derived['src_ip'] = gd.get('src')
+            derived['dst_ip'] = gd.get('dst')
+
+        match = dsdb_re.search(msg)
+        if match:
+            gd = match.groupdict()
+            derived['action'] = gd.get('action')
+            derived['result'] = gd.get('status')
+            dn_info = _parse_dn(gd.get('dn'))
+            if dn_info.get('cn'):
+                derived['target'] = dn_info.get('cn')
+            if dn_info.get('ou'):
+                derived['ou'] = dn_info.get('ou')
+            if dn_info.get('domain'):
+                derived['domain'] = dn_info.get('domain')
+
+        match = bind_re.search(msg)
+        if match:
+            dn = match.group('dn')
+            dn_info = _parse_dn(dn)
+            if dn_info.get('cn'):
+                derived.setdefault('user', dn_info.get('cn'))
+            if dn_info.get('ou'):
+                derived.setdefault('ou', dn_info.get('ou'))
+            derived.setdefault('action', 'Bind')
+            derived.setdefault('result', 'Attempt')
+
+        if 'result' not in derived:
+            lower = msg.lower()
+            if 'success' in lower or 'successful' in lower or 'accepted' in lower:
+                derived['result'] = 'Success'
+            elif 'fail' in lower or 'denied' in lower or 'invalid' in lower or 'error' in lower:
+                derived['result'] = 'Failed'
+
+        if 'event_id' not in derived:
+            derived['event_id'] = _find_first(payload, event_id_keys)
+        if 'user' not in derived:
+            derived['user'] = _find_first(payload, user_keys)
+        if 'action' not in derived:
+            derived['action'] = _find_first(payload, action_keys)
+        if 'result' not in derived:
+            derived['result'] = _find_first(payload, result_keys)
+        if 'auth_method' not in derived:
+            derived['auth_method'] = _find_first(payload, auth_keys)
+        if 'src_ip' not in derived:
+            derived['src_ip'] = _payload_lookup(payload, 'src_ip')
+        if 'dst_ip' not in derived:
+            derived['dst_ip'] = _payload_lookup(payload, 'dst_ip')
+        if 'target' not in derived:
+            derived['target'] = _payload_lookup(payload, 'target')
+
+        if derived.get('user') and not derived.get('auth_pair'):
+            target = derived.get('target') or base_map.get('host_name') or derived.get('dst_ip') or base_map.get('host_ip')
+            if target:
+                derived['auth_pair'] = f"{derived['user']} -> {target}"
+
+        # Summary for knowledge-centric tables
+        if derived.get('action') or derived.get('result') or derived.get('user') or derived.get('target'):
+            parts = []
+            if derived.get('user'):
+                parts.append(str(derived.get('user')))
+            if derived.get('action'):
+                parts.append(str(derived.get('action')))
+            if derived.get('target'):
+                parts.append(f"target={derived.get('target')}")
+            if derived.get('ou'):
+                parts.append(f"ou={derived.get('ou')}")
+            if derived.get('result'):
+                parts.append(f"result={derived.get('result')}")
+            if derived.get('service'):
+                parts.append(f"service={derived.get('service')}")
+            derived['summary'] = ' | '.join(parts)
+
+        return derived
+
+
+    mem_include_filters = []
+    mem_exclude_filters = []
+    active_filters = []
+    for field, value, token in parsed_include:
+        if field not in allowed_fields:
+            continue
+        mem_include_filters.append((field, value, token))
+        active_filters.append({'mode': 'include', 'field': field, 'value': value, 'token': token})
+    for field, value, token in parsed_exclude:
+        if field not in allowed_fields:
+            continue
+        mem_exclude_filters.append((field, value, token))
+        active_filters.append({'mode': 'exclude', 'field': field, 'value': value, 'token': token})
+
+    bucket_unit, bucket_step = {
+        '15m': ('minute', 1),
+        '1h': ('minute', 5),
+        '24h': ('hour', 1),
+        '7d': ('day', 1),
+        '30d': ('day', 1),
+    }.get(time_range, ('hour', 1))
+
+    def _floor_bucket(dt, unit, step):
+        if unit == 'minute':
+            minute = (dt.minute // step) * step
+            return dt.replace(minute=minute, second=0, microsecond=0)
+        if unit == 'hour':
+            hour = (dt.hour // step) * step
+            return dt.replace(hour=hour, minute=0, second=0, microsecond=0)
+        base = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        if step <= 1:
+            return base
+        offset = base.toordinal() % step
+        return base - timedelta(days=offset)
+
+    def _iter_buckets(start_dt, end_dt, unit, step):
+        cur = _floor_bucket(start_dt, unit, step)
+        while cur <= end_dt:
+            yield cur
+            if unit == 'minute':
+                cur = cur + timedelta(minutes=step)
+            elif unit == 'hour':
+                cur = cur + timedelta(hours=step)
+            else:
+                cur = cur + timedelta(days=step)
+
+    filters = ["event_time >= %s"]
+    params = [since]
+    filters.append(
+        "("
+        "source_type IN ('windows_eventlog', 'file_log', 'agent') "
+        "OR event_category ILIKE %s OR event_category ILIKE %s OR event_category ILIKE %s "
+        "OR source_name ILIKE %s "
+        "OR tags ? 'ad' OR tags ? 'ldap' OR tags ? 'domain' OR tags ? 'audit'"
+        ")"
+    )
+    params.extend(['%samba%', '%ldap%', '%domain%', '%samba%'])
+    if query:
+        like = f"%{query}%"
+        filters.append("(message ILIKE %s OR event_category ILIKE %s OR host_name ILIKE %s OR source_name ILIKE %s)")
+        params.extend([like, like, like, like])
+
+    rows = []
+    total = 0
+    db_error = None
+    offset = (page - 1) * page_size
+    now_ts = timezone.now()
+    bucket_counts = {b: 0 for b in _iter_buckets(since, now_ts, bucket_unit, bucket_step)}
+    top_categories = Counter()
+    top_sources = Counter()
+    top_hosts = Counter()
+    top_users = Counter()
+    top_targets = Counter()
+    top_ous = Counter()
+    top_auth_pairs = Counter()
+    top_actions = Counter()
+    top_results = Counter()
+    top_src_ips = Counter()
+    top_dst_ips = Counter()
+    top_services = Counter()
+    top_failed_src_ips = Counter()
+    top_lockout_users = Counter()
+    unique_users = set()
+    unique_targets = set()
+    modified_targets = set()
+    modified_ous = set()
+    auth_success = 0
+    auth_failed = 0
+    auth_total = 0
+    password_changes = 0
+    user_modifications = 0
+    group_changes = 0
+    policy_changes = 0
+    ldap_binds = 0
+    kerberos_events = 0
+    lockout_events = 0
+
+    def _add_counter(counter, value):
+        if value is None:
+            return
+        text = str(value).strip()
+        if not text or text.lower() in ('none', 'null', '-'):
+            return
+        counter[text] += 1
+
+    query_sql = f"""
+        SELECT
+            id,
+            source_type,
+            source_name,
+            host_name,
+            host_ip,
+            event_time,
+            severity,
+            event_category,
+            message,
+            tags,
+            ingested_at,
+            COALESCE(raw_payload, '{{}}'::jsonb) AS raw_payload
+        FROM os_events_raw
+        WHERE {" AND ".join(filters)}
+        ORDER BY event_time DESC
+    """
+
+    try:
+        pg = _get_opensearch_pg_conn()
+        with pg.cursor(name='domain_audit_stream') as cur:
+            cur.itersize = 2000
+            cur.execute(query_sql, params)
+            matched = 0
+            start_idx = offset
+            end_idx = offset + page_size
+            for record in cur:
+                payload = record[11] if isinstance(record[11], dict) else {}
+                if payload is None:
+                    payload = {}
+
+                base_map = {
+                    'id': record[0],
+                    'source_type': record[1],
+                    'source_name': record[2],
+                    'host_name': record[3],
+                    'host_ip': record[4],
+                    'event_time': record[5],
+                    'severity': record[6],
+                    'event_category': record[7],
+                    'message': record[8],
+                    'tags': record[9],
+                    'ingested_at': record[10],
+                }
+
+                derived = _derive_domain_fields(base_map, payload)
+                if _is_noise_event(base_map, derived):
+                    continue
+
+                def _get_field_value(field_name):
+                    if field_name in derived:
+                        return derived.get(field_name)
+                    if field_name in core_fields:
+                        return base_map.get(field_name)
+                    return _payload_lookup(payload, field_name)
+
+                include_ok = all(_value_matches(_get_field_value(f), v) for f, v, _ in mem_include_filters)
+                exclude_ok = all(not _value_matches(_get_field_value(f), v) for f, v, _ in mem_exclude_filters)
+                if not (include_ok and exclude_ok):
+                    continue
+
+                event_time = base_map.get('event_time')
+                if event_time:
+                    if timezone.is_naive(event_time):
+                        event_time = timezone.make_aware(event_time, timezone.get_current_timezone())
+                    bucket = _floor_bucket(event_time, bucket_unit, bucket_step)
+                    if bucket in bucket_counts:
+                        bucket_counts[bucket] += 1
+
+                action_val = _get_field_value('action')
+                result_val = _get_field_value('result')
+                user_val = _get_field_value('user')
+                target_val = _get_field_value('target')
+                ou_val = _get_field_value('ou')
+                auth_pair_val = _get_field_value('auth_pair')
+                service_val = _get_field_value('service')
+                msg_lower = (base_map.get('message') or '').lower()
+                category_lower = (base_map.get('event_category') or '').lower()
+                action_lower = (str(action_val or '')).lower()
+                result_lower = (str(result_val or '')).lower()
+
+                _add_counter(top_categories, base_map.get('event_category'))
+                _add_counter(top_sources, base_map.get('source_name'))
+                _add_counter(top_hosts, base_map.get('host_name'))
+                _add_counter(top_users, user_val)
+                _add_counter(top_actions, action_val)
+                _add_counter(top_results, result_val)
+                _add_counter(top_src_ips, _get_field_value('src_ip'))
+                _add_counter(top_dst_ips, _get_field_value('dst_ip'))
+                _add_counter(top_services, service_val)
+
+                if action_val and str(action_val).lower() in ('modify', 'add', 'delete', 'reset', 'password', 'changepassword'):
+                    _add_counter(top_targets, target_val)
+                    _add_counter(top_ous, ou_val)
+                    if target_val:
+                        modified_targets.add(str(target_val))
+                    if ou_val:
+                        modified_ous.add(str(ou_val))
+                elif ou_val or target_val:
+                    _add_counter(top_targets, target_val)
+                    _add_counter(top_ous, ou_val)
+
+                _add_counter(top_auth_pairs, auth_pair_val)
+
+                if user_val:
+                    unique_users.add(str(user_val))
+                if target_val:
+                    unique_targets.add(str(target_val))
+
+                is_success = any(token in result_lower for token in ('success', 'ok', 'accepted')) or ('successful' in msg_lower)
+                is_failed = any(token in result_lower for token in ('fail', 'denied', 'invalid', 'error')) or ('failed' in msg_lower)
+
+                if 'auth' in action_lower or 'authorization' in action_lower or 'authentication' in action_lower or 'autenticacion' in category_lower or 'auth' in category_lower:
+                    auth_total += 1
+                    if is_success:
+                        auth_success += 1
+                    if is_failed:
+                        auth_failed += 1
+
+                if 'lockout' in msg_lower or 'bloque' in msg_lower:
+                    lockout_events += 1
+                    _add_counter(top_lockout_users, user_val)
+
+                if 'password' in action_lower or 'contrasen' in msg_lower or 'cambios_contrasenas' in category_lower:
+                    password_changes += 1
+
+                if 'modify' in action_lower or 'modificaciones_usuarios' in category_lower:
+                    user_modifications += 1
+
+                if 'group' in action_lower or 'cambios_grupos' in category_lower:
+                    group_changes += 1
+
+                if 'policy' in action_lower or 'politicas_dominio' in category_lower:
+                    policy_changes += 1
+
+                if 'bind' in action_lower or 'bind' in msg_lower or 'ldap' in category_lower:
+                    ldap_binds += 1
+
+                if 'kerberos' in category_lower or 'ticket' in category_lower:
+                    kerberos_events += 1
+
+                if is_failed:
+                    _add_counter(top_failed_src_ips, _get_field_value('src_ip'))
+
+                if matched >= start_idx and matched < end_idx:
+                    row_cells = []
+                    for col in table_columns:
+                        raw_value = _get_field_value(col)
+                        if col == 'event_time' and raw_value:
+                            display_value = raw_value.strftime('%Y-%m-%d %H:%M:%S')
+                        elif col == 'message' and derived.get('summary'):
+                            display_value = derived.get('summary')
+                        elif isinstance(raw_value, list):
+                            display_value = ', '.join(str(v) for v in raw_value)
+                        elif isinstance(raw_value, dict):
+                            display_value = json.dumps(raw_value, ensure_ascii=True)
+                        elif raw_value is None:
+                            display_value = '-'
+                        else:
+                            display_value = str(raw_value)
+
+                        if len(display_value) > 220:
+                            display_value = f"{display_value[:220]}..."
+
+                        row_cells.append(
+                            {
+                                'field': col,
+                                'display': display_value,
+                                'raw': str(raw_value)[:180] if raw_value is not None else '',
+                                'full': '' if raw_value is None else str(raw_value),
+                            }
+                        )
+                    rows.append({'cells': row_cells})
+                matched += 1
+
+            total = matched
+        pg.close()
+    except Exception as exc:
+        db_error = str(exc)
+
+    timeline = [
+        {'t': bucket.strftime('%Y-%m-%d %H:%M'), 'count': int(count or 0)}
+        for bucket, count in bucket_counts.items()
+    ]
+
+    def _top_list(counter):
+        return [{'label': k, 'count': int(v)} for k, v in counter.most_common(10)]
+
+    total_pages = (total + page_size - 1) // page_size if total else 1
+    base_qd = request.GET.copy()
+    if 'page' in base_qd:
+        base_qd.pop('page')
+    base_querystring = base_qd.urlencode()
+
+    context = {
+        'rows': rows,
+        'total': total,
+        'page': page,
+        'total_pages': total_pages,
+        'time_range': time_range,
+        'q': query,
+        'table_columns': table_columns,
+        'active_filters': active_filters,
+        'base_querystring': base_querystring,
+        'timeline': timeline,
+        'top_categories': _top_list(top_categories),
+        'top_sources': _top_list(top_sources),
+        'top_hosts': _top_list(top_hosts),
+        'top_users': _top_list(top_users),
+        'top_targets': _top_list(top_targets),
+        'top_ous': _top_list(top_ous),
+        'top_auth_pairs': _top_list(top_auth_pairs),
+        'top_actions': _top_list(top_actions),
+        'top_results': _top_list(top_results),
+        'top_src_ips': _top_list(top_src_ips),
+        'top_dst_ips': _top_list(top_dst_ips),
+        'top_services': _top_list(top_services),
+        'top_failed_src_ips': _top_list(top_failed_src_ips),
+        'top_lockout_users': _top_list(top_lockout_users),
+        'unique_users': len(unique_users),
+        'unique_targets': len(unique_targets),
+        'modified_targets': len(modified_targets),
+        'modified_ous': len(modified_ous),
+        'auth_success': auth_success,
+        'auth_failed': auth_failed,
+        'auth_total': auth_total,
+        'password_changes': password_changes,
+        'user_modifications': user_modifications,
+        'group_changes': group_changes,
+        'policy_changes': policy_changes,
+        'ldap_binds': ldap_binds,
+        'kerberos_events': kerberos_events,
+        'lockout_events': lockout_events,
+        'db_error': db_error,
+    }
+
+    return context
+
+
+@login_required
 def snort_log_details(request, log_id):
     """Obtener detalles completos de un log de Snort"""
     try:
@@ -3378,6 +4073,758 @@ def opensearch_discovery(request):
 
 
 @login_required
+def snort_security_dashboard(request):
+    """Dashboard de seguridad Snort con top métricas + tabla estilo Discovery."""
+    time_range = request.GET.get('time_range', '24h')
+    query = request.GET.get('q', '').strip()
+    try:
+        page = max(int(request.GET.get('page', '1') or '1'), 1)
+    except (TypeError, ValueError):
+        page = 1
+    page_size = 100
+    include_tokens = request.GET.getlist('f')
+    exclude_tokens = request.GET.getlist('nf')
+
+    range_map = {
+        '15m': timedelta(minutes=15),
+        '1h': timedelta(hours=1),
+        '24h': timedelta(hours=24),
+        '7d': timedelta(days=7),
+        '30d': timedelta(days=30),
+    }
+    since = timezone.now() - range_map.get(time_range, timedelta(hours=24))
+
+    core_fields = [
+        'event_time',
+        'severity',
+        'event_category',
+        'message',
+        'host_name',
+        'host_ip',
+    ]
+    snort_fields = [
+        'signature',
+        'classification',
+        'priority',
+        'proto',
+        'src_ip',
+        'src_port',
+        'dst_ip',
+        'dst_port',
+        'gid',
+        'sid',
+        'rev',
+        'line',
+    ]
+    table_columns = [
+        'event_time',
+        'severity',
+        'signature',
+        'classification',
+        'priority',
+        'proto',
+        'src_ip',
+        'src_port',
+        'dst_ip',
+        'dst_port',
+        'gid',
+        'sid',
+        'rev',
+        'host_name',
+        'message',
+    ]
+    allowed_fields = set(core_fields + snort_fields)
+
+    snort_line_re = re.compile(
+        r'^\S+\s+\[\*\*\]\s+\[(?P<gid>\d+):(?P<sid>\d+):(?P<rev>\d+)\]\s+'
+        r'(?P<signature>.*?)\s+\[\*\*\]\s+\[Classification:\s*(?P<classification>[^\]]+)\]\s+'
+        r'\[Priority:\s*(?P<priority>\d+)\]\s+\{(?P<proto>[^}]+)\}\s+'
+        r'(?P<src_ip>[^: ]+):(?P<src_port>\d+)\s+->\s+(?P<dst_ip>[^: ]+):(?P<dst_port>\d+)'
+    )
+
+    def _parse_snort_line(raw_line):
+        if not raw_line:
+            return {}
+        text = str(raw_line).strip()
+        if not text:
+            return {}
+        match = snort_line_re.match(text)
+        if match:
+            out = match.groupdict()
+            out['line'] = text
+            return out
+
+        out = {'line': text}
+        ids = re.search(r'\[(\d+):(\d+):(\d+)\]', text)
+        if ids:
+            out['gid'], out['sid'], out['rev'] = ids.group(1), ids.group(2), ids.group(3)
+        sig = re.search(r'\[\d+:\d+:\d+\]\s+(.*?)\s+\[\*\*\]', text)
+        if sig:
+            out['signature'] = sig.group(1).strip()
+        cls = re.search(r'\[Classification:\s*([^\]]+)\]', text)
+        if cls:
+            out['classification'] = cls.group(1).strip()
+        prio = re.search(r'\[Priority:\s*([^\]]+)\]', text)
+        if prio:
+            out['priority'] = prio.group(1).strip()
+        proto = re.search(r'\{([^}]+)\}', text)
+        if proto:
+            out['proto'] = proto.group(1).strip()
+        flow = re.search(r'([0-9a-fA-F:\.]+):(\d+)\s+->\s+([0-9a-fA-F:\.]+):(\d+)', text)
+        if flow:
+            out['src_ip'], out['src_port'], out['dst_ip'], out['dst_port'] = (
+                flow.group(1), flow.group(2), flow.group(3), flow.group(4)
+            )
+        return out
+
+    parsed_include = []
+    parsed_exclude = []
+    for token in include_tokens:
+        if ':' in token:
+            field, value = token.split(':', 1)
+            field = field.strip()
+            value = value.strip()
+            if field and value:
+                parsed_include.append((field, value, token))
+    for token in exclude_tokens:
+        if ':' in token:
+            field, value = token.split(':', 1)
+            field = field.strip()
+            value = value.strip()
+            if field and value:
+                parsed_exclude.append((field, value, token))
+
+    def _value_matches(field_value, filter_value):
+        text = '' if field_value is None else str(field_value).strip()
+        if filter_value == '__EMPTY__':
+            return text == ''
+        return filter_value.lower() in text.lower()
+
+    def _payload_lookup(payload, key):
+        if not key:
+            return None
+        if key in payload:
+            return payload.get(key)
+        if '.' not in key:
+            return payload.get(key)
+        cur = payload
+        for part in key.split('.'):
+            if not isinstance(cur, dict):
+                return None
+            cur = cur.get(part)
+        return cur
+
+    mem_include_filters = []
+    mem_exclude_filters = []
+    active_filters = []
+    for field, value, token in parsed_include:
+        if field not in allowed_fields:
+            continue
+        mem_include_filters.append((field, value, token))
+        active_filters.append({'mode': 'include', 'field': field, 'value': value, 'token': token})
+    for field, value, token in parsed_exclude:
+        if field not in allowed_fields:
+            continue
+        mem_exclude_filters.append((field, value, token))
+        active_filters.append({'mode': 'exclude', 'field': field, 'value': value, 'token': token})
+
+    bucket_unit, bucket_step = {
+        '15m': ('minute', 1),
+        '1h': ('minute', 5),
+        '24h': ('hour', 1),
+        '7d': ('day', 1),
+        '30d': ('day', 1),
+    }.get(time_range, ('hour', 1))
+
+    def _floor_bucket(dt, unit, step):
+        if unit == 'minute':
+            minute = (dt.minute // step) * step
+            return dt.replace(minute=minute, second=0, microsecond=0)
+        if unit == 'hour':
+            hour = (dt.hour // step) * step
+            return dt.replace(hour=hour, minute=0, second=0, microsecond=0)
+        base = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        if step <= 1:
+            return base
+        offset = base.toordinal() % step
+        return base - timedelta(days=offset)
+
+    def _iter_buckets(start_dt, end_dt, unit, step):
+        cur = _floor_bucket(start_dt, unit, step)
+        while cur <= end_dt:
+            yield cur
+            if unit == 'minute':
+                cur = cur + timedelta(minutes=step)
+            elif unit == 'hour':
+                cur = cur + timedelta(hours=step)
+            else:
+                cur = cur + timedelta(days=step)
+
+    filters = ["event_time >= %s", "source_type = 'snort'"]
+    params = [since]
+    if query:
+        like = f"%{query}%"
+        filters.append("(message ILIKE %s OR event_category ILIKE %s OR host_name ILIKE %s OR host_ip ILIKE %s)")
+        params.extend([like, like, like, like])
+
+    rows = []
+    total = 0
+    db_error = None
+    offset = (page - 1) * page_size
+    now_ts = timezone.now()
+    bucket_counts = {b: 0 for b in _iter_buckets(since, now_ts, bucket_unit, bucket_step)}
+    top_src_ips = Counter()
+    top_dst_ips = Counter()
+    top_src_ports = Counter()
+    top_dst_ports = Counter()
+    top_ports_total = Counter()
+    top_protocols = Counter()
+    top_hostnames = Counter()
+    top_classifications = Counter()
+    top_priorities = Counter()
+    top_signatures = Counter()
+    top_alerts = Counter()
+
+    def _add_counter(counter, value):
+        if value is None:
+            return
+        text = str(value).strip()
+        if not text or text.lower() in ('none', 'null', '-'):
+            return
+        counter[text] += 1
+
+    query_sql = f"""
+        SELECT
+            id,
+            source_type,
+            source_name,
+            host_name,
+            host_ip,
+            event_time,
+            severity,
+            event_category,
+            message,
+            tags,
+            ingested_at,
+            COALESCE(raw_payload, '{{}}'::jsonb) AS raw_payload
+        FROM os_events_raw
+        WHERE {" AND ".join(filters)}
+        ORDER BY event_time DESC
+    """
+
+    try:
+        pg = _get_opensearch_pg_conn()
+        with pg.cursor(name='snort_security_stream') as cur:
+            cur.itersize = 2000
+            cur.execute(query_sql, params)
+            matched = 0
+            start_idx = offset
+            end_idx = offset + page_size
+            for record in cur:
+                payload = record[11] if isinstance(record[11], dict) else {}
+                if payload is None:
+                    payload = {}
+
+                base_map = {
+                    'id': record[0],
+                    'source_type': record[1],
+                    'source_name': record[2],
+                    'host_name': record[3],
+                    'host_ip': record[4],
+                    'event_time': record[5],
+                    'severity': record[6],
+                    'event_category': record[7],
+                    'message': record[8],
+                    'tags': record[9],
+                    'ingested_at': record[10],
+                }
+
+                snort_line = payload.get('line') or base_map.get('message') or ''
+                parsed_snort = _parse_snort_line(snort_line)
+                if parsed_snort:
+                    for key, val in parsed_snort.items():
+                        if val is not None and str(val).strip() != '':
+                            payload[key] = val
+                    if parsed_snort.get('signature'):
+                        base_map['message'] = parsed_snort['signature']
+                    if not payload.get('line') and snort_line:
+                        payload['line'] = snort_line
+                if (not payload.get('signature')) and str(base_map.get('message') or '').strip():
+                    payload['signature'] = str(base_map.get('message')).strip()
+
+                extracted = {f: payload.get(f) for f in snort_fields}
+
+                def _get_field_value(field_name):
+                    if field_name in core_fields:
+                        return base_map.get(field_name)
+                    if field_name in snort_fields:
+                        return extracted.get(field_name)
+                    return _payload_lookup(payload, field_name)
+
+                include_ok = all(_value_matches(_get_field_value(f), v) for f, v, _ in mem_include_filters)
+                exclude_ok = all(not _value_matches(_get_field_value(f), v) for f, v, _ in mem_exclude_filters)
+                if not (include_ok and exclude_ok):
+                    continue
+
+                event_time = base_map.get('event_time')
+                if event_time:
+                    if timezone.is_naive(event_time):
+                        event_time = timezone.make_aware(event_time, timezone.get_current_timezone())
+                    bucket = _floor_bucket(event_time, bucket_unit, bucket_step)
+                    if bucket in bucket_counts:
+                        bucket_counts[bucket] += 1
+
+                _add_counter(top_src_ips, extracted.get('src_ip'))
+                _add_counter(top_dst_ips, extracted.get('dst_ip'))
+                src_port = extracted.get('src_port')
+                dst_port = extracted.get('dst_port')
+                _add_counter(top_src_ports, src_port)
+                _add_counter(top_dst_ports, dst_port)
+                _add_counter(top_ports_total, src_port)
+                _add_counter(top_ports_total, dst_port)
+                _add_counter(top_protocols, extracted.get('proto'))
+                _add_counter(top_classifications, extracted.get('classification'))
+                _add_counter(top_priorities, extracted.get('priority'))
+                _add_counter(top_hostnames, base_map.get('host_name'))
+                signature_val = extracted.get('signature') or base_map.get('message')
+                _add_counter(top_signatures, signature_val)
+                _add_counter(top_alerts, signature_val)
+
+                if matched >= start_idx and matched < end_idx:
+                    row_cells = []
+                    for col in table_columns:
+                        if col in extracted and extracted.get(col) not in (None, ''):
+                            raw_value = extracted.get(col)
+                        else:
+                            raw_value = base_map.get(col)
+                        if col == 'event_time' and raw_value:
+                            display_value = raw_value.strftime('%Y-%m-%d %H:%M:%S')
+                        elif isinstance(raw_value, list):
+                            display_value = ', '.join(str(v) for v in raw_value)
+                        elif isinstance(raw_value, dict):
+                            display_value = json.dumps(raw_value, ensure_ascii=True)
+                        elif raw_value is None:
+                            display_value = '-'
+                        else:
+                            display_value = str(raw_value)
+
+                        if len(display_value) > 220:
+                            display_value = f"{display_value[:220]}..."
+
+                        row_cells.append(
+                            {
+                                'field': col,
+                                'display': display_value,
+                                'raw': str(raw_value)[:180] if raw_value is not None else '',
+                                'full': '' if raw_value is None else str(raw_value),
+                            }
+                        )
+                    rows.append({'cells': row_cells})
+                matched += 1
+
+            total = matched
+        pg.close()
+    except Exception as exc:
+        db_error = str(exc)
+
+    timeline = [
+        {'t': bucket.strftime('%Y-%m-%d %H:%M'), 'count': int(count or 0)}
+        for bucket, count in bucket_counts.items()
+    ]
+
+    def _top_list(counter):
+        return [{'label': k, 'count': int(v)} for k, v in counter.most_common(10)]
+
+    total_pages = (total + page_size - 1) // page_size if total else 1
+    base_qd = request.GET.copy()
+    if 'page' in base_qd:
+        base_qd.pop('page')
+    base_querystring = base_qd.urlencode()
+
+    context = {
+        'rows': rows,
+        'total': total,
+        'page': page,
+        'total_pages': total_pages,
+        'time_range': time_range,
+        'q': query,
+        'table_columns': table_columns,
+        'active_filters': active_filters,
+        'base_querystring': base_querystring,
+        'timeline': timeline,
+        'top_src_ips': _top_list(top_src_ips),
+        'top_dst_ips': _top_list(top_dst_ips),
+        'top_ports_total': _top_list(top_ports_total),
+        'top_src_ports': _top_list(top_src_ports),
+        'top_dst_ports': _top_list(top_dst_ports),
+        'top_protocols': _top_list(top_protocols),
+        'top_hostnames': _top_list(top_hostnames),
+        'top_classifications': _top_list(top_classifications),
+        'top_priorities': _top_list(top_priorities),
+        'top_signatures': _top_list(top_signatures),
+        'top_alerts': _top_list(top_alerts),
+        'db_error': db_error,
+    }
+    return render(request, 'snort_security_dashboard.html', context)
+
+
+@login_required
+def suricata_security_dashboard(request):
+    """Dashboard de seguridad Suricata con top métricas + tabla estilo Discovery."""
+    time_range = request.GET.get('time_range', '24h')
+    query = request.GET.get('q', '').strip()
+    try:
+        page = max(int(request.GET.get('page', '1') or '1'), 1)
+    except (TypeError, ValueError):
+        page = 1
+    page_size = 100
+    include_tokens = request.GET.getlist('f')
+    exclude_tokens = request.GET.getlist('nf')
+
+    range_map = {
+        '15m': timedelta(minutes=15),
+        '1h': timedelta(hours=1),
+        '24h': timedelta(hours=24),
+        '7d': timedelta(days=7),
+        '30d': timedelta(days=30),
+    }
+    since = timezone.now() - range_map.get(time_range, timedelta(hours=24))
+
+    core_fields = [
+        'event_time',
+        'severity',
+        'event_category',
+        'message',
+        'host_name',
+        'host_ip',
+    ]
+    suricata_fields = [
+        'event_type',
+        'proto',
+        'src_ip',
+        'src_port',
+        'dst_ip',
+        'dst_port',
+        'app_proto',
+        'flow_id',
+        'in_iface',
+        'signature',
+        'classification',
+        'priority',
+    ]
+    table_columns = [
+        'event_time',
+        'severity',
+        'event_type',
+        'signature',
+        'classification',
+        'priority',
+        'proto',
+        'app_proto',
+        'src_ip',
+        'src_port',
+        'dst_ip',
+        'dst_port',
+        'flow_id',
+        'host_name',
+        'message',
+    ]
+    allowed_fields = set(core_fields + suricata_fields)
+
+    parsed_include = []
+    parsed_exclude = []
+    for token in include_tokens:
+        if ':' in token:
+            field, value = token.split(':', 1)
+            field = field.strip()
+            value = value.strip()
+            if field and value:
+                parsed_include.append((field, value, token))
+    for token in exclude_tokens:
+        if ':' in token:
+            field, value = token.split(':', 1)
+            field = field.strip()
+            value = value.strip()
+            if field and value:
+                parsed_exclude.append((field, value, token))
+
+    def _value_matches(field_value, filter_value):
+        text = '' if field_value is None else str(field_value).strip()
+        if filter_value == '__EMPTY__':
+            return text == ''
+        return filter_value.lower() in text.lower()
+
+    def _payload_lookup(payload, key):
+        if not key:
+            return None
+        if key in payload:
+            return payload.get(key)
+        if '.' not in key:
+            return payload.get(key)
+        cur = payload
+        for part in key.split('.'):
+            if not isinstance(cur, dict):
+                return None
+            cur = cur.get(part)
+        return cur
+
+    mem_include_filters = []
+    mem_exclude_filters = []
+    active_filters = []
+    for field, value, token in parsed_include:
+        if field not in allowed_fields:
+            continue
+        mem_include_filters.append((field, value, token))
+        active_filters.append({'mode': 'include', 'field': field, 'value': value, 'token': token})
+    for field, value, token in parsed_exclude:
+        if field not in allowed_fields:
+            continue
+        mem_exclude_filters.append((field, value, token))
+        active_filters.append({'mode': 'exclude', 'field': field, 'value': value, 'token': token})
+
+    bucket_unit, bucket_step = {
+        '15m': ('minute', 1),
+        '1h': ('minute', 5),
+        '24h': ('hour', 1),
+        '7d': ('day', 1),
+        '30d': ('day', 1),
+    }.get(time_range, ('hour', 1))
+
+    def _floor_bucket(dt, unit, step):
+        if unit == 'minute':
+            minute = (dt.minute // step) * step
+            return dt.replace(minute=minute, second=0, microsecond=0)
+        if unit == 'hour':
+            hour = (dt.hour // step) * step
+            return dt.replace(hour=hour, minute=0, second=0, microsecond=0)
+        base = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        if step <= 1:
+            return base
+        offset = base.toordinal() % step
+        return base - timedelta(days=offset)
+
+    def _iter_buckets(start_dt, end_dt, unit, step):
+        cur = _floor_bucket(start_dt, unit, step)
+        while cur <= end_dt:
+            yield cur
+            if unit == 'minute':
+                cur = cur + timedelta(minutes=step)
+            elif unit == 'hour':
+                cur = cur + timedelta(hours=step)
+            else:
+                cur = cur + timedelta(days=step)
+
+    filters = ["event_time >= %s", "source_type = 'suricata'"]
+    params = [since]
+    if query:
+        like = f"%{query}%"
+        filters.append("(message ILIKE %s OR event_category ILIKE %s OR host_name ILIKE %s OR host_ip ILIKE %s)")
+        params.extend([like, like, like, like])
+
+    rows = []
+    total = 0
+    db_error = None
+    offset = (page - 1) * page_size
+    now_ts = timezone.now()
+    bucket_counts = {b: 0 for b in _iter_buckets(since, now_ts, bucket_unit, bucket_step)}
+    top_src_ips = Counter()
+    top_dst_ips = Counter()
+    top_src_ports = Counter()
+    top_dst_ports = Counter()
+    top_ports_total = Counter()
+    top_protocols = Counter()
+    top_app_protocols = Counter()
+    top_hostnames = Counter()
+    top_classifications = Counter()
+    top_priorities = Counter()
+    top_signatures = Counter()
+
+    def _add_counter(counter, value):
+        if value is None:
+            return
+        text = str(value).strip()
+        if not text or text.lower() in ('none', 'null', '-'):
+            return
+        counter[text] += 1
+
+    query_sql = f"""
+        SELECT
+            id,
+            source_type,
+            source_name,
+            host_name,
+            host_ip,
+            event_time,
+            severity,
+            event_category,
+            message,
+            tags,
+            ingested_at,
+            COALESCE(raw_payload, '{{}}'::jsonb) AS raw_payload
+        FROM os_events_raw
+        WHERE {" AND ".join(filters)}
+        ORDER BY event_time DESC
+    """
+
+    try:
+        pg = _get_opensearch_pg_conn()
+        with pg.cursor(name='suricata_security_stream') as cur:
+            cur.itersize = 2000
+            cur.execute(query_sql, params)
+            matched = 0
+            start_idx = offset
+            end_idx = offset + page_size
+            for record in cur:
+                payload = record[11] if isinstance(record[11], dict) else {}
+                if payload is None:
+                    payload = {}
+
+                base_map = {
+                    'id': record[0],
+                    'source_type': record[1],
+                    'source_name': record[2],
+                    'host_name': record[3],
+                    'host_ip': record[4],
+                    'event_time': record[5],
+                    'severity': record[6],
+                    'event_category': record[7],
+                    'message': record[8],
+                    'tags': record[9],
+                    'ingested_at': record[10],
+                }
+
+                alert_obj = payload.get('alert') if isinstance(payload.get('alert'), dict) else {}
+                extracted = {
+                    'event_type': payload.get('event_type') or base_map.get('event_category'),
+                    'proto': payload.get('proto'),
+                    'src_ip': payload.get('src_ip'),
+                    'src_port': payload.get('src_port'),
+                    'dst_ip': payload.get('dest_ip') or payload.get('dst_ip'),
+                    'dst_port': payload.get('dest_port') or payload.get('dst_port'),
+                    'app_proto': payload.get('app_proto'),
+                    'flow_id': payload.get('flow_id'),
+                    'in_iface': payload.get('in_iface'),
+                    'signature': alert_obj.get('signature') if alert_obj else None,
+                    'classification': alert_obj.get('category') if alert_obj else None,
+                    'priority': alert_obj.get('severity') if alert_obj else None,
+                }
+                if (not extracted.get('signature')) and str(base_map.get('message') or '').strip():
+                    extracted['signature'] = str(base_map.get('message')).strip()
+
+                def _get_field_value(field_name):
+                    if field_name in core_fields:
+                        return base_map.get(field_name)
+                    if field_name in suricata_fields:
+                        return extracted.get(field_name)
+                    return _payload_lookup(payload, field_name)
+
+                include_ok = all(_value_matches(_get_field_value(f), v) for f, v, _ in mem_include_filters)
+                exclude_ok = all(not _value_matches(_get_field_value(f), v) for f, v, _ in mem_exclude_filters)
+                if not (include_ok and exclude_ok):
+                    continue
+
+                event_time = base_map.get('event_time')
+                if event_time:
+                    if timezone.is_naive(event_time):
+                        event_time = timezone.make_aware(event_time, timezone.get_current_timezone())
+                    bucket = _floor_bucket(event_time, bucket_unit, bucket_step)
+                    if bucket in bucket_counts:
+                        bucket_counts[bucket] += 1
+
+                src_port = extracted.get('src_port')
+                dst_port = extracted.get('dst_port')
+                _add_counter(top_src_ips, extracted.get('src_ip'))
+                _add_counter(top_dst_ips, extracted.get('dst_ip'))
+                _add_counter(top_src_ports, src_port)
+                _add_counter(top_dst_ports, dst_port)
+                _add_counter(top_ports_total, src_port)
+                _add_counter(top_ports_total, dst_port)
+                _add_counter(top_protocols, extracted.get('proto'))
+                _add_counter(top_app_protocols, extracted.get('app_proto'))
+                _add_counter(top_hostnames, base_map.get('host_name'))
+                _add_counter(top_classifications, extracted.get('classification'))
+                _add_counter(top_priorities, extracted.get('priority'))
+                _add_counter(top_signatures, extracted.get('signature'))
+
+                if matched >= start_idx and matched < end_idx:
+                    row_cells = []
+                    for col in table_columns:
+                        if col in extracted and extracted.get(col) not in (None, ''):
+                            raw_value = extracted.get(col)
+                        else:
+                            raw_value = base_map.get(col)
+                        if col == 'event_time' and raw_value:
+                            display_value = raw_value.strftime('%Y-%m-%d %H:%M:%S')
+                        elif isinstance(raw_value, list):
+                            display_value = ', '.join(str(v) for v in raw_value)
+                        elif isinstance(raw_value, dict):
+                            display_value = json.dumps(raw_value, ensure_ascii=True)
+                        elif raw_value is None:
+                            display_value = '-'
+                        else:
+                            display_value = str(raw_value)
+
+                        if len(display_value) > 220:
+                            display_value = f"{display_value[:220]}..."
+
+                        row_cells.append(
+                            {
+                                'field': col,
+                                'display': display_value,
+                                'raw': str(raw_value)[:180] if raw_value is not None else '',
+                                'full': '' if raw_value is None else str(raw_value),
+                            }
+                        )
+                    rows.append({'cells': row_cells})
+                matched += 1
+
+            total = matched
+        pg.close()
+    except Exception as exc:
+        db_error = str(exc)
+
+    timeline = [
+        {'t': bucket.strftime('%Y-%m-%d %H:%M'), 'count': int(count or 0)}
+        for bucket, count in bucket_counts.items()
+    ]
+
+    def _top_list(counter):
+        return [{'label': k, 'count': int(v)} for k, v in counter.most_common(10)]
+
+    total_pages = (total + page_size - 1) // page_size if total else 1
+    base_qd = request.GET.copy()
+    if 'page' in base_qd:
+        base_qd.pop('page')
+    base_querystring = base_qd.urlencode()
+
+    context = {
+        'rows': rows,
+        'total': total,
+        'page': page,
+        'total_pages': total_pages,
+        'time_range': time_range,
+        'q': query,
+        'table_columns': table_columns,
+        'active_filters': active_filters,
+        'base_querystring': base_querystring,
+        'timeline': timeline,
+        'top_ports_total': _top_list(top_ports_total),
+        'top_src_ports': _top_list(top_src_ports),
+        'top_dst_ports': _top_list(top_dst_ports),
+        'top_protocols': _top_list(top_protocols),
+        'top_app_protocols': _top_list(top_app_protocols),
+        'top_hostnames': _top_list(top_hostnames),
+        'top_src_ips': _top_list(top_src_ips),
+        'top_dst_ips': _top_list(top_dst_ips),
+        'top_classifications': _top_list(top_classifications),
+        'top_priorities': _top_list(top_priorities),
+        'top_signatures': _top_list(top_signatures),
+        'db_error': db_error,
+    }
+    return render(request, 'suricata_security_dashboard.html', context)
+
+
+@login_required
 def opensearch_create_visualizations(request):
     """Base UI para creacion de visualizaciones personalizadas."""
     presets = [
@@ -3787,4 +5234,3 @@ def opensearch_visualizations_preview(request):
         return JsonResponse(response)
     except Exception as exc:
         return JsonResponse({'success': False, 'error': str(exc)}, status=500)
-
