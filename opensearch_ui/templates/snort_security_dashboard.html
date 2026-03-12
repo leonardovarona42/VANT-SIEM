@@ -1,0 +1,537 @@
+{% extends "dashboard.html" %}
+{% load static %}
+{% block title %}Snort Security Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ids-dashboard.css' %}">
+<style>
+.snort-sec-wrap { padding: 12px; background: #0b1220; min-height: 100vh; color: #e2e8f0; }
+.snort-sec-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+.snort-sec-title { margin: 0; font-size: 20px; color: #f8fafc; }
+.snort-sec-sub { font-size: 12px; color: #94a3b8; }
+.snort-sec-toolbar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; gap: 8px; margin-bottom: 10px; }
+.snort-sec-toolbar input, .snort-sec-toolbar select { background: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 6px; padding: 8px; }
+.snort-sec-chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.snort-sec-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 999px; border: 1px solid #334155; background: #0f172a; font-size: 11px; color: #cbd5e1; }
+.snort-sec-chip.include { border-color: #22d3ee; }
+.snort-sec-chip.exclude { border-color: #fb7185; }
+.snort-sec-chip button { background: transparent; border: 0; color: #94a3b8; cursor: pointer; padding: 0; font-size: 12px; }
+.snort-sec-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.snort-sec-card { background: #111827; border: 1px solid #1f2937; border-radius: 10px; padding: 12px; }
+.snort-sec-card h6 { margin: 0 0 6px 0; font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: .04em; }
+.snort-sec-card .value { font-size: 20px; color: #f8fafc; font-weight: 700; }
+.snort-sec-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.snort-sec-grid .span-full { grid-column: 1 / -1; }
+.snort-chart-card { background: #0f172a; border: 1px solid #1f2937; border-radius: 10px; padding: 10px; min-height: 260px; }
+.snort-chart-title { margin: 0 0 8px 0; font-size: 13px; color: #cbd5e1; }
+.snort-chart-wrap { height: 210px; }
+.discover-columns-panel { margin-top: 10px; padding: 8px; border: 1px solid #1f2937; border-radius: 8px; background: #0f172a; }
+.discover-columns-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
+.discover-columns-title { font-size: 12px; color: #cbd5e1; }
+.discover-columns-actions { display: flex; gap: 6px; }
+.discover-columns-list { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+.discover-col-chip { border: 1px solid #334155; background: #111827; color: #cbd5e1; border-radius: 999px; padding: 3px 8px; font-size: 11px; cursor: pointer; white-space: nowrap; }
+.discover-col-chip.off { opacity: .45; border-color: #475569; }
+.discover-table-wrap { max-height: 60vh; overflow-x: auto; overflow-y: auto; border: 1px solid #1f2937; border-radius: 8px; }
+.discover-table { width: max-content; min-width: 100%; border-collapse: collapse; table-layout: fixed; }
+.discover-table th, .discover-table td { min-width: 160px; max-width: 520px; padding: 8px 10px; border-bottom: 1px solid #1f2937; border-right: 1px solid #1f2937; font-size: 12px; vertical-align: top; }
+.discover-table th { position: sticky; top: 0; background: #0f172a; z-index: 3; color: #cbd5e1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.discover-table th .col-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  background: linear-gradient(to right, transparent, rgba(34, 211, 238, 0.25));
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+.discover-table th:hover .col-resizer { opacity: 1; }
+.discover-table th.is-resizing { user-select: none; }
+.discover-cell { position: relative; min-height: 24px; padding-right: 48px; }
+.discover-cell-value {
+  white-space: normal;
+  word-break: break-word;
+  color: #e2e8f0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  max-height: 4.8em;
+}
+.discover-cell.is-expanded .discover-cell-value { -webkit-line-clamp: unset; max-height: none; }
+.discover-cell-actions { position: absolute; top: 0; right: 0; display: flex; gap: 4px; opacity: .18; transition: opacity .18s ease; }
+.discover-table td:hover .discover-cell-actions { opacity: 1; }
+.discover-cell-actions button, .discover-field-action {
+  border: 1px solid #334155;
+  background: #111827;
+  color: #cbd5e1;
+  border-radius: 6px;
+  font-size: 11px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+.cell-filter-btn { width: 22px; height: 20px; line-height: 16px; text-align: center; padding: 0 !important; font-weight: 700; }
+.cell-filter-btn.include-btn { border-color: #155e75; color: #67e8f9; }
+.cell-filter-btn.exclude-btn { border-color: #7f1d1d; color: #fecdd3; }
+.cell-expand-btn { border-color: #1f2937; color: #cbd5e1; }
+.snort-sec-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+.snort-sec-footer .ids-btn-modern { margin-left: 6px; }
+@media (max-width: 1200px) { .snort-sec-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 960px) {
+  .snort-sec-toolbar { grid-template-columns: 1fr 1fr; }
+  .snort-sec-cards { grid-template-columns: 1fr; }
+  .snort-sec-grid { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="snort-sec-wrap">
+  <div class="snort-sec-header">
+    <div>
+      <h2 class="snort-sec-title">Snort Security Dashboard</h2>
+      <div class="snort-sec-sub">Top métricas de seguridad y tabla interactiva tipo Discovery.</div>
+    </div>
+    <div class="snort-sec-sub">Total eventos: <strong>{{ total }}</strong></div>
+  </div>
+
+  <form method="get" class="snort-sec-toolbar">
+    <select name="time_range">
+      <option value="15m" {% if time_range == '15m' %}selected{% endif %}>Last 15m</option>
+      <option value="1h" {% if time_range == '1h' %}selected{% endif %}>Last 1h</option>
+      <option value="24h" {% if time_range == '24h' %}selected{% endif %}>Last 24h</option>
+      <option value="7d" {% if time_range == '7d' %}selected{% endif %}>Last 7d</option>
+      <option value="30d" {% if time_range == '30d' %}selected{% endif %}>Last 30d</option>
+    </select>
+    <input type="text" name="q" value="{{ q }}" placeholder="Search message, category, host...">
+    {% for af in active_filters %}
+    <input type="hidden" name="{% if af.mode == 'include' %}f{% else %}nf{% endif %}" value="{{ af.token }}">
+    {% endfor %}
+    <button class="ids-btn-modern" type="submit">Apply</button>
+  </form>
+
+  <div class="snort-sec-chip-row">
+    {% for af in active_filters %}
+    <span class="snort-sec-chip {{ af.mode }}">
+      <strong>{{ af.mode|upper }}</strong> {{ af.field }}: {% if af.value == '__EMPTY__' %}(empty){% else %}{{ af.value }}{% endif %}
+      <button type="button" class="js-remove-filter" data-mode="{{ af.mode }}" data-token="{{ af.token|escape }}">x</button>
+    </span>
+    {% empty %}
+    <span class="snort-sec-chip">No attribute filters</span>
+    {% endfor %}
+  </div>
+
+  <div class="snort-sec-cards">
+    <div class="snort-sec-card">
+      <h6>Total eventos</h6>
+      <div class="value">{{ total }}</div>
+    </div>
+    <div class="snort-sec-card">
+      <h6>Rango</h6>
+      <div class="value">{{ time_range }}</div>
+    </div>
+    <div class="snort-sec-card">
+      <h6>Filtros activos</h6>
+      <div class="value">{{ active_filters|length }}</div>
+    </div>
+  </div>
+
+  <div class="snort-sec-grid">
+    <div class="snort-chart-card">
+      <h6 class="snort-chart-title">Top Puertos (Total)</h6>
+      <div class="snort-chart-wrap"><canvas id="chartTopPorts"></canvas></div>
+    </div>
+    <div class="snort-chart-card">
+      <h6 class="snort-chart-title">Top Puertos Origen</h6>
+      <div class="snort-chart-wrap"><canvas id="chartSrcPorts"></canvas></div>
+    </div>
+    <div class="snort-chart-card">
+      <h6 class="snort-chart-title">Top Puertos Destino</h6>
+      <div class="snort-chart-wrap"><canvas id="chartDstPorts"></canvas></div>
+    </div>
+    <div class="snort-chart-card">
+      <h6 class="snort-chart-title">Top Protocolos</h6>
+      <div class="snort-chart-wrap"><canvas id="chartProtocols"></canvas></div>
+    </div>
+    <div class="snort-chart-card">
+      <h6 class="snort-chart-title">Top Clasificaciones</h6>
+      <div class="snort-chart-wrap"><canvas id="chartClassifications"></canvas></div>
+    </div>
+    <div class="snort-chart-card">
+      <h6 class="snort-chart-title">Top Prioridades</h6>
+      <div class="snort-chart-wrap"><canvas id="chartPriorities"></canvas></div>
+    </div>
+    <div class="snort-chart-card">
+      <h6 class="snort-chart-title">Top Signatures</h6>
+      <div class="snort-chart-wrap"><canvas id="chartSignatures"></canvas></div>
+    </div>
+    <div class="snort-chart-card">
+      <h6 class="snort-chart-title">Top Hostnames</h6>
+      <div class="snort-chart-wrap"><canvas id="chartHostnames"></canvas></div>
+    </div>
+    <div class="snort-chart-card">
+      <h6 class="snort-chart-title">Top Alertas</h6>
+      <div class="snort-chart-wrap"><canvas id="chartAlerts"></canvas></div>
+    </div>
+    <div class="snort-chart-card span-full">
+      <h6 class="snort-chart-title">Top IPs Origen</h6>
+      <div class="snort-chart-wrap"><canvas id="chartSrcIps"></canvas></div>
+    </div>
+    <div class="snort-chart-card span-full">
+      <h6 class="snort-chart-title">Top IPs Destino</h6>
+      <div class="snort-chart-wrap"><canvas id="chartDstIps"></canvas></div>
+    </div>
+  </div>
+
+  <div class="snort-chart-card" style="margin-bottom:12px;">
+    <h6 class="snort-chart-title">Eventos por Tiempo</h6>
+    <div class="snort-chart-wrap"><canvas id="chartTimeline"></canvas></div>
+  </div>
+
+  {% if db_error %}
+  <div style="color:#fca5a5;margin:10px 0;">Database error: {{ db_error }}</div>
+  {% endif %}
+
+  <div class="discover-columns-panel">
+    <div class="discover-columns-head">
+      <div class="discover-columns-title">Available data (show/hide columns)</div>
+      <div class="discover-columns-actions">
+        <button type="button" class="discover-field-action" id="showAllCols">Show all</button>
+        <button type="button" class="discover-field-action" id="hideAllCols">Hide all</button>
+        <button type="button" class="discover-field-action" id="resetCols">Reset</button>
+      </div>
+    </div>
+    <div class="discover-columns-list" id="columnsControl"></div>
+  </div>
+
+  <div class="discover-table-wrap">
+    <table class="discover-table">
+      <thead>
+        <tr>
+          {% for col in table_columns %}
+          <th data-col-index="{{ forloop.counter0 }}"><span class="col-label">{{ col }}</span><span class="col-resizer" data-col-index="{{ forloop.counter0 }}"></span></th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          {% for cell in row.cells %}
+          <td data-col-index="{{ forloop.counter0 }}">
+            <div class="discover-cell" data-full="{{ cell.full|escape }}" data-display="{{ cell.display|escape }}">
+              <div class="discover-cell-value">{{ cell.display }}</div>
+              <div class="discover-cell-actions">
+                <button class="js-add-filter cell-filter-btn include-btn" title="Include filter" aria-label="Include filter" type="button" data-mode="include" data-field="{{ cell.field }}" data-value="{{ cell.raw|escape }}">+</button>
+                <button class="js-add-filter cell-filter-btn exclude-btn" title="Exclude filter" aria-label="Exclude filter" type="button" data-mode="exclude" data-field="{{ cell.field }}" data-value="{{ cell.raw|escape }}">-</button>
+                <button class="js-toggle-cell cell-filter-btn cell-expand-btn" title="Expand/collapse" aria-label="Expand/collapse" type="button">↕</button>
+              </div>
+            </div>
+          </td>
+          {% endfor %}
+        </tr>
+        {% empty %}
+        <tr><td colspan="{{ table_columns|length }}">No logs found with current filters.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="snort-sec-footer">
+    <div>Total: <strong>{{ total }}</strong> | Columns: <strong>{{ table_columns|length }}</strong></div>
+    <div>
+      {% if page > 1 %}
+      <a class="ids-btn-modern secondary" href="?{{ base_querystring }}{% if base_querystring %}&{% endif %}page={{ page|add:'-1' }}">Prev</a>
+      {% endif %}
+      <span style="margin:0 8px;">Page {{ page }} / {{ total_pages }}</span>
+      {% if page < total_pages %}
+      <a class="ids-btn-modern secondary" href="?{{ base_querystring }}{% if base_querystring %}&{% endif %}page={{ page|add:'1' }}">Next</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{{ timeline|json_script:"snort-sec-timeline" }}
+{{ table_columns|json_script:"snort-sec-columns" }}
+{{ top_ports_total|json_script:"snort-top-ports" }}
+{{ top_src_ports|json_script:"snort-top-src-ports" }}
+{{ top_dst_ports|json_script:"snort-top-dst-ports" }}
+{{ top_protocols|json_script:"snort-top-protocols" }}
+{{ top_classifications|json_script:"snort-top-classifications" }}
+{{ top_priorities|json_script:"snort-top-priorities" }}
+{{ top_signatures|json_script:"snort-top-signatures" }}
+{{ top_hostnames|json_script:"snort-top-hostnames" }}
+{{ top_src_ips|json_script:"snort-top-src-ips" }}
+{{ top_dst_ips|json_script:"snort-top-dst-ips" }}
+{{ top_alerts|json_script:"snort-top-alerts" }}
+
+<script>
+(function () {
+  function whenChartReady(cb, attempt) {
+    if (typeof Chart !== 'undefined') {
+      cb();
+      return;
+    }
+    if ((attempt || 0) > 25) return;
+    setTimeout(function () { whenChartReady(cb, (attempt || 0) + 1); }, 120);
+  }
+
+  function updateUrl(mutator) {
+    const params = new URLSearchParams(window.location.search);
+    mutator(params);
+    params.delete('page');
+    window.location.search = params.toString();
+  }
+
+  function addFilter(mode, field, value) {
+    if (!field) return;
+    const clean = (value || '').replace(/\s+/g, ' ').trim();
+    const emptyLike = !clean || clean === '-' || clean === 'None' || clean === 'null';
+    const normalized = emptyLike ? '__EMPTY__' : clean;
+    const key = mode === 'exclude' ? 'nf' : 'f';
+    const token = field + ':' + normalized;
+    updateUrl(function (params) {
+      const all = params.getAll(key);
+      if (!all.includes(token)) params.append(key, token);
+    });
+  }
+
+  function removeFilter(mode, token) {
+    const key = mode === 'exclude' ? 'nf' : 'f';
+    updateUrl(function (params) {
+      const existing = params.getAll(key);
+      params.delete(key);
+      existing.forEach(function (item) {
+        if (item !== token) params.append(key, item);
+      });
+    });
+  }
+
+  function bindFilters() {
+    document.querySelectorAll('.js-add-filter').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const field = btn.getAttribute('data-field');
+        let value = btn.getAttribute('data-value') || '';
+        if (!value || value === '-') {
+          const rowCell = btn.closest('.discover-cell');
+          const valueNode = rowCell ? rowCell.querySelector('.discover-cell-value') : null;
+          value = valueNode ? (valueNode.textContent || '') : value;
+        }
+        if (value === '*') {
+          const typed = window.prompt('Filter value for ' + field + ':');
+          if (typed === null) return;
+          value = typed;
+        }
+        addFilter(btn.getAttribute('data-mode') || 'include', field, value);
+      });
+    });
+
+    document.querySelectorAll('.js-remove-filter').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        removeFilter(btn.getAttribute('data-mode'), btn.getAttribute('data-token'));
+      });
+    });
+  }
+
+  function bindCellToggles(root) {
+    (root || document).querySelectorAll('.js-toggle-cell').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        const cell = btn.closest('.discover-cell');
+        if (!cell) return;
+        const valueNode = cell.querySelector('.discover-cell-value');
+        const isExpanded = cell.classList.toggle('is-expanded');
+        if (valueNode) {
+          const full = cell.getAttribute('data-full') || '';
+          const display = cell.getAttribute('data-display') || '';
+          valueNode.textContent = isExpanded ? full : display;
+        }
+      });
+    });
+  }
+
+  function setupColumnVisibility() {
+    const colsEl = document.getElementById('snort-sec-columns');
+    const holder = document.getElementById('columnsControl');
+    if (!colsEl || !holder) return;
+
+    let columns = [];
+    try { columns = JSON.parse(colsEl.textContent || '[]'); } catch (e) { columns = []; }
+
+    const storageKey = 'snort_security_visible_columns';
+    let visible = {};
+    try { visible = JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch (e) { visible = {}; }
+
+    function applyVisibility() {
+      document.querySelectorAll('.discover-table th, .discover-table td').forEach(function (cell) {
+        const idx = cell.getAttribute('data-col-index');
+        if (!idx) return;
+        const name = columns[parseInt(idx, 10)];
+        const isVisible = visible[name] !== false;
+        cell.classList.toggle('is-hidden-col', !isVisible);
+      });
+    }
+
+    function renderChips() {
+      holder.innerHTML = '';
+      columns.forEach(function (col) {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'discover-col-chip' + (visible[col] === false ? ' off' : '');
+        chip.textContent = col;
+        chip.addEventListener('click', function () {
+          visible[col] = visible[col] === false ? true : false;
+          localStorage.setItem(storageKey, JSON.stringify(visible));
+          renderChips();
+          applyVisibility();
+        });
+        holder.appendChild(chip);
+      });
+    }
+
+    document.getElementById('showAllCols').addEventListener('click', function () {
+      columns.forEach(function (c) { visible[c] = true; });
+      localStorage.setItem(storageKey, JSON.stringify(visible));
+      renderChips(); applyVisibility();
+    });
+    document.getElementById('hideAllCols').addEventListener('click', function () {
+      columns.forEach(function (c) { visible[c] = false; });
+      localStorage.setItem(storageKey, JSON.stringify(visible));
+      renderChips(); applyVisibility();
+    });
+    document.getElementById('resetCols').addEventListener('click', function () {
+      visible = {};
+      localStorage.removeItem(storageKey);
+      renderChips(); applyVisibility();
+    });
+
+    renderChips();
+    applyVisibility();
+  }
+
+  function setupResizers() {
+    document.querySelectorAll('.discover-table th').forEach(function (th) {
+      const resizer = th.querySelector('.col-resizer');
+      if (!resizer) return;
+      let startX, startWidth;
+      resizer.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        startX = e.pageX;
+        startWidth = th.offsetWidth;
+        th.classList.add('is-resizing');
+        const onMove = function (ev) {
+          const newWidth = Math.max(120, startWidth + (ev.pageX - startX));
+          const idx = th.getAttribute('data-col-index');
+          document.querySelectorAll('.discover-table [data-col-index=\"' + idx + '\"]').forEach(function (cell) {
+            cell.style.width = newWidth + 'px';
+          });
+        };
+        const onUp = function () {
+          th.classList.remove('is-resizing');
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+        };
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+    });
+  }
+
+  function renderBarChart(canvasId, series, label) {
+    const el = document.getElementById(canvasId);
+    if (!el || typeof Chart === 'undefined') return;
+    const labels = series.map(function (p) { return p.label; });
+    const values = series.map(function (p) { return p.count; });
+    new Chart(el.getContext('2d'), {
+      type: 'bar',
+      data: { labels: labels, datasets: [{ label: label, data: values, backgroundColor: 'rgba(34, 211, 238, 0.35)', borderColor: '#22d3ee', borderWidth: 1 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(51,65,85,.35)' } },
+          y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(51,65,85,.35)' }, beginAtZero: true }
+        },
+        plugins: { legend: { labels: { color: '#cbd5e1' } } }
+      }
+    });
+  }
+
+  function renderPieChart(canvasId, series, label, chartType) {
+    const el = document.getElementById(canvasId);
+    if (!el || typeof Chart === 'undefined') return;
+    const labels = series.map(function (p) { return p.label; });
+    const values = series.map(function (p) { return p.count; });
+    new Chart(el.getContext('2d'), {
+      type: chartType || 'pie',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: label,
+          data: values,
+          backgroundColor: [
+            '#38bdf8', '#22d3ee', '#a78bfa', '#f472b6', '#fb7185',
+            '#fbbf24', '#34d399', '#60a5fa', '#f97316', '#c084fc'
+          ]
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: '#cbd5e1' } } }
+      }
+    });
+  }
+
+  function renderTimeline() {
+    const dataEl = document.getElementById('snort-sec-timeline');
+    const canvas = document.getElementById('chartTimeline');
+    if (!dataEl || !canvas || typeof Chart === 'undefined') return;
+    let points = [];
+    try { points = JSON.parse(dataEl.textContent || '[]'); } catch (e) { points = []; }
+    const labels = points.map(function (p) { return p.t; });
+    const values = points.map(function (p) { return p.count; });
+    new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: { labels: labels, datasets: [{ label: 'Events', data: values, borderColor: '#22d3ee', backgroundColor: 'rgba(34, 211, 238, 0.14)', fill: true, tension: 0.24, pointRadius: 0, borderWidth: 2 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          x: { ticks: { color: '#94a3b8', maxTicksLimit: 12 }, grid: { color: 'rgba(51,65,85,.35)' } },
+          y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(51,65,85,.35)' }, beginAtZero: true }
+        },
+        plugins: { legend: { labels: { color: '#cbd5e1' } } }
+      }
+    });
+  }
+
+  function parseJson(id) {
+    const el = document.getElementById(id);
+    if (!el) return [];
+    try { return JSON.parse(el.textContent || '[]'); } catch (e) { return []; }
+  }
+
+  function initDashboard() {
+    bindFilters();
+    bindCellToggles();
+    setupColumnVisibility();
+    setupResizers();
+    renderTimeline();
+    renderPieChart('chartTopPorts', parseJson('snort-top-ports'), 'Top Ports', 'doughnut');
+    renderPieChart('chartSrcPorts', parseJson('snort-top-src-ports'), 'Top Src Ports', 'doughnut');
+    renderPieChart('chartDstPorts', parseJson('snort-top-dst-ports'), 'Top Dst Ports', 'doughnut');
+    renderPieChart('chartProtocols', parseJson('snort-top-protocols'), 'Top Protocols', 'doughnut');
+    renderBarChart('chartClassifications', parseJson('snort-top-classifications'), 'Top Classifications');
+    renderPieChart('chartPriorities', parseJson('snort-top-priorities'), 'Top Priorities', 'doughnut');
+    renderPieChart('chartSignatures', parseJson('snort-top-signatures'), 'Top Signatures', 'doughnut');
+    renderPieChart('chartHostnames', parseJson('snort-top-hostnames'), 'Top Hostnames', 'doughnut');
+    renderBarChart('chartSrcIps', parseJson('snort-top-src-ips'), 'Top Src IPs');
+    renderBarChart('chartDstIps', parseJson('snort-top-dst-ips'), 'Top Dst IPs');
+    renderPieChart('chartAlerts', parseJson('snort-top-alerts'), 'Top Alerts', 'doughnut');
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    whenChartReady(initDashboard);
+  });
+})();
+</script>
+{% endblock %}
