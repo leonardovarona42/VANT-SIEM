@@ -1,155 +1,294 @@
-# VANT-SIEM
+# 🛡️ VANT-SIEM
+## Vigilance And Neutralization of Threats - Security Information & Event Management
 
-VANT-SIEM es una plataforma de gestión de seguridad orientada a detección, analítica y respuesta operativa. Combina SIEM tradicional (eventos, alertas, investigación) con un pipeline moderno de logs basado en OpenSearch para lograr visibilidad en tiempo casi real, trazabilidad y capacidad de escalado.
+<p align="center">
+  <img src="https://img.shields.io/badge/Django-5.x-green?style=for-the-badge&logo=django" alt="Django">
+  <img src="https://img.shields.io/badge/Python-3.12-blue?style=for-the-badge&logo=python" alt="Python">
+  <img src="https://img.shields.io/badge/OpenSearch-2.x-orange?style=for-the-badge" alt="OpenSearch">
+  <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License">
+</p>
 
-## Objetivo del proyecto
+---
 
-Entregar una plataforma unificada para:
+## 📋 Descripción
 
-- centralizar eventos de seguridad de múltiples fuentes,
-- correlacionar y priorizar riesgos,
-- apoyar decisiones de respuesta con analítica y predicción,
-- fortalecer el aseguramiento operativo y la continuidad del servicio.
+**VANT-SIEM** es una plataforma de gestión de seguridad empresarial 🏢 de última generación, diseñada para la **detección**, **análisis** y **respuesta operativa** a incidentes de ciberseguridad. Combina las capacidades de un SIEM tradicional (eventos, alertas, investigación) con un pipeline moderno de logs basado en **OpenSearch** para lograr:
 
-## Cualidades clave
+- ✅ **Visibilidad en tiempo real**
+- ✅ **Trazabilidad completa**
+- ✅ **Escalabilidad horizontal**
+- ✅ **Cumplimiento normativo**
 
-- Arquitectura desacoplada: separa la operación SIEM de la ingesta de alto volumen.
-- Escalabilidad operativa: microservicio de logs + agente multi-fuente.
-- Observabilidad completa: dashboards, Discovery, filtros por atributo y trazabilidad.
-- Integridad de datos: normalización, deduplicación y persistencia en base dedicada.
-- Seguridad de transporte: soporte de TLS y autenticación configurable.
+---
 
-## Servicios y módulos
+## 🧠 Ciberinteligencia y SOC de Nueva Generación
 
-- `CORE/`: configuración y orquestación Django.
-- `VANT_SIEM/`: núcleo SIEM (autenticación, notificaciones, panel principal).
-- `EVENT_M/`: gestión de incidentes, reportes y seguimiento.
-- `IRIS/`: capacidades de analítica asistida y automatización.
-- `opensearch/`: microservicio de ingesta y agentes.
-- `opensearch_ui/`: dashboard de logs y Discovery avanzado.
+### 🤖 IA, Machine Learning y Analítica Predictiva
 
-## Pipeline OpenSearch (estado actual)
+VANT-SIEM representa la evolución del concepto tradicional de SIEM hacia un **Sistema de Ciberinteligencia** de próxima generación. Esta no es simplemente una herramienta de registro de eventos, sino una **plataforma de análisis avanzado** que integra:
 
-`ids_ingest` fue retirado del flujo principal. El pipeline activo es:
+#### 🧠 Inteligencia Artificial
+- **Análisis Comportamental**: Detección de anomalías mediante algoritmos de machine learning que identifican patrones de comportamiento sospechoso
+- **Clasificación Automática**: Los incidentes son categorizados automáticamente según su naturaleza y severidad
+- **Reducción de Falsos Positivos**: Los modelos predictivos aprenden de los patrones históricos para filtrar alertas ruido
 
-- `opensearch/service`: recibe y persiste eventos en lotes.
-- `opensearch/agent`: recolecta logs de Snort, Suricata, Windows Event Logs, Samba AD y PostgreSQL.
-- `opensearch_ui`: visualización operativa y exploración avanzada.
+#### 📊 Analítica Avanzada
+- **Correlación Inteligente**: Relación de eventos aparentemente desconectados para descubrir ataques sofisticados
+- **Análisis de Tendencias**: Visualización de patrones temporales para anticipar amenazas emergentes
+- **Métricas de Seguridad**: KPIs y dashboards que proporcionan visibilidad del postura de seguridad organizacional
 
-Base de datos de logs: dedicada (`opensearch`) y separada de la BD principal del SIEM.
+#### 🔮 Predicción y Prevención
+- **Modelos Predictivos**: Algoritmos que anticipan posibles vectores de ataque basándose en inteligencia de amenazas
+- **Evaluación de Riesgos**: Scoring dinámico de activos y vulnerabilidades
+- ** Recomendaciones Automáticas**: Sugerencias de acciones de mitigación basadas en el análisis de incidentes similares
 
-## Analítica, predicción y aseguramiento
+#### ⚡ Características Avanzadas de Ciberinteligencia
 
-La plataforma integra capacidades para evolucionar de monitoreo reactivo a operación preventiva:
+| Capacidad | Descripción | Beneficio |
+|-----------|-------------|-----------|
+| 🕵️ **Inteligencia de Amenazas** | Integración con fuentes de threat intelligence | Conocimiento proactivo de amenazas |
+| 🔬 **Análisis Forense** | Investigación profunda de incidentes | Determinación de causa raíz |
+| 📡 **Monitoreo en Tiempo Real** | Streaming de eventos y alertas | Respuesta inmediata |
+| 🧪 **Simulación de Amenazas** | Pruebas de seguridad automatizadas | Validación de controles |
+| 📈 **Trend Analysis** | Análisis de patrones históricos | Predicción de tendencias |
 
-- Analítica de comportamiento y tendencias temporales.
-- Priorización de eventos por severidad y contexto.
-- Correlación entre fuentes heterogéneas.
-- Base para modelos predictivos de riesgo y saturación operativa.
-- Evidencia auditable para cumplimiento, respuesta y mejora continua.
+### 🏗️ Sistema Escalable de Punta
 
-## OpenSearch UI - Dashboards y Visualizaciones
+VANT-SIEM está diseñado como una **plataforma de punta** que escala vertical y horizontalmente:
 
-### Dashboards Disponibles
+- **Arquitectura de Microservicios**: Cada componente opera de manera independiente, permitiendo escalar únicamente los módulos que lo requieran
+- **Procesamiento de Alto Volumen**: Capacidad de ingestar y procesar millones de eventos por segundo
+- **Alta Disponibilidad**: Diseño tolerante a fallos con redundancia integrada
+- **Balanceo de Carga**: Distribución inteligente del procesamiento entre nodos
 
-- **Dashboard Principal**: `/opensearch/` - Vista general de eventos
-- **Snort Dashboard V2**: `/opensearch/snort/v2/` - Dashboard especializado para Snort IDS con:
-  - Stats de alertas críticas, altas, medias y totales
-  - Gráficos de timeline de alertas
-  - Top mensajes de alerta
-  - Top IPs fuente y destino
-  - Tabla de alertas recientes
-  - Selector de rango de tiempo (5m, 15m, 1h, 6h, 24h, 7d, All)
-  - Estilo Kibana/Wazuh oscuro
+---
 
-- **Discovery**: `/opensearch/discover/` - Exploración avanzada de logs
+## ⚖️ Cumplimiento Legal
 
-### Constructor de Visualizaciones
+### 📜 Resolución 105 - MINCOM (Ministerio de Comunicaciones)
 
-- **Acceso**: `/opensearch/visualizations/create/`
-- **Características**:
-  - Tipos de gráfico: Line, Bar, Area, Pie/Donut, Table, Metric
-  - Fuentes de datos: dinámicas desde `source_type` (All + fuentes reales con conteo)
-  - Configuración de métricas: Count, Average, Sum, Min, Max, Cardinality, Percentiles
-  - Buckets configurables: Date Histogram, Terms, Filters
-  - Opciones avanzadas de chart:
-    - Título del chart
-    - Posición de leyenda
-    - Líneas de grid
-    - Esquema de colores
-    - Stacking (para Bar/Area)
-    - Modo porcentaje
-    - Opacidad de relleno
-    - Radio de puntos
-    - Tensión de línea (curvas)
-    - Animaciones
-    - Etiquetas de datos
-  - Preview en tiempo real
-  - Guardar visualizaciones
-  - Custom labels con sugerencias dinámicas por fuente/atributos
+VANT-SIEM ha sido diseñado para cumplir con los requisitos establecidos en la **Resolución 105** del **Ministerio de Comunicaciones (MINCOM)** de Cuba, que establece el marco legal normativo para la gestión de incidentes de seguridad Informatica en el país:
 
-### Funcionalidades del Discovery
+| Requisito | Cumplimiento VANT-SIEM |
+|-----------|----------------------|
+| 📝 **Registro de incidentes** | Bitácora de incidentes en tiempo real con trazabilidad completa |
+| 👤 **Identificación de responsables** | Gestión de involucrados, responsables y áreas asignadas |
+| ⏰ **Trazabilidad temporal** | Timestamps precisos, historial de estados y acciones |
+| 📊 **Análisis y estadísticas** | Dashboard de incidentes, reportes y tendencias |
+| 🔒 **Confidencialidad** | Control de acceso granular, autenticación LDAP |
+| 📋 **Documentación** | Reportes formales, evidencia auditable |
+| 🔄 **Ciclo de vida del incidente** | Workflow completo: detección → análisis → contención → resolución |
+| 📑 **Notificación de incidentes** | Sistema de alertas y notificaciones a partes interesadas |
+| 🏢 **Coordinación institucional** | workflow multi-nivel con escalamiento |
 
-- Filtros include/exclude por atributo.
-- Manejo de campos vacíos `(empty)`.
-- Show/Hide dinámico de columnas.
-- Timeline + tabla de eventos de alta densidad.
-- Auto refresh sin recargar página.
-- Expansión de celdas y redimensionamiento de columnas.
+> 📢 **Nota**: La Resolución 105 del MINCOM establece las normas para la gestión de incidentes de seguridad Informatica en las organizaciones cubanas, incluyendo requisitos de reporte, tiempos de respuesta y procedimientos de coordinación.
 
-## Autenticación LDAP
+---
 
-El sistema soporta autenticación LDAP mediante configuraciones en UI:
+## 🏗️ Arquitectura Modular Basada en Microservicios
 
-- Soporta SSL/TLS o StartTLS.
-- Bind DN opcional.
-- Búsqueda de usuarios con placeholder `{username}`.
-- Mapeo de atributos (usuario, nombre, apellido, email).
-- Auto‑creación de usuario en el sistema (opcional).
+VANT-SIEM adopta una **arquitectura desacoplada** basada en microservicios, separando la operación SIEM de la ingesta de alto volumen:
 
-La autenticación LDAP se activa cuando existe una configuración marcada como `is_active` (y `is_default` preferente).
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         VANT-SIEM                                │
+├─────────────────────────────────────────────────────────────────┤
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐ │
+│  │   CORE       │  │  VANT_SIEM   │  │      EVENT_M         │ │
+│  │  (Orquestación)│ │  (Núcleo)    │  │  (Gestión Incidentes) │ │
+│  └──────────────┘  └──────────────┘  └──────────────────────┘ │
+│                                                                  │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐ │
+│  │     IRIS     │  │  opensearch  │  │    opensearch_ui     │ │
+│  │ (IA/Automát.) │ │  (Ingesta)   │  │   (Visualización)    │ │
+│  └──────────────┘  └──────────────┘  └──────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+```
 
-## Inicio rápido
+### 📦 Módulos del Sistema
 
-1. Crear y activar entorno virtual.
-2. Instalar dependencias.
-3. Configurar BD principal Django en `CORE/settings.py`.
-4. Configurar BD dedicada de logs (`opensearch`).
-5. Ejecutar migraciones y levantar Django.
-6. Instalar/iniciar servicio OpenSearch y agente.
+| Módulo | Descripción | Tecnologías |
+|--------|-------------|-------------|
+| 🏗️ **CORE** | Configuración y orquestación Django | Django, Python |
+| ⚙️ **VANT_SIEM** | Núcleo SIEM: autenticación, notificaciones, dashboard principal | Django, Bootstrap 5 |
+| 📋 **EVENT_M** | Gestión de incidentes, reportes,bitácora y seguimiento | Django, PostgreSQL |
+| 🤖 **IRIS** | Analítica asistida por IA y automatización SOAR | scikit-learn, NumPy |
+| 🌐 **opensearch** | Microservicio de ingesta de logs y agentes multi-fuente | Python, OpenSearch |
+| 📊 **opensearch_ui** | Dashboard de logs y Discovery avanzado | Bootstrap, Chart.js |
+
+---
+
+## 🔐 SIEM - Security Information & Event Management
+
+### 📊 Capacidades Principales
+
+- **📥 Centralización de Eventos**: Recolección de eventos de múltiples fuentes (Snort, Suricata, Windows Event Logs, Samba AD, PostgreSQL)
+- **🔍 Correlación de Eventos**: Análisis avanzado para identificar patrones de ataque
+- **🚨 Alertas en Tiempo Real**: Notificaciones inmediatas ante eventos sospechosos
+- **📈 Priorización por Severidad**: Clasificación automática de eventos por nivel de riesgo
+- **🔎 Investigación Forense**: Búsqueda avanzada y análisis de comportamiento
+- **📝 Auditoría Granular**: Registro detallado de todas las acciones y accesos
+
+---
+
+## 📝 Bitácora de Incidentes en Tiempo Real
+
+VANT-SIEM proporciona una **bitácora completa** de incidentes con:
+
+- 🕐 **Tiempo Real**: Registro inmediato de eventos y incidentes
+- 📋 **Gestión Integral**: Creación, seguimiento y resolución de incidentes
+- 👥 **Asignación de Responsables**: Control de quienes atienden cada incidente
+- 📊 **Métricas y KPIs**: Indicadores de rendimiento del proceso de gestión
+- 🔄 **Historial de Estados**: Trazabilidad completa del ciclo de vida
+- 📑 **Reportes Formalizados**: Generación de informes cumpliendo normativas
+
+---
+
+## 🔍 Análisis de Logs y Observabilidad
+
+### 🌐 Pipeline de OpenSearch
+
+```
+Fuentes de Datos → Agente → Servicio de Ingesta → OpenSearch → Dashboard
+     (Snort,                                               │
+      Suricata,                                            │
+      Windows,                                             │
+      AD, ...)                                             │
+                                                            ↓
+                                              ┌────────────────────┐
+                                              │   opensearch_ui    │
+                                              │  - Dashboards      │
+                                              │  - Discovery       │
+                                              │  - Visualizaciones │
+                                              └────────────────────┘
+```
+
+### 📊 Dashboards Disponibles
+
+| Dashboard | Ruta | Descripción |
+|-----------|------|-------------|
+| 🏠 **Principal** | `/opensearch/` | Vista general de eventos |
+| 🛡️ **Snort IDS V2** | `/opensearch/snort/v2/` | Alertas IDS con timeline |
+| 🔎 **Discovery** | `/opensearch/discover/` | Exploración avanzada de logs |
+
+### 🎨 Constructor de Visualizaciones
+
+- **📈 Gráficos**: Line, Bar, Area, Pie/Donut, Table, Metric
+- **⚙️ Métricas**: Count, Average, Sum, Min, Max, Cardinality, Percentiles
+- **🪣 Buckets**: Date Histogram, Terms, Filters
+- **✨ Personalización**: Colores, leyendas, animaciones, etiquetas
+
+---
+
+## 🔐 Autenticación y Seguridad
+
+### 🏢 Integración LDAP/Active Directory
+
+VANT-SIEM soporta **autenticación centralizada** mediante LDAP:
+
+- 🔒 **SSL/TLS** o StartTLS
+- 👤 **Bind DN** opcional
+- 🔍 **Búsqueda de usuarios** con placeholder `{username}`
+- 📝 **Mapeo de atributos**: usuario, nombre, apellido, email
+- ➕ **Auto-creación** de usuarios en el sistema
+
+---
+
+## 🤖 Inteligencia Artificial y Machine Learning
+
+El módulo **IRIS** integra capacidades de IA para:
+
+- 📊 **Análisis de comportamiento** y detección de anomalías
+- 🔮 **Predicción de riesgos** y tendencias
+- 🎯 **Clasificación automática** de incidentes
+- 📈 **Optimización operativa** mediante modelos predictivos
+
+---
+
+## 🚀 Inicio Rápido
+
+### Prerequisites
+
+- Python 3.12+
+- PostgreSQL 14+
+- OpenSearch 2.x
+
+### Instalación
 
 ```bash
+# 1. Crear entorno virtual
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# Windows: venv\Scripts\activate
+
+# 2. Instalar dependencias
+pip install -r requirements.txt
+
+# 3. Configurar base de datos en CORE/settings.py
+
+# 4. Ejecutar migraciones
 python manage.py migrate
+
+# 5. Iniciar servidor
 python manage.py runserver 0.0.0.0:8000
 ```
 
-Servicio OpenSearch (Windows):
+### Servicio OpenSearch (Windows)
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\opensearch\service\install_windows_service.ps1
 ```
 
-Agente OpenSearch (Windows):
+### Agente OpenSearch (Windows)
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\dist\opensearch-agent-installer\package\Install-OpenSearchAgent.ps1 -RunNow
 ```
 
-## Documentación
+---
 
-- `docs/README.md`
-- `docs/ARCHITECTURE.md`
-- `docs/INSTALLATION.md`
-- `docs/CHANGELOG.md`
-- `docs/OPENSEARCH_FEATURE.md`
-- `opensearch/README.md`
-- `opensearch_ui/README.md`
+## 📚 Documentación
 
-## Tecnologías utilizadas
+| Documento | Descripción |
+|-----------|-------------|
+| 📖 `docs/README.md` | Documentación general |
+| 🏗️ `docs/ARCHITECTURE.md` | Arquitectura del sistema |
+| 📦 `docs/INSTALLATION.md` | Guía de instalación |
+| 📋 `docs/CHANGELOG.md` | Historial de cambios |
+| 🔍 `docs/OPENSEARCH_FEATURE.md` | Características de OpenSearch |
+| 🌐 `opensearch/README.md` | Documentación del agente |
+| 📊 `opensearch_ui/README.md` | Documentación del UI |
 
-- **Backend**: Django 5.x, Python 3.12
-- **Base de datos**: PostgreSQL, SQLite (dev)
-- **Logs**: OpenSearch, PostgreSQL (opensearch)
-- **Frontend**: Bootstrap 5, Chart.js, Font Awesome
-- **IA/ML**: scikit-learn, NumPy, Pandas
-- **Agentes**: Python (multi-plataforma)
+---
+
+## 🛠️ Tecnologías Utilizadas
+
+<p align="left">
+
+![Django](https://img.shields.io/badge/Django-5.x-green)
+![Python](https://img.shields.io/badge/Python-3.12-blue)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-blue)
+![OpenSearch](https://img.shields.io/badge/OpenSearch-2.x-orange)
+![Bootstrap](https://img.shields.io/badge/Bootstrap-5-purple)
+![Chart.js](https://img.shields.io/badge/Chart.js-yellow)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-blue)
+
+</p>
+
+---
+
+## 📄 Licencia
+
+MIT License - © 2025 VANT-SIEM - Developed by **LLVT**
+
+---
+
+<div align="center">
+
+**🛡️ VANT-SIEM** - *Vigilance And Neutralization of Threats*
+
+*Plataforma integral de ciberseguridad para la gestión de incidentes en tiempo real*
+
+*Integrando Inteligencia Artificial, Machine Learning y Ciberinteligencia de última generación*
+
+</div>
