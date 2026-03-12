@@ -359,7 +359,17 @@
  >
  </li>
  <li>
- <a class="dropdown-item" href="{% url 'opensearch-visual-dashboard' %}"
+ <a class="dropdown-item" href="{% url 'snort-security-dashboard' %}"
+ ><i class="fas fa-shield-alt me-2"></i>Snort Security Dashboard</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item" href="{% url 'suricata-security-dashboard' %}"
+ ><i class="fas fa-shield-virus me-2"></i>Suricata Security Dashboard</a
+ >
+ </li>
+ <li>
+ <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1" title="En construcción"
  ><i class="fas fa-chart-line me-2"></i>Dashboard Visual</a
  >
  </li>
@@ -637,4 +647,3 @@
  {% block extra_js %}{% endblock %}
  </body>
 </html>
-

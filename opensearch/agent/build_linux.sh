@@ -160,8 +160,13 @@ create_debian_package() {
     mkdir -p "${pkg_dir}/DEBIAN"
     mkdir -p "${pkg_dir}/etc/init.d"
     
-    # Copy agent
-    cp -r "${venv_dir}"/* "${pkg_dir}/opt/vant-siem-agent/"
+    # Copy agent (prefer compiled binary if available)
+    if [ -f "${DIST_DIR}/VANT-SIEM-Agent" ]; then
+        cp "${DIST_DIR}/VANT-SIEM-Agent" "${pkg_dir}/opt/vant-siem-agent/"
+        chmod +x "${pkg_dir}/opt/vant-siem-agent/VANT-SIEM-Agent"
+    else
+        cp -r "${venv_dir}"/* "${pkg_dir}/opt/vant-siem-agent/"
+    fi
     
     # Copy config
     cp config.example.yaml "${pkg_dir}/etc/vant-siem/config.yaml"
@@ -182,7 +187,7 @@ create_debian_package() {
 NAME=vant-siem-agent
 DESC="VANT-SIEM OpenSearch Agent"
 PIDFILE=/var/run/$NAME.pid
-SCRIPT=/opt/vant-siem-agent/agent.py
+SCRIPT=/opt/vant-siem-agent/VANT-SIEM-Agent
 PYTHON_BIN=/opt/vant-siem-agent/bin/python
 CONFIG=/etc/vant-siem/config.yaml
 USER=root
@@ -191,7 +196,7 @@ case "$1" in
   start)
     echo "Starting $DESC: "
     cd /opt/vant-siem-agent
-    $PYTHON_BIN $SCRIPT --config $CONFIG &
+    $SCRIPT --config $CONFIG &
     echo $! > $PIDFILE
     echo "OK"
     ;;
@@ -264,8 +269,12 @@ create_tarball() {
     mkdir -p "${install_dir}/scripts"
     mkdir -p "${install_dir}/docs"
     
-    # Copy files
-    cp -r "${venv_dir}"/* "${install_dir}/agent/"
+    # Copy files (prefer compiled binary if available)
+    if [ -f "${DIST_DIR}/VANT-SIEM-Agent" ]; then
+        cp "${DIST_DIR}/VANT-SIEM-Agent" "${install_dir}/agent/"
+    else
+        cp -r "${venv_dir}"/* "${install_dir}/agent/"
+    fi
     cp config.example.yaml "${install_dir}/config/agent.yaml"
     cp opensearchcheck.py "${install_dir}/scripts/"
     cp opensearchmover.py "${install_dir}/scripts/"
@@ -276,8 +285,12 @@ create_tarball() {
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
-PYTHON_BIN="${SCRIPT_DIR}/bin/python"
-${PYTHON_BIN} agent.py --config ../config/agent.yaml "$@"
+if [ -x "${SCRIPT_DIR}/VANT-SIEM-Agent" ]; then
+  "${SCRIPT_DIR}/VANT-SIEM-Agent" --config ../config/agent.yaml "$@"
+else
+  PYTHON_BIN="${SCRIPT_DIR}/bin/python"
+  ${PYTHON_BIN} agent.py --config ../config/agent.yaml "$@"
+fi
 LAUNCHEREOF
     chmod +x "${install_dir}/agent/run.sh"
     
@@ -309,9 +322,10 @@ cp config/agent.yaml /etc/vant-siem/config.yaml
 cp scripts/*.py /opt/vant-siem-agent/
 
 # Make executable
-chmod +x /opt/vant-siem-agent/agent.py
-chmod +x /opt/vant-siem-agent/opensearchcheck.py
-chmod +x /opt/vant-siem-agent/opensearchmover.py
+chmod +x /opt/vant-siem-agent/VANT-SIEM-Agent 2>/dev/null || true
+chmod +x /opt/vant-siem-agent/agent.py 2>/dev/null || true
+chmod +x /opt/vant-siem-agent/opensearchcheck.py 2>/dev/null || true
+chmod +x /opt/vant-siem-agent/opensearchmover.py 2>/dev/null || true
 chmod +x /opt/vant-siem-agent/run.sh
 
 echo "Installation complete!"
