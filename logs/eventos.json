@@ -16836,5 +16836,239 @@
     "target_id": null,
     "ip_address": null,
     "user_agent": null
+  },
+  {
+    "id": 750,
+    "timestamp": "2026-03-11T16:08:55.774699+00:00",
+    "user": {
+      "id": 2,
+      "username": "test",
+      "email": "",
+      "is_superuser": false,
+      "is_staff": false
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario test cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 751,
+    "timestamp": "2026-03-11T21:53:49.382272+00:00",
+    "user": {
+      "id": 1,
+      "username": "root",
+      "email": "",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario root inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 752,
+    "timestamp": "2026-03-11T21:53:49.421788+00:00",
+    "user": {
+      "id": 1,
+      "username": "root",
+      "email": "",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 753,
+    "timestamp": "2026-03-11T21:54:51.254930+00:00",
+    "user": {
+      "id": 1,
+      "username": "root",
+      "email": "",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 754,
+    "timestamp": "2026-03-11T21:54:56.597096+00:00",
+    "user": {
+      "id": 1,
+      "username": "root",
+      "email": "",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "NOTIFICATION_ACCESS",
+    "description": "Usuario consultó notifications exitosamente",
+    "details": {
+      "method": "GET",
+      "path": "/siem/ids/notifications/",
+      "status_code": 200,
+      "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 755,
+    "timestamp": "2026-03-11T21:55:43.010756+00:00",
+    "user": {
+      "id": 1,
+      "username": "root",
+      "email": "",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario root cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 756,
+    "timestamp": "2026-03-11T22:55:55.900428+00:00",
+    "user": {
+      "id": 1,
+      "username": "root",
+      "email": "",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario root inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 757,
+    "timestamp": "2026-03-11T22:55:55.931159+00:00",
+    "user": {
+      "id": 1,
+      "username": "root",
+      "email": "",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 758,
+    "timestamp": "2026-03-11T23:00:26.346954+00:00",
+    "user": {
+      "id": 1,
+      "username": "root",
+      "email": "",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGOUT",
+    "description": "Usuario root cerró sesión",
+    "details": {},
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 759,
+    "timestamp": "2026-03-11T23:00:34.789711+00:00",
+    "user": {
+      "id": 2,
+      "username": "test",
+      "email": "",
+      "is_superuser": false,
+      "is_staff": false
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario test inició sesión",
+    "details": {
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 760,
+    "timestamp": "2026-03-11T23:00:34.833213+00:00",
+    "user": {
+      "id": 2,
+      "username": "test",
+      "email": "",
+      "is_superuser": false,
+      "is_staff": false
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0",
+      "ip_address": "127.0.0.1"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
   }
 ]

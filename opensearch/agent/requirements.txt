@@ -1,0 +1,9 @@
+# VANT-SIEM Agent Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core dependencies
+PyYAML>=6.0
+requests>=2.28.0
+
+# For building executables (optional)
+# pyinstaller>=5.0
