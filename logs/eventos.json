@@ -17070,5 +17070,69 @@
     "target_id": null,
     "ip_address": null,
     "user_agent": null
+  },
+  {
+    "id": 761,
+    "timestamp": "2026-03-13T20:34:03.525679+00:00",
+    "user": {
+      "id": null,
+      "username": "Anonymous",
+      "email": null,
+      "is_superuser": false,
+      "is_staff": false
+    },
+    "event_type": "LOGIN_FAILED",
+    "description": "Intento de login fallido para usuario: leonardo.varona",
+    "details": {
+      "ip_address": "192.168.1.12"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 762,
+    "timestamp": "2026-03-13T20:35:07.830787+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario leonardo.varona inició sesión",
+    "details": {
+      "ip_address": "192.168.1.12"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
+  },
+  {
+    "id": 763,
+    "timestamp": "2026-03-13T20:35:07.909141+00:00",
+    "user": {
+      "id": 1,
+      "username": "leonardo.varona",
+      "email": "leonardo.varona44@gmail.com",
+      "is_superuser": true,
+      "is_staff": true
+    },
+    "event_type": "LOGIN",
+    "description": "Usuario creó login exitosamente",
+    "details": {
+      "method": "POST",
+      "path": "/siem/ids/login/",
+      "status_code": 302,
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36 Edg/145.0.0.0",
+      "ip_address": "192.168.1.12"
+    },
+    "target_model": null,
+    "target_id": null,
+    "ip_address": null,
+    "user_agent": null
   }
 ]

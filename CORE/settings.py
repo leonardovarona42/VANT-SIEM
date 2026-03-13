@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'VANT_SIEM.apps.VantSiemConfig',
-    'collector.apps.CollectorConfig',
+    'opensearch_service.apps.OpenSearchServiceConfig',
     'EVENT_M',
     'opensearch_ui.apps.OpenSearchUiConfig',
     'IRIS',
@@ -89,12 +89,24 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'vant_test1',           
-        'USER': 'testing', 
+        'USER': 'postgres', 
         'PASSWORD': 'postgres',   
         'HOST': 'localhost',           
         'PORT': '5432',               
-    }
+    },
+    'opensearch': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('OS_DB_NAME', 'vant_opensearch'),
+        'USER': os.getenv('OS_DB_USER', 'postgres'),
+        'PASSWORD': os.getenv('OS_DB_PASSWORD', 'postgres'),
+        'HOST': os.getenv('OS_DB_HOST', '127.0.0.1'),
+        'PORT': os.getenv('OS_DB_PORT', '5432'),
+    },
 }
+
+DATABASE_ROUTERS = [
+    "opensearch_service.db_router.OpenSearchRouter",
+]
 
 
 

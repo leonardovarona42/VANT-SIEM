@@ -2,8 +2,8 @@
 
 
 a = Analysis(
-    ['opensearch\\agent\\agent.py'],
-    pathex=['opensearch/agent'],
+    ['opensearch_agents\\agent.py'],
+    pathex=['opensearch_agents'],
     binaries=[],
     datas=[],
     hiddenimports=[],

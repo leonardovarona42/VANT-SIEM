@@ -77,7 +77,7 @@ def _get_opensearch_pg_conn():
         host=os.getenv('OS_DB_HOST', '127.0.0.1'),
         port=int(os.getenv('OS_DB_PORT', '5432')),
         dbname=os.getenv('OS_DB_NAME', 'vant_opensearch'),
-        user=os.getenv('OS_DB_USER', 'testing'),
+        user=os.getenv('OS_DB_USER', 'postgres'),
         password=os.getenv('OS_DB_PASSWORD', 'postgres'),
     )
 
@@ -3376,7 +3376,7 @@ def opensearch_visual_dashboard(request):
     db_host = os.getenv('OS_DB_HOST', '127.0.0.1')
     db_port = int(os.getenv('OS_DB_PORT', '5432'))
     db_name = os.getenv('OS_DB_NAME', 'vant_opensearch')
-    db_user = os.getenv('OS_DB_USER', 'testing')
+    db_user = os.getenv('OS_DB_USER', 'postgres')
     db_password = os.getenv('OS_DB_PASSWORD', 'postgres')
 
     try:
@@ -3507,7 +3507,7 @@ def opensearch_discovery(request):
     db_host = os.getenv('OS_DB_HOST', '127.0.0.1')
     db_port = int(os.getenv('OS_DB_PORT', '5432'))
     db_name = os.getenv('OS_DB_NAME', 'vant_opensearch')
-    db_user = os.getenv('OS_DB_USER', 'testing')
+    db_user = os.getenv('OS_DB_USER', 'postgres')
     db_password = os.getenv('OS_DB_PASSWORD', 'postgres')
 
     core_fields = [
