@@ -182,7 +182,13 @@
  </a>
  </li>
  </ul>
- </li>
+ </li><!-- Neural Network Visualization for IRIS
+ <li class="nav-item">
+ <div id="neural-network-canvas" style="width: 60px; height: 40px; position: relative; display: inline-block; margin-right: 10px;">
+ <canvas id="neuralCanvas" width="60" height="40" style="display: block;"></canvas>
+ </div>
+ </li> -->
+
 
  <!-- Neural Network Visualization for IRIS
  <li class="nav-item">
@@ -761,7 +767,7 @@
  <i class="fas fa-file-alt fa-2x"></i>
  </div>
  </div>
- <small id="reportes-24h">Ãltimas 24h: -</small>
+ <small id="reportes-24h">Ultimas 24h: -</small>
  </div>
  </div>
  </div>
@@ -1117,10 +1123,10 @@
 
  document.getElementById(
  "reportes-24h"
- ).textContent = `Ãltimas 24h: ${metricas.ultimas_24h.reportes}`;
+ ).textContent = `Ultimas 24h: ${metricas.ultimas_24h.reportes}`;
  document.getElementById(
  "incidentes-24h"
- ).textContent = `Ãltimas 24h: ${metricas.ultimas_24h.incidentes}`;
+ ).textContent = `Ultimas 24h: ${metricas.ultimas_24h.incidentes}`;
 
  // Actualizar grafico de reportes por estado
  updateReportesEstadoChart(metricas.reportes_por_estado);
