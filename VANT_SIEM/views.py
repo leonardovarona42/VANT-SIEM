@@ -443,10 +443,24 @@ def agent_inventory_compare(request, agent_id):
     except AgentDevice.DoesNotExist:
         return JsonResponse({'ok': False, 'error': 'Agente no encontrado'}, status=404)
 
-    snapshots = list(
-        AgentInventorySnapshot.objects.filter(agent=device)
-        .order_by('-created_at')[:2]
-    )
+    from_ts = request.GET.get("from")
+    to_ts = request.GET.get("to")
+    if from_ts and to_ts:
+        try:
+            from_dt = timezone.datetime.fromisoformat(from_ts)
+            to_dt = timezone.datetime.fromisoformat(to_ts)
+            snapshots = list(
+                AgentInventorySnapshot.objects.filter(
+                    agent=device, created_at__in=[from_dt, to_dt]
+                ).order_by("-created_at")
+            )
+        except Exception:
+            snapshots = []
+    else:
+        snapshots = list(
+            AgentInventorySnapshot.objects.filter(agent=device)
+            .order_by('-created_at')[:2]
+        )
     if len(snapshots) < 2:
         return JsonResponse({'ok': False, 'error': 'No hay suficientes snapshots'}, status=400)
 

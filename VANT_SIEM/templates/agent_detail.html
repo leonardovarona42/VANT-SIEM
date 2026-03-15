@@ -81,6 +81,17 @@
     border-radius: 10px;
     margin-top: 12px;
   }
+  .compare-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+  }
+  .compare-card {
+    background: #0b162a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 10px;
+  }
 </style>
 {% endblock %}
 
@@ -195,6 +206,24 @@
     <h5>Cambios en apps (últimos snapshots)</h5>
     <div id="apps-diff" class="text-muted">Cargando comparación...</div>
   </div>
+  <div class="detail-section">
+    <h5>Comparar inventarios por fecha</h5>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <label class="form-label">Snapshot A</label>
+        <select class="form-select" id="snapshot-a"></select>
+      </div>
+      <div class="compare-card">
+        <label class="form-label">Snapshot B</label>
+        <select class="form-select" id="snapshot-b"></select>
+      </div>
+      <div class="compare-card">
+        <label class="form-label">Acciones</label>
+        <button class="btn btn-sm btn-outline-info w-100" id="compare-btn">Comparar</button>
+      </div>
+    </div>
+    <div class="mt-3 text-muted" id="compare-result">Selecciona dos snapshots para comparar.</div>
+  </div>
   {% endif %}
 </div>
 <script>
@@ -247,6 +276,7 @@
       list.innerHTML = history
         .map((h) => `<li><strong>${h.created_at}</strong><div class="text-muted">Snapshot registrado</div></li>`)
         .join("");
+      populateSnapshotSelects(history);
       renderTimeline(history);
     } catch (err) {
       const list = document.getElementById("history-list");
@@ -305,6 +335,51 @@
     }
   }
 
+  function populateSnapshotSelects(history) {
+    const selectA = document.getElementById("snapshot-a");
+    const selectB = document.getElementById("snapshot-b");
+    selectA.innerHTML = "";
+    selectB.innerHTML = "";
+    history.forEach((h) => {
+      const optA = document.createElement("option");
+      optA.value = h.created_at;
+      optA.textContent = h.created_at;
+      const optB = optA.cloneNode(true);
+      selectA.appendChild(optA);
+      selectB.appendChild(optB);
+    });
+    if (history.length > 1) {
+      selectA.selectedIndex = history.length - 1;
+      selectB.selectedIndex = history.length - 2;
+    }
+  }
+
+  async function compareSnapshots() {
+    const a = document.getElementById("snapshot-a").value;
+    const b = document.getElementById("snapshot-b").value;
+    const target = document.getElementById("compare-result");
+    if (!a || !b || a === b) {
+      target.textContent = "Selecciona dos snapshots distintos.";
+      return;
+    }
+    try {
+      const res = await fetch(`/api/agent/inventory/compare/{{ device.agent_id }}/?from=${encodeURIComponent(b)}&to=${encodeURIComponent(a)}`);
+      const data = await res.json();
+      if (!data.ok) {
+        target.textContent = data.error || "No se pudo comparar.";
+        return;
+      }
+      target.innerHTML = `
+        <div><strong>Desde:</strong> ${data.from}</div>
+        <div><strong>Hasta:</strong> ${data.to}</div>
+        <div class="mt-2"><strong>Apps agregadas:</strong> ${data.apps_added.join(", ") || "Ninguna"}</div>
+        <div><strong>Apps removidas:</strong> ${data.apps_removed.join(", ") || "Ninguna"}</div>
+      `;
+    } catch (err) {
+      target.textContent = "Error comparando snapshots.";
+    }
+  }
+
   function renderAlerts() {
     const bios = "{{ latest_snapshot.bios_serial|default:'' }}";
     const cpu = "{{ latest_snapshot.cpu|default:'' }}";
@@ -329,5 +404,6 @@
   document.getElementById("agent-export-apps-btn").onclick = () => {
     window.location.href = `/api/agent/inventory/apps/export/{{ device.agent_id }}/`;
   };
+  document.getElementById("compare-btn").onclick = compareSnapshots;
 </script>
 {% endblock %}
