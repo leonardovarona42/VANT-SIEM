@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'sslserver',
     'VANT_SIEM.apps.VantSiemConfig',
+    'inventory.apps.InventoryConfig',
     'opensearch_service.apps.OpenSearchServiceConfig',
     'EVENT_M',
     'opensearch_ui.apps.OpenSearchUiConfig',

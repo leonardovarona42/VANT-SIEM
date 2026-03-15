@@ -4,9 +4,9 @@ import django.db.models.deletion
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ("VANT_SIEM", "0006_ldapconfig"),
-    ]
+    initial = True
+
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
@@ -37,7 +37,7 @@ class Migration(migrations.Migration):
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 ("executed_at", models.DateTimeField(blank=True, null=True)),
                 ("message", models.TextField(blank=True, default="")),
-                ("agent", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="commands", to="VANT_SIEM.agentdevice")),
+                ("agent", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="commands", to="inventory.agentdevice")),
             ],
             options={
                 "verbose_name": "Comando de Agente",
@@ -50,7 +50,7 @@ class Migration(migrations.Migration):
                 ("id", models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
                 ("payload", models.JSONField(default=dict)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
-                ("agent", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="inventory_snapshots", to="VANT_SIEM.agentdevice")),
+                ("agent", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="inventory_snapshots", to="inventory.agentdevice")),
             ],
             options={
                 "verbose_name": "Inventario de Agente",

@@ -152,7 +152,7 @@ def agent_heartbeat(request):
     agent_version = payload.get('agent_version', '').strip()
     ips = payload.get('ips') or []
 
-    from .models import AgentDevice
+    from inventory.models import AgentDevice
 
     device, _ = AgentDevice.objects.get_or_create(agent_id=agent_id)
     device.host_name = host_name or device.host_name
@@ -185,7 +185,7 @@ def agent_inventory(request):
         return JsonResponse({'ok': False, 'error': 'Token invalido'}, status=403)
 
     inventory = payload.get('inventory') or {}
-    from .models import AgentDevice, AgentInventorySnapshot
+    from inventory.models import AgentDevice, AgentInventorySnapshot
 
     device, _ = AgentDevice.objects.get_or_create(agent_id=agent_id)
     device.last_seen = timezone.now()
@@ -208,7 +208,7 @@ def agent_commands_pull(request):
     if not auth:
         return JsonResponse({'ok': False, 'error': 'Token invalido'}, status=403)
 
-    from .models import AgentDevice, AgentCommand
+    from inventory.models import AgentDevice, AgentCommand
 
     device, _ = AgentDevice.objects.get_or_create(agent_id=agent_id)
     cmd = (
@@ -237,7 +237,7 @@ def agent_commands_ack(request):
     if not command_id:
         return JsonResponse({'ok': False, 'error': 'command_id requerido'}, status=400)
 
-    from .models import AgentCommand
+    from inventory.models import AgentCommand
 
     try:
         cmd = AgentCommand.objects.get(id=command_id)
@@ -264,7 +264,7 @@ def agent_command_issue(request):
     if command not in ('stop', 'restart'):
         return JsonResponse({'ok': False, 'error': 'Comando invalido'}, status=400)
 
-    from .models import AgentDevice, AgentCommand
+    from inventory.models import AgentDevice, AgentCommand
 
     try:
         device = AgentDevice.objects.get(agent_id=agent_id)
@@ -277,7 +277,7 @@ def agent_command_issue(request):
 
 @login_required
 def agent_list(request):
-    from .models import AgentDevice
+    from inventory.models import AgentDevice
     devices = AgentDevice.objects.all().order_by('-last_seen')
     payload = []
     for d in devices:
