@@ -159,6 +159,8 @@ class ConnectionPage(QtWidgets.QWizardPage):
         if auth_mode == "none":
             shared_secret = self._load_bootstrap_key()
             if not shared_secret:
+                shared_secret = self._fetch_bootstrap_secret()
+            if not shared_secret:
                 shared_secret = DEFAULT_AGENT_SHARED_SECRET
 
             timestamp = str(int(time.time()))
@@ -227,6 +229,29 @@ class ConnectionPage(QtWidgets.QWizardPage):
             except Exception:
                 return ""
         return ""
+
+    def _fetch_bootstrap_secret(self):
+        url = self._build_bootstrap_url()
+        if not url:
+            return ""
+        try:
+            response = requests.get(url, timeout=6)
+            if "application/json" not in response.headers.get("Content-Type", ""):
+                return ""
+            data = response.json()
+            if response.status_code == 200 and data.get("ok") and data.get("secret"):
+                return data.get("secret", "")
+        except Exception:
+            return ""
+        return ""
+
+    def _build_bootstrap_url(self):
+        scheme = "https" if self.server_https.isChecked() else "http"
+        host = self.server_host.text().strip()
+        port = self.server_port.value()
+        if not host:
+            return ""
+        return f"{scheme}://{host}:{port}/api/agent/bootstrap/"
 
     def _sign_request(self, secret, agent_id, host_name, timestamp):
         message = f"{agent_id}:{host_name}:{timestamp}".encode("utf-8")

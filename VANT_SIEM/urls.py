@@ -9,6 +9,7 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),
     path('devices/management/', views.devices_management, name='devices-management'),
     path('api/agent/enroll/', views.agent_enroll, name='agent-enroll'),
+    path('api/agent/bootstrap/', views.agent_bootstrap_secret, name='agent-bootstrap'),
     path('api/agent/authorize-stop/', views.agent_authorize_stop, name='agent-authorize-stop'),
     path('api/agent/heartbeat/', views.agent_heartbeat, name='agent-heartbeat'),
     path('api/agent/inventory/', views.agent_inventory, name='agent-inventory'),

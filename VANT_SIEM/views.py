@@ -48,11 +48,18 @@ def devices_management(request):
 DEFAULT_AGENT_SHARED_SECRET = "VANT-SIEM-AGENT-BOOTSTRAP-2026"
 
 
+def _derive_secret_from_superuser():
+    user = User.objects.filter(is_superuser=True).order_by("id").first()
+    if not user or not user.username:
+        return DEFAULT_AGENT_SHARED_SECRET
+    return hashlib.sha256(user.username.encode("utf-8")).hexdigest()
+
+
 def _load_agent_shared_secret():
     env_secret = os.environ.get('VANT_AGENT_SHARED_SECRET', '').strip()
     if env_secret:
         return env_secret
-    return DEFAULT_AGENT_SHARED_SECRET
+    return _derive_secret_from_superuser()
 
 
 def _load_agent_allowlist():
@@ -132,6 +139,13 @@ def agent_enroll(request):
             'expires_in': 86400,
         }
     )
+
+
+@csrf_exempt
+@require_GET
+def agent_bootstrap_secret(request):
+    secret = _load_agent_shared_secret()
+    return JsonResponse({'ok': True, 'secret': secret})
 
 
 @csrf_exempt
