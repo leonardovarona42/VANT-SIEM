@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
@@ -62,6 +62,26 @@ def _load_agent_allowlist():
     return [item.strip() for item in raw.split(',') if item.strip()]
 
 
+def _get_bearer_token(request):
+    auth = request.headers.get('Authorization', '')
+    if auth.lower().startswith('bearer '):
+        return auth.split(' ', 1)[1].strip()
+    return ''
+
+
+def _authorize_agent_request(request, agent_id=None):
+    token = _get_bearer_token(request)
+    if not token:
+        return None
+    try:
+        data = signing.loads(token, salt='vant-siem-agent-token', max_age=86400 * 30)
+    except Exception:
+        return None
+    if agent_id and data.get('agent_id') != agent_id:
+        return None
+    return data
+
+
 @csrf_exempt
 @require_POST
 def agent_enroll(request):
@@ -112,6 +132,166 @@ def agent_enroll(request):
             'expires_in': 86400,
         }
     )
+
+
+@csrf_exempt
+@require_POST
+def agent_heartbeat(request):
+    try:
+        payload = json.loads(request.body.decode('utf-8')) if request.body else {}
+    except Exception:
+        payload = {}
+
+    agent_id = payload.get('agent_id', '').strip()
+    auth = _authorize_agent_request(request, agent_id=agent_id)
+    if not auth:
+        return JsonResponse({'ok': False, 'error': 'Token invalido'}, status=403)
+
+    host_name = payload.get('host_name', '').strip()
+    host_ip = payload.get('host_ip', '').strip()
+    agent_version = payload.get('agent_version', '').strip()
+    ips = payload.get('ips') or []
+
+    from .models import AgentDevice
+
+    device, _ = AgentDevice.objects.get_or_create(agent_id=agent_id)
+    device.host_name = host_name or device.host_name
+    device.host_ip = host_ip or device.host_ip
+    device.agent_version = agent_version or device.agent_version
+    device.last_seen = timezone.now()
+    device.status = "online"
+
+    known_ips = device.known_ips or []
+    for ip in ips:
+        if ip and ip not in known_ips:
+            known_ips.append(ip)
+    device.known_ips = known_ips
+    device.save()
+
+    return JsonResponse({'ok': True})
+
+
+@csrf_exempt
+@require_POST
+def agent_inventory(request):
+    try:
+        payload = json.loads(request.body.decode('utf-8')) if request.body else {}
+    except Exception:
+        payload = {}
+
+    agent_id = payload.get('agent_id', '').strip()
+    auth = _authorize_agent_request(request, agent_id=agent_id)
+    if not auth:
+        return JsonResponse({'ok': False, 'error': 'Token invalido'}, status=403)
+
+    inventory = payload.get('inventory') or {}
+    from .models import AgentDevice, AgentInventorySnapshot
+
+    device, _ = AgentDevice.objects.get_or_create(agent_id=agent_id)
+    device.last_seen = timezone.now()
+    device.save()
+
+    AgentInventorySnapshot.objects.create(agent=device, payload=inventory)
+    return JsonResponse({'ok': True})
+
+
+@csrf_exempt
+@require_POST
+def agent_commands_pull(request):
+    try:
+        payload = json.loads(request.body.decode('utf-8')) if request.body else {}
+    except Exception:
+        payload = {}
+
+    agent_id = payload.get('agent_id', '').strip()
+    auth = _authorize_agent_request(request, agent_id=agent_id)
+    if not auth:
+        return JsonResponse({'ok': False, 'error': 'Token invalido'}, status=403)
+
+    from .models import AgentDevice, AgentCommand
+
+    device, _ = AgentDevice.objects.get_or_create(agent_id=agent_id)
+    cmd = (
+        AgentCommand.objects.filter(agent=device, status='pending')
+        .order_by('created_at')
+        .first()
+    )
+    if not cmd:
+        return JsonResponse({'ok': True, 'command': None})
+
+    cmd.status = 'issued'
+    cmd.save(update_fields=['status'])
+    return JsonResponse({'ok': True, 'command': cmd.command, 'command_id': cmd.id})
+
+
+@csrf_exempt
+@require_POST
+def agent_commands_ack(request):
+    try:
+        payload = json.loads(request.body.decode('utf-8')) if request.body else {}
+    except Exception:
+        payload = {}
+
+    command_id = payload.get('command_id')
+    status = payload.get('status', 'done')
+    if not command_id:
+        return JsonResponse({'ok': False, 'error': 'command_id requerido'}, status=400)
+
+    from .models import AgentCommand
+
+    try:
+        cmd = AgentCommand.objects.get(id=command_id)
+    except AgentCommand.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'command_id invalido'}, status=404)
+
+    cmd.status = status
+    cmd.executed_at = timezone.now()
+    cmd.save(update_fields=['status', 'executed_at'])
+    return JsonResponse({'ok': True})
+
+
+@login_required
+@require_POST
+def agent_command_issue(request):
+    if not request.user.is_superuser:
+        return JsonResponse({'ok': False, 'error': 'No autorizado'}, status=403)
+    try:
+        payload = json.loads(request.body.decode('utf-8')) if request.body else {}
+    except Exception:
+        payload = {}
+    agent_id = payload.get('agent_id', '').strip()
+    command = payload.get('command', '').strip()
+    if command not in ('stop', 'restart'):
+        return JsonResponse({'ok': False, 'error': 'Comando invalido'}, status=400)
+
+    from .models import AgentDevice, AgentCommand
+
+    try:
+        device = AgentDevice.objects.get(agent_id=agent_id)
+    except AgentDevice.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Agente no encontrado'}, status=404)
+
+    cmd = AgentCommand.objects.create(agent=device, command=command, status='pending')
+    return JsonResponse({'ok': True, 'command_id': cmd.id})
+
+
+@login_required
+def agent_list(request):
+    from .models import AgentDevice
+    devices = AgentDevice.objects.all().order_by('-last_seen')
+    payload = []
+    for d in devices:
+        payload.append(
+            {
+                'agent_id': d.agent_id,
+                'host_name': d.host_name,
+                'host_ip': d.host_ip,
+                'agent_version': d.agent_version,
+                'last_seen': d.last_seen.isoformat() if d.last_seen else '',
+                'status': d.status,
+            }
+        )
+    return JsonResponse({'ok': True, 'devices': payload})
 
 
 @csrf_exempt

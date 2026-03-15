@@ -3,10 +3,17 @@ import logging
 import socket
 import sys
 import time
+import os
+import threading
+import json
+import subprocess
+import platform
+from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 import yaml
+import requests
 
 from collectors.snort import SnortCollector
 from collectors.suricata import SuricataCollector
@@ -123,6 +130,65 @@ def _sleep_with_stop(stop_event, seconds):
         remaining -= 1
 
 
+def _control_config(cfg):
+    return cfg.get("control", {}) or {}
+
+
+def _control_headers(token):
+    return {"Authorization": f"Bearer {token}"} if token else {}
+
+
+def _control_post(url, payload, token, timeout=8):
+    headers = _control_headers(token)
+    return requests.post(url, json=payload, headers=headers, timeout=timeout)
+
+
+def _collect_inventory():
+    info = {
+        "host": socket.gethostname(),
+        "os": platform.platform(),
+        "collected_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    def run_cmd(cmd):
+        try:
+            out = subprocess.check_output(cmd, shell=True, text=True, stderr=subprocess.STDOUT)
+            return out.strip()
+        except Exception:
+            return ""
+
+    info["bios_serial"] = run_cmd("wmic bios get serialnumber")
+    info["csproduct"] = run_cmd("wmic csproduct get name,uuid")
+    info["cpu"] = run_cmd("wmic cpu get name,ProcessorId")
+    info["baseboard"] = run_cmd("wmic baseboard get product,serialnumber,manufacturer")
+    info["os_details"] = run_cmd("wmic os get Caption,Version,BuildNumber,SerialNumber,InstallDate,LastBootUpTime")
+    info["logged_users"] = run_cmd("query user")
+
+    # Installed apps (best-effort, can be slow on some systems)
+    info["installed_apps"] = run_cmd(
+        'powershell -NoProfile -Command "Get-ItemProperty HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* '
+        '| Select-Object DisplayName,DisplayVersion,Publisher '
+        '| ConvertTo-Json -Compress"'
+    )
+    return info
+
+
+def _current_ips():
+    ips = set()
+    try:
+        hostname = socket.gethostname()
+        ips.add(socket.gethostbyname(hostname))
+    except Exception:
+        pass
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("8.8.8.8", 80))
+            ips.add(s.getsockname()[0])
+    except Exception:
+        pass
+    return [ip for ip in ips if ip and not ip.startswith("127.")]
+
+
 def run_with_stop(config_path, stop_event):
     cfg = load_cfg(config_path)
     agent_cfg = cfg.get("agent", {})
@@ -145,6 +211,15 @@ def run_with_stop(config_path, stop_event):
     collectors = build_collectors(cfg)
     interval = int(agent_cfg.get("interval_seconds", 10))
     log_every = int(agent_cfg.get("log_every_cycles", 60))
+    control_cfg = _control_config(cfg)
+    control_server = (control_cfg.get("server_url") or "").rstrip("/")
+    control_poll = int(control_cfg.get("poll_seconds", 30))
+    control_token = (
+        cfg.get("output", {}).get("auth", {}).get("token")
+        or control_cfg.get("token", "")
+    )
+    next_control = time.time() + control_poll
+    next_inventory = time.time() + int(control_cfg.get("inventory_seconds", 86400))
     cycle = 0
 
     logger.info(
@@ -211,6 +286,62 @@ def run_with_stop(config_path, stop_event):
         except Exception as exc:
             # Keep agent running even if output endpoint is down.
             logger.error("send_events failed error=%s batch=%s", exc, len(batch))
+        now = time.time()
+        if control_server and now >= next_control:
+            try:
+                payload = {
+                    "agent_id": agent_cfg.get("id", "agent"),
+                    "host_name": agent_cfg.get("host_name", ""),
+                    "host_ip": agent_cfg.get("host_ip", ""),
+                    "agent_version": AGENT_VERSION,
+                    "ips": _current_ips(),
+                }
+                _control_post(
+                    f"{control_server}/api/agent/heartbeat/",
+                    payload,
+                    control_token,
+                    timeout=8,
+                )
+                cmd_resp = _control_post(
+                    f"{control_server}/api/agent/commands/pull/",
+                    {"agent_id": agent_cfg.get("id", "agent")},
+                    control_token,
+                    timeout=8,
+                )
+                if cmd_resp.status_code == 200:
+                    data = cmd_resp.json()
+                    command = data.get("command")
+                    command_id = data.get("command_id")
+                    if command == "stop":
+                        logger.warning("command.stop received")
+                        stop_event.set()
+                    elif command == "restart":
+                        logger.warning("command.restart received")
+                        os._exit(3)
+                    if command_id:
+                        _control_post(
+                            f"{control_server}/api/agent/commands/ack/",
+                            {"command_id": command_id, "status": "done"},
+                            control_token,
+                            timeout=8,
+                        )
+            except Exception as exc:
+                logger.warning("control poll failed error=%s", exc)
+            next_control = now + control_poll
+
+        if control_server and now >= next_inventory:
+            try:
+                inv = _collect_inventory()
+                _control_post(
+                    f"{control_server}/api/agent/inventory/",
+                    {"agent_id": agent_cfg.get("id", "agent"), "inventory": inv},
+                    control_token,
+                    timeout=12,
+                )
+            except Exception as exc:
+                logger.warning("inventory upload failed error=%s", exc)
+            next_inventory = now + int(control_cfg.get("inventory_seconds", 86400))
+
         _sleep_with_stop(stop_event, interval)
 
 

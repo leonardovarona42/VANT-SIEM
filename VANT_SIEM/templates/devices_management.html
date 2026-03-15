@@ -56,13 +56,20 @@
         <small class="text-muted">Esperando ingestión</small>
       </div>
     </div>
+    <div class="col-md-4">
+      <div class="device-card">
+        <h5>DLP</h5>
+        <div class="display-6">Planificado</div>
+        <small class="text-muted">Preparado para integrar DLP/DSPM</small>
+      </div>
+    </div>
   </div>
 
   <div class="card bg-dark border-secondary">
     <div class="card-header">
       <strong>Lista de agentes</strong>
     </div>
-    <div class="card-body">
+  <div class="card-body">
       <div class="table-responsive">
         <table class="table table-dark table-hover device-table">
           <thead>
@@ -73,11 +80,12 @@
               <th>Versión</th>
               <th>Estado</th>
               <th>Último evento</th>
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td colspan="6" class="text-center text-muted">Sin agentes registrados.</td>
+              <td colspan="7" class="text-center text-muted">Cargando agentes...</td>
             </tr>
           </tbody>
         </table>
@@ -85,4 +93,59 @@
     </div>
   </div>
 </div>
+<script>
+  async function loadAgents() {
+    const tbody = document.querySelector(".device-table tbody");
+    try {
+      const res = await fetch("{% url 'agent-list' %}");
+      const data = await res.json();
+      if (!data.ok || !data.devices.length) {
+        tbody.innerHTML =
+          '<tr><td colspan="7" class="text-center text-muted">Sin agentes registrados.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = data.devices
+        .map((d) => {
+          return `
+            <tr>
+              <td>${d.agent_id}</td>
+              <td>${d.host_name || "-"}</td>
+              <td>${d.host_ip || "-"}</td>
+              <td>${d.agent_version || "-"}</td>
+              <td>${d.status || "unknown"}</td>
+              <td>${d.last_seen || "-"}</td>
+              <td>
+                <button class="btn btn-sm btn-outline-warning me-1" onclick="issueCommand('${d.agent_id}','restart')">Reiniciar</button>
+                <button class="btn btn-sm btn-outline-danger" onclick="issueCommand('${d.agent_id}','stop')">Detener</button>
+              </td>
+            </tr>
+          `;
+        })
+        .join("");
+    } catch (err) {
+      tbody.innerHTML =
+        '<tr><td colspan="7" class="text-center text-danger">Error cargando agentes.</td></tr>';
+    }
+  }
+
+  async function issueCommand(agentId, command) {
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    const res = await fetch("{% url 'agent-command-issue' %}", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrftoken,
+      },
+      body: JSON.stringify({ agent_id: agentId, command }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      alert(`Comando ${command} enviado a ${agentId}`);
+    } else {
+      alert(data.error || "No se pudo enviar el comando");
+    }
+  }
+
+  loadAgents();
+</script>
 {% endblock %}

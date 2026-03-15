@@ -10,6 +10,12 @@ urlpatterns = [
     path('devices/management/', views.devices_management, name='devices-management'),
     path('api/agent/enroll/', views.agent_enroll, name='agent-enroll'),
     path('api/agent/authorize-stop/', views.agent_authorize_stop, name='agent-authorize-stop'),
+    path('api/agent/heartbeat/', views.agent_heartbeat, name='agent-heartbeat'),
+    path('api/agent/inventory/', views.agent_inventory, name='agent-inventory'),
+    path('api/agent/commands/pull/', views.agent_commands_pull, name='agent-commands-pull'),
+    path('api/agent/commands/ack/', views.agent_commands_ack, name='agent-commands-ack'),
+    path('api/agent/commands/issue/', views.agent_command_issue, name='agent-command-issue'),
+    path('api/agent/list/', views.agent_list, name='agent-list'),
     path('password-change/', views.password_change_view, name='password-change'),
     
     # Gestión de usuarios
