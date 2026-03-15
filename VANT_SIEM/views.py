@@ -358,6 +358,27 @@ def agent_detail(request, agent_id):
 
 
 @login_required
+def agent_detail_page(request, agent_id):
+    from inventory.models import AgentDevice, AgentInventorySnapshot
+    try:
+        device = AgentDevice.objects.get(agent_id=agent_id)
+    except AgentDevice.DoesNotExist:
+        return render(request, "agent_detail.html", {"error": "Agente no encontrado"})
+
+    latest = (
+        AgentInventorySnapshot.objects.filter(agent=device)
+        .order_by("-created_at")
+        .first()
+    )
+    context = {
+        "device": device,
+        "latest_snapshot": latest.payload if latest else {},
+        "latest_at": latest.created_at if latest else None,
+    }
+    return render(request, "agent_detail.html", context)
+
+
+@login_required
 def agent_inventory_csv(request, agent_id):
     from inventory.models import AgentDevice, AgentInventorySnapshot
     try:

@@ -8,6 +8,7 @@ urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('devices/management/', views.devices_management, name='devices-management'),
+    path('devices/management/<str:agent_id>/', views.agent_detail_page, name='agent-detail-page'),
     # Agent APIs moved to VANT_SIEM/agent_urls.py
     path('password-change/', views.password_change_view, name='password-change'),
     

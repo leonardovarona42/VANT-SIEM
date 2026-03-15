@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Detalle de Agente | VANT-SIEM{% endblock %}
+
+{% block extra_css %}
+<style>
+  .detail-hero {
+    background: linear-gradient(120deg, rgba(34, 211, 238, 0.18), rgba(15, 31, 53, 0.95));
+    border-radius: 16px;
+    padding: 20px 24px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .detail-card {
+    background: #0f1f35;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .detail-section {
+    margin-top: 16px;
+  }
+  .detail-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .detail-list li {
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .detail-list li:last-child {
+    border-bottom: none;
+  }
+  pre {
+    background: #0b162a;
+    border-radius: 10px;
+    padding: 12px;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="detail-hero mb-4">
+    {% if error %}
+      <h4 class="text-danger">{{ error }}</h4>
+    {% else %}
+      <div class="d-flex justify-content-between flex-wrap gap-3">
+        <div>
+          <h2 class="mb-1">{{ device.agent_id }}</h2>
+          <p class="text-muted mb-0">Host: {{ device.host_name }} | IP: {{ device.host_ip }}</p>
+        </div>
+        <div>
+          <span class="badge bg-info text-dark">v{{ device.agent_version }}</span>
+          <span class="badge bg-secondary">{{ device.status }}</span>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if not error %}
+  <div class="detail-grid">
+    <div class="detail-card">
+      <h6>Último inventario</h6>
+      <div class="text-muted">{{ latest_at|default:"--" }}</div>
+    </div>
+    <div class="detail-card">
+      <h6>IPs conocidas</h6>
+      <div class="text-muted">{{ device.known_ips|default:"--" }}</div>
+    </div>
+    <div class="detail-card">
+      <h6>Agente</h6>
+      <div class="text-muted">Versión {{ device.agent_version|default:"--" }}</div>
+    </div>
+    <div class="detail-card">
+      <h6>Estado</h6>
+      <div class="text-muted">{{ device.status }}</div>
+    </div>
+  </div>
+
+  <div class="detail-section">
+    <h5>Hardware</h5>
+    <ul class="detail-list">
+      <li><strong>BIOS Serial:</strong> {{ latest_snapshot.bios_serial|default:"--" }}</li>
+      <li><strong>CPU:</strong> {{ latest_snapshot.cpu|default:"--" }}</li>
+      <li><strong>Baseboard:</strong> {{ latest_snapshot.baseboard|default:"--" }}</li>
+      <li><strong>CSProduct:</strong> {{ latest_snapshot.csproduct|default:"--" }}</li>
+    </ul>
+  </div>
+
+  <div class="detail-section">
+    <h5>Sistema Operativo</h5>
+    <ul class="detail-list">
+      <li><strong>OS:</strong> {{ latest_snapshot.os|default:"--" }}</li>
+      <li><strong>Detalles:</strong> {{ latest_snapshot.os_details|default:"--" }}</li>
+      <li><strong>Usuarios conectados:</strong> {{ latest_snapshot.logged_users|default:"--" }}</li>
+    </ul>
+  </div>
+
+  <div class="detail-section">
+    <h5>Apps instaladas</h5>
+    <pre>{{ latest_snapshot.installed_apps|default:"--" }}</pre>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -198,8 +198,8 @@
     <div class="col-md-3">
       <div class="agent-stat">
         <h5>Último check-in</h5>
-        <div class="display-6" id="stat-last">--</div>
-        <small class="text-muted">UTC</small>
+        <div class="display-6 fs-4" id="stat-last">--</div>
+        <small class="text-muted">Actualizado por heartbeat</small>
       </div>
     </div>
     <div class="col-md-3">
@@ -226,7 +226,7 @@
       </div>
     </div>
     <div class="card-body">
-      <div class="agent-grid mb-3" id="agent-mini-grid"></div>
+      <div class="agent-grid mb-3 d-none" id="agent-mini-grid"></div>
       <div class="table-responsive">
         <table class="table table-dark table-hover device-table">
           <thead>
@@ -247,19 +247,6 @@
           </tbody>
         </table>
       </div>
-    </div>
-  </div>
-</div>
-<div class="agent-modal" id="agent-modal">
-  <div class="agent-modal-card">
-    <div class="d-flex justify-content-between align-items-center mb-2">
-      <h5 class="mb-0">Detalle del Agente</h5>
-      <button class="btn btn-sm btn-outline-light" onclick="closeAgentModal()">Cerrar</button>
-    </div>
-    <div class="agent-detail-grid" id="agent-detail-grid"></div>
-    <div class="agent-history" id="agent-history"></div>
-    <div class="mt-3">
-      <button class="btn btn-sm btn-outline-info" id="agent-export-btn">Exportar inventario CSV</button>
     </div>
   </div>
 </div>
@@ -288,28 +275,7 @@
   }
 
   function renderMiniCards(devices) {
-    const grid = document.getElementById("agent-mini-grid");
-    if (!devices.length) {
-      grid.innerHTML = '<div class="text-muted">Sin agentes registrados.</div>';
-      return;
-    }
-    grid.innerHTML = devices
-      .slice(0, 8)
-      .map((d) => {
-        return `
-          <div class="agent-mini">
-            <h6>${d.agent_id}</h6>
-            <small>${d.host_name || "-"}</small>
-            <div class="d-flex align-items-center gap-2">
-              ${statusPill(d.status)}
-              <span class="text-muted">${d.agent_version || "-"}</span>
-            </div>
-            <small>${d.host_ip || "-"}</small>
-            <button class="btn btn-sm btn-outline-info agent-toggle" onclick="openAgentModal('${d.agent_id}')">Detalle</button>
-          </div>
-        `;
-      })
-      .join("");
+    return;
   }
 
   function renderAgents(devices) {
@@ -337,15 +303,16 @@
             <td>${d.agent_version || "-"}</td>
             <td>${statusPill(d.status)}</td>
             <td>${d.last_seen || "-"}</td>
-            <td>
-              <button class="btn btn-sm btn-outline-success me-1" onclick="issueCommand('${d.agent_id}','activate')">Activar</button>
-              <button class="btn btn-sm btn-outline-warning me-1" onclick="issueCommand('${d.agent_id}','restart')">Reiniciar</button>
-              <button class="btn btn-sm btn-outline-danger" onclick="issueCommand('${d.agent_id}','stop')">Detener</button>
-            </td>
-          </tr>
-        `;
-      })
-      .join("");
+              <td>
+                <a class="btn btn-sm btn-outline-info me-1" href="/siem/dashboard/devices/management/${d.agent_id}/">Detalles</a>
+                <button class="btn btn-sm btn-outline-success me-1" onclick="issueCommand('${d.agent_id}','activate')">Activar</button>
+                <button class="btn btn-sm btn-outline-warning me-1" onclick="issueCommand('${d.agent_id}','restart')">Reiniciar</button>
+                <button class="btn btn-sm btn-outline-danger" onclick="issueCommand('${d.agent_id}','stop')">Detener</button>
+              </td>
+            </tr>
+          `;
+        })
+        .join("");
   }
 
   async function loadAgents() {
@@ -397,51 +364,8 @@
     setTimeout(() => toast.classList.remove("show"), 2200);
   }
 
-  async function openAgentModal(agentId) {
-    const modal = document.getElementById("agent-modal");
-    const grid = document.getElementById("agent-detail-grid");
-    const history = document.getElementById("agent-history");
-    grid.innerHTML = '<div class="text-muted">Cargando detalle...</div>';
-    history.innerHTML = "";
-    try {
-      const res = await fetch(`/api/agent/detail/${agentId}/`);
-      const data = await res.json();
-      if (!data.ok) {
-        grid.innerHTML = '<div class="text-danger">No se pudo cargar el detalle.</div>';
-      } else {
-        const d = data.device || {};
-        grid.innerHTML = `
-          <div class="agent-detail-card"><strong>ID</strong><div>${d.agent_id}</div></div>
-          <div class="agent-detail-card"><strong>Host</strong><div>${d.host_name || "-"}</div></div>
-          <div class="agent-detail-card"><strong>IP</strong><div>${d.host_ip || "-"}</div></div>
-          <div class="agent-detail-card"><strong>Versión</strong><div>${d.agent_version || "-"}</div></div>
-          <div class="agent-detail-card"><strong>Estado</strong><div>${d.status || "-"}</div></div>
-          <div class="agent-detail-card"><strong>Último check-in</strong><div>${d.last_seen || "-"}</div></div>
-          <div class="agent-detail-card"><strong>IPs conocidas</strong><div>${(d.known_ips || []).join(", ") || "-"}</div></div>
-        `;
-        const historyItems = (data.history || []).map((h) => {
-          const apps = h.payload?.installed_apps ? "apps" : "sin apps";
-          return `<div class="agent-history-item">
-            <div><strong>${h.created_at}</strong></div>
-            <small class="text-muted">Snapshot ${apps}</small>
-          </div>`;
-        });
-        history.innerHTML = historyItems.length
-          ? historyItems.join("")
-          : '<div class="text-muted">Sin historial disponible.</div>';
-        const exportBtn = document.getElementById("agent-export-btn");
-        exportBtn.onclick = () => {
-          window.location.href = `/api/agent/inventory/export/${agentId}/`;
-        };
-      }
-    } catch (err) {
-      grid.innerHTML = '<div class="text-danger">Error cargando detalle.</div>';
-    }
-    modal.classList.add("show");
-  }
-
-  function closeAgentModal() {
-    document.getElementById("agent-modal").classList.remove("show");
+  function openAgentModal(agentId) {
+    window.location.href = `/siem/dashboard/devices/management/${agentId}/`;
   }
 
   function startAutoRefresh() {

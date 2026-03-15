@@ -252,99 +252,103 @@ def run_with_stop(config_path, stop_event):
             logger.warning("upsert_source failed source=%s error=%s", c.source_type, exc)
 
     while not stop_event.is_set():
-        cycle += 1
-        batch = []
-        for collector in collectors:
-            try:
-                events = collector.collect()
-                for ev in events:
-                    _ensure_host_fields(ev, agent_cfg.get("host_name", ""), agent_cfg.get("host_ip", ""))
-                batch.extend(events)
-            except Exception as exc:
-                logger.exception("collector failed source=%s", collector.source_type)
-                batch.append(
-                    _ensure_host_fields(
-                        {
-                        "source_type": "agent",
-                        "source_name": "agent-runtime",
-                        "host_name": agent_cfg.get("host_name", ""),
-                        "event_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                        "severity": "error",
-                        "event_category": "agent.error",
-                        "message": f"collector {collector.source_type} failed: {exc}",
-                        "raw_payload": {},
-                        "tags": ["agent", "error"],
-                        },
-                        agent_cfg.get("host_name", ""),
-                        agent_cfg.get("host_ip", ""),
-                    )
-                )
         try:
-            out.send_events(batch)
-            if log_every > 0 and (cycle % log_every == 0):
-                logger.info("cycle ok events=%s collectors=%s", len(batch), len(collectors))
-        except Exception as exc:
-            # Keep agent running even if output endpoint is down.
-            logger.error("send_events failed error=%s batch=%s", exc, len(batch))
-        now = time.time()
-        if control_server and now >= next_control:
-            try:
-                payload = {
-                    "agent_id": agent_cfg.get("id", "agent"),
-                    "host_name": agent_cfg.get("host_name", ""),
-                    "host_ip": agent_cfg.get("host_ip", ""),
-                    "agent_version": AGENT_VERSION,
-                    "ips": _current_ips(),
-                }
-                _control_post(
-                    f"{control_server}/api/agent/heartbeat/",
-                    payload,
-                    control_token,
-                    timeout=8,
-                )
-                cmd_resp = _control_post(
-                    f"{control_server}/api/agent/commands/pull/",
-                    {"agent_id": agent_cfg.get("id", "agent")},
-                    control_token,
-                    timeout=8,
-                )
-                if cmd_resp.status_code == 200:
-                    data = cmd_resp.json()
-                    command = data.get("command")
-                    command_id = data.get("command_id")
-                    if command == "stop":
-                        logger.warning("command.stop received")
-                        stop_event.set()
-                    elif command == "restart":
-                        logger.warning("command.restart received")
-                        os._exit(3)
-                    elif command == "activate":
-                        logger.info("command.activate received")
-                    if command_id:
-                        _control_post(
-                            f"{control_server}/api/agent/commands/ack/",
-                            {"command_id": command_id, "status": "done"},
-                            control_token,
-                            timeout=8,
+            cycle += 1
+            batch = []
+            for collector in collectors:
+                try:
+                    events = collector.collect()
+                    for ev in events:
+                        _ensure_host_fields(ev, agent_cfg.get("host_name", ""), agent_cfg.get("host_ip", ""))
+                    batch.extend(events)
+                except Exception as exc:
+                    logger.exception("collector failed source=%s", collector.source_type)
+                    batch.append(
+                        _ensure_host_fields(
+                            {
+                            "source_type": "agent",
+                            "source_name": "agent-runtime",
+                            "host_name": agent_cfg.get("host_name", ""),
+                            "event_time": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                            "severity": "error",
+                            "event_category": "agent.error",
+                            "message": f"collector {collector.source_type} failed: {exc}",
+                            "raw_payload": {},
+                            "tags": ["agent", "error"],
+                            },
+                            agent_cfg.get("host_name", ""),
+                            agent_cfg.get("host_ip", ""),
                         )
-            except Exception as exc:
-                logger.warning("control poll failed error=%s", exc)
-            next_control = now + control_poll
-
-        if control_server and now >= next_inventory:
+                    )
             try:
-                inv = _collect_inventory()
-                _control_post(
-                    f"{control_server}/api/agent/inventory/",
-                    {"agent_id": agent_cfg.get("id", "agent"), "inventory": inv},
-                    control_token,
-                    timeout=12,
-                )
+                out.send_events(batch)
+                if log_every > 0 and (cycle % log_every == 0):
+                    logger.info("cycle ok events=%s collectors=%s", len(batch), len(collectors))
             except Exception as exc:
-                logger.warning("inventory upload failed error=%s", exc)
-            next_inventory = now + int(control_cfg.get("inventory_seconds", 86400))
+                # Keep agent running even if output endpoint is down.
+                logger.error("send_events failed error=%s batch=%s", exc, len(batch))
+            now = time.time()
+            if control_server and now >= next_control:
+                try:
+                    payload = {
+                        "agent_id": agent_cfg.get("id", "agent"),
+                        "host_name": agent_cfg.get("host_name", ""),
+                        "host_ip": agent_cfg.get("host_ip", ""),
+                        "agent_version": AGENT_VERSION,
+                        "ips": _current_ips(),
+                    }
+                    _control_post(
+                        f"{control_server}/api/agent/heartbeat/",
+                        payload,
+                        control_token,
+                        timeout=8,
+                    )
+                    cmd_resp = _control_post(
+                        f"{control_server}/api/agent/commands/pull/",
+                        {"agent_id": agent_cfg.get("id", "agent")},
+                        control_token,
+                        timeout=8,
+                    )
+                    if cmd_resp.status_code == 200:
+                        data = cmd_resp.json()
+                        command = data.get("command")
+                        command_id = data.get("command_id")
+                        if command == "stop":
+                            logger.warning("command.stop received")
+                            stop_event.set()
+                        elif command == "restart":
+                            logger.warning("command.restart received")
+                            os._exit(3)
+                        elif command == "activate":
+                            logger.info("command.activate received")
+                        if command_id:
+                            _control_post(
+                                f"{control_server}/api/agent/commands/ack/",
+                                {"command_id": command_id, "status": "done"},
+                                control_token,
+                                timeout=8,
+                            )
+                except Exception as exc:
+                    logger.warning("control poll failed error=%s", exc)
+                next_control = now + control_poll
 
-        _sleep_with_stop(stop_event, interval)
+            if control_server and now >= next_inventory:
+                try:
+                    inv = _collect_inventory()
+                    _control_post(
+                        f"{control_server}/api/agent/inventory/",
+                        {"agent_id": agent_cfg.get("id", "agent"), "inventory": inv},
+                        control_token,
+                        timeout=12,
+                    )
+                except Exception as exc:
+                    logger.warning("inventory upload failed error=%s", exc)
+                next_inventory = now + int(control_cfg.get("inventory_seconds", 86400))
+
+            _sleep_with_stop(stop_event, interval)
+        except Exception as exc:
+            logger.exception("agent.loop crashed error=%s", exc)
+            _sleep_with_stop(stop_event, 5)
 
 
 def run(config_path):
