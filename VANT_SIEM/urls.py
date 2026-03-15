@@ -7,6 +7,9 @@ urlpatterns = [
     path('', views.dashboard_view, name='dashboard'),
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
+    path('devices/management/', views.devices_management, name='devices-management'),
+    path('api/agent/enroll/', views.agent_enroll, name='agent-enroll'),
+    path('api/agent/authorize-stop/', views.agent_authorize_stop, name='agent-authorize-stop'),
     path('password-change/', views.password_change_view, name='password-change'),
     
     # Gestión de usuarios

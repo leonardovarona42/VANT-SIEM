@@ -21,18 +21,117 @@ import requests
 from django.core.paginator import Paginator
 from django.db.models import Count
 from datetime import timedelta
+from django.core import signing
+from django.conf import settings
 import socket
 import subprocess
 import ipaddress
 import shutil
 import os
 import ssl
+import hmac
+import hashlib
+import time
 # Optional LDAP support (activated via LDAPConfig)
 try:
     from ldap3 import Server, Connection, ALL, Tls, SUBTREE
 except Exception:
     Server = Connection = Tls = SUBTREE = None
 # IDS features removed per user request
+
+
+@login_required
+def devices_management(request):
+    return render(request, "devices_management.html")
+
+
+DEFAULT_AGENT_SHARED_SECRET = "VANT-SIEM-AGENT-BOOTSTRAP-2026"
+
+
+def _load_agent_shared_secret():
+    env_secret = os.environ.get('VANT_AGENT_SHARED_SECRET', '').strip()
+    if env_secret:
+        return env_secret
+    return DEFAULT_AGENT_SHARED_SECRET
+
+
+def _load_agent_allowlist():
+    raw = os.environ.get('VANT_AGENT_ALLOWED', '').strip()
+    if not raw:
+        return []
+    return [item.strip() for item in raw.split(',') if item.strip()]
+
+
+@csrf_exempt
+@require_POST
+def agent_enroll(request):
+    try:
+        payload = json.loads(request.body.decode('utf-8')) if request.body else {}
+    except Exception:
+        payload = {}
+
+    agent_id = payload.get('agent_id', '').strip()
+    host_name = payload.get('host_name', '').strip()
+    timestamp = str(payload.get('timestamp', '')).strip()
+    signature = payload.get('signature', '').strip()
+
+    if not timestamp or not signature:
+        return JsonResponse({'ok': False, 'error': 'Firma incompleta'}, status=403)
+
+    try:
+        ts = int(timestamp)
+    except Exception:
+        return JsonResponse({'ok': False, 'error': 'Timestamp invalido'}, status=403)
+
+    if abs(int(time.time()) - ts) > 300:
+        return JsonResponse({'ok': False, 'error': 'Timestamp expirado'}, status=403)
+
+    secret = _load_agent_shared_secret().encode('utf-8')
+    message = f"{agent_id}:{host_name}:{timestamp}".encode('utf-8')
+    expected = hmac.new(secret, message, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, signature):
+        return JsonResponse({'ok': False, 'error': 'Firma invalida'}, status=403)
+
+    allowlist = _load_agent_allowlist()
+    if allowlist:
+        if agent_id not in allowlist and host_name not in allowlist:
+            return JsonResponse({'ok': False, 'error': 'Agente no autorizado'}, status=403)
+
+    agent_token_payload = {
+        'agent_id': agent_id,
+        'host_name': host_name,
+        'issued_at': timezone.now().isoformat(),
+    }
+    agent_token = signing.dumps(agent_token_payload, salt='vant-siem-agent-token')
+
+    return JsonResponse(
+        {
+            'ok': True,
+            'token': agent_token,
+            'token_type': 'signed',
+            'expires_in': 86400,
+        }
+    )
+
+
+@csrf_exempt
+@require_POST
+def agent_authorize_stop(request):
+    if not request.is_secure() and not settings.DEBUG:
+        return JsonResponse({'ok': False, 'error': 'HTTPS requerido'}, status=403)
+    try:
+        payload = json.loads(request.body.decode('utf-8')) if request.body else {}
+    except Exception:
+        payload = {}
+
+    username = (payload.get('username') or '').strip()
+    password = payload.get('password') or ''
+
+    user = authenticate(request, username=username, password=password)
+    if user is None or not user.is_superuser:
+        return JsonResponse({'ok': False, 'error': 'Credenciales invalidas'}, status=403)
+
+    return JsonResponse({'ok': True})
 
 def find_command_path(command):
     """Find the full path of a command, checking common locations"""

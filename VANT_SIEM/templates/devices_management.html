@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Devices Management | VANT-SIEM{% endblock %}
+
+{% block extra_css %}
+<style>
+  .device-card {
+    background: #0f1f35;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .device-card h5 {
+    margin-bottom: 8px;
+  }
+  .device-table th,
+  .device-table td {
+    color: #e5e7eb;
+  }
+  .device-table tbody tr {
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h2 class="mb-1">Devices Management</h2>
+      <p class="text-muted mb-0">Panel para gestionar y monitorear los agentes.</p>
+    </div>
+    <span class="badge bg-info text-dark">Agente v1.01</span>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="device-card">
+        <h5>Agentes activos</h5>
+        <div class="display-6">0</div>
+        <small class="text-muted">Sin datos en tiempo real</small>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="device-card">
+        <h5>Último check-in</h5>
+        <div class="display-6">--</div>
+        <small class="text-muted">Conexión pendiente</small>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="device-card">
+        <h5>Eventos recientes</h5>
+        <div class="display-6">0</div>
+        <small class="text-muted">Esperando ingestión</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="card bg-dark border-secondary">
+    <div class="card-header">
+      <strong>Lista de agentes</strong>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-dark table-hover device-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Host</th>
+              <th>IP</th>
+              <th>Versión</th>
+              <th>Estado</th>
+              <th>Último evento</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="6" class="text-center text-muted">Sin agentes registrados.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

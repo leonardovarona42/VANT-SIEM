@@ -15,6 +15,8 @@ from collectors.postgres_log import PostgresLogCollector
 from collectors.file_log import FileLogCollector
 from output import OutputClient
 
+AGENT_VERSION = "v1.01"
+
 
 def load_cfg(path):
     p = Path(path)
@@ -112,7 +114,16 @@ def _configure_logging(agent_cfg):
     return logger
 
 
-def run(config_path):
+def _sleep_with_stop(stop_event, seconds):
+    remaining = max(0, int(seconds))
+    while remaining > 0:
+        if stop_event.is_set():
+            return
+        time.sleep(1)
+        remaining -= 1
+
+
+def run_with_stop(config_path, stop_event):
     cfg = load_cfg(config_path)
     agent_cfg = cfg.get("agent", {})
     logger = _configure_logging(agent_cfg)
@@ -136,9 +147,14 @@ def run(config_path):
     log_every = int(agent_cfg.get("log_every_cycles", 60))
     cycle = 0
 
-    logger.info("agent.starting host=%s ip=%s interval=%ss collectors=%s",
-                agent_cfg.get("host_name", ""), agent_cfg.get("host_ip", ""),
-                interval, ",".join([c.source_type for c in collectors]) or "none")
+    logger.info(
+        "agent.starting version=%s host=%s ip=%s interval=%ss collectors=%s",
+        AGENT_VERSION,
+        agent_cfg.get("host_name", ""),
+        agent_cfg.get("host_ip", ""),
+        interval,
+        ",".join([c.source_type for c in collectors]) or "none",
+    )
 
     # register/upsert enabled sources
     for c in collectors:
@@ -153,13 +169,14 @@ def run(config_path):
                         **(c.cfg or {}),
                         "host_name": agent_cfg.get("host_name", ""),
                         "host_ip": agent_cfg.get("host_ip", ""),
+                        "agent_version": AGENT_VERSION,
                     },
                 }
             )
         except Exception as exc:
             logger.warning("upsert_source failed source=%s error=%s", c.source_type, exc)
 
-    while True:
+    while not stop_event.is_set():
         cycle += 1
         batch = []
         for collector in collectors:
@@ -194,7 +211,15 @@ def run(config_path):
         except Exception as exc:
             # Keep agent running even if output endpoint is down.
             logger.error("send_events failed error=%s batch=%s", exc, len(batch))
-        time.sleep(interval)
+        _sleep_with_stop(stop_event, interval)
+
+
+def run(config_path):
+    class _Stop:
+        def is_set(self):
+            return False
+
+    run_with_stop(config_path, _Stop())
 
 
 def default_config_path():
