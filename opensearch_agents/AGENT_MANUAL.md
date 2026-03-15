@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![VANT-SIEM](https://img.shields.io/badge/VANT--SIEM-Agent-v1.0-blue)
+![VANT-SIEM](https://img.shields.io/badge/VANT--SIEM-Agent-v1.01-blue)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-green)
 ![Python](https://img.shields.io/badge/Python-3.8%2B-yellow)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen)
@@ -316,6 +316,37 @@ output:
     verify: true              # true para certificados válidos
     ca_cert: "path/to/ca.crt" # Ruta al certificado CA
 ```
+
+---
+
+## Control y Enrolamiento del Agente (v1.01)
+
+El agente v1.01 usa enrolamiento automático por firma HMAC y reporta inventario del host.
+
+### Endpoints usados por el agente
+
+- `GET /api/agent/bootstrap/`
+- `POST /api/agent/enroll/`
+- `POST /api/agent/heartbeat/`
+- `POST /api/agent/inventory/`
+- `POST /api/agent/commands/pull/`
+- `POST /api/agent/commands/ack/`
+
+### Reglas clave
+
+- El endpoint `bootstrap` requiere encabezado `X-Agent-Id`.
+- Si el servidor está en HTTP, desactiva HTTPS en el instalador.
+- Si el servidor está en HTTPS, activa HTTPS en el instalador.
+
+### Inventario reportado
+
+- Seriales de BIOS, CPU y motherboard
+- Versiones de SO y build
+- Usuarios conectados
+- Apps instaladas
+- Historial de IPs
+
+Los datos se almacenan en el módulo `inventory` del servidor.
 
 ---
 

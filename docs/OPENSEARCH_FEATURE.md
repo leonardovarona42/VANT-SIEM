@@ -31,6 +31,9 @@ Funciones:
 - normalizacion de evento
 - envio batch al microservicio
 - retries y logs locales
+- version actual: `v1.01`
+- inventario del host y heartbeat
+- comandos remotos: `activate`, `restart`, `stop`
 
 Fuentes soportadas:
 - Snort
@@ -74,6 +77,21 @@ Config del agente:
 - `tls.enabled`: `true | false`
 - `tls.verify`: `true | false`
 - `tls.ca_cert`: ruta opcional
+
+## Inventario y Device Management
+
+El servidor expone APIs para inventario y control del agente:
+
+- `GET /api/agent/bootstrap/`
+- `POST /api/agent/enroll/`
+- `POST /api/agent/heartbeat/`
+- `POST /api/agent/inventory/`
+- `POST /api/agent/commands/pull/`
+- `POST /api/agent/commands/ack/`
+- `POST /api/agent/commands/issue/`
+- `GET /api/agent/list/`
+
+Los datos se guardan en la app `inventory` del servidor.
 
 ## Puertos por defecto
 
