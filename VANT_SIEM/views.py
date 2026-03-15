@@ -297,7 +297,8 @@ def agent_list(request):
 @csrf_exempt
 @require_POST
 def agent_authorize_stop(request):
-    if not request.is_secure() and not settings.DEBUG:
+    allow_http = os.environ.get("VANT_AGENT_ALLOW_HTTP_CONTROL", "0") == "1"
+    if not request.is_secure() and not settings.DEBUG and not allow_http:
         return JsonResponse({'ok': False, 'error': 'HTTPS requerido'}, status=403)
     try:
         payload = json.loads(request.body.decode('utf-8')) if request.body else {}

@@ -485,9 +485,9 @@ class AgentInstallerWizard(QtWidgets.QWizard):
         QtWidgets.QMessageBox.information(
             self,
             "Instalacion completada",
-            "El servicio se instalo correctamente (mock). La ventana permanece abierta.",
+            "El servicio se instalo correctamente.",
         )
-        return
+        super().accept()
 
     def build_config_preview(self, mask_secrets=False):
         agent_id = self.field("agent_id")
@@ -509,6 +509,7 @@ class AgentInstallerWizard(QtWidgets.QWizard):
             auth_password = "******" if auth_password else ""
             auth_token = "******" if auth_token else ""
 
+        require_https = self.page(self.PAGE_CONNECTION).server_https.isChecked()
         return f"""agent:
   id: "{agent_id}"
   host_name: "{host_name}"
@@ -530,7 +531,7 @@ output:
 
 control:
   server_url: "{server_url}"
-  require_https: true
+  require_https: {str(require_https).lower()}
 """
 
     def write_config_file(self):
