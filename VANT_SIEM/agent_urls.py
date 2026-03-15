@@ -12,5 +12,7 @@ urlpatterns = [
     path("commands/ack/", views.agent_commands_ack, name="agent-commands-ack"),
     path("commands/issue/", views.agent_command_issue, name="agent-command-issue"),
     path("list/", views.agent_list, name="agent-list"),
+    path("detail/<str:agent_id>/", views.agent_detail, name="agent-detail"),
+    path("inventory/export/<str:agent_id>/", views.agent_inventory_csv, name="agent-inventory-csv"),
     path("authorize-stop/", views.agent_authorize_stop, name="agent-authorize-stop"),
 ]

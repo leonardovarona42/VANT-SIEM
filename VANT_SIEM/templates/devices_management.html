@@ -81,6 +81,87 @@
     color: var(--agent-accent);
     font-size: 12px;
   }
+  .agent-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .agent-mini {
+    background: var(--agent-panel-2);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .agent-mini h6 {
+    margin: 0;
+    font-size: 14px;
+  }
+  .agent-mini small {
+    color: #9ca3af;
+  }
+  .agent-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(6, 10, 18, 0.7);
+    z-index: 1050;
+    align-items: center;
+    justify-content: center;
+  }
+  .agent-modal.show {
+    display: flex;
+  }
+  .agent-modal-card {
+    background: #0f1f35;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 20px;
+    width: min(900px, 92vw);
+    max-height: 80vh;
+    overflow: auto;
+  }
+  .agent-toast {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    background: #0f1f35;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: #e5e7eb;
+    z-index: 1100;
+    display: none;
+  }
+  .agent-toast.show {
+    display: block;
+  }
+  .agent-toggle {
+    cursor: pointer;
+  }
+  .agent-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+  }
+  .agent-detail-card {
+    background: #0b162a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 10px;
+  }
+  .agent-history {
+    margin-top: 12px;
+  }
+  .agent-history-item {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 8px 0;
+  }
+  .agent-history-item:last-child {
+    border-bottom: none;
+  }
 </style>
 {% endblock %}
 
@@ -135,10 +216,17 @@
       <strong>Lista de agentes</strong>
       <div class="agent-toolbar">
         <input class="agent-search" id="agent-search" placeholder="Buscar por ID, host o IP" />
+        <select class="agent-search" id="agent-filter">
+          <option value="all">Todos</option>
+          <option value="online">Online</option>
+          <option value="offline">Offline</option>
+          <option value="unknown">Unknown</option>
+        </select>
         <button class="btn btn-sm btn-outline-info" onclick="loadAgents()">Actualizar</button>
       </div>
     </div>
     <div class="card-body">
+      <div class="agent-grid mb-3" id="agent-mini-grid"></div>
       <div class="table-responsive">
         <table class="table table-dark table-hover device-table">
           <thead>
@@ -162,8 +250,23 @@
     </div>
   </div>
 </div>
+<div class="agent-modal" id="agent-modal">
+  <div class="agent-modal-card">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h5 class="mb-0">Detalle del Agente</h5>
+      <button class="btn btn-sm btn-outline-light" onclick="closeAgentModal()">Cerrar</button>
+    </div>
+    <div class="agent-detail-grid" id="agent-detail-grid"></div>
+    <div class="agent-history" id="agent-history"></div>
+    <div class="mt-3">
+      <button class="btn btn-sm btn-outline-info" id="agent-export-btn">Exportar inventario CSV</button>
+    </div>
+  </div>
+</div>
+<div class="agent-toast" id="agent-toast"></div>
 <script>
   let agentsCache = [];
+  let autoRefreshTimer = null;
 
   function statusPill(status) {
     if (status === "online") return '<span class="agent-pill pill-online">online</span>';
@@ -184,12 +287,40 @@
     document.getElementById("stat-last").textContent = last || "--";
   }
 
+  function renderMiniCards(devices) {
+    const grid = document.getElementById("agent-mini-grid");
+    if (!devices.length) {
+      grid.innerHTML = '<div class="text-muted">Sin agentes registrados.</div>';
+      return;
+    }
+    grid.innerHTML = devices
+      .slice(0, 8)
+      .map((d) => {
+        return `
+          <div class="agent-mini">
+            <h6>${d.agent_id}</h6>
+            <small>${d.host_name || "-"}</small>
+            <div class="d-flex align-items-center gap-2">
+              ${statusPill(d.status)}
+              <span class="text-muted">${d.agent_version || "-"}</span>
+            </div>
+            <small>${d.host_ip || "-"}</small>
+            <button class="btn btn-sm btn-outline-info agent-toggle" onclick="openAgentModal('${d.agent_id}')">Detalle</button>
+          </div>
+        `;
+      })
+      .join("");
+  }
+
   function renderAgents(devices) {
     const tbody = document.querySelector(".device-table tbody");
     const query = document.getElementById("agent-search").value.trim().toLowerCase();
+    const filter = document.getElementById("agent-filter").value;
     const filtered = devices.filter((d) => {
       const hay = `${d.agent_id} ${d.host_name} ${d.host_ip}`.toLowerCase();
-      return hay.includes(query);
+      const matchesQuery = hay.includes(query);
+      const matchesStatus = filter === "all" ? true : (d.status || "unknown") === filter;
+      return matchesQuery && matchesStatus;
     });
     if (!filtered.length) {
       tbody.innerHTML =
@@ -226,11 +357,13 @@
         agentsCache = [];
         updateStats([]);
         renderAgents([]);
+        renderMiniCards([]);
         return;
       }
       agentsCache = data.devices;
       updateStats(agentsCache);
       renderAgents(agentsCache);
+      renderMiniCards(agentsCache);
     } catch (err) {
       tbody.innerHTML =
         '<tr><td colspan="7" class="text-center text-danger">Error cargando agentes.</td></tr>';
@@ -255,7 +388,70 @@
     }
   }
 
+  function showToast(message, tone = "info") {
+    const toast = document.getElementById("agent-toast");
+    toast.textContent = message;
+    toast.style.borderColor = tone === "error" ? "rgba(239,68,68,0.6)" : "rgba(34,211,238,0.4)";
+    toast.style.color = tone === "error" ? "#fecaca" : "#e5e7eb";
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), 2200);
+  }
+
+  async function openAgentModal(agentId) {
+    const modal = document.getElementById("agent-modal");
+    const grid = document.getElementById("agent-detail-grid");
+    const history = document.getElementById("agent-history");
+    grid.innerHTML = '<div class="text-muted">Cargando detalle...</div>';
+    history.innerHTML = "";
+    try {
+      const res = await fetch(`/api/agent/detail/${agentId}/`);
+      const data = await res.json();
+      if (!data.ok) {
+        grid.innerHTML = '<div class="text-danger">No se pudo cargar el detalle.</div>';
+      } else {
+        const d = data.device || {};
+        grid.innerHTML = `
+          <div class="agent-detail-card"><strong>ID</strong><div>${d.agent_id}</div></div>
+          <div class="agent-detail-card"><strong>Host</strong><div>${d.host_name || "-"}</div></div>
+          <div class="agent-detail-card"><strong>IP</strong><div>${d.host_ip || "-"}</div></div>
+          <div class="agent-detail-card"><strong>Versión</strong><div>${d.agent_version || "-"}</div></div>
+          <div class="agent-detail-card"><strong>Estado</strong><div>${d.status || "-"}</div></div>
+          <div class="agent-detail-card"><strong>Último check-in</strong><div>${d.last_seen || "-"}</div></div>
+          <div class="agent-detail-card"><strong>IPs conocidas</strong><div>${(d.known_ips || []).join(", ") || "-"}</div></div>
+        `;
+        const historyItems = (data.history || []).map((h) => {
+          const apps = h.payload?.installed_apps ? "apps" : "sin apps";
+          return `<div class="agent-history-item">
+            <div><strong>${h.created_at}</strong></div>
+            <small class="text-muted">Snapshot ${apps}</small>
+          </div>`;
+        });
+        history.innerHTML = historyItems.length
+          ? historyItems.join("")
+          : '<div class="text-muted">Sin historial disponible.</div>';
+        const exportBtn = document.getElementById("agent-export-btn");
+        exportBtn.onclick = () => {
+          window.location.href = `/api/agent/inventory/export/${agentId}/`;
+        };
+      }
+    } catch (err) {
+      grid.innerHTML = '<div class="text-danger">Error cargando detalle.</div>';
+    }
+    modal.classList.add("show");
+  }
+
+  function closeAgentModal() {
+    document.getElementById("agent-modal").classList.remove("show");
+  }
+
+  function startAutoRefresh() {
+    if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+    autoRefreshTimer = setInterval(loadAgents, 15000);
+  }
+
   loadAgents();
   document.getElementById("agent-search").addEventListener("input", () => renderAgents(agentsCache));
+  document.getElementById("agent-filter").addEventListener("change", () => renderAgents(agentsCache));
+  startAutoRefresh();
 </script>
 {% endblock %}

@@ -303,6 +303,11 @@ def agent_list(request):
     devices = AgentDevice.objects.all().order_by('-last_seen')
     payload = []
     for d in devices:
+        status = d.status
+        if d.last_seen:
+            delta = timezone.now() - d.last_seen
+            if delta.total_seconds() > 120:
+                status = "offline"
         payload.append(
             {
                 'agent_id': d.agent_id,
@@ -310,10 +315,66 @@ def agent_list(request):
                 'host_ip': d.host_ip,
                 'agent_version': d.agent_version,
                 'last_seen': d.last_seen.isoformat() if d.last_seen else '',
-                'status': d.status,
+                'status': status,
             }
         )
     return JsonResponse({'ok': True, 'devices': payload})
+
+
+@login_required
+def agent_detail(request, agent_id):
+    from inventory.models import AgentDevice, AgentInventorySnapshot
+    try:
+        device = AgentDevice.objects.get(agent_id=agent_id)
+    except AgentDevice.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Agente no encontrado'}, status=404)
+
+    snapshots = (
+        AgentInventorySnapshot.objects.filter(agent=device)
+        .order_by('-created_at')[:10]
+    )
+    history = [
+        {
+            'created_at': s.created_at.isoformat(),
+            'payload': s.payload,
+        }
+        for s in snapshots
+    ]
+    return JsonResponse(
+        {
+            'ok': True,
+            'device': {
+                'agent_id': device.agent_id,
+                'host_name': device.host_name,
+                'host_ip': device.host_ip,
+                'agent_version': device.agent_version,
+                'status': device.status,
+                'last_seen': device.last_seen.isoformat() if device.last_seen else '',
+                'known_ips': device.known_ips or [],
+            },
+            'history': history,
+        }
+    )
+
+
+@login_required
+def agent_inventory_csv(request, agent_id):
+    from inventory.models import AgentDevice, AgentInventorySnapshot
+    try:
+        device = AgentDevice.objects.get(agent_id=agent_id)
+    except AgentDevice.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Agente no encontrado'}, status=404)
+
+    snapshots = AgentInventorySnapshot.objects.filter(agent=device).order_by('-created_at')
+    rows = ["created_at,payload_json"]
+    for s in snapshots:
+        payload = json.dumps(s.payload, ensure_ascii=False).replace('"', '""')
+        rows.append(f"\"{s.created_at.isoformat()}\",\"{payload}\"")
+    resp = JsonResponse({})
+    resp.content = "\n".join(rows).encode("utf-8")
+    resp["Content-Type"] = "text/csv; charset=utf-8"
+    resp["Content-Disposition"] = f'attachment; filename="inventory_{agent_id}.csv"'
+    return resp
 
 
 @csrf_exempt
