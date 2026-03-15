@@ -73,11 +73,20 @@
   .apps-table td, .apps-table th {
     color: #e5e7eb;
   }
+  .alert-strip {
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.12);
+    color: #fecaca;
+    padding: 10px 12px;
+    border-radius: 10px;
+    margin-top: 12px;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container mt-4">
+  <script src="{% static 'js/chart.umd.min.js' %}"></script>
   <div class="detail-hero mb-4">
     {% if error %}
       <h4 class="text-danger">{{ error }}</h4>
@@ -167,6 +176,9 @@
         </tbody>
       </table>
     </div>
+    <div class="mt-2">
+      <button class="btn btn-sm btn-outline-info" id="agent-export-apps-btn">Exportar apps CSV</button>
+    </div>
   </div>
 
   <div class="detail-section">
@@ -174,6 +186,14 @@
     <ul class="history-list" id="history-list">
       <li class="text-muted">Cargando historial...</li>
     </ul>
+  </div>
+  <div class="detail-section">
+    <h5>Timeline de inventario</h5>
+    <canvas id="inventory-chart" height="120"></canvas>
+  </div>
+  <div class="detail-section">
+    <h5>Cambios en apps (últimos snapshots)</h5>
+    <div id="apps-diff" class="text-muted">Cargando comparación...</div>
   </div>
   {% endif %}
 </div>
@@ -227,14 +247,87 @@
       list.innerHTML = history
         .map((h) => `<li><strong>${h.created_at}</strong><div class="text-muted">Snapshot registrado</div></li>`)
         .join("");
+      renderTimeline(history);
     } catch (err) {
       const list = document.getElementById("history-list");
       list.innerHTML = '<li class="text-danger">Error cargando historial.</li>';
     }
   }
 
+  async function renderTimeline(history) {
+    if (!window.Chart) return;
+    const ctx = document.getElementById("inventory-chart").getContext("2d");
+    const labels = history.map((h) => h.created_at).reverse();
+    const points = history.map((h) => Object.keys(h.payload || {}).length).reverse();
+    new Chart(ctx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Campos reportados",
+            data: points,
+            borderColor: "#22d3ee",
+            backgroundColor: "rgba(34, 211, 238, 0.12)",
+            tension: 0.25,
+            fill: true,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: "#9ca3af" } },
+          y: { ticks: { color: "#9ca3af" } },
+        },
+      },
+    });
+  }
+
+  async function loadAppsDiff() {
+    const target = document.getElementById("apps-diff");
+    try {
+      const res = await fetch(`/api/agent/inventory/compare/{{ device.agent_id }}/`);
+      const data = await res.json();
+      if (!data.ok) {
+        target.textContent = data.error || "No hay comparación disponible.";
+        return;
+      }
+      target.innerHTML = `
+        <div><strong>Desde:</strong> ${data.from}</div>
+        <div><strong>Hasta:</strong> ${data.to}</div>
+        <div class="mt-2"><strong>Apps agregadas:</strong> ${data.apps_added.join(", ") || "Ninguna"}</div>
+        <div><strong>Apps removidas:</strong> ${data.apps_removed.join(", ") || "Ninguna"}</div>
+      `;
+    } catch (err) {
+      target.textContent = "Error cargando comparación.";
+    }
+  }
+
+  function renderAlerts() {
+    const bios = "{{ latest_snapshot.bios_serial|default:'' }}";
+    const cpu = "{{ latest_snapshot.cpu|default:'' }}";
+    const users = "{{ latest_snapshot.logged_users|default:'' }}";
+    const container = document.createElement("div");
+    container.className = "alert-strip";
+    let alerts = [];
+    if (!bios) alerts.push("BIOS sin serial");
+    if (!cpu) alerts.push("CPU sin datos");
+    if (!users) alerts.push("Usuarios no reportados");
+    if (!alerts.length) return;
+    container.textContent = "Alertas: " + alerts.join(" | ");
+    document.querySelector(".detail-hero").appendChild(container);
+  }
+
   const latestApps = parseApps({{ latest_snapshot.installed_apps|default:"null"|safe }});
   renderApps(latestApps);
   loadHistory();
+  loadAppsDiff();
+  renderAlerts();
+
+  document.getElementById("agent-export-apps-btn").onclick = () => {
+    window.location.href = `/api/agent/inventory/apps/export/{{ device.agent_id }}/`;
+  };
 </script>
 {% endblock %}

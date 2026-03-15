@@ -14,5 +14,7 @@ urlpatterns = [
     path("list/", views.agent_list, name="agent-list"),
     path("detail/<str:agent_id>/", views.agent_detail, name="agent-detail"),
     path("inventory/export/<str:agent_id>/", views.agent_inventory_csv, name="agent-inventory-csv"),
+    path("inventory/apps/export/<str:agent_id>/", views.agent_apps_csv, name="agent-apps-csv"),
+    path("inventory/compare/<str:agent_id>/", views.agent_inventory_compare, name="agent-inventory-compare"),
     path("authorize-stop/", views.agent_authorize_stop, name="agent-authorize-stop"),
 ]

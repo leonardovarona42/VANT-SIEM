@@ -398,6 +398,93 @@ def agent_inventory_csv(request, agent_id):
     return resp
 
 
+@login_required
+def agent_apps_csv(request, agent_id):
+    from inventory.models import AgentDevice, AgentInventorySnapshot
+    try:
+        device = AgentDevice.objects.get(agent_id=agent_id)
+    except AgentDevice.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Agente no encontrado'}, status=404)
+
+    snapshot = (
+        AgentInventorySnapshot.objects.filter(agent=device)
+        .order_by('-created_at')
+        .first()
+    )
+    apps = []
+    if snapshot and snapshot.payload:
+        raw = snapshot.payload.get("installed_apps")
+        if isinstance(raw, str):
+            try:
+                apps = json.loads(raw)
+            except Exception:
+                apps = []
+        elif isinstance(raw, list):
+            apps = raw
+
+    rows = ["name,version,publisher"]
+    for app in apps or []:
+        name = (app or {}).get("DisplayName", "") if isinstance(app, dict) else ""
+        version = (app or {}).get("DisplayVersion", "") if isinstance(app, dict) else ""
+        publisher = (app or {}).get("Publisher", "") if isinstance(app, dict) else ""
+        rows.append(f"\"{name}\",\"{version}\",\"{publisher}\"")
+    resp = JsonResponse({})
+    resp.content = "\n".join(rows).encode("utf-8")
+    resp["Content-Type"] = "text/csv; charset=utf-8"
+    resp["Content-Disposition"] = f'attachment; filename="apps_{agent_id}.csv"'
+    return resp
+
+
+@login_required
+def agent_inventory_compare(request, agent_id):
+    from inventory.models import AgentDevice, AgentInventorySnapshot
+    try:
+        device = AgentDevice.objects.get(agent_id=agent_id)
+    except AgentDevice.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Agente no encontrado'}, status=404)
+
+    snapshots = list(
+        AgentInventorySnapshot.objects.filter(agent=device)
+        .order_by('-created_at')[:2]
+    )
+    if len(snapshots) < 2:
+        return JsonResponse({'ok': False, 'error': 'No hay suficientes snapshots'}, status=400)
+
+    def _apps_from_snapshot(snap):
+        raw = (snap.payload or {}).get("installed_apps")
+        if isinstance(raw, str):
+            try:
+                return json.loads(raw) or []
+            except Exception:
+                return []
+        if isinstance(raw, list):
+            return raw
+        return []
+
+    def _normalize(apps):
+        names = set()
+        for app in apps:
+            if isinstance(app, dict) and app.get("DisplayName"):
+                names.add(app.get("DisplayName"))
+        return names
+
+    apps_new = _normalize(_apps_from_snapshot(snapshots[0]))
+    apps_old = _normalize(_apps_from_snapshot(snapshots[1]))
+
+    added = sorted(list(apps_new - apps_old))
+    removed = sorted(list(apps_old - apps_new))
+
+    return JsonResponse(
+        {
+            'ok': True,
+            'from': snapshots[1].created_at.isoformat(),
+            'to': snapshots[0].created_at.isoformat(),
+            'apps_added': added,
+            'apps_removed': removed,
+        }
+    )
+
+
 @csrf_exempt
 @require_POST
 def agent_authorize_stop(request):
