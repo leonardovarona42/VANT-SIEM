@@ -42,6 +42,37 @@
     border-radius: 10px;
     padding: 12px;
   }
+  .detail-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    margin-right: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .badge-ok {
+    background: rgba(34, 197, 94, 0.15);
+    color: #86efac;
+  }
+  .badge-warn {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fcd34d;
+  }
+  .history-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .history-list li {
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .history-list li:last-child {
+    border-bottom: none;
+  }
+  .apps-table td, .apps-table th {
+    color: #e5e7eb;
+  }
 </style>
 {% endblock %}
 
@@ -85,6 +116,23 @@
   </div>
 
   <div class="detail-section">
+    <h5>Indicadores de integridad</h5>
+    <div>
+      <span class="detail-badge badge-ok">Heartbeat activo</span>
+      {% if latest_snapshot.bios_serial %}
+      <span class="detail-badge badge-ok">BIOS OK</span>
+      {% else %}
+      <span class="detail-badge badge-warn">BIOS sin serial</span>
+      {% endif %}
+      {% if latest_snapshot.cpu %}
+      <span class="detail-badge badge-ok">CPU OK</span>
+      {% else %}
+      <span class="detail-badge badge-warn">CPU sin datos</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="detail-section">
     <h5>Hardware</h5>
     <ul class="detail-list">
       <li><strong>BIOS Serial:</strong> {{ latest_snapshot.bios_serial|default:"--" }}</li>
@@ -105,8 +153,88 @@
 
   <div class="detail-section">
     <h5>Apps instaladas</h5>
-    <pre>{{ latest_snapshot.installed_apps|default:"--" }}</pre>
+    <div class="table-responsive">
+      <table class="table table-dark table-hover apps-table" id="apps-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Versión</th>
+            <th>Proveedor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="3" class="text-muted">Cargando apps...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="detail-section">
+    <h5>Historial de inventario</h5>
+    <ul class="history-list" id="history-list">
+      <li class="text-muted">Cargando historial...</li>
+    </ul>
   </div>
   {% endif %}
 </div>
+<script>
+  function parseApps(raw) {
+    if (!raw) return [];
+    try {
+      if (typeof raw === "string") {
+        return JSON.parse(raw);
+      }
+      return raw;
+    } catch (err) {
+      return [];
+    }
+  }
+
+  function renderApps(apps) {
+    const tbody = document.querySelector("#apps-table tbody");
+    if (!apps || !apps.length) {
+      tbody.innerHTML = '<tr><td colspan="3" class="text-muted">Sin apps detectadas.</td></tr>';
+      return;
+    }
+    const rows = apps
+      .filter((a) => a.DisplayName)
+      .slice(0, 200)
+      .map((a) => {
+        return `<tr>
+          <td>${a.DisplayName || "-"}</td>
+          <td>${a.DisplayVersion || "-"}</td>
+          <td>${a.Publisher || "-"}</td>
+        </tr>`;
+      })
+      .join("");
+    tbody.innerHTML = rows || '<tr><td colspan="3" class="text-muted">Sin apps detectadas.</td></tr>';
+  }
+
+  async function loadHistory() {
+    try {
+      const res = await fetch(`/api/agent/detail/{{ device.agent_id }}/`);
+      const data = await res.json();
+      const list = document.getElementById("history-list");
+      if (!data.ok) {
+        list.innerHTML = '<li class="text-danger">No se pudo cargar historial.</li>';
+        return;
+      }
+      const history = data.history || [];
+      if (!history.length) {
+        list.innerHTML = '<li class="text-muted">Sin historial disponible.</li>';
+        return;
+      }
+      list.innerHTML = history
+        .map((h) => `<li><strong>${h.created_at}</strong><div class="text-muted">Snapshot registrado</div></li>`)
+        .join("");
+    } catch (err) {
+      const list = document.getElementById("history-list");
+      list.innerHTML = '<li class="text-danger">Error cargando historial.</li>';
+    }
+  }
+
+  const latestApps = parseApps({{ latest_snapshot.installed_apps|default:"null"|safe }});
+  renderApps(latestApps);
+  loadHistory();
+</script>
 {% endblock %}
