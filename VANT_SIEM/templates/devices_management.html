@@ -115,6 +115,7 @@
               <td>${d.status || "unknown"}</td>
               <td>${d.last_seen || "-"}</td>
               <td>
+                <button class="btn btn-sm btn-outline-success me-1" onclick="issueCommand('${d.agent_id}','activate')">Activar</button>
                 <button class="btn btn-sm btn-outline-warning me-1" onclick="issueCommand('${d.agent_id}','restart')">Reiniciar</button>
                 <button class="btn btn-sm btn-outline-danger" onclick="issueCommand('${d.agent_id}','stop')">Detener</button>
               </td>

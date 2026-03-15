@@ -318,6 +318,8 @@ def run_with_stop(config_path, stop_event):
                     elif command == "restart":
                         logger.warning("command.restart received")
                         os._exit(3)
+                    elif command == "activate":
+                        logger.info("command.activate received")
                     if command_id:
                         _control_post(
                             f"{control_server}/api/agent/commands/ack/",

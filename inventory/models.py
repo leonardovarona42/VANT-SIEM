@@ -24,6 +24,7 @@ class AgentCommand(models.Model):
     COMMAND_CHOICES = [
         ("stop", "Stop"),
         ("restart", "Restart"),
+        ("activate", "Activate"),
     ]
     STATUS_CHOICES = [
         ("pending", "Pending"),

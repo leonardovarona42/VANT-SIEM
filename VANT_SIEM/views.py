@@ -144,6 +144,14 @@ def agent_enroll(request):
 @csrf_exempt
 @require_GET
 def agent_bootstrap_secret(request):
+    agent_id = request.headers.get("X-Agent-Id", "").strip()
+    if not agent_id:
+        return JsonResponse({'ok': False, 'error': 'X-Agent-Id requerido'}, status=400)
+
+    allowlist = _load_agent_allowlist()
+    if allowlist and agent_id not in allowlist:
+        return JsonResponse({'ok': False, 'error': 'Agente no autorizado'}, status=403)
+
     secret = _load_agent_shared_secret()
     return JsonResponse({'ok': True, 'secret': secret})
 
@@ -275,7 +283,7 @@ def agent_command_issue(request):
         payload = {}
     agent_id = payload.get('agent_id', '').strip()
     command = payload.get('command', '').strip()
-    if command not in ('stop', 'restart'):
+    if command not in ('stop', 'restart', 'activate'):
         return JsonResponse({'ok': False, 'error': 'Comando invalido'}, status=400)
 
     from inventory.models import AgentDevice, AgentCommand

@@ -235,7 +235,8 @@ class ConnectionPage(QtWidgets.QWizardPage):
         if not url:
             return ""
         try:
-            response = requests.get(url, timeout=6)
+            headers = {"X-Agent-Id": self.wizard().field("agent_id") or ""}
+            response = requests.get(url, headers=headers, timeout=6)
             if "application/json" not in response.headers.get("Content-Type", ""):
                 return ""
             data = response.json()
