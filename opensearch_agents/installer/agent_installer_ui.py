@@ -177,14 +177,21 @@ class ConnectionPage(QtWidgets.QWizardPage):
             enroll_url = self._build_enroll_url()
             try:
                 response = requests.post(enroll_url, json=payload, timeout=8)
-                data = response.json()
+                data = {}
+                if "application/json" in response.headers.get("Content-Type", ""):
+                    data = response.json()
             except Exception as exc:
                 self.test_status.setText(f"Error al conectar: {exc}")
                 self.test_status.setStyleSheet("color: #dc2626;")
                 return
 
             if response.status_code != 200 or not data.get("ok"):
-                self.test_status.setText("Agente no autorizado para enrolamiento.")
+                if response.status_code == 400 and "HTTPS" in response.text:
+                    self.test_status.setText(
+                        "Servidor en HTTP. Desactiva HTTPS o inicia run_https.ps1."
+                    )
+                else:
+                    self.test_status.setText("Agente no autorizado para enrolamiento.")
                 self.test_status.setStyleSheet("color: #dc2626;")
                 return
 
