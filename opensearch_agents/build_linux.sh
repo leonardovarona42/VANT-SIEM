@@ -24,9 +24,11 @@ NC='\033[0m' # No Color
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 DIST_DIR="${SCRIPT_DIR}/dist"
 AGENT_VERSION="1.0.0"
 AGENT_NAME="vant-siem-agent"
+DISTRO="${VANT_LINUX_DISTRO:-debian}"
 
 # Print functions
 print_header() {
@@ -92,17 +94,11 @@ install_dependencies() {
     print_header "Installing Python Dependencies"
     
     cd "${SCRIPT_DIR}"
-    
-    # Check if requirements.txt exists
-    if [ -f "requirements.txt" ]; then
-        print_info "Installing from requirements.txt..."
-        pip3 install --user -r requirements.txt
-        print_success "Dependencies installed"
-    else
-        print_info "Installing basic dependencies..."
-        pip3 install --user pyyaml requests
-        print_success "Basic dependencies installed"
-    fi
+
+    # Avoid PEP 668 (externally managed environment). Dependencies are
+    # installed inside the package venv in create_venv().
+    print_info "Skipping system-wide pip installs (handled in package venv)"
+    print_success "Dependencies step complete"
 }
 
 # Create virtual environment for the agent
@@ -120,7 +116,7 @@ create_venv() {
     # Activate and install
     source "${venv_dir}/bin/activate"
     pip install --upgrade pip
-    pip install pyyaml requests
+    pip install pyyaml requests PyQt6
     
     # Copy agent files
     print_info "Copying agent files..."
@@ -129,7 +125,16 @@ create_venv() {
     cp agent.py "${venv_dir}/"
     cp -r collectors "${venv_dir}/"
     cp output.py "${venv_dir}/"
-    cp config.example.yaml "${venv_dir}/config.yaml"
+    if [ -f "linux/${DISTRO}/config.yaml" ]; then
+        cp "linux/${DISTRO}/config.yaml" "${venv_dir}/config.yaml"
+    else
+        cp config.example.yaml "${venv_dir}/config.yaml"
+    fi
+    cp agent_tray.py "${venv_dir}/"
+    if [ -f "${ROOT_DIR}/staticfiles/img/logo.png" ]; then
+        mkdir -p "${venv_dir}/staticfiles/img"
+        cp "${ROOT_DIR}/staticfiles/img/logo.png" "${venv_dir}/staticfiles/img/logo.png"
+    fi
     
     # Copy utility scripts
     cp opensearchcheck.py "${venv_dir}/"
@@ -158,78 +163,69 @@ create_debian_package() {
     mkdir -p "${pkg_dir}/etc/vant-siem"
     mkdir -p "${pkg_dir}/var/log/vant-siem"
     mkdir -p "${pkg_dir}/DEBIAN"
-    mkdir -p "${pkg_dir}/etc/init.d"
+    mkdir -p "${pkg_dir}/lib/systemd/system"
+    mkdir -p "${pkg_dir}/etc/xdg/autostart"
     
     # Copy agent (prefer compiled binary if available)
     if [ -f "${DIST_DIR}/VANT-SIEM-Agent" ]; then
         cp "${DIST_DIR}/VANT-SIEM-Agent" "${pkg_dir}/opt/vant-siem-agent/"
         chmod +x "${pkg_dir}/opt/vant-siem-agent/VANT-SIEM-Agent"
+        local exec_start="/opt/vant-siem-agent/VANT-SIEM-Agent --config /etc/vant-siem/config.yaml"
     else
         cp -r "${venv_dir}"/* "${pkg_dir}/opt/vant-siem-agent/"
+        local exec_start="/opt/vant-siem-agent/bin/python /opt/vant-siem-agent/agent.py --config /etc/vant-siem/config.yaml"
+    fi
+
+    # Always include venv for tray GUI
+    mkdir -p "${pkg_dir}/opt/vant-siem-agent/venv"
+    cp -r "${venv_dir}"/* "${pkg_dir}/opt/vant-siem-agent/venv/"
+    if [ -f "${venv_dir}/agent_tray.py" ]; then
+        cp "${venv_dir}/agent_tray.py" "${pkg_dir}/opt/vant-siem-agent/agent_tray.py"
+    fi
+    if [ -d "${venv_dir}/staticfiles" ]; then
+        cp -r "${venv_dir}/staticfiles" "${pkg_dir}/opt/vant-siem-agent/"
     fi
     
     # Copy config
-    cp config.example.yaml "${pkg_dir}/etc/vant-siem/config.yaml"
-    
-    # Create init script
-    cat > "${pkg_dir}/etc/init.d/vant-siem-agent" << 'INITEOF'
-#!/bin/bash
-### BEGIN INIT INFO
-# Provides:          vant-siem-agent
-# Required-Start:    $network $remote_fs $syslog
-# Required-Stop:     $network $remote_fs $syslog
-# Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
-# Short-Description: VANT-SIEM OpenSearch Agent
-# Description:       Security event collector for VANT-SIEM
-### END INIT INFO
-
-NAME=vant-siem-agent
-DESC="VANT-SIEM OpenSearch Agent"
-PIDFILE=/var/run/$NAME.pid
-SCRIPT=/opt/vant-siem-agent/VANT-SIEM-Agent
-PYTHON_BIN=/opt/vant-siem-agent/bin/python
-CONFIG=/etc/vant-siem/config.yaml
-USER=root
-
-case "$1" in
-  start)
-    echo "Starting $DESC: "
-    cd /opt/vant-siem-agent
-    $SCRIPT --config $CONFIG &
-    echo $! > $PIDFILE
-    echo "OK"
-    ;;
-  stop)
-    echo "Stopping $DESC: "
-    if [ -f $PIDFILE ]; then
-      kill $(cat $PIDFILE)
-      rm $PIDFILE
-    fi
-    echo "OK"
-    ;;
-  restart)
-    $0 stop
-    sleep 2
-    $0 start
-    ;;
-  status)
-    if [ -f $PIDFILE ]; then
-      echo "$DESC is running (PID: $(cat $PIDFILE))"
+    if [ -f "linux/${DISTRO}/config.yaml" ]; then
+        cp "linux/${DISTRO}/config.yaml" "${pkg_dir}/etc/vant-siem/config.yaml"
     else
-      echo "$DESC is not running"
+        cp config.example.yaml "${pkg_dir}/etc/vant-siem/config.yaml"
     fi
-    ;;
-  *)
-    echo "Usage: $0 {start|stop|restart|status}"
-    exit 1
-    ;;
-esac
 
-exit 0
-INITEOF
+    cat > "${pkg_dir}/etc/xdg/autostart/vant-opensearch-agent-tray.desktop" << EOF
+[Desktop Entry]
+Type=Application
+Name=VANT-SIEM Agent Tray
+Comment=Control del agente en la bandeja del sistema
+Exec=/opt/vant-siem-agent/venv/bin/python /opt/vant-siem-agent/agent_tray.py --config /etc/vant-siem/config.yaml
+Icon=/opt/vant-siem-agent/staticfiles/img/logo.png
+Terminal=false
+StartupNotify=false
+X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Delay=5
+X-KDE-autostart-after=panel
+X-KDE-StartupNotify=false
+Categories=Utility;
+EOF
+    
+    # Create systemd unit
+    cat > "${pkg_dir}/lib/systemd/system/vant-siem-agent.service" << EOF
+[Unit]
+Description=VANT-SIEM OpenSearch Agent
+After=network-online.target
+Wants=network-online.target
 
-    chmod +x "${pkg_dir}/etc/init.d/vant-siem-agent"
+[Service]
+Type=simple
+WorkingDirectory=/opt/vant-siem-agent
+ExecStart=${exec_start}
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
     
     # Create control file
     cat > "${pkg_dir}/DEBIAN/control" << 'CONTROLEOF'
@@ -238,7 +234,7 @@ Version: 1.0.0
 Section: net
 Priority: optional
 Architecture: all
-Depends: python3, python3-yaml, python3-requests
+Depends: python3
 Maintainer: LLVT <leonardovarona42@gmail.com>
 Description: VANT-SIEM OpenSearch Agent
  Security event collector for VANT-SIEM platform.
@@ -247,11 +243,36 @@ Description: VANT-SIEM OpenSearch Agent
 Homepage: https://github.com/vant-siem/vant-siem
 CONTROLEOF
 
+    # Post-install: enable and start systemd unit
+    cat > "${pkg_dir}/DEBIAN/postinst" << 'POSTINSTE'
+#!/bin/sh
+set -e
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl daemon-reload || true
+  systemctl enable --now vant-siem-agent.service || true
+fi
+exit 0
+POSTINSTE
+    chmod 755 "${pkg_dir}/DEBIAN/postinst"
+
+    # Pre-remove: stop systemd unit
+    cat > "${pkg_dir}/DEBIAN/prerm" << 'PRERME'
+#!/bin/sh
+set -e
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl stop vant-siem-agent.service || true
+  systemctl disable vant-siem-agent.service || true
+  systemctl daemon-reload || true
+fi
+exit 0
+PRERME
+    chmod 755 "${pkg_dir}/DEBIAN/prerm"
+
     # Build package
     print_info "Building .deb package..."
-    dpkg-deb --build "${pkg_dir}" "${DIST_DIR}/vant-siem-agent_${AGENT_VERSION}_all.deb"
+    dpkg-deb --build "${pkg_dir}" "${DIST_DIR}/vant-siem-agent_${DISTRO}_${AGENT_VERSION}_all.deb"
     
-    print_success "Package created: dist/vant-siem-agent_${AGENT_VERSION}_all.deb"
+    print_success "Package created: dist/vant-siem-agent_${DISTRO}_${AGENT_VERSION}_all.deb"
 }
 
 # Create generic tarball
@@ -259,7 +280,7 @@ create_tarball() {
     print_header "Creating Tarball Package"
     
     local venv_dir="${DIST_DIR}/${AGENT_NAME}-venv"
-    local tarball="${DIST_DIR}/${AGENT_NAME}-linux-${AGENT_VERSION}.tar.gz"
+    local tarball="${DIST_DIR}/${AGENT_NAME}-linux-${DISTRO}-${AGENT_VERSION}.tar.gz"
     
     # Create directory structure
     local install_dir="${DIST_DIR}/vant-siem-agent-install"
@@ -275,7 +296,18 @@ create_tarball() {
     else
         cp -r "${venv_dir}"/* "${install_dir}/agent/"
     fi
-    cp config.example.yaml "${install_dir}/config/agent.yaml"
+    mkdir -p "${install_dir}/agent/venv"
+    cp -r "${venv_dir}"/* "${install_dir}/agent/venv/"
+    if [ -f "linux/${DISTRO}/config.yaml" ]; then
+        cp "linux/${DISTRO}/config.yaml" "${install_dir}/config/agent.yaml"
+    else
+        cp config.example.yaml "${install_dir}/config/agent.yaml"
+    fi
+    cp agent_tray.py "${install_dir}/agent/"
+    if [ -f "${ROOT_DIR}/staticfiles/img/logo.png" ]; then
+        mkdir -p "${install_dir}/agent/staticfiles/img"
+        cp "${ROOT_DIR}/staticfiles/img/logo.png" "${install_dir}/agent/staticfiles/img/logo.png"
+    fi
     cp opensearchcheck.py "${install_dir}/scripts/"
     cp opensearchmover.py "${install_dir}/scripts/"
     cp AGENT_MANUAL.md "${install_dir}/docs/"
@@ -321,6 +353,24 @@ cp -r agent/* /opt/vant-siem-agent/
 cp config/agent.yaml /etc/vant-siem/config.yaml
 cp scripts/*.py /opt/vant-siem-agent/
 
+# Autostart tray
+mkdir -p /etc/xdg/autostart
+cat > /etc/xdg/autostart/vant-opensearch-agent-tray.desktop << EOF
+[Desktop Entry]
+Type=Application
+Name=VANT-SIEM Agent Tray
+Comment=Control del agente en la bandeja del sistema
+Exec=/opt/vant-siem-agent/venv/bin/python /opt/vant-siem-agent/agent_tray.py --config /etc/vant-siem/config.yaml
+Icon=/opt/vant-siem-agent/staticfiles/img/logo.png
+Terminal=false
+StartupNotify=false
+X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Delay=5
+X-KDE-autostart-after=panel
+X-KDE-StartupNotify=false
+Categories=Utility;
+EOF
+
 # Make executable
 chmod +x /opt/vant-siem-agent/VANT-SIEM-Agent 2>/dev/null || true
 chmod +x /opt/vant-siem-agent/agent.py 2>/dev/null || true
@@ -336,9 +386,9 @@ INSTALLEOF
     
     # Create tarball
     cd "${DIST_DIR}"
-    tar -czf vant-siem-agent-linux-${AGENT_VERSION}.tar.gz vant-siem-agent-install/
+    tar -czf vant-siem-agent-linux-${DISTRO}-${AGENT_VERSION}.tar.gz vant-siem-agent-install/
     
-    print_success "Tarball created: dist/vant-siem-agent-linux-${AGENT_VERSION}.tar.gz"
+    print_success "Tarball created: dist/vant-siem-agent-linux-${DISTRO}-${AGENT_VERSION}.tar.gz"
 }
 
 # Main function
@@ -434,8 +484,8 @@ main() {
     print_success "All builds completed!"
     echo ""
     echo "To install:"
-    echo "  - Debian/Ubuntu: sudo dpkg -i dist/vant-siem-agent_${AGENT_VERSION}_all.deb"
-    echo "  - Generic: tar -xzf dist/vant-siem-agent-linux-${AGENT_VERSION}.tar.gz && cd vant-siem-agent-install && ./install.sh"
+    echo "  - Debian/Ubuntu: sudo dpkg -i dist/vant-siem-agent_${DISTRO}_${AGENT_VERSION}_all.deb"
+    echo "  - Generic: tar -xzf dist/vant-siem-agent-linux-${DISTRO}-${AGENT_VERSION}.tar.gz && cd vant-siem-agent-install && ./install.sh"
 }
 
 # Run main

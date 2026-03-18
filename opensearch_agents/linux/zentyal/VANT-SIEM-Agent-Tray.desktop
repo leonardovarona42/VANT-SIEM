@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=VANT-SIEM Agent Tray
+Comment=Control del agente en la bandeja del sistema
+Exec=/opt/vant/opensearch-agent/venv/bin/python /opt/vant/opensearch-agent/agent_tray.py --config /etc/vant-opensearch-agent/config.yaml
+Icon=/opt/vant/opensearch-agent/staticfiles/img/logo.png
+Terminal=false
+StartupNotify=false
+X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Delay=5
+X-KDE-autostart-after=panel
+X-KDE-StartupNotify=false
+Categories=Utility;

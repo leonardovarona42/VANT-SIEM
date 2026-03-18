@@ -11,8 +11,12 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 from agent import run_with_stop
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-LOGO_PATH = BASE_DIR / "staticfiles" / "img" / "logo.png"
+_HERE = Path(__file__).resolve().parent
+_CANDIDATES = [
+    _HERE / "staticfiles" / "img" / "logo.png",
+    _HERE.parent / "staticfiles" / "img" / "logo.png",
+]
+LOGO_PATH = next((p for p in _CANDIDATES if p.exists()), _CANDIDATES[0])
 
 
 def load_cfg(path):
@@ -75,10 +79,13 @@ class AgentTray(QtWidgets.QSystemTrayIcon):
         self.action_stop.triggered.connect(self._stop_agent)
         self.action_exit.triggered.connect(self._exit_app)
 
-        self.worker = threading.Thread(
-            target=run_with_stop, args=(config_path, self.stop_event), daemon=True
-        )
-        self.worker.start()
+        if self._can_start_worker():
+            self.worker = threading.Thread(
+                target=run_with_stop, args=(config_path, self.stop_event), daemon=True
+            )
+            self.worker.start()
+        else:
+            self.worker = None
 
         self.show()
 
@@ -100,6 +107,8 @@ class AgentTray(QtWidgets.QSystemTrayIcon):
             )
 
     def _stop_worker(self):
+        if self.worker is None:
+            return
         self.stop_event.set()
         time.sleep(0.5)
 
@@ -146,6 +155,26 @@ class AgentTray(QtWidgets.QSystemTrayIcon):
             return False
 
         return True
+
+    def _can_start_worker(self):
+        agent_cfg = self.cfg.get("agent", {})
+        log_file = (agent_cfg.get("log_file") or "").strip()
+        if not log_file:
+            return True
+        try:
+            log_path = Path(log_file)
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+            with log_path.open("a", encoding="utf-8"):
+                pass
+            return True
+        except Exception:
+            QtWidgets.QMessageBox.warning(
+                None,
+                "VANT-SIEM Agent",
+                "No hay permisos para escribir el log del agente. "
+                "El tray se iniciara sin ejecutar el agente.",
+            )
+            return False
 
 
 def main():

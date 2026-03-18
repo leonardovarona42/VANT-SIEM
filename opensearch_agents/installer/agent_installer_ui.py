@@ -1,6 +1,8 @@
 import os
 import sys
 import socket
+import platform
+import subprocess
 from urllib.parse import urlparse
 
 import requests
@@ -16,6 +18,44 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 LOGO_PATH = os.path.join(BASE_DIR, "staticfiles", "img", "logo.png")
 BOOTSTRAP_KEY_PATH = os.path.join(BASE_DIR, "opensearch_agents", "installer", "bootstrap.key")
 DEFAULT_AGENT_SHARED_SECRET = "VANT-SIEM-AGENT-BOOTSTRAP-2026"
+DEFAULT_CONFIG_PATH = os.environ.get("VANT_AGENT_CONFIG", "opensearch_agents/config.yaml")
+
+
+def _is_admin():
+    if sys.platform.startswith("win"):
+        try:
+            import ctypes
+            return ctypes.windll.shell32.IsUserAnAdmin() != 0
+        except Exception:
+            return False
+    try:
+        return os.geteuid() == 0
+    except Exception:
+        return False
+
+
+def _os_label():
+    if sys.platform.startswith("win"):
+        return "Windows"
+    if sys.platform.startswith("linux"):
+        return "Linux"
+    return platform.system() or "Desconocido"
+
+
+def _default_paths():
+    if sys.platform.startswith("win"):
+        return {
+            "snort": "C:/snort/log/alert",
+            "suricata": "C:/suricata/logs/eve.json",
+            "postgres": "C:/Program Files/PostgreSQL/16/data/log/postgresql.log",
+            "file_logs": "C:/ProgramData/VANT/logs/audit.log",
+        }
+    return {
+        "snort": "/var/log/snort/alert",
+        "suricata": "/var/log/suricata/eve.json",
+        "postgres": "/var/log/postgresql/postgresql-16-main.log",
+        "file_logs": "/var/log/samba/audit.log",
+    }
 
 
 class WelcomePage(QtWidgets.QWizardPage):
@@ -28,8 +68,11 @@ class WelcomePage(QtWidgets.QWizardPage):
 
         status_box = QtWidgets.QGroupBox("Estado del sistema")
         status_layout = QtWidgets.QFormLayout()
-        status_layout.addRow("Sistema operativo:", QtWidgets.QLabel("Windows (detectado)"))
-        status_layout.addRow("Permisos:", QtWidgets.QLabel("Administrador confirmado"))
+        status_layout.addRow("Sistema operativo:", QtWidgets.QLabel(f"{_os_label()} (detectado)"))
+        status_layout.addRow(
+            "Permisos:",
+            QtWidgets.QLabel("Administrador confirmado" if _is_admin() else "Requiere privilegios"),
+        )
         status_layout.addRow("Python:", QtWidgets.QLabel("Disponible"))
         status_layout.addRow("Carpeta destino:", QtWidgets.QLabel("Lista"))
         status_box.setLayout(status_layout)
@@ -86,13 +129,13 @@ class ConnectionPage(QtWidgets.QWizardPage):
 
         layout = QtWidgets.QFormLayout()
 
-        self.server_host = QtWidgets.QLineEdit("127.0.0.1")
+        self.server_host = QtWidgets.QLineEdit("192.168.1.12")
         self.server_port = QtWidgets.QSpinBox()
         self.server_port.setRange(1, 65535)
         self.server_port.setValue(8000)
         self.server_https = QtWidgets.QCheckBox("Usar HTTPS para VANT-SIEM")
 
-        self.opensearch_host = QtWidgets.QLineEdit("127.0.0.1")
+        self.opensearch_host = QtWidgets.QLineEdit("192.168.1.12")
         self.opensearch_port = QtWidgets.QSpinBox()
         self.opensearch_port.setRange(1, 65535)
         self.opensearch_port.setValue(9201)
@@ -328,19 +371,18 @@ class CollectorsPage(QtWidgets.QWizardPage):
 
         layout = QtWidgets.QFormLayout()
 
+        defaults = _default_paths()
         self.snort = QtWidgets.QCheckBox("Snort")
-        self.snort_path = QtWidgets.QLineEdit("C:/snort/log/alert")
+        self.snort_path = QtWidgets.QLineEdit(defaults["snort"])
         self.suricata = QtWidgets.QCheckBox("Suricata")
-        self.suricata_path = QtWidgets.QLineEdit("C:/suricata/logs/eve.json")
+        self.suricata_path = QtWidgets.QLineEdit(defaults["suricata"])
         self.winlog = QtWidgets.QCheckBox("Windows Event Log")
         self.winlog_channel = QtWidgets.QComboBox()
         self.winlog_channel.addItems(["Security", "Application", "System"])
         self.postgres = QtWidgets.QCheckBox("PostgreSQL")
-        self.postgres_path = QtWidgets.QLineEdit(
-            "C:/Program Files/PostgreSQL/16/data/log/postgresql.log"
-        )
+        self.postgres_path = QtWidgets.QLineEdit(defaults["postgres"])
         self.file_logs = QtWidgets.QCheckBox("File Logs")
-        self.file_logs_path = QtWidgets.QLineEdit("/var/log/samba/audit.log")
+        self.file_logs_path = QtWidgets.QLineEdit(defaults["file_logs"])
 
         layout.addRow(self.snort, self.snort_path)
         layout.addRow(self.suricata, self.suricata_path)
@@ -418,7 +460,7 @@ class ProgressPage(QtWidgets.QWizardPage):
         else:
             self.log.appendPlainText("config.yaml guardado correctamente.")
             if self.wizard().page(AgentInstallerWizard.PAGE_SUMMARY).install_service.isChecked():
-                if self._install_windows_service():
+                if self._install_service():
                     self.log.appendPlainText("Servicio creado y configurado (auto-start).")
                 else:
                     self.log.appendPlainText("No se pudo crear el servicio.")
@@ -438,19 +480,27 @@ class ProgressPage(QtWidgets.QWizardPage):
         try:
             tray_path = Path("opensearch_agents/agent_tray.py")
             if tray_path.exists():
+                config_path = Path(DEFAULT_CONFIG_PATH).resolve()
                 QtCore.QProcess.startDetached(
-                    sys.executable, [str(tray_path), "--config", "opensearch_agents/config.yaml"]
+                    sys.executable, [str(tray_path), "--config", str(config_path)]
                 )
                 self.log.appendPlainText("Agente iniciado en bandeja (tray).")
         except Exception:
             self.log.appendPlainText("No se pudo iniciar el tray del agente.")
+
+    def _install_service(self):
+        if sys.platform.startswith("win"):
+            return self._install_windows_service()
+        if sys.platform.startswith("linux"):
+            return self._install_linux_service()
+        return False
 
     def _install_windows_service(self):
         try:
             service_name = "VANTSIEMAgent"
             python_exe = sys.executable
             agent_path = Path("opensearch_agents/agent.py").resolve()
-            config_path = Path("opensearch_agents/config.yaml").resolve()
+            config_path = Path(DEFAULT_CONFIG_PATH).resolve()
             bin_path = f'"{python_exe}" "{agent_path}" --config "{config_path}"'
 
             create_cmd = [
@@ -464,6 +514,41 @@ class ProgressPage(QtWidgets.QWizardPage):
             QtCore.QProcess.execute(create_cmd[0], create_cmd[1:])
             QtCore.QProcess.execute("sc.exe", ["failure", service_name, "reset= 0", "actions= restart/5000"])
             QtCore.QProcess.execute("sc.exe", ["start", service_name])
+            return True
+        except Exception:
+            return False
+
+    def _install_linux_service(self):
+        try:
+            config_path = Path(DEFAULT_CONFIG_PATH).resolve()
+            agent_dir = Path(__file__).resolve().parent.parent
+            bin_path = agent_dir / "VANT-SIEM-Agent"
+            if not bin_path.exists():
+                bin_path = agent_dir / "agent.py"
+                exec_line = f"{sys.executable} {bin_path} --config {config_path}"
+            else:
+                exec_line = f"{bin_path} --config {config_path}"
+
+            service_text = f"""[Unit]
+Description=VANT-SIEM OpenSearch Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory={agent_dir}
+ExecStart={exec_line}
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+"""
+            service_path = Path("/etc/systemd/system/vant-siem-agent.service")
+            service_path.write_text(service_text, encoding="utf-8")
+
+            subprocess.check_call(["systemctl", "daemon-reload"])
+            subprocess.check_call(["systemctl", "enable", "--now", "vant-siem-agent"])
             return True
         except Exception:
             return False
@@ -568,7 +653,7 @@ control:
         config_text = self.build_config_preview(mask_secrets=False)
         try:
             data = yaml.safe_load(config_text) or {}
-            config_path = Path("opensearch_agents/config.yaml")
+            config_path = Path(DEFAULT_CONFIG_PATH)
             config_path.parent.mkdir(parents=True, exist_ok=True)
             config_path.write_text(
                 yaml.safe_dump(data, sort_keys=False, allow_unicode=False),

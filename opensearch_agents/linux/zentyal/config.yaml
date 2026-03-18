@@ -2,10 +2,15 @@ agent:
   id: "agent-zentyal-ad-01"
   host_name: "zentyal-ad"
   interval_seconds: 10
+  log_level: "INFO"
+  log_file: "/var/log/vant-siem/agent.log"
+  log_max_bytes: 10485760
+  log_backup_count: 5
+  log_every_cycles: 60
 
 output:
-  endpoint: "http://127.0.0.1:9201/api/v1/events/bulk"
-  source_endpoint: "http://127.0.0.1:9201/api/v1/sources/upsert"
+  endpoint: "http://192.168.1.12:9201/api/v1/events/bulk"
+  source_endpoint: "http://192.168.1.12:9201/api/v1/sources/upsert"
   timeout_seconds: 10
   auth:
     mode: "none"   # none|basic|token
@@ -16,6 +21,13 @@ output:
     enabled: false
     verify: false
     ca_cert: ""
+
+control:
+  server_url: "http://192.168.1.12:8000"
+  require_https: false
+  token: ""
+  poll_seconds: 30
+  inventory_seconds: 86400
 
 collectors:
   snort:

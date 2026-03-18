@@ -8,9 +8,33 @@ sudo chmod +x install_agent.sh enable_logs.sh
 sudo ./install_agent.sh
 ```
 
+Para forzar el asistente CLI (similar al UI de Windows):
+
+```bash
+sudo VANT_AGENT_WIZARD=1 ./install_agent.sh
+```
+
+Para desactivar el asistente (modo no interactivo):
+
+```bash
+sudo VANT_AGENT_WIZARD=0 ./install_agent.sh
+```
+
 Config principal:
 
 `/etc/vant-opensearch-agent/config.yaml`
+
+## Tray GUI (auto-arranque)
+
+El instalador copia `VANT-SIEM-Agent-Tray.desktop` a:
+
+`/etc/xdg/autostart/vant-opensearch-agent-tray.desktop`
+
+Para desactivar el tray:
+
+```bash
+sudo rm /etc/xdg/autostart/vant-opensearch-agent-tray.desktop
+```
 
 ## 2) Habilitar logs para AD Samba + extras
 
