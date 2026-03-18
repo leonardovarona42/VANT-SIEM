@@ -8,6 +8,7 @@ dependencias/
 snort-logs/
 suricata-log/
 logs/
+logs/eventos.json
 
 # Documentation
 VANT_SIEM_PRESENTATION.md
