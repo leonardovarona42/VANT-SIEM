@@ -47,18 +47,35 @@ def devices_management(request):
 
 @login_required
 def inventory_service_dashboard(request):
-    from inventory.models import AgentDevice, AgentHardwareComponent, AgentSoftwareRecord, AgentTimelineEvent
+    from inventory.models import AgentDevice, AgentHardwareComponent, AgentNetworkIdentity, AgentSoftwareRecord, AgentTimelineEvent
 
     agents = AgentDevice.objects.order_by("-last_seen")[:20]
     recent_timeline = AgentTimelineEvent.objects.exclude(category="dlp").order_by("-observed_at")[:40]
+    recent_hardware = AgentHardwareComponent.objects.select_related("agent").order_by("-last_seen")[:30]
+    recent_software = AgentSoftwareRecord.objects.select_related("agent").filter(is_present=True).order_by("-last_seen")[:30]
+    agent_cards = []
+    for agent in agents:
+        agent_cards.append(
+            {
+                "agent": agent,
+                "hardware_count": agent.hardware_components.filter(status="active").count(),
+                "software_count": agent.software_records.filter(is_present=True).count(),
+                "network_count": agent.network_identities.filter(is_active=True).count(),
+                "timeline_count": agent.timeline_events.exclude(category="dlp").count(),
+                "latest_inventory": agent.latest_inventory or {},
+            }
+        )
     context = {
         "agents_total": AgentDevice.objects.count(),
         "agents_online": AgentDevice.objects.filter(status="online").count(),
         "hardware_total": AgentHardwareComponent.objects.filter(status="active").count(),
         "software_total": AgentSoftwareRecord.objects.filter(is_present=True).count(),
+        "network_total": AgentNetworkIdentity.objects.filter(is_active=True).count(),
         "timeline_total": AgentTimelineEvent.objects.exclude(category="dlp").count(),
-        "recent_agents": agents,
+        "recent_agents": agent_cards,
         "recent_timeline": recent_timeline,
+        "recent_hardware": recent_hardware,
+        "recent_software": recent_software,
         "top_software": AgentSoftwareRecord.objects.filter(is_present=True).order_by("-last_seen")[:20],
     }
     return render(request, "inventory_service_dashboard.html", context)
@@ -78,6 +95,230 @@ def dlp_service_dashboard(request):
         "policies": AegisDlpPolicy.objects.prefetch_related("rules").order_by("name"),
     }
     return render(request, "dlp_service_dashboard.html", context)
+
+
+def _split_list_field(value):
+    if isinstance(value, list):
+        return [item for item in value if str(item).strip()]
+    raw = (value or "").replace(";", ",").replace("\n", ",")
+    return [item.strip() for item in raw.split(",") if item.strip()]
+
+@login_required
+def dlp_rule_save(request, policy_id, rule_id=None):
+    from inventory.models import AegisDlpPolicy, AegisDlpRule
+
+    policy = get_object_or_404(AegisDlpPolicy, id=policy_id)
+    rule = get_object_or_404(AegisDlpRule, id=rule_id, policy=policy) if rule_id else None
+
+    if request.method == "POST":
+        payload = {
+            "name": request.POST.get("name", "").strip(),
+            "enabled": request.POST.get("enabled") == "on",
+            "classification": request.POST.get("classification", "").strip(),
+            "severity": request.POST.get("severity", "high").strip() or "high",
+            "match_type": request.POST.get("match_type", "keyword").strip() or "keyword",
+            "pattern": request.POST.get("pattern", "").strip(),
+            "tags": _split_list_field(request.POST.get("tags", "")),
+        }
+        if rule:
+            for key, value in payload.items():
+                setattr(rule, key, value)
+            rule.save()
+            messages.success(request, "Regla actualizada.")
+        else:
+            AegisDlpRule.objects.create(policy=policy, **payload)
+            messages.success(request, "Regla creada.")
+        return redirect("dlp-policy-list")
+
+    policies = AegisDlpPolicy.objects.prefetch_related("rules").order_by("name")
+    return render(
+        request,
+        "dlp_policy_list.html",
+        {"policies": policies, "edit_policy": policy, "edit_rule": rule},
+    )
+
+
+@login_required
+def dlp_rule_delete(request, policy_id, rule_id):
+    from inventory.models import AegisDlpPolicy, AegisDlpRule
+
+    policy = get_object_or_404(AegisDlpPolicy, id=policy_id)
+    rule = get_object_or_404(AegisDlpRule, id=rule_id, policy=policy)
+    if request.method == "POST":
+        rule.delete()
+        messages.success(request, "Regla eliminada.")
+    return redirect("dlp-policy-list")
+
+
+@login_required
+def dlp_policy_list(request):
+    from inventory.models import AegisDlpPolicy
+
+    if request.method == "POST":
+        policy_id = request.POST.get("policy_id", "").strip()
+        action = request.POST.get("action", "").strip() or "save"
+        if action == "delete" and policy_id:
+            AegisDlpPolicy.objects.filter(id=policy_id).delete()
+            messages.success(request, "Política eliminada.")
+            return redirect("dlp-policy-list")
+
+        policy = AegisDlpPolicy.objects.filter(id=policy_id).first() if policy_id else None
+        payload = {
+            "name": request.POST.get("name", "").strip(),
+            "code": request.POST.get("code", "").strip(),
+            "description": request.POST.get("description", "").strip(),
+            "enabled": request.POST.get("enabled") == "on",
+            "severity": request.POST.get("severity", "high").strip() or "high",
+            "scan_paths": _split_list_field(request.POST.get("scan_paths", "")),
+            "monitored_extensions": _split_list_field(request.POST.get("monitored_extensions", "")),
+            "max_file_size_mb": int(request.POST.get("max_file_size_mb", 10) or 10),
+        }
+        if policy:
+            for key, value in payload.items():
+                setattr(policy, key, value)
+            policy.save()
+            messages.success(request, "Política actualizada.")
+        else:
+            AegisDlpPolicy.objects.create(**payload)
+            messages.success(request, "Política creada.")
+        return redirect("dlp-policy-list")
+
+    policies = AegisDlpPolicy.objects.prefetch_related("rules").order_by("name")
+    return render(request, "dlp_policy_list.html", {"policies": policies})
+
+
+@login_required
+def dlp_policy_create(request):
+    from inventory.models import AegisDlpPolicy, AegisDlpRule
+
+    if request.method == "POST":
+        scan_paths = [item.strip() for item in request.POST.get("scan_paths", "").splitlines() if item.strip()]
+        monitored_extensions = [item.strip() for item in request.POST.get("monitored_extensions", "").split(",") if item.strip()]
+        tags = [item.strip() for item in request.POST.get("rule_tags", "").split(",") if item.strip()]
+        policy = AegisDlpPolicy.objects.create(
+            name=request.POST.get("name", "").strip(),
+            code=request.POST.get("code", "").strip(),
+            description=request.POST.get("description", "").strip(),
+            enabled=request.POST.get("enabled") == "on",
+            severity=request.POST.get("severity", "high").strip() or "high",
+            scan_paths=scan_paths,
+            monitored_extensions=monitored_extensions,
+            max_file_size_mb=int(request.POST.get("max_file_size_mb", 10) or 10),
+        )
+        if request.POST.get("rule_name", "").strip() and request.POST.get("rule_pattern", "").strip():
+            AegisDlpRule.objects.create(
+                policy=policy,
+                name=request.POST.get("rule_name", "").strip(),
+                enabled=True,
+                classification=request.POST.get("rule_classification", "").strip(),
+                severity=request.POST.get("rule_severity", "high").strip() or "high",
+                match_type=request.POST.get("rule_match_type", "keyword").strip() or "keyword",
+                pattern=request.POST.get("rule_pattern", "").strip(),
+                tags=tags,
+            )
+        messages.success(request, f'Politica DLP "{policy.name}" creada exitosamente.')
+        return redirect("dlp-policy-list")
+
+    return render(request, "dlp_policy_form.html", {"mode": "create"})
+
+
+@login_required
+def dlp_policy_edit(request, policy_id):
+    from inventory.models import AegisDlpPolicy, AegisDlpRule
+
+    policy = get_object_or_404(AegisDlpPolicy, id=policy_id)
+    if request.method == "POST":
+        action = request.POST.get("action", "save")
+        if action == "add_rule":
+            tags = [item.strip() for item in request.POST.get("rule_tags", "").split(",") if item.strip()]
+            if request.POST.get("rule_name", "").strip() and request.POST.get("rule_pattern", "").strip():
+                AegisDlpRule.objects.create(
+                    policy=policy,
+                    name=request.POST.get("rule_name", "").strip(),
+                    enabled=True,
+                    classification=request.POST.get("rule_classification", "").strip(),
+                    severity=request.POST.get("rule_severity", "high").strip() or "high",
+                    match_type=request.POST.get("rule_match_type", "keyword").strip() or "keyword",
+                    pattern=request.POST.get("rule_pattern", "").strip(),
+                    tags=tags,
+                )
+                messages.success(request, "Regla DLP agregada.")
+            return redirect("dlp-policy-edit", policy_id=policy.id)
+
+        policy.name = request.POST.get("name", "").strip()
+        policy.code = request.POST.get("code", "").strip()
+        policy.description = request.POST.get("description", "").strip()
+        policy.enabled = request.POST.get("enabled") == "on"
+        policy.severity = request.POST.get("severity", "high").strip() or "high"
+        policy.scan_paths = [item.strip() for item in request.POST.get("scan_paths", "").splitlines() if item.strip()]
+        policy.monitored_extensions = [item.strip() for item in request.POST.get("monitored_extensions", "").split(",") if item.strip()]
+        policy.max_file_size_mb = int(request.POST.get("max_file_size_mb", 10) or 10)
+        policy.save()
+        messages.success(request, f'Politica "{policy.name}" actualizada.')
+        return redirect("dlp-policy-edit", policy_id=policy.id)
+
+    return render(request, "dlp_policy_form.html", {"mode": "edit", "policy": policy})
+
+
+@login_required
+def dlp_incident_list(request):
+    from inventory.models import AegisDlpIncident
+
+    incidents = AegisDlpIncident.objects.select_related("agent", "policy", "rule").order_by("-detected_at")
+    status_filter = request.GET.get("status", "").strip()
+    if status_filter:
+        incidents = incidents.filter(status=status_filter)
+    return render(
+        request,
+        "dlp_incident_list.html",
+        {"incidents": incidents[:200], "status_filter": status_filter},
+    )
+
+
+@login_required
+@require_POST
+def dlp_incident_update(request, incident_id):
+    from inventory.models import AegisDlpIncident
+
+    incident = get_object_or_404(AegisDlpIncident, id=incident_id)
+    new_status = request.POST.get("status", "").strip()
+    if new_status in {"open", "reviewing", "contained", "closed"}:
+        incident.status = new_status
+        incident.save(update_fields=["status"])
+        messages.success(request, f"Incidente {incident.id} actualizado a {new_status}.")
+    else:
+        messages.error(request, "Estado DLP invalido.")
+    return redirect("dlp-incident-list")
+
+
+def _inventory_components(payload):
+    payload = payload or {}
+    hardware = payload.get("hardware") or []
+    software = payload.get("software") or []
+    network = payload.get("network") or []
+    users = payload.get("users") or []
+    usb_devices = payload.get("usb_devices") or []
+
+    def _first_component(component_type):
+        for item in hardware:
+            if (item.get("component_type") or "").lower() == component_type:
+                return item
+        return {}
+
+    return {
+        "hardware": hardware,
+        "software": software,
+        "network": network,
+        "users": users,
+        "usb_devices": usb_devices,
+        "bios": _first_component("bios"),
+        "system": _first_component("system"),
+        "cpu": _first_component("cpu"),
+        "board": _first_component("board"),
+        "disk": _first_component("disk"),
+        "network_identity": _first_component("network"),
+        "usb": _first_component("usb"),
+    }
 
 
 DEFAULT_AGENT_SHARED_SECRET = "VANT-SIEM-AGENT-BOOTSTRAP-2026"
@@ -473,7 +714,7 @@ def agent_detail(request, agent_id):
 
 @login_required
 def agent_detail_page(request, agent_id):
-    from inventory.models import AegisDlpIncident, AgentDevice, AgentInventorySnapshot, AgentTimelineEvent
+    from inventory.models import AegisDlpIncident, AgentDevice, AgentInventorySnapshot, AgentHardwareComponent, AgentNetworkIdentity, AgentSoftwareRecord, AgentTimelineEvent
     try:
         device = AgentDevice.objects.get(agent_id=agent_id)
     except AgentDevice.DoesNotExist:
@@ -484,14 +725,22 @@ def agent_detail_page(request, agent_id):
         .order_by("-created_at")
         .first()
     )
+    latest_inventory = latest.payload if latest else (device.latest_inventory or {})
+    inventory_summary = _inventory_components(latest_inventory)
     context = {
         "device": device,
-        "latest_snapshot": latest.payload if latest else {},
+        "latest_snapshot": latest_inventory,
+        "latest_inventory": latest_inventory,
         "latest_at": latest.created_at if latest else None,
+        "inventory_summary": inventory_summary,
+        "hardware_components": AgentHardwareComponent.objects.filter(agent=device).order_by("component_type", "name"),
+        "software_records": AgentSoftwareRecord.objects.filter(agent=device).order_by("-last_seen"),
+        "network_identities": AgentNetworkIdentity.objects.filter(agent=device).order_by("-last_seen"),
         "timeline_events": AgentTimelineEvent.objects.filter(agent=device).order_by("-observed_at")[:100],
         "dlp_incidents": AegisDlpIncident.objects.filter(agent=device).order_by("-detected_at")[:100],
+        "latest_inventory_json": json.dumps(latest_inventory, ensure_ascii=False),
     }
-    return render(request, "agent_detail.html", context)
+    return render(request, "agent_detail_inventory.html", context)
 
 
 @login_required
@@ -516,7 +765,7 @@ def agent_inventory_csv(request, agent_id):
 
 @login_required
 def agent_apps_csv(request, agent_id):
-    from inventory.models import AgentDevice, AgentInventorySnapshot
+    from inventory.models import AgentDevice, AgentInventorySnapshot, AgentSoftwareRecord
     try:
         device = AgentDevice.objects.get(agent_id=agent_id)
     except AgentDevice.DoesNotExist:
@@ -529,20 +778,40 @@ def agent_apps_csv(request, agent_id):
     )
     apps = []
     if snapshot and snapshot.payload:
-        raw = snapshot.payload.get("installed_apps")
-        if isinstance(raw, str):
-            try:
-                apps = json.loads(raw)
-            except Exception:
-                apps = []
-        elif isinstance(raw, list):
-            apps = raw
+        apps = snapshot.payload.get("software") or []
+        if not apps:
+            raw = snapshot.payload.get("installed_apps")
+            if isinstance(raw, str):
+                try:
+                    apps = json.loads(raw)
+                except Exception:
+                    apps = []
+            elif isinstance(raw, list):
+                apps = raw
+    if not apps:
+        apps = [
+            {
+                "name": item.name,
+                "version": item.version,
+                "publisher": item.publisher,
+            }
+            for item in AgentSoftwareRecord.objects.filter(agent=device, is_present=True).order_by("name")
+        ]
+
+    def _app_field(app, *keys):
+        if not isinstance(app, dict):
+            return ""
+        for key in keys:
+            value = app.get(key)
+            if value:
+                return value
+        return ""
 
     rows = ["name,version,publisher"]
     for app in apps or []:
-        name = (app or {}).get("DisplayName", "") if isinstance(app, dict) else ""
-        version = (app or {}).get("DisplayVersion", "") if isinstance(app, dict) else ""
-        publisher = (app or {}).get("Publisher", "") if isinstance(app, dict) else ""
+        name = _app_field(app, "name", "DisplayName", "Name")
+        version = _app_field(app, "version", "DisplayVersion", "Version")
+        publisher = _app_field(app, "publisher", "Publisher", "Vendor")
         rows.append(f"\"{name}\",\"{version}\",\"{publisher}\"")
     resp = JsonResponse({})
     resp.content = "\n".join(rows).encode("utf-8")
@@ -581,7 +850,8 @@ def agent_inventory_compare(request, agent_id):
         return JsonResponse({'ok': False, 'error': 'No hay suficientes snapshots'}, status=400)
 
     def _apps_from_snapshot(snap):
-        raw = (snap.payload or {}).get("installed_apps")
+        payload = snap.payload or {}
+        raw = payload.get("software") or payload.get("installed_apps")
         if isinstance(raw, str):
             try:
                 return json.loads(raw) or []
@@ -594,8 +864,10 @@ def agent_inventory_compare(request, agent_id):
     def _normalize(apps):
         names = set()
         for app in apps:
-            if isinstance(app, dict) and app.get("DisplayName"):
-                names.add(app.get("DisplayName"))
+            if isinstance(app, dict):
+                name = app.get("name") or app.get("DisplayName")
+                if name:
+                    names.add(name)
         return names
 
     apps_new = _normalize(_apps_from_snapshot(snapshots[0]))

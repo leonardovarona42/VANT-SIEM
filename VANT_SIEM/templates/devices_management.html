@@ -1,7 +1,7 @@
 {% extends "dashboard.html" %}
 {% load static %}
 
-{% block title %}Devices Management | VANT-SIEM{% endblock %}
+{% block title %}Inventory Management | VANT-SIEM{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -170,7 +170,7 @@
   <div class="agent-hero mb-4">
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
       <div>
-        <h2 class="mb-1">Devices Management</h2>
+        <h2 class="mb-1">Inventory Management</h2>
         <p class="text-muted mb-0">Visibilidad en tiempo real de agentes, inventario y control remoto.</p>
       </div>
       <div class="d-flex align-items-center gap-2">
@@ -202,13 +202,13 @@
         <small class="text-muted">Actualizado por heartbeat</small>
       </div>
     </div>
-    <div class="col-md-3">
-      <div class="agent-stat">
-        <h5>DLP/DSPM</h5>
-        <div class="display-6">Aegis</div>
-        <small class="text-muted">Inventario y DLP activos</small>
+      <div class="col-md-3">
+        <div class="agent-stat">
+          <h5>Aegis DLP</h5>
+          <div class="display-6">Active</div>
+          <small class="text-muted">Panel separado en el navbar</small>
+        </div>
       </div>
-    </div>
   </div>
 
   <div class="card bg-dark border-secondary">
