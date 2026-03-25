@@ -35,11 +35,13 @@ $agentSpec = Join-Path $buildRoot "agent-spec"
 $agentDist = Join-Path $buildRoot "agent-dist"
 $setupWork = Join-Path $buildRoot "setup-work"
 $setupSpec = Join-Path $buildRoot "setup-spec"
+$trayWork = Join-Path $buildRoot "tray-work"
+$traySpec = Join-Path $buildRoot "tray-spec"
 $packageDir = Join-Path $windowsDir "package"
 $configsDir = Join-Path $windowsDir "configs"
 $outputExe = Join-Path $windowsDir "opensearch_agent_setup.exe"
 
-foreach ($path in @($agentWork, $agentSpec, $agentDist, $setupWork, $setupSpec, $packageDir)) {
+foreach ($path in @($agentWork, $agentSpec, $agentDist, $trayWork, $traySpec, $setupWork, $setupSpec, $packageDir)) {
     if (Test-Path $path) {
         Remove-Item $path -Recurse -Force
     }
@@ -69,7 +71,30 @@ if (-not (Test-Path $agentExe)) {
     throw "No se pudo generar vant-opensearch-agent.exe"
 }
 
+& $PythonExe -m PyInstaller `
+  --noconfirm `
+  --clean `
+  --onefile `
+  --windowed `
+  --name "vant-opensearch-agent-tray" `
+  --hidden-import "PyQt6.sip" `
+  --hidden-import "PyQt6.QtCore" `
+  --hidden-import "PyQt6.QtGui" `
+  --hidden-import "PyQt6.QtWidgets" `
+  --hidden-import "requests" `
+  --hidden-import "yaml" `
+  --distpath $agentDist `
+  --workpath (Join-Path $buildRoot "tray-work") `
+  --specpath (Join-Path $buildRoot "tray-spec") `
+  "opensearch_agents\agent_tray.py"
+
+$trayExe = Join-Path $agentDist "vant-opensearch-agent-tray.exe"
+if (-not (Test-Path $trayExe)) {
+    throw "No se pudo generar vant-opensearch-agent-tray.exe"
+}
+
 Copy-Item $agentExe (Join-Path $packageDir "vant-opensearch-agent.exe") -Force
+Copy-Item $trayExe (Join-Path $packageDir "vant-opensearch-agent-tray.exe") -Force
 Copy-Item (Join-Path $windowsDir "Install-OpenSearchAgent.ps1") (Join-Path $packageDir "Install-OpenSearchAgent.ps1") -Force
 Copy-Item (Join-Path $windowsDir "Uninstall-OpenSearchAgent.ps1") (Join-Path $packageDir "Uninstall-OpenSearchAgent.ps1") -Force
 Copy-Item (Join-Path $configsDir "config.yaml") (Join-Path $packageDir "config.yaml") -Force

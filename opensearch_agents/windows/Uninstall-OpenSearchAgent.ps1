@@ -31,6 +31,16 @@ try {
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
 } catch {}
 
+$startupDir = if ($UserMode) {
+    [Environment]::GetFolderPath("Startup")
+} else {
+    [Environment]::GetFolderPath("CommonStartup")
+}
+$shortcutPath = Join-Path $startupDir "VANT-OpenSearch-Agent Tray.lnk"
+if (Test-Path $shortcutPath) {
+    Remove-Item $shortcutPath -Force -ErrorAction SilentlyContinue
+}
+
 if (-not $KeepFiles -and (Test-Path $InstallDir)) {
     Remove-Item -Path $InstallDir -Recurse -Force
 }

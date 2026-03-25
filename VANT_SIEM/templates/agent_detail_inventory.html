@@ -1,0 +1,438 @@
+{% extends "dashboard.html" %}
+{% load static %}
+
+{% block title %}Detalle de Inventario | VANT-SIEM{% endblock %}
+
+{% block extra_css %}
+<style>
+  .detail-hero {
+    background: linear-gradient(120deg, rgba(34, 211, 238, 0.18), rgba(15, 31, 53, 0.95));
+    border-radius: 16px;
+    padding: 20px 24px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .detail-card, .timeline-card, .table-card {
+    background: #0f1f35;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 14px;
+  }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .detail-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    margin-right: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .badge-ok { background: rgba(34, 197, 94, 0.15); color: #86efac; }
+  .badge-warn { background: rgba(245, 158, 11, 0.15); color: #fcd34d; }
+  .inventory-table td, .inventory-table th { color: #e5e7eb; vertical-align: middle; }
+  .section-title { margin: 18px 0 12px; }
+  .compact-list { list-style: none; padding: 0; margin: 0; }
+  .compact-list li { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .compact-list li:last-child { border-bottom: none; }
+  pre.inventory-json {
+    background: #0b162a;
+    border-radius: 10px;
+    padding: 12px;
+    max-height: 180px;
+    overflow: auto;
+    color: #cbd5e1;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="detail-hero mb-4">
+    {% if error %}
+      <h4 class="text-danger">{{ error }}</h4>
+    {% else %}
+      <div class="d-flex justify-content-between flex-wrap gap-3">
+        <div>
+          <h2 class="mb-1">{{ device.agent_id }}</h2>
+          <p class="text-muted mb-0">Host: {{ device.host_name }} | IP: {{ device.host_ip }}</p>
+        </div>
+        <div>
+          <span class="badge bg-info text-dark">v{{ device.agent_version }}</span>
+          <span class="badge bg-secondary">{{ device.status }}</span>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if not error %}
+  <div class="detail-grid">
+    <div class="detail-card">
+      <h6>Último inventario</h6>
+      <div class="text-muted">{{ latest_at|default:"--" }}</div>
+    </div>
+    <div class="detail-card">
+      <h6>IPs conocidas</h6>
+      <div class="text-muted">{{ device.known_ips|default:"--" }}</div>
+    </div>
+    <div class="detail-card">
+      <h6>Hardware</h6>
+      <div class="text-muted">{{ hardware_components|length }} componentes</div>
+    </div>
+    <div class="detail-card">
+      <h6>Software</h6>
+      <div class="text-muted">{{ software_records|length }} registros</div>
+    </div>
+  </div>
+
+  <div class="section-title">
+    <h5>Indicadores de integridad</h5>
+    <div>
+      <span class="detail-badge badge-ok">Heartbeat activo</span>
+      {% if inventory_summary.bios.serial_number %}
+      <span class="detail-badge badge-ok">BIOS detectada</span>
+      {% else %}
+      <span class="detail-badge badge-warn">BIOS sin serial</span>
+      {% endif %}
+      {% if inventory_summary.cpu.name %}
+      <span class="detail-badge badge-ok">CPU detectada</span>
+      {% else %}
+      <span class="detail-badge badge-warn">CPU sin datos</span>
+      {% endif %}
+      {% if inventory_summary.software %}
+      <span class="detail-badge badge-ok">Software observado</span>
+      {% else %}
+      <span class="detail-badge badge-warn">Software no reportado</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="section-title">
+    <h5>Hardware normalizado</h5>
+    <div class="detail-grid">
+      <div class="detail-card"><strong>BIOS</strong><div class="text-muted">{{ inventory_summary.bios.name|default:"--" }} | {{ inventory_summary.bios.serial_number|default:"--" }}</div></div>
+      <div class="detail-card"><strong>Sistema</strong><div class="text-muted">{{ inventory_summary.system.name|default:"--" }} | {{ inventory_summary.system.serial_number|default:"--" }}</div></div>
+      <div class="detail-card"><strong>CPU</strong><div class="text-muted">{{ inventory_summary.cpu.name|default:"--" }} | {{ inventory_summary.cpu.serial_number|default:"--" }}</div></div>
+      <div class="detail-card"><strong>Board</strong><div class="text-muted">{{ inventory_summary.board.name|default:"--" }} | {{ inventory_summary.board.serial_number|default:"--" }}</div></div>
+    </div>
+    <div class="table-responsive mt-3 table-card">
+      <table class="table table-dark table-hover inventory-table mb-0">
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Nombre</th>
+            <th>Vendor</th>
+            <th>Modelo</th>
+            <th>Serial</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in hardware_components %}
+          <tr>
+            <td>{{ item.component_type }}</td>
+            <td>{{ item.name|default:"--" }}</td>
+            <td>{{ item.vendor|default:"--" }}</td>
+            <td>{{ item.model|default:"--" }}</td>
+            <td>{{ item.serial_number|default:"--" }}</td>
+            <td>{{ item.status }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="6" class="text-muted">Sin hardware observado.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-title">
+    <h5>Software observado</h5>
+    <div class="table-responsive table-card">
+      <table class="table table-dark table-hover inventory-table mb-0" id="apps-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Versión</th>
+            <th>Proveedor</th>
+            <th>Presente</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in software_records %}
+          <tr>
+            <td>{{ item.name }}</td>
+            <td>{{ item.version|default:"--" }}</td>
+            <td>{{ item.publisher|default:"--" }}</td>
+            <td>{{ item.is_present|yesno:"si,no" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-muted">Sin software observado.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="mt-2">
+      <button class="btn btn-sm btn-outline-info" id="agent-export-apps-btn">Exportar apps CSV</button>
+    </div>
+  </div>
+
+  <div class="section-title">
+    <h5>Red, USB y usuarios</h5>
+    <div class="detail-grid">
+      <div class="detail-card">
+        <strong>Identidades de red</strong>
+        <ul class="compact-list">
+          {% for item in network_identities %}
+          <li>{{ item.address_type }} | {{ item.address }} | {{ item.interface_name|default:"--" }}</li>
+          {% empty %}
+          <li class="text-muted">Sin identidades de red.</li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="detail-card">
+        <strong>USB / Usuarios</strong>
+        <ul class="compact-list">
+          {% for user in inventory_summary.users %}
+          <li>Usuario: {{ user.username|default:"--" }}</li>
+          {% empty %}
+          <li class="text-muted">Sin usuarios detectados.</li>
+          {% endfor %}
+          {% for usb in inventory_summary.usb_devices %}
+          <li>USB: {{ usb.name|default:"--" }}</li>
+          {% empty %}
+          {% if not inventory_summary.users %}
+          <li class="text-muted">Sin USB observados.</li>
+          {% endif %}
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">
+    <h5>Historial de inventario</h5>
+    <ul class="compact-list" id="history-list">
+      <li class="text-muted">Cargando historial...</li>
+    </ul>
+  </div>
+
+  <div class="section-title">
+    <h5>Timeline de inventario</h5>
+    <canvas id="inventory-chart" height="120"></canvas>
+  </div>
+
+  <div class="section-title">
+    <h5>Comparación de software</h5>
+    <div id="apps-diff" class="text-muted">Cargando comparación...</div>
+  </div>
+
+  <div class="section-title">
+    <h5>Comparar inventarios por fecha</h5>
+    <div class="compare-grid">
+      <div class="compare-card">
+        <label class="form-label">Snapshot A</label>
+        <select class="form-select" id="snapshot-a"></select>
+      </div>
+      <div class="compare-card">
+        <label class="form-label">Snapshot B</label>
+        <select class="form-select" id="snapshot-b"></select>
+      </div>
+      <div class="compare-card">
+        <label class="form-label">Acciones</label>
+        <button class="btn btn-sm btn-outline-info w-100" id="compare-btn">Comparar</button>
+      </div>
+    </div>
+    <div class="mt-3 text-muted" id="compare-result">Selecciona dos snapshots para comparar.</div>
+  </div>
+
+  <div class="section-title">
+    <h5>Inventario bruto actual</h5>
+    {{ latest_inventory|json_script:"latest-inventory-data" }}
+    <pre class="inventory-json" id="inventory-json"></pre>
+  </div>
+  {% endif %}
+</div>
+<script src="{% static 'js/chart.umd.min.js' %}"></script>
+<script>
+  const inventorySource = document.getElementById("latest-inventory-data");
+  const inventoryData = inventorySource ? JSON.parse(inventorySource.textContent || "{}") : {};
+  document.getElementById("inventory-json").textContent = JSON.stringify(inventoryData, null, 2);
+
+  function parseApps(raw) {
+    if (!raw) return [];
+    try {
+      if (typeof raw === "string") {
+        return JSON.parse(raw);
+      }
+      return raw;
+    } catch (err) {
+      return [];
+    }
+  }
+
+  function renderApps(apps) {
+    const tbody = document.querySelector("#apps-table tbody");
+    if (!apps || !apps.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="text-muted">Sin apps detectadas.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = apps
+      .slice(0, 200)
+      .map((a) => {
+        const name = a.name || a.DisplayName || "-";
+        const version = a.version || a.DisplayVersion || "-";
+        const publisher = a.publisher || a.Publisher || "-";
+        return `<tr><td>${name}</td><td>${version}</td><td>${publisher}</td><td>si</td></tr>`;
+      })
+      .join("");
+  }
+
+  async function loadHistory() {
+    try {
+      const res = await fetch(`/api/agent/detail/{{ device.agent_id }}/`);
+      const data = await res.json();
+      const list = document.getElementById("history-list");
+      if (!data.ok) {
+        list.innerHTML = '<li class="text-danger">No se pudo cargar historial.</li>';
+        return;
+      }
+      const history = data.history || [];
+      if (!history.length) {
+        list.innerHTML = '<li class="text-muted">Sin historial disponible.</li>';
+        return;
+      }
+      list.innerHTML = history
+        .map((h) => `<li><strong>${h.created_at}</strong><div class="text-muted">Snapshot registrado</div></li>`)
+        .join("");
+      populateSnapshotSelects(history);
+      renderTimeline(history);
+    } catch (err) {
+      const list = document.getElementById("history-list");
+      list.innerHTML = '<li class="text-danger">Error cargando historial.</li>';
+    }
+  }
+
+  async function renderTimeline(history) {
+    if (!window.Chart) return;
+    const ctx = document.getElementById("inventory-chart").getContext("2d");
+    const labels = history.map((h) => h.created_at).reverse();
+    const points = history.map((h) => Object.keys(h.payload || {}).length).reverse();
+    new Chart(ctx, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Campos reportados",
+            data: points,
+            borderColor: "#22d3ee",
+            backgroundColor: "rgba(34, 211, 238, 0.12)",
+            tension: 0.25,
+            fill: true,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: "#9ca3af" } },
+          y: { ticks: { color: "#9ca3af" } },
+        },
+      },
+    });
+  }
+
+  async function loadAppsDiff() {
+    const target = document.getElementById("apps-diff");
+    try {
+      const res = await fetch(`/api/agent/inventory/compare/{{ device.agent_id }}/`);
+      const data = await res.json();
+      if (!data.ok) {
+        target.textContent = data.error || "No hay comparación disponible.";
+        return;
+      }
+      target.innerHTML = `
+        <div><strong>Desde:</strong> ${data.from}</div>
+        <div><strong>Hasta:</strong> ${data.to}</div>
+        <div class="mt-2"><strong>Apps agregadas:</strong> ${data.apps_added.join(", ") || "Ninguna"}</div>
+        <div><strong>Apps removidas:</strong> ${data.apps_removed.join(", ") || "Ninguna"}</div>
+      `;
+    } catch (err) {
+      target.textContent = "Error cargando comparación.";
+    }
+  }
+
+  function populateSnapshotSelects(history) {
+    const selectA = document.getElementById("snapshot-a");
+    const selectB = document.getElementById("snapshot-b");
+    selectA.innerHTML = "";
+    selectB.innerHTML = "";
+    history.forEach((h) => {
+      const optA = document.createElement("option");
+      optA.value = h.created_at;
+      optA.textContent = h.created_at;
+      const optB = optA.cloneNode(true);
+      selectA.appendChild(optA);
+      selectB.appendChild(optB);
+    });
+    if (history.length > 1) {
+      selectA.selectedIndex = history.length - 1;
+      selectB.selectedIndex = history.length - 2;
+    }
+  }
+
+  async function compareSnapshots() {
+    const a = document.getElementById("snapshot-a").value;
+    const b = document.getElementById("snapshot-b").value;
+    const target = document.getElementById("compare-result");
+    if (!a || !b || a === b) {
+      target.textContent = "Selecciona dos snapshots distintos.";
+      return;
+    }
+    try {
+      const res = await fetch(`/api/agent/inventory/compare/{{ device.agent_id }}/?from=${encodeURIComponent(b)}&to=${encodeURIComponent(a)}`);
+      const data = await res.json();
+      if (!data.ok) {
+        target.textContent = data.error || "No se pudo comparar.";
+        return;
+      }
+      target.innerHTML = `
+        <div><strong>Desde:</strong> ${data.from}</div>
+        <div><strong>Hasta:</strong> ${data.to}</div>
+        <div class="mt-2"><strong>Apps agregadas:</strong> ${data.apps_added.join(", ") || "Ninguna"}</div>
+        <div><strong>Apps removidas:</strong> ${data.apps_removed.join(", ") || "Ninguna"}</div>
+      `;
+    } catch (err) {
+      target.textContent = "Error comparando snapshots.";
+    }
+  }
+
+  function renderAlerts() {
+    const bios = inventoryData?.hardware?.find((item) => (item.component_type || "").toLowerCase() === "bios");
+    const cpu = inventoryData?.hardware?.find((item) => (item.component_type || "").toLowerCase() === "cpu");
+    const users = inventoryData?.users || [];
+    const container = document.createElement("div");
+    container.className = "alert-strip";
+    let alerts = [];
+    if (!bios) alerts.push("BIOS sin serial");
+    if (!cpu) alerts.push("CPU sin datos");
+    if (!users.length) alerts.push("Usuarios no reportados");
+    if (!alerts.length) return;
+    container.textContent = "Alertas: " + alerts.join(" | ");
+    document.querySelector(".detail-hero").appendChild(container);
+  }
+
+  renderApps(parseApps(inventoryData.software || []));
+  loadHistory();
+  loadAppsDiff();
+  renderAlerts();
+
+  document.getElementById("agent-export-apps-btn").onclick = () => {
+    window.location.href = `/api/agent/inventory/apps/export/{{ device.agent_id }}/`;
+  };
+  document.getElementById("compare-btn").onclick = compareSnapshots;
+</script>
+{% endblock %}

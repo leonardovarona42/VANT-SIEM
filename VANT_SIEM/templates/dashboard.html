@@ -444,7 +444,7 @@
  data-bs-toggle="dropdown"
  aria-expanded="false"
  >
- <i class="fas fa-network-wired me-2"></i>Devices Management
+ <i class="fas fa-network-wired me-2"></i>Inventory Management
  </a>
  <ul
  class="dropdown-menu dropdown-menu-dark"
@@ -461,11 +461,6 @@
  <i class="fas fa-microchip me-2"></i>Inventario y Auditoria
  </a>
  </li>
- <li>
- <a class="dropdown-item" href="{% url 'dlp-service-dashboard' %}">
- <i class="fas fa-user-secret me-2"></i>Aegis DLP
- </a>
- </li>
  <li><hr class="dropdown-divider" /></li>
  <li><h6 class="dropdown-header text-info">Administracion</h6></li>
  <li>
@@ -473,11 +468,25 @@
  <i class="fas fa-server me-2"></i>Activos gestionados
  </a>
  </li>
- <li>
- <a class="dropdown-item" href="/admin/inventory/aegisdlppolicy/">
- <i class="fas fa-shield-alt me-2"></i>Politicas DLP
- </a>
+ </ul>
  </li>
+ <li class="nav-item dropdown">
+ <a
+ class="nav-link dropdown-toggle"
+ href="{% url 'dlp-service-dashboard' %}"
+ id="dlpDropdown"
+ role="button"
+ data-bs-toggle="dropdown"
+ aria-expanded="false"
+ >
+ <i class="fas fa-user-secret me-2"></i>Aegis DLP
+ </a>
+ <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="dlpDropdown">
+ <li><h6 class="dropdown-header text-warning">Operaciones DLP</h6></li>
+ <li><a class="dropdown-item" href="{% url 'dlp-service-dashboard' %}"><i class="fas fa-shield-alt me-2"></i>Dashboard DLP</a></li>
+ <li><a class="dropdown-item" href="{% url 'dlp-policy-list' %}"><i class="fas fa-list-check me-2"></i>Politicas y Reglas</a></li>
+ <li><a class="dropdown-item" href="{% url 'dlp-policy-create' %}"><i class="fas fa-plus-circle me-2"></i>Nueva Politica</a></li>
+ <li><a class="dropdown-item" href="{% url 'dlp-incident-list' %}"><i class="fas fa-triangle-exclamation me-2"></i>Incidentes</a></li>
  </ul>
  </li>
  <li class="nav-item dropdown">

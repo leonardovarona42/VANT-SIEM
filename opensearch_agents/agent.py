@@ -155,6 +155,43 @@ def _control_post(url, payload, token, timeout=8):
     return requests.post(url, json=payload, headers=headers, timeout=timeout)
 
 
+def _spawn_detached_process(args):
+    kwargs = {
+        "stdin": subprocess.DEVNULL,
+        "stdout": subprocess.DEVNULL,
+        "stderr": subprocess.DEVNULL,
+        "close_fds": True,
+    }
+    if sys.platform.startswith("win"):
+        creationflags = 0
+        creationflags |= getattr(subprocess, "DETACHED_PROCESS", 0)
+        creationflags |= getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        creationflags |= getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        kwargs["creationflags"] = creationflags
+    try:
+        return subprocess.Popen(args, **kwargs)
+    except Exception:
+        return None
+
+
+def _restart_self(config_path, logger=None):
+    exe = str(Path(sys.executable).resolve())
+    cfg_path = Path(config_path)
+    try:
+        cfg_path = cfg_path.resolve()
+    except Exception:
+        pass
+    child_args = [exe, "--config", str(cfg_path)]
+    child = _spawn_detached_process(child_args)
+    if child is None:
+        if logger:
+            logger.error("restart.spawn_failed path=%s", exe)
+        return False
+    if logger:
+        logger.warning("restart.spawned pid=%s path=%s", child.pid, exe)
+    return True
+
+
 def _current_ips():
     ips = set()
     try:
@@ -208,8 +245,8 @@ def run_with_stop(config_path, stop_event):
     dlp_poll_seconds = int(control_cfg.get("dlp_poll_seconds", max(300, min(inventory_seconds, 3600))))
     dlp_scan_seconds = int(control_cfg.get("dlp_scan_seconds", max(300, min(inventory_seconds, 1800))))
     next_control = time.time() + control_poll
-    next_inventory = time.time() + inventory_seconds
-    next_dlp_poll = time.time() + min(control_poll, dlp_poll_seconds)
+    next_inventory = time.time()
+    next_dlp_poll = time.time()
     next_dlp_scan = time.time() + dlp_scan_seconds
     cycle = 0
 
@@ -304,15 +341,27 @@ def run_with_stop(config_path, stop_event):
                         data = cmd_resp.json()
                         command = data.get("command")
                         command_id = data.get("command_id")
+                        command_acked = False
                         if command == "stop":
                             logger.warning("command.stop received")
                             stop_event.set()
                         elif command == "restart":
                             logger.warning("command.restart received")
-                            os._exit(3)
+                            if _restart_self(config_path, logger):
+                                if command_id:
+                                    _control_post(
+                                        f"{control_server}/api/agent/commands/ack/",
+                                        {"command_id": command_id, "status": "done"},
+                                        control_token,
+                                        timeout=8,
+                                    )
+                                    command_acked = True
+                                stop_event.set()
+                                return
+                            logger.error("command.restart failed to relaunch self")
                         elif command == "activate":
                             logger.info("command.activate received")
-                        if command_id:
+                        if command_id and not command_acked:
                             _control_post(
                                 f"{control_server}/api/agent/commands/ack/",
                                 {"command_id": command_id, "status": "done"},

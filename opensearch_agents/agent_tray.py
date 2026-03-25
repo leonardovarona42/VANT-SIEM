@@ -59,11 +59,12 @@ class StopDialog(QtWidgets.QDialog):
 
 
 class AgentTray(QtWidgets.QSystemTrayIcon):
-    def __init__(self, config_path):
+    def __init__(self, config_path, monitor_only=False):
         super().__init__()
         self.config_path = config_path
         self.cfg = load_cfg(config_path)
         self.stop_event = threading.Event()
+        self.monitor_only = monitor_only
 
         icon = QtGui.QIcon(str(LOGO_PATH)) if LOGO_PATH.exists() else QtGui.QIcon()
         self.setIcon(icon)
@@ -71,15 +72,21 @@ class AgentTray(QtWidgets.QSystemTrayIcon):
 
         self.menu = QtWidgets.QMenu()
         self.action_show = self.menu.addAction("Mostrar estado")
+        self.action_restart = self.menu.addAction("Reiniciar agente")
         self.action_stop = self.menu.addAction("Detener agente")
         self.action_exit = self.menu.addAction("Salir")
         self.setContextMenu(self.menu)
 
+        if self.monitor_only:
+            self.action_restart.setEnabled(False)
+            self.action_stop.setEnabled(False)
+
         self.action_show.triggered.connect(self._show_status)
+        self.action_restart.triggered.connect(self._restart_agent)
         self.action_stop.triggered.connect(self._stop_agent)
         self.action_exit.triggered.connect(self._exit_app)
 
-        if self._can_start_worker():
+        if not self.monitor_only and self._can_start_worker():
             self.worker = threading.Thread(
                 target=run_with_stop, args=(config_path, self.stop_event), daemon=True
             )
@@ -88,6 +95,7 @@ class AgentTray(QtWidgets.QSystemTrayIcon):
             self.worker = None
 
         self.show()
+        QtWidgets.QApplication.instance().setQuitOnLastWindowClosed(False)
 
     def _show_status(self):
         QtWidgets.QMessageBox.information(
@@ -95,11 +103,38 @@ class AgentTray(QtWidgets.QSystemTrayIcon):
         )
 
     def _exit_app(self):
-        if self._authorize_stop():
+        if self.monitor_only or self._authorize_stop():
             self._stop_worker()
             QtWidgets.QApplication.quit()
 
+    def _restart_agent(self):
+        if self.monitor_only:
+            QtWidgets.QMessageBox.information(
+                None,
+                "VANT-SIEM Agent",
+                "El tray esta en modo monitor-only. Reinicia el agente desde el servicio de Windows.",
+            )
+            return
+        if self._authorize_stop():
+            self._stop_worker()
+            time.sleep(1)
+            self.worker = threading.Thread(
+                target=run_with_stop, args=(self.config_path, self.stop_event), daemon=True
+            )
+            self.stop_event.clear()
+            self.worker.start()
+            QtWidgets.QMessageBox.information(
+                None, "VANT-SIEM Agent", "Agente reiniciado correctamente."
+            )
+
     def _stop_agent(self):
+        if self.monitor_only:
+            QtWidgets.QMessageBox.information(
+                None,
+                "VANT-SIEM Agent",
+                "El tray esta en modo monitor-only. Deten el servicio de Windows para parar el agente.",
+            )
+            return
         if self._authorize_stop():
             self._stop_worker()
             QtWidgets.QMessageBox.information(
@@ -180,10 +215,13 @@ class AgentTray(QtWidgets.QSystemTrayIcon):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default="opensearch_agents/config.yaml")
+    parser.add_argument("--monitor-only", action="store_true")
     args = parser.parse_args()
 
     app = QtWidgets.QApplication(sys.argv)
-    tray = AgentTray(args.config)
+    app.setApplicationName("VANT-SIEM Agent")
+    app.setQuitOnLastWindowClosed(False)
+    tray = AgentTray(args.config, monitor_only=args.monitor_only)
     sys.exit(app.exec())
 
 

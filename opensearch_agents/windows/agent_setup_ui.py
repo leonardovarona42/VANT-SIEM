@@ -193,16 +193,17 @@ class ConnectionPage(QtWidgets.QWizardPage):
         self.registerField("opensearch_host*", self.opensearch_host)
         self.registerField("opensearch_port", self.opensearch_port)
 
+        self._notify_complete = lambda *_: self.completeChanged.emit()
         self.server_host.textChanged.connect(self._refresh_endpoints)
-        self.server_host.textChanged.connect(self.completeChanged)
+        self.server_host.textChanged.connect(self._notify_complete)
         self.server_port.valueChanged.connect(self._refresh_endpoints)
-        self.server_port.valueChanged.connect(self.completeChanged)
+        self.server_port.valueChanged.connect(self._notify_complete)
         self.opensearch_host.textChanged.connect(self._refresh_endpoints)
-        self.opensearch_host.textChanged.connect(self.completeChanged)
+        self.opensearch_host.textChanged.connect(self._notify_complete)
         self.opensearch_port.valueChanged.connect(self._refresh_endpoints)
-        self.opensearch_port.valueChanged.connect(self.completeChanged)
+        self.opensearch_port.valueChanged.connect(self._notify_complete)
         self.tls_enabled.stateChanged.connect(self._refresh_endpoints)
-        self.tls_enabled.stateChanged.connect(self.completeChanged)
+        self.tls_enabled.stateChanged.connect(self._notify_complete)
         self._refresh_endpoints()
 
     def _load_bootstrap_key(self):

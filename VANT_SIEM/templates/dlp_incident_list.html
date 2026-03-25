@@ -1,0 +1,69 @@
+{% extends "dashboard.html" %}
+
+{% block title %}Incidentes DLP | VANT-SIEM{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="card bg-dark border-secondary">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <strong>Incidentes Aegis DLP</strong>
+      <a class="btn btn-sm btn-outline-info" href="{% url 'dlp-service-dashboard' %}">Dashboard DLP</a>
+    </div>
+    <div class="card-body">
+      <form class="row g-2 mb-3" method="get">
+        <div class="col-md-4">
+          <select class="form-select bg-dark text-light" name="status">
+            <option value="">Todos los estados</option>
+            <option value="open" {% if status_filter == "open" %}selected{% endif %}>open</option>
+            <option value="reviewing" {% if status_filter == "reviewing" %}selected{% endif %}>reviewing</option>
+            <option value="contained" {% if status_filter == "contained" %}selected{% endif %}>contained</option>
+            <option value="closed" {% if status_filter == "closed" %}selected{% endif %}>closed</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-info w-100" type="submit">Filtrar</button>
+        </div>
+      </form>
+      <div class="table-responsive">
+        <table class="table table-dark table-hover">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Agente</th>
+              <th>Clasificacion</th>
+              <th>Archivo</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for incident in incidents %}
+            <tr>
+              <td>{{ incident.detected_at }}</td>
+              <td>{{ incident.agent.host_name|default:incident.agent.agent_id }}</td>
+              <td>{{ incident.classification|default:"sensible" }}</td>
+              <td>{{ incident.file_name|default:"--" }}</td>
+              <td>{{ incident.status }}</td>
+              <td>
+                <form method="post" action="{% url 'dlp-incident-update' incident.id %}" class="d-flex gap-2">
+                  {% csrf_token %}
+                  <select class="form-select form-select-sm bg-dark text-light" name="status">
+                    <option value="open">open</option>
+                    <option value="reviewing">reviewing</option>
+                    <option value="contained">contained</option>
+                    <option value="closed">closed</option>
+                  </select>
+                  <button class="btn btn-sm btn-warning" type="submit">Actualizar</button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-muted">Sin incidentes DLP.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

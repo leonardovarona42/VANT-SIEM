@@ -25,6 +25,7 @@ if (-not $UserMode -and -not (Test-Admin)) {
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $exeSource = Join-Path $scriptDir "vant-opensearch-agent.exe"
+$traySource = Join-Path $scriptDir "vant-opensearch-agent-tray.exe"
 $dirSource = Join-Path $scriptDir "vant-opensearch-agent"
 $cfgSource = Join-Path $scriptDir "config.yaml"
 
@@ -56,12 +57,17 @@ if (Test-Path (Join-Path $dirSource "vant-opensearch-agent.exe")) {
     Copy-Item $exeSource (Join-Path $InstallDir "vant-opensearch-agent.exe") -Force
     $exePath = Join-Path $InstallDir "vant-opensearch-agent.exe"
 }
+if (Test-Path $traySource) {
+    Copy-Item $traySource (Join-Path $InstallDir "vant-opensearch-agent-tray.exe") -Force
+}
 if (Test-Path $cfgSource) {
     Copy-Item $cfgSource (Join-Path $InstallDir "config.yaml") -Force
 }
 
 $cfgPath = Join-Path $InstallDir "config.yaml"
 $arg = "--config `"$cfgPath`""
+$trayExe = Join-Path $InstallDir "vant-opensearch-agent-tray.exe"
+$trayArg = "--config `"$cfgPath`" --monitor-only"
 
 $action = New-ScheduledTaskAction -Execute $exePath -Argument $arg
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1)
@@ -75,8 +81,29 @@ if ($UserMode) {
 
 Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
 
+$startupDir = if ($UserMode) {
+    [Environment]::GetFolderPath("Startup")
+} else {
+    [Environment]::GetFolderPath("CommonStartup")
+}
+
+if (Test-Path $trayExe) {
+    $shortcutPath = Join-Path $startupDir "VANT-OpenSearch-Agent Tray.lnk"
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcut = $shell.CreateShortcut($shortcutPath)
+    $shortcut.TargetPath = $trayExe
+    $shortcut.Arguments = $trayArg
+    $shortcut.WorkingDirectory = $InstallDir
+    $shortcut.IconLocation = "$trayExe,0"
+    $shortcut.Description = "VANT-SIEM Agent tray"
+    $shortcut.Save()
+}
+
 if ($RunNow) {
     Start-ScheduledTask -TaskName $TaskName
+    if ((Test-Path $trayExe) -and [Environment]::UserInteractive) {
+        Start-Process -FilePath $trayExe -ArgumentList $trayArg -WorkingDirectory $InstallDir
+    }
 }
 
 Write-Host "Installed OpenSearch agent."
