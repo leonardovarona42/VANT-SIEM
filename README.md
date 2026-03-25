@@ -256,8 +256,35 @@ powershell -ExecutionPolicy Bypass -File .\opensearch\service\install_windows_se
 | 📦 `docs/INSTALLATION.md` | Guía de instalación |
 | 📋 `docs/CHANGELOG.md` | Historial de cambios |
 | 🔍 `docs/OPENSEARCH_FEATURE.md` | Características de OpenSearch |
+| 🧩 `docs/AGENT_MICROSERVICES.md` | Microservicios `asset_audit` y `aegis_dlp` |
+| 🛡️ `docs/DLP_CLASSIFICATION_GUIDE.md` | Tratamiento de información clasificada y sensible |
 | 🌐 `opensearch/README.md` | Documentación del agente |
 | 📊 `opensearch_ui/README.md` | Documentación del UI |
+
+---
+
+## 🛡️ Inventario, Auditoría y DLP
+
+VANT-SIEM integra ahora dos microservicios embebidos dentro del agente:
+
+- `asset_audit`: inventario profesional de hardware, software, identidades de red, USB, usuarios y línea de tiempo del endpoint.
+- `aegis_dlp`: prevención de fuga de información para contenido clasificado, secreto, restringido y de seguridad del Estado.
+
+Capacidades principales:
+
+- trazabilidad histórica de lo que existió en una máquina
+- observación de seriales, MACs, IPs, software y dispositivos USB
+- línea de tiempo por host con eventos de inventario y DLP
+- incidentes DLP con actor, archivo, hash, canal y clasificación
+- políticas soberanas personalizables desde el servidor
+
+Rutas operativas del dashboard:
+
+- `/siem/dashboard/devices/management/`
+- `/siem/dashboard/devices/inventory/`
+- `/siem/dashboard/devices/dlp/`
+
+Para Windows Server, el instalador gráfico incluye perfil de auditoría para Active Directory con canales de `Security`, `Directory Service`, `DNS Server`, `DFS Replication` y `Active Directory Web Services`.
 
 ---
 

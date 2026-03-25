@@ -64,6 +64,18 @@ def _default_paths():
     }
 
 
+def _ad_event_channels():
+    return [
+        "Security",
+        "System",
+        "Application",
+        "Directory Service",
+        "DNS Server",
+        "DFS Replication",
+        "Active Directory Web Services",
+    ]
+
+
 class WelcomePage(QtWidgets.QWizardPage):
     def __init__(self):
         super().__init__()
@@ -362,28 +374,54 @@ class CollectorsPage(QtWidgets.QWizardPage):
     def __init__(self):
         super().__init__()
         self.setTitle("Recolectores")
-        self.setSubTitle("Activa las fuentes de eventos.")
+        self.setSubTitle("Activa las fuentes de eventos y perfiles de auditoria.")
 
-        layout = QtWidgets.QFormLayout()
+        layout = QtWidgets.QVBoxLayout()
         defaults = _default_paths()
 
+        ids_group = QtWidgets.QGroupBox("IDS y logs de aplicacion")
+        ids_form = QtWidgets.QFormLayout()
         self.snort = QtWidgets.QCheckBox("Snort")
         self.snort_path = QtWidgets.QLineEdit(defaults["snort"])
         self.suricata = QtWidgets.QCheckBox("Suricata")
         self.suricata_path = QtWidgets.QLineEdit(defaults["suricata"])
-        self.winlog = QtWidgets.QCheckBox("Windows Event Log")
-        self.winlog_channel = QtWidgets.QComboBox()
-        self.winlog_channel.addItems(["Security", "Application", "System"])
         self.postgres = QtWidgets.QCheckBox("PostgreSQL")
         self.postgres_path = QtWidgets.QLineEdit(defaults["postgres"])
         self.file_logs = QtWidgets.QCheckBox("File Logs")
         self.file_logs_path = QtWidgets.QLineEdit(defaults["file_logs"])
 
-        layout.addRow(self.snort, self.snort_path)
-        layout.addRow(self.suricata, self.suricata_path)
-        layout.addRow(self.winlog, self.winlog_channel)
-        layout.addRow(self.postgres, self.postgres_path)
-        layout.addRow(self.file_logs, self.file_logs_path)
+        ids_form.addRow(self.snort, self.snort_path)
+        ids_form.addRow(self.suricata, self.suricata_path)
+        ids_form.addRow(self.postgres, self.postgres_path)
+        ids_form.addRow(self.file_logs, self.file_logs_path)
+        ids_group.setLayout(ids_form)
+
+        winlog_group = QtWidgets.QGroupBox("Windows Event Log y Active Directory")
+        self.winlog = QtWidgets.QCheckBox("Windows Event Log")
+        self.winlog_channel = QtWidgets.QComboBox()
+        self.winlog_channel.addItems(_ad_event_channels())
+        self.winlog_ad_profile = QtWidgets.QCheckBox("Habilitar perfil de auditoria AD/Domain Controller")
+        self.winlog_ad_profile.setChecked(True)
+        self.winlog_channels = QtWidgets.QPlainTextEdit()
+        self.winlog_channels.setPlaceholderText(
+            "Canales por linea. Ejemplo:\nSecurity\nDirectory Service\nDNS Server"
+        )
+        self.winlog_channels.setFixedHeight(110)
+        self.winlog_help = QtWidgets.QLabel(
+            "El perfil AD agrega Security, Directory Service, DNS Server, DFS Replication y Active Directory Web Services."
+        )
+        self.winlog_help.setWordWrap(True)
+        self.winlog_help.setStyleSheet("color: #6b7280;")
+
+        winlog_form = QtWidgets.QFormLayout()
+        winlog_form.addRow(self.winlog, self.winlog_channel)
+        winlog_form.addRow(self.winlog_ad_profile)
+        winlog_form.addRow("Canales adicionales / finales:", self.winlog_channels)
+        winlog_form.addRow(self.winlog_help)
+        winlog_group.setLayout(winlog_form)
+
+        layout.addWidget(ids_group)
+        layout.addWidget(winlog_group)
         self.setLayout(layout)
 
         self.registerField("snort_enabled", self.snort)
@@ -392,10 +430,27 @@ class CollectorsPage(QtWidgets.QWizardPage):
         self.registerField("suricata_path", self.suricata_path)
         self.registerField("winlog_enabled", self.winlog)
         self.registerField("winlog_channel", self.winlog_channel, "currentText")
+        self.registerField("winlog_ad_profile", self.winlog_ad_profile)
         self.registerField("postgres_enabled", self.postgres)
         self.registerField("postgres_path", self.postgres_path)
         self.registerField("file_logs_enabled", self.file_logs)
         self.registerField("file_logs_path", self.file_logs_path)
+
+        self.winlog.stateChanged.connect(self._refresh_winlog_channels)
+        self.winlog_ad_profile.stateChanged.connect(self._refresh_winlog_channels)
+        self.winlog_channel.currentTextChanged.connect(self._refresh_winlog_channels)
+        self._refresh_winlog_channels()
+
+    def _refresh_winlog_channels(self):
+        channels = []
+        primary = self.winlog_channel.currentText().strip()
+        if primary:
+            channels.append(primary)
+        if self.winlog_ad_profile.isChecked():
+            for channel in _ad_event_channels():
+                if channel not in channels:
+                    channels.append(channel)
+        self.winlog_channels.setPlainText("\n".join(channels))
 
 
 class SummaryPage(QtWidgets.QWizardPage):
@@ -530,6 +585,13 @@ class AgentInstallerWizard(QtWidgets.QWizard):
             auth_token = "******" if auth_token else ""
 
         require_https = self.page(self.PAGE_CONNECTION).server_https.isChecked()
+        collectors_page = self.page(self.PAGE_COLLECTORS)
+        winlog_channels = [
+            line.strip()
+            for line in collectors_page.winlog_channels.toPlainText().splitlines()
+            if line.strip()
+        ]
+        winlog_channels_block = "\n".join([f'      - "{channel}"' for channel in winlog_channels]) or '      - "Security"'
         return f"""agent:
   id: "{self.field("agent_id")}"
   host_name: "{self.field("host_name")}"
@@ -575,6 +637,39 @@ aegis_dlp:
     - ".xlsx"
     - ".pptx"
     - ".pdf"
+
+collectors:
+  snort:
+    enabled: {str(self.field("snort_enabled")).lower()}
+    path: "{self.field("snort_path")}"
+    start_position: "beginning"
+    max_lines_per_cycle: 400
+  suricata:
+    enabled: {str(self.field("suricata_enabled")).lower()}
+    path: "{self.field("suricata_path")}"
+    start_position: "beginning"
+    max_lines_per_cycle: 600
+  windows_eventlog:
+    enabled: {str(self.field("winlog_enabled")).lower()}
+    channel: "{self.field("winlog_channel")}"
+    channels:
+{winlog_channels_block}
+  postgres:
+    enabled: {str(self.field("postgres_enabled")).lower()}
+    path: "{self.field("postgres_path")}"
+    start_position: "end"
+    max_lines_per_cycle: 400
+  file_logs:
+    enabled: {str(self.field("file_logs_enabled")).lower()}
+    items:
+      - enabled: {str(self.field("file_logs_enabled")).lower()}
+        source_name: "windows-custom-audit"
+        path: "{self.field("file_logs_path")}"
+        event_category: "windows.custom.audit"
+        severity: "info"
+        tags: ["windows", "audit", "custom"]
+        start_position: "end"
+        max_lines_per_cycle: 400
 """
 
     def _build_server_url(self):

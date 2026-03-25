@@ -60,6 +60,22 @@ Invoke-RestMethod http://127.0.0.1:9201/health
 
 Configurar `config.yaml` (host, puerto, auth, tls, fuentes).
 
+El instalador gráfico ya incluye:
+
+- perfil de auditoría de Active Directory para Windows Server
+- `asset_audit` para inventario y línea de tiempo del endpoint
+- `aegis_dlp` para detección de información clasificada y sensible
+
+Canales recomendados de Active Directory:
+
+- `Security`
+- `System`
+- `Application`
+- `Directory Service`
+- `DNS Server`
+- `DFS Replication`
+- `Active Directory Web Services`
+
 ### Linux
 
 Ver guias por distro en:

@@ -45,6 +45,41 @@ def devices_management(request):
     return render(request, "devices_management.html")
 
 
+@login_required
+def inventory_service_dashboard(request):
+    from inventory.models import AgentDevice, AgentHardwareComponent, AgentSoftwareRecord, AgentTimelineEvent
+
+    agents = AgentDevice.objects.order_by("-last_seen")[:20]
+    recent_timeline = AgentTimelineEvent.objects.exclude(category="dlp").order_by("-observed_at")[:40]
+    context = {
+        "agents_total": AgentDevice.objects.count(),
+        "agents_online": AgentDevice.objects.filter(status="online").count(),
+        "hardware_total": AgentHardwareComponent.objects.filter(status="active").count(),
+        "software_total": AgentSoftwareRecord.objects.filter(is_present=True).count(),
+        "timeline_total": AgentTimelineEvent.objects.exclude(category="dlp").count(),
+        "recent_agents": agents,
+        "recent_timeline": recent_timeline,
+        "top_software": AgentSoftwareRecord.objects.filter(is_present=True).order_by("-last_seen")[:20],
+    }
+    return render(request, "inventory_service_dashboard.html", context)
+
+
+@login_required
+def dlp_service_dashboard(request):
+    from inventory.models import AegisDlpIncident, AegisDlpPolicy, AegisDlpRule
+
+    incidents = AegisDlpIncident.objects.select_related("agent", "policy", "rule").order_by("-detected_at")[:50]
+    context = {
+        "policies_total": AegisDlpPolicy.objects.filter(enabled=True).count(),
+        "rules_total": AegisDlpRule.objects.filter(enabled=True).count(),
+        "incidents_open": AegisDlpIncident.objects.filter(status="open").count(),
+        "incidents_total": AegisDlpIncident.objects.count(),
+        "incidents_recent": incidents,
+        "policies": AegisDlpPolicy.objects.prefetch_related("rules").order_by("name"),
+    }
+    return render(request, "dlp_service_dashboard.html", context)
+
+
 DEFAULT_AGENT_SHARED_SECRET = "VANT-SIEM-AGENT-BOOTSTRAP-2026"
 
 

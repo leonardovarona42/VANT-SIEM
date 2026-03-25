@@ -79,6 +79,10 @@ collectors:
   windows_eventlog:
     enabled: false
     channel: "Security"
+    channels:
+      - "Security"
+      - "System"
+      - "Application"
   postgres:
     enabled: false
     path: "C:/Program Files/PostgreSQL/16/data/log/postgresql.log"

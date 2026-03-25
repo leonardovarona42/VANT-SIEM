@@ -33,10 +33,10 @@ class WindowsEventLogCollector(CollectorBase):
                 "host_name": self.agent_cfg.get("host_name", ""),
                 "event_time": now,
                 "severity": "info",
-                "event_category": "windows.eventlog",
+                "event_category": f"windows.eventlog.{channel.lower().replace(' ', '_')}",
                 "message": f"Collected {channel} events",
-                "raw_payload": {"raw_json": result.stdout},
-                "tags": ["windows", "eventlog"],
+                "raw_payload": {"channel": channel, "raw_json": result.stdout},
+                "tags": ["windows", "eventlog", channel.lower().replace(" ", "_")],
             }
         ]
 

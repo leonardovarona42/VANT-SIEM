@@ -1,0 +1,125 @@
+{% extends "dashboard.html" %}
+
+{% block title %}Inventory Service | VANT-SIEM{% endblock %}
+
+{% block extra_css %}
+<style>
+  .inv-panel {
+    background: linear-gradient(135deg, rgba(8, 47, 73, 0.95), rgba(15, 31, 53, 0.95));
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 18px;
+  }
+  .inv-stat {
+    background: rgba(11, 22, 42, 0.9);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 16px;
+    height: 100%;
+  }
+  .inv-card {
+    background: #0f1f35;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 16px;
+    height: 100%;
+  }
+  .inv-table th, .inv-table td { color: #e5e7eb; }
+  .inv-timeline li {
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    padding: 10px 0;
+    list-style: none;
+  }
+  .inv-timeline li:last-child { border-bottom: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="inv-panel mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h2 class="mb-1">Asset Audit & Inventory</h2>
+        <p class="text-muted mb-0">Inventario histórico, hardware, software y trazabilidad operativa de los agentes.</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a class="btn btn-outline-info btn-sm" href="{% url 'devices-management' %}">Agentes</a>
+        <a class="btn btn-info btn-sm" href="{% url 'dlp-service-dashboard' %}">Ir a Aegis DLP</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="inv-stat"><h6>Agentes</h6><div class="display-6">{{ agents_total }}</div><small class="text-muted">{{ agents_online }} online</small></div></div>
+    <div class="col-md-3"><div class="inv-stat"><h6>Hardware activo</h6><div class="display-6">{{ hardware_total }}</div><small class="text-muted">Componentes observados</small></div></div>
+    <div class="col-md-3"><div class="inv-stat"><h6>Software presente</h6><div class="display-6">{{ software_total }}</div><small class="text-muted">Paquetes detectados</small></div></div>
+    <div class="col-md-3"><div class="inv-stat"><h6>Eventos timeline</h6><div class="display-6">{{ timeline_total }}</div><small class="text-muted">Auditoría histórica</small></div></div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-6">
+      <div class="inv-card">
+        <h5>Agentes recientes</h5>
+        <div class="table-responsive">
+          <table class="table table-dark table-hover inv-table">
+            <thead><tr><th>Agente</th><th>Host</th><th>Estado</th><th>Último inventario</th></tr></thead>
+            <tbody>
+              {% for agent in recent_agents %}
+              <tr>
+                <td><a class="link-info" href="{% url 'agent-detail-page' agent.agent_id %}">{{ agent.agent_id }}</a></td>
+                <td>{{ agent.host_name|default:"--" }}</td>
+                <td>{{ agent.status }}</td>
+                <td>{{ agent.last_inventory_at|default:"--" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="4" class="text-muted">Sin agentes inventariados.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="inv-card">
+        <h5>Timeline reciente</h5>
+        <ul class="inv-timeline ps-0 mb-0">
+          {% for event in recent_timeline %}
+          <li>
+            <div class="d-flex justify-content-between gap-3">
+              <strong>{{ event.title }}</strong>
+              <small class="text-muted">{{ event.observed_at }}</small>
+            </div>
+            <div class="text-muted">{{ event.agent.host_name|default:event.agent.agent_id }} | {{ event.category }} | {{ event.description|default:"Sin descripción" }}</div>
+          </li>
+          {% empty %}
+          <li class="text-muted">Sin eventos de inventario todavía.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+    <div class="col-12">
+      <div class="inv-card">
+        <h5>Software observado recientemente</h5>
+        <div class="table-responsive">
+          <table class="table table-dark table-hover inv-table">
+            <thead><tr><th>Agente</th><th>Software</th><th>Versión</th><th>Proveedor</th><th>Última observación</th></tr></thead>
+            <tbody>
+              {% for item in top_software %}
+              <tr>
+                <td>{{ item.agent.host_name|default:item.agent.agent_id }}</td>
+                <td>{{ item.name }}</td>
+                <td>{{ item.version|default:"--" }}</td>
+                <td>{{ item.publisher|default:"--" }}</td>
+                <td>{{ item.last_seen }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-muted">Sin software inventariado.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

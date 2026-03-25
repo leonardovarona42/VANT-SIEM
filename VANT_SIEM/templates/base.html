@@ -36,6 +36,24 @@
  </button>
  <div class="collapse navbar-collapse" id="navbarNav">
  <ul class="navbar-nav ms-auto">
+ <li class="nav-item dropdown">
+ <a
+ class="nav-link dropdown-toggle"
+ href="{% url 'devices-management' %}"
+ id="devicesDropdown"
+ role="button"
+ data-bs-toggle="dropdown"
+ aria-expanded="false"
+ >
+ <i class="fas fa-network-wired me-2"></i>Devices Management
+ </a>
+ <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="devicesDropdown">
+ <li><h6 class="dropdown-header text-info">Agentes e Inventario</h6></li>
+ <li><a class="dropdown-item" href="{% url 'devices-management' %}"><i class="fas fa-desktop me-2"></i>Dashboard de Agentes</a></li>
+ <li><a class="dropdown-item" href="{% url 'inventory-service-dashboard' %}"><i class="fas fa-microchip me-2"></i>Inventario y Auditoria</a></li>
+ <li><a class="dropdown-item" href="{% url 'dlp-service-dashboard' %}"><i class="fas fa-user-secret me-2"></i>Aegis DLP</a></li>
+ </ul>
+ </li>
  <!-- Menú principal: Gestión de Incidentes -->
  <li class="nav-item dropdown">
  <a

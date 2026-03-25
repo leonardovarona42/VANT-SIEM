@@ -44,7 +44,17 @@ def build_collectors(cfg):
     if collectors_cfg.get("suricata", {}).get("enabled"):
         collectors.append(SuricataCollector(collectors_cfg.get("suricata"), agent_cfg))
     if collectors_cfg.get("windows_eventlog", {}).get("enabled"):
-        collectors.append(WindowsEventLogCollector(collectors_cfg.get("windows_eventlog"), agent_cfg))
+        winlog_cfg = collectors_cfg.get("windows_eventlog") or {}
+        channels = winlog_cfg.get("channels") or []
+        if isinstance(channels, str):
+            channels = [item.strip() for item in channels.split(",") if item.strip()]
+        if channels:
+            for channel in channels:
+                per_channel_cfg = dict(winlog_cfg)
+                per_channel_cfg["channel"] = channel
+                collectors.append(WindowsEventLogCollector(per_channel_cfg, agent_cfg))
+        else:
+            collectors.append(WindowsEventLogCollector(winlog_cfg, agent_cfg))
     if collectors_cfg.get("postgres", {}).get("enabled"):
         collectors.append(PostgresLogCollector(collectors_cfg.get("postgres"), agent_cfg))
     if collectors_cfg.get("file_logs", {}).get("enabled"):

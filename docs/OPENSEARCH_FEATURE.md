@@ -34,6 +34,8 @@ Funciones:
 - version actual: `v1.01`
 - inventario del host y heartbeat
 - comandos remotos: `activate`, `restart`, `stop`
+- microservicio `asset_audit` para inventario historico
+- microservicio `aegis_dlp` para proteccion de informacion sensible
 
 Fuentes soportadas:
 - Snort
@@ -86,12 +88,51 @@ El servidor expone APIs para inventario y control del agente:
 - `POST /api/agent/enroll/`
 - `POST /api/agent/heartbeat/`
 - `POST /api/agent/inventory/`
+- `POST /api/agent/dlp/config/`
+- `POST /api/agent/dlp/incidents/`
 - `POST /api/agent/commands/pull/`
 - `POST /api/agent/commands/ack/`
 - `POST /api/agent/commands/issue/`
 - `GET /api/agent/list/`
 
 Los datos se guardan en la app `inventory` del servidor.
+
+Modelos principales del nuevo plano de control:
+
+- `AgentHardwareComponent`
+- `AgentSoftwareRecord`
+- `AgentNetworkIdentity`
+- `AgentTimelineEvent`
+- `AegisDlpPolicy`
+- `AegisDlpRule`
+- `AegisDlpIncident`
+
+## Active Directory en Windows Server
+
+El instalador grafico de Windows ya soporta un perfil de auditoria AD para controladores de dominio.
+
+Canales recomendados:
+
+- `Security`
+- `System`
+- `Application`
+- `Directory Service`
+- `DNS Server`
+- `DFS Replication`
+- `Active Directory Web Services`
+
+Estos canales se escriben en `collectors.windows_eventlog.channels`.
+
+## DLP y tratamiento de informacion clasificada
+
+El modulo `aegis_dlp` protege informacion con marcas como:
+
+- `informacion clasificada`
+- `secreto`
+- `seguridad del estado`
+- `restringido`
+
+Tambien permite reglas soberanas personalizadas desde el servidor para palabras clave, metadatos y patrones propios de la organizacion.
 
 ## Puertos por defecto
 

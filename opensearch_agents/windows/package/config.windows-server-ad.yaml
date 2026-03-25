@@ -59,6 +59,14 @@ collectors:
   windows_eventlog:
     enabled: true
     channel: "Security"
+    channels:
+      - "Security"
+      - "System"
+      - "Application"
+      - "Directory Service"
+      - "DNS Server"
+      - "DFS Replication"
+      - "Active Directory Web Services"
   postgres:
     enabled: false
     path: "C:/Program Files/PostgreSQL/16/data/log/postgresql.log"

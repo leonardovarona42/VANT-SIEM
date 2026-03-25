@@ -1,0 +1,96 @@
+{% extends "dashboard.html" %}
+
+{% block title %}Aegis DLP | VANT-SIEM{% endblock %}
+
+{% block extra_css %}
+<style>
+  .dlp-hero {
+    background: linear-gradient(135deg, rgba(69, 10, 10, 0.95), rgba(15, 31, 53, 0.95));
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 18px;
+  }
+  .dlp-stat, .dlp-card {
+    background: #0f1f35;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 16px;
+    height: 100%;
+  }
+  .dlp-table th, .dlp-table td { color: #e5e7eb; }
+  .sev-critical { color: #fca5a5; }
+  .sev-high { color: #fdba74; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="dlp-hero mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h2 class="mb-1">Aegis DLP</h2>
+        <p class="text-muted mb-0">Protección de información clasificada, secreta, restringida y reglas soberanas personalizadas.</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a class="btn btn-outline-warning btn-sm" href="{% url 'inventory-service-dashboard' %}">Ir a Inventario</a>
+        <a class="btn btn-warning btn-sm" href="/admin/inventory/aegisdlppolicy/">Administrar políticas</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="dlp-stat"><h6>Políticas activas</h6><div class="display-6">{{ policies_total }}</div></div></div>
+    <div class="col-md-3"><div class="dlp-stat"><h6>Reglas activas</h6><div class="display-6">{{ rules_total }}</div></div></div>
+    <div class="col-md-3"><div class="dlp-stat"><h6>Incidentes abiertos</h6><div class="display-6">{{ incidents_open }}</div></div></div>
+    <div class="col-md-3"><div class="dlp-stat"><h6>Incidentes totales</h6><div class="display-6">{{ incidents_total }}</div></div></div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-5">
+      <div class="dlp-card">
+        <h5>Políticas desplegadas</h5>
+        {% for policy in policies %}
+        <div class="mb-3 pb-3 border-bottom border-secondary">
+          <div class="d-flex justify-content-between gap-2">
+            <strong>{{ policy.name }}</strong>
+            <span class="badge bg-danger">{{ policy.severity }}</span>
+          </div>
+          <div class="text-muted small mb-2">{{ policy.description|default:"Sin descripción" }}</div>
+          <div class="small text-info mb-1">Código: {{ policy.code }}</div>
+          <div class="small text-muted">Extensiones: {{ policy.monitored_extensions|join:", " }}</div>
+          <div class="small text-muted">Reglas: {{ policy.rules.count }}</div>
+        </div>
+        {% empty %}
+        <div class="text-muted">No hay políticas DLP activas.</div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="col-lg-7">
+      <div class="dlp-card">
+        <h5>Incidentes recientes</h5>
+        <div class="table-responsive">
+          <table class="table table-dark table-hover dlp-table">
+            <thead><tr><th>Fecha</th><th>Agente</th><th>Clasificación</th><th>Archivo</th><th>Canal</th><th>Estado</th></tr></thead>
+            <tbody>
+              {% for incident in incidents_recent %}
+              <tr>
+                <td>{{ incident.detected_at }}</td>
+                <td>{{ incident.agent.host_name|default:incident.agent.agent_id }}</td>
+                <td class="{% if incident.severity == 'critical' %}sev-critical{% elif incident.severity == 'high' %}sev-high{% endif %}">
+                  {{ incident.classification|default:"sensible" }}
+                </td>
+                <td title="{{ incident.file_path }}">{{ incident.file_name|default:"--" }}</td>
+                <td>{{ incident.channel|default:"filesystem" }}</td>
+                <td>{{ incident.status }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" class="text-muted">Sin incidentes DLP todavía.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
