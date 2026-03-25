@@ -25,7 +25,7 @@ NC='\033[0m' # No Color
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-DIST_DIR="${SCRIPT_DIR}/dist"
+DIST_DIR="${SCRIPT_DIR}/linux/dist"
 AGENT_VERSION="1.0.0"
 AGENT_NAME="vant-siem-agent"
 DISTRO="${VANT_LINUX_DISTRO:-debian}"
@@ -124,6 +124,7 @@ create_venv() {
     # Copy main scripts
     cp agent.py "${venv_dir}/"
     cp -r collectors "${venv_dir}/"
+    cp -r services "${venv_dir}/"
     cp output.py "${venv_dir}/"
     if [ -f "linux/${DISTRO}/config.yaml" ]; then
         cp "linux/${DISTRO}/config.yaml" "${venv_dir}/config.yaml"
@@ -193,7 +194,7 @@ create_debian_package() {
         cp config.example.yaml "${pkg_dir}/etc/vant-siem/config.yaml"
     fi
 
-    cat > "${pkg_dir}/etc/xdg/autostart/vant-opensearch-agent-tray.desktop" << EOF
+    cat > "${pkg_dir}/etc/xdg/autostart/vant-siem-agent-tray.desktop" << EOF
 [Desktop Entry]
 Type=Application
 Name=VANT-SIEM Agent Tray
@@ -272,7 +273,7 @@ PRERME
     print_info "Building .deb package..."
     dpkg-deb --build "${pkg_dir}" "${DIST_DIR}/vant-siem-agent_${DISTRO}_${AGENT_VERSION}_all.deb"
     
-    print_success "Package created: dist/vant-siem-agent_${DISTRO}_${AGENT_VERSION}_all.deb"
+    print_success "Package created: linux/dist/vant-siem-agent_${DISTRO}_${AGENT_VERSION}_all.deb"
 }
 
 # Create generic tarball
@@ -355,7 +356,7 @@ cp scripts/*.py /opt/vant-siem-agent/
 
 # Autostart tray
 mkdir -p /etc/xdg/autostart
-cat > /etc/xdg/autostart/vant-opensearch-agent-tray.desktop << EOF
+cat > /etc/xdg/autostart/vant-siem-agent-tray.desktop << EOF
 [Desktop Entry]
 Type=Application
 Name=VANT-SIEM Agent Tray
@@ -388,7 +389,7 @@ INSTALLEOF
     cd "${DIST_DIR}"
     tar -czf vant-siem-agent-linux-${DISTRO}-${AGENT_VERSION}.tar.gz vant-siem-agent-install/
     
-    print_success "Tarball created: dist/vant-siem-agent-linux-${DISTRO}-${AGENT_VERSION}.tar.gz"
+    print_success "Tarball created: linux/dist/vant-siem-agent-linux-${DISTRO}-${AGENT_VERSION}.tar.gz"
 }
 
 # Main function
@@ -484,8 +485,8 @@ main() {
     print_success "All builds completed!"
     echo ""
     echo "To install:"
-    echo "  - Debian/Ubuntu: sudo dpkg -i dist/vant-siem-agent_${DISTRO}_${AGENT_VERSION}_all.deb"
-    echo "  - Generic: tar -xzf dist/vant-siem-agent-linux-${DISTRO}-${AGENT_VERSION}.tar.gz && cd vant-siem-agent-install && ./install.sh"
+    echo "  - Debian/Ubuntu: sudo dpkg -i linux/dist/vant-siem-agent_${DISTRO}_${AGENT_VERSION}_all.deb"
+    echo "  - Generic: tar -xzf linux/dist/vant-siem-agent-linux-${DISTRO}-${AGENT_VERSION}.tar.gz && cd vant-siem-agent-install && ./install.sh"
 }
 
 # Run main

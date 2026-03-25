@@ -1,60 +1,66 @@
+import hashlib
+import hmac
 import os
-import sys
+import shutil
 import socket
-import platform
 import subprocess
+import sys
+import tempfile
+import time
+from pathlib import Path
 from urllib.parse import urlparse
 
 import requests
-import hashlib
-import hmac
-import time
-
 from PyQt6 import QtCore, QtGui, QtWidgets
-from pathlib import Path
 
 
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-LOGO_PATH = os.path.join(BASE_DIR, "staticfiles", "img", "logo.png")
-BOOTSTRAP_KEY_PATH = os.path.join(BASE_DIR, "opensearch_agents", "installer", "bootstrap.key")
 DEFAULT_AGENT_SHARED_SECRET = "VANT-SIEM-AGENT-BOOTSTRAP-2026"
-DEFAULT_CONFIG_PATH = os.environ.get("VANT_AGENT_CONFIG", "opensearch_agents/config.yaml")
+
+
+def _runtime_root():
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return Path(sys._MEIPASS)
+    return Path(__file__).resolve().parents[2]
+
+
+def _source_windows_dir():
+    return Path(__file__).resolve().parent
+
+
+def _windows_assets_dir():
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return _runtime_root() / "package"
+    return _source_windows_dir() / "package"
+
+
+def _logo_path():
+    return _runtime_root() / "staticfiles" / "img" / "logo.png"
+
+
+def _bootstrap_key_path():
+    bundled = _windows_assets_dir() / "bootstrap.key"
+    if bundled.exists():
+        return bundled
+    return _source_windows_dir() / "bootstrap.key"
 
 
 def _is_admin():
     if sys.platform.startswith("win"):
         try:
             import ctypes
+
             return ctypes.windll.shell32.IsUserAnAdmin() != 0
         except Exception:
             return False
-    try:
-        return os.geteuid() == 0
-    except Exception:
-        return False
-
-
-def _os_label():
-    if sys.platform.startswith("win"):
-        return "Windows"
-    if sys.platform.startswith("linux"):
-        return "Linux"
-    return platform.system() or "Desconocido"
+    return False
 
 
 def _default_paths():
-    if sys.platform.startswith("win"):
-        return {
-            "snort": "C:/snort/log/alert",
-            "suricata": "C:/suricata/logs/eve.json",
-            "postgres": "C:/Program Files/PostgreSQL/16/data/log/postgresql.log",
-            "file_logs": "C:/ProgramData/VANT/logs/audit.log",
-        }
     return {
-        "snort": "/var/log/snort/alert",
-        "suricata": "/var/log/suricata/eve.json",
-        "postgres": "/var/log/postgresql/postgresql-16-main.log",
-        "file_logs": "/var/log/samba/audit.log",
+        "snort": "C:/snort/log/alert",
+        "suricata": "C:/suricata/logs/eve.json",
+        "postgres": "C:/Program Files/PostgreSQL/16/data/log/postgresql.log",
+        "file_logs": "C:/ProgramData/VANT/logs/audit.log",
     }
 
 
@@ -62,23 +68,21 @@ class WelcomePage(QtWidgets.QWizardPage):
     def __init__(self):
         super().__init__()
         self.setTitle("Bienvenida")
-        self.setSubTitle("Vamos a configurar el agente VANT-SIEM para OpenSearch.")
+        self.setSubTitle("Vamos a instalar el agente OpenSearch de VANT-SIEM en Windows.")
 
         layout = QtWidgets.QVBoxLayout()
-
         status_box = QtWidgets.QGroupBox("Estado del sistema")
         status_layout = QtWidgets.QFormLayout()
-        status_layout.addRow("Sistema operativo:", QtWidgets.QLabel(f"{_os_label()} (detectado)"))
+        status_layout.addRow("Sistema operativo:", QtWidgets.QLabel("Windows"))
         status_layout.addRow(
             "Permisos:",
             QtWidgets.QLabel("Administrador confirmado" if _is_admin() else "Requiere privilegios"),
         )
-        status_layout.addRow("Python:", QtWidgets.QLabel("Disponible"))
-        status_layout.addRow("Carpeta destino:", QtWidgets.QLabel("Lista"))
+        status_layout.addRow("Instalador:", QtWidgets.QLabel("Modo grafico"))
         status_box.setLayout(status_layout)
 
         hint = QtWidgets.QLabel(
-            "Recomendamos probar la conectividad antes de instalar el servicio."
+            "Este setup empaqueta el agente de Windows con interfaz grafica y luego instala el servicio programado."
         )
         hint.setWordWrap(True)
         hint.setStyleSheet("color: #6b7280;")
@@ -96,7 +100,6 @@ class IdentityPage(QtWidgets.QWizardPage):
         self.setSubTitle("Define como se identificara este agente.")
 
         layout = QtWidgets.QFormLayout()
-
         self.agent_id = QtWidgets.QLineEdit("agent-001")
         self.host_name = QtWidgets.QLineEdit(socket.gethostname())
         self.interval = QtWidgets.QSpinBox()
@@ -112,13 +115,8 @@ class IdentityPage(QtWidgets.QWizardPage):
         self.registerField("host_name*", self.host_name)
         self.registerField("interval", self.interval)
 
-        self.agent_id.textChanged.connect(self.completeChanged)
-        self.host_name.textChanged.connect(self.completeChanged)
-
     def isComplete(self):
-        return bool(self.agent_id.text().strip()) and bool(
-            self.host_name.text().strip()
-        )
+        return bool(self.agent_id.text().strip()) and bool(self.host_name.text().strip())
 
 
 class ConnectionPage(QtWidgets.QWizardPage):
@@ -129,23 +127,19 @@ class ConnectionPage(QtWidgets.QWizardPage):
 
         layout = QtWidgets.QFormLayout()
 
-        self.server_host = QtWidgets.QLineEdit("192.168.1.12")
+        self.server_host = QtWidgets.QLineEdit("192.168.12.43")
         self.server_port = QtWidgets.QSpinBox()
         self.server_port.setRange(1, 65535)
         self.server_port.setValue(8000)
         self.server_https = QtWidgets.QCheckBox("Usar HTTPS para VANT-SIEM")
 
-        self.opensearch_host = QtWidgets.QLineEdit("192.168.1.12")
+        self.opensearch_host = QtWidgets.QLineEdit("192.168.12.43")
         self.opensearch_port = QtWidgets.QSpinBox()
         self.opensearch_port.setRange(1, 65535)
         self.opensearch_port.setValue(9201)
 
-        self.endpoint = QtWidgets.QLineEdit(
-            "http://127.0.0.1:9201/api/v1/events/bulk"
-        )
-        self.source_endpoint = QtWidgets.QLineEdit(
-            "http://127.0.0.1:9201/api/v1/sources/upsert"
-        )
+        self.endpoint = QtWidgets.QLineEdit()
+        self.source_endpoint = QtWidgets.QLineEdit()
         self.timeout = QtWidgets.QSpinBox()
         self.timeout.setRange(1, 120)
         self.timeout.setValue(10)
@@ -188,75 +182,16 @@ class ConnectionPage(QtWidgets.QWizardPage):
         self.registerField("opensearch_port", self.opensearch_port)
 
         self.server_host.textChanged.connect(self._refresh_endpoints)
+        self.server_host.textChanged.connect(self.completeChanged)
         self.server_port.valueChanged.connect(self._refresh_endpoints)
+        self.server_port.valueChanged.connect(self.completeChanged)
         self.opensearch_host.textChanged.connect(self._refresh_endpoints)
+        self.opensearch_host.textChanged.connect(self.completeChanged)
         self.opensearch_port.valueChanged.connect(self._refresh_endpoints)
+        self.opensearch_port.valueChanged.connect(self.completeChanged)
         self.tls_enabled.stateChanged.connect(self._refresh_endpoints)
+        self.tls_enabled.stateChanged.connect(self.completeChanged)
         self._refresh_endpoints()
-
-    def _on_test(self):
-        wizard = self.wizard()
-        auth_page = wizard.page(AgentInstallerWizard.PAGE_AUTH)
-        auth_mode = auth_page.auth_mode.currentText()
-
-        if auth_mode == "none":
-            shared_secret = self._load_bootstrap_key()
-            if not shared_secret:
-                shared_secret = self._fetch_bootstrap_secret()
-            if not shared_secret:
-                shared_secret = DEFAULT_AGENT_SHARED_SECRET
-
-            timestamp = str(int(time.time()))
-            signature = self._sign_request(
-                shared_secret,
-                wizard.field("agent_id"),
-                wizard.field("host_name"),
-                timestamp,
-            )
-            payload = {
-                "agent_id": wizard.field("agent_id"),
-                "host_name": wizard.field("host_name"),
-                "timestamp": timestamp,
-                "signature": signature,
-            }
-            enroll_url = self._build_enroll_url()
-            try:
-                response = requests.post(enroll_url, json=payload, timeout=8)
-                data = {}
-                if "application/json" in response.headers.get("Content-Type", ""):
-                    data = response.json()
-            except Exception as exc:
-                self.test_status.setText(f"Error al conectar: {exc}")
-                self.test_status.setStyleSheet("color: #dc2626;")
-                return
-
-            if response.status_code != 200 or not data.get("ok"):
-                if response.status_code == 400 and "HTTPS" in response.text:
-                    self.test_status.setText(
-                        "Servidor en HTTP. Desactiva HTTPS o inicia run_https.ps1."
-                    )
-                else:
-                    self.test_status.setText("Agente no autorizado para enrolamiento.")
-                self.test_status.setStyleSheet("color: #dc2626;")
-                return
-
-            token = data.get("token", "")
-            auth_page.auth_mode.setCurrentText("token")
-            auth_page.token.setText(token)
-
-        self._refresh_endpoints()
-        if self._probe_endpoint(self.endpoint.text().strip()):
-            self.test_status.setText("Conexion exitosa y token obtenido.")
-            self.test_status.setStyleSheet("color: #16a34a;")
-        else:
-            self.test_status.setText("Token obtenido, pero endpoint no responde.")
-            self.test_status.setStyleSheet("color: #f59e0b;")
-
-    def _build_enroll_url(self):
-        scheme = "https" if self.server_https.isChecked() else "http"
-        host = self.server_host.text().strip()
-        port = self.server_port.value()
-        return f"{scheme}://{host}:{port}/api/agent/enroll/"
 
     def _load_bootstrap_key(self):
         env_key = os.environ.get("VANT_AGENT_BOOTSTRAP_KEY", "").strip()
@@ -265,10 +200,10 @@ class ConnectionPage(QtWidgets.QWizardPage):
         env_shared = os.environ.get("VANT_AGENT_SHARED_SECRET", "").strip()
         if env_shared:
             return env_shared
-        if os.path.exists(BOOTSTRAP_KEY_PATH):
+        path = _bootstrap_key_path()
+        if path.exists():
             try:
-                with open(BOOTSTRAP_KEY_PATH, "r", encoding="utf-8") as handle:
-                    return handle.read().strip()
+                return path.read_text(encoding="utf-8").strip()
             except Exception:
                 return ""
         return ""
@@ -297,6 +232,12 @@ class ConnectionPage(QtWidgets.QWizardPage):
             return ""
         return f"{scheme}://{host}:{port}/api/agent/bootstrap/"
 
+    def _build_enroll_url(self):
+        scheme = "https" if self.server_https.isChecked() else "http"
+        host = self.server_host.text().strip()
+        port = self.server_port.value()
+        return f"{scheme}://{host}:{port}/api/agent/enroll/"
+
     def _sign_request(self, secret, agent_id, host_name, timestamp):
         message = f"{agent_id}:{host_name}:{timestamp}".encode("utf-8")
         return hmac.new(secret.encode("utf-8"), message, hashlib.sha256).hexdigest()
@@ -307,6 +248,17 @@ class ConnectionPage(QtWidgets.QWizardPage):
         port = self.opensearch_port.value()
         self.endpoint.setText(f"{scheme}://{host}:{port}/api/v1/events/bulk")
         self.source_endpoint.setText(f"{scheme}://{host}:{port}/api/v1/sources/upsert")
+        self.completeChanged.emit()
+
+    def isComplete(self):
+        return all(
+            [
+                bool(self.server_host.text().strip()),
+                bool(self.opensearch_host.text().strip()),
+                bool(self.endpoint.text().strip()),
+                bool(self.source_endpoint.text().strip()),
+            ]
+        )
 
     def _probe_endpoint(self, endpoint):
         try:
@@ -319,7 +271,52 @@ class ConnectionPage(QtWidgets.QWizardPage):
         except Exception:
             return False
 
+    def _on_test(self):
+        wizard = self.wizard()
+        auth_page = wizard.page(AgentInstallerWizard.PAGE_AUTH)
+        auth_mode = auth_page.auth_mode.currentText()
 
+        if auth_mode == "none":
+            shared_secret = self._load_bootstrap_key() or self._fetch_bootstrap_secret() or DEFAULT_AGENT_SHARED_SECRET
+            timestamp = str(int(time.time()))
+            signature = self._sign_request(
+                shared_secret,
+                wizard.field("agent_id"),
+                wizard.field("host_name"),
+                timestamp,
+            )
+            payload = {
+                "agent_id": wizard.field("agent_id"),
+                "host_name": wizard.field("host_name"),
+                "timestamp": timestamp,
+                "signature": signature,
+            }
+            try:
+                response = requests.post(self._build_enroll_url(), json=payload, timeout=8)
+                data = response.json() if "application/json" in response.headers.get("Content-Type", "") else {}
+            except Exception as exc:
+                self.test_status.setText(f"Error al conectar: {exc}")
+                self.test_status.setStyleSheet("color: #dc2626;")
+                return
+
+            if response.status_code != 200 or not data.get("ok"):
+                if response.status_code == 400 and "HTTPS" in response.text:
+                    self.test_status.setText("Servidor en HTTP. Desactiva HTTPS o inicia run_https.ps1.")
+                else:
+                    self.test_status.setText("Agente no autorizado para enrolamiento.")
+                self.test_status.setStyleSheet("color: #dc2626;")
+                return
+
+            auth_page.auth_mode.setCurrentText("token")
+            auth_page.token.setText(data.get("token", ""))
+
+        self._refresh_endpoints()
+        if self._probe_endpoint(self.endpoint.text().strip()):
+            self.test_status.setText("Conexion exitosa y token obtenido.")
+            self.test_status.setStyleSheet("color: #16a34a;")
+        else:
+            self.test_status.setText("Token obtenido, pero endpoint no responde.")
+            self.test_status.setStyleSheet("color: #f59e0b;")
 
 
 class AuthPage(QtWidgets.QWizardPage):
@@ -329,7 +326,6 @@ class AuthPage(QtWidgets.QWizardPage):
         self.setSubTitle("Selecciona el metodo de autenticacion.")
 
         layout = QtWidgets.QVBoxLayout()
-
         self.auth_mode = QtWidgets.QComboBox()
         self.auth_mode.addItems(["none", "basic", "token"])
         self.auth_mode.currentTextChanged.connect(self._update_fields)
@@ -344,7 +340,6 @@ class AuthPage(QtWidgets.QWizardPage):
         form.addRow("Usuario:", self.user)
         form.addRow("Password:", self.password)
         form.addRow("Token:", self.token)
-
         layout.addLayout(form)
         layout.addStretch()
         self.setLayout(layout)
@@ -370,8 +365,8 @@ class CollectorsPage(QtWidgets.QWizardPage):
         self.setSubTitle("Activa las fuentes de eventos.")
 
         layout = QtWidgets.QFormLayout()
-
         defaults = _default_paths()
+
         self.snort = QtWidgets.QCheckBox("Snort")
         self.snort_path = QtWidgets.QLineEdit(defaults["snort"])
         self.suricata = QtWidgets.QCheckBox("Suricata")
@@ -414,7 +409,7 @@ class SummaryPage(QtWidgets.QWizardPage):
         self.preview.setReadOnly(True)
         self.preview.setStyleSheet("font-family: Consolas, monospace;")
 
-        self.install_service = QtWidgets.QCheckBox("Instalar como servicio")
+        self.install_service = QtWidgets.QCheckBox("Instalar como tarea programada")
         self.install_service.setChecked(True)
 
         layout.addWidget(self.preview)
@@ -422,18 +417,16 @@ class SummaryPage(QtWidgets.QWizardPage):
         self.setLayout(layout)
 
     def initializePage(self):
-        wizard = self.wizard()
-        config = wizard.build_config_preview(mask_secrets=True)
-
-        self.preview.setPlainText(config)
+        self.preview.setPlainText(self.wizard().build_config_preview(mask_secrets=True))
 
 
 class ProgressPage(QtWidgets.QWizardPage):
     def __init__(self):
         super().__init__()
         self.setTitle("Instalacion en progreso")
-        self.setSubTitle("Aplicando la configuracion y registrando el servicio.")
+        self.setSubTitle("Aplicando la configuracion y registrando el agente.")
         self.setFinalPage(True)
+        self._done = False
 
         layout = QtWidgets.QVBoxLayout()
         self.progress = QtWidgets.QProgressBar()
@@ -441,120 +434,49 @@ class ProgressPage(QtWidgets.QWizardPage):
         self.log = QtWidgets.QPlainTextEdit()
         self.log.setReadOnly(True)
         self.log.setStyleSheet("font-family: Consolas, monospace;")
-
         layout.addWidget(self.progress)
         layout.addWidget(self.log)
         self.setLayout(layout)
 
-        self._timer = QtCore.QTimer(self)
-        self._timer.setInterval(300)
-        self._timer.timeout.connect(self._tick)
-
     def initializePage(self):
-        self.progress.setValue(0)
+        self._done = False
+        self.progress.setValue(5)
         self.log.clear()
-        self.log.appendPlainText("Iniciando instalacion del agente...")
-        self.log.appendPlainText("Validando configuracion...")
-        if not self.wizard().write_config_file():
-            self.log.appendPlainText("Error al escribir config.yaml.")
-        else:
-            self.log.appendPlainText("config.yaml guardado correctamente.")
-            if self.wizard().page(AgentInstallerWizard.PAGE_SUMMARY).install_service.isChecked():
-                if self._install_service():
-                    self.log.appendPlainText("Servicio creado y configurado (auto-start).")
-                else:
-                    self.log.appendPlainText("No se pudo crear el servicio.")
-        self._timer.start()
+        self.log.appendPlainText("Preparando paquete interno del instalador...")
 
-    def _tick(self):
-        value = self.progress.value() + 10
-        self.progress.setValue(value)
-        self.log.appendPlainText(f"Paso completado ({value}%).")
-        if value >= 100:
-            self._timer.stop()
-            self.log.appendPlainText("Servicio instalado correctamente (mock).")
-            self._launch_tray()
+        package_dir = self.wizard().stage_package()
+        if not package_dir:
+            self.log.appendPlainText("No se pudo preparar el paquete del agente.")
             self.completeChanged.emit()
+            return
 
-    def _launch_tray(self):
-        try:
-            tray_path = Path("opensearch_agents/agent_tray.py")
-            if tray_path.exists():
-                config_path = Path(DEFAULT_CONFIG_PATH).resolve()
-                QtCore.QProcess.startDetached(
-                    sys.executable, [str(tray_path), "--config", str(config_path)]
-                )
-                self.log.appendPlainText("Agente iniciado en bandeja (tray).")
-        except Exception:
-            self.log.appendPlainText("No se pudo iniciar el tray del agente.")
+        self.progress.setValue(40)
+        self.log.appendPlainText(f"Paquete preparado en: {package_dir}")
 
-    def _install_service(self):
-        if sys.platform.startswith("win"):
-            return self._install_windows_service()
-        if sys.platform.startswith("linux"):
-            return self._install_linux_service()
-        return False
+        if not self.wizard().page(AgentInstallerWizard.PAGE_SUMMARY).install_service.isChecked():
+            self.log.appendPlainText("Instalacion omitida por el usuario.")
+            self.progress.setValue(100)
+            self._done = True
+            self.completeChanged.emit()
+            return
 
-    def _install_windows_service(self):
-        try:
-            service_name = "VANTSIEMAgent"
-            python_exe = sys.executable
-            agent_path = Path("opensearch_agents/agent.py").resolve()
-            config_path = Path(DEFAULT_CONFIG_PATH).resolve()
-            bin_path = f'"{python_exe}" "{agent_path}" --config "{config_path}"'
+        self.log.appendPlainText("Ejecutando instalador PowerShell del agente...")
+        ok, output = self.wizard().install_windows_package(package_dir)
+        if output.strip():
+            self.log.appendPlainText(output.strip())
 
-            create_cmd = [
-                "sc.exe",
-                "create",
-                service_name,
-                f'binPath= {bin_path}',
-                "start= auto",
-            ]
-            QtCore.QProcess.execute("sc.exe", ["delete", service_name])
-            QtCore.QProcess.execute(create_cmd[0], create_cmd[1:])
-            QtCore.QProcess.execute("sc.exe", ["failure", service_name, "reset= 0", "actions= restart/5000"])
-            QtCore.QProcess.execute("sc.exe", ["start", service_name])
-            return True
-        except Exception:
-            return False
+        if ok:
+            self.log.appendPlainText("Instalacion completada correctamente.")
+            self.progress.setValue(100)
+            self._done = True
+        else:
+            self.log.appendPlainText("La instalacion fallo. Revisa el log anterior.")
+            self.progress.setValue(100)
 
-    def _install_linux_service(self):
-        try:
-            config_path = Path(DEFAULT_CONFIG_PATH).resolve()
-            agent_dir = Path(__file__).resolve().parent.parent
-            bin_path = agent_dir / "VANT-SIEM-Agent"
-            if not bin_path.exists():
-                bin_path = agent_dir / "agent.py"
-                exec_line = f"{sys.executable} {bin_path} --config {config_path}"
-            else:
-                exec_line = f"{bin_path} --config {config_path}"
-
-            service_text = f"""[Unit]
-Description=VANT-SIEM OpenSearch Agent
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-WorkingDirectory={agent_dir}
-ExecStart={exec_line}
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-"""
-            service_path = Path("/etc/systemd/system/vant-siem-agent.service")
-            service_path.write_text(service_text, encoding="utf-8")
-
-            subprocess.check_call(["systemctl", "daemon-reload"])
-            subprocess.check_call(["systemctl", "enable", "--now", "vant-siem-agent"])
-            return True
-        except Exception:
-            return False
+        self.completeChanged.emit()
 
     def isComplete(self):
-        return self.progress.value() >= 100
+        return self._done
 
 
 class AgentInstallerWizard(QtWidgets.QWizard):
@@ -568,15 +490,17 @@ class AgentInstallerWizard(QtWidgets.QWizard):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("VANT-SIEM OpenSearch Agent Installer")
+        self._staged_dir = None
+        self.setWindowTitle("VANT-SIEM Windows Agent Setup")
         self.setWizardStyle(QtWidgets.QWizard.WizardStyle.ModernStyle)
 
-        if os.path.exists(LOGO_PATH):
-            icon = QtGui.QIcon(LOGO_PATH)
+        logo = _logo_path()
+        if logo.exists():
+            icon = QtGui.QIcon(str(logo))
             self.setWindowIcon(icon)
             self.setPixmap(
                 QtWidgets.QWizard.WizardPixmap.LogoPixmap,
-                QtGui.QPixmap(LOGO_PATH).scaled(64, 64, QtCore.Qt.AspectRatioMode.KeepAspectRatio),
+                QtGui.QPixmap(str(logo)).scaled(64, 64, QtCore.Qt.AspectRatioMode.KeepAspectRatio),
             )
 
         self.setPage(self.PAGE_WELCOME, WelcomePage())
@@ -589,79 +513,69 @@ class AgentInstallerWizard(QtWidgets.QWizard):
 
         self.setStartId(self.PAGE_WELCOME)
         self.setOption(QtWidgets.QWizard.WizardOption.NoBackButtonOnStartPage, True)
-        self.setOption(QtWidgets.QWizard.WizardOption.IndependentPages, False)
-        self.setOption(QtWidgets.QWizard.WizardOption.HaveFinishButtonOnEarlyPages, False)
 
     def accept(self):
         QtWidgets.QMessageBox.information(
             self,
             "Instalacion completada",
-            "El servicio se instalo correctamente.",
+            "El setup grafico termino correctamente.",
         )
         super().accept()
 
     def build_config_preview(self, mask_secrets=False):
-        agent_id = self.field("agent_id")
-        host_name = self.field("host_name")
-        interval = self.field("interval")
-        endpoint = self.field("endpoint")
-        source_endpoint = self.field("source_endpoint")
-        timeout = self.field("timeout")
-        tls_enabled = self.field("tls_enabled")
-        tls_verify = self.field("tls_verify")
-        ca_cert = self.field("ca_cert")
-        auth_mode = self.field("auth_mode")
-        auth_user = self.field("auth_user")
         auth_password = self.field("auth_password") or ""
         auth_token = self.field("auth_token") or ""
-        server_url = self._build_server_url()
-
         if mask_secrets:
             auth_password = "******" if auth_password else ""
             auth_token = "******" if auth_token else ""
 
         require_https = self.page(self.PAGE_CONNECTION).server_https.isChecked()
         return f"""agent:
-  id: "{agent_id}"
-  host_name: "{host_name}"
-  interval_seconds: {interval}
+  id: "{self.field("agent_id")}"
+  host_name: "{self.field("host_name")}"
+  interval_seconds: {self.field("interval")}
 
 output:
-  endpoint: "{endpoint}"
-  source_endpoint: "{source_endpoint}"
-  timeout_seconds: {timeout}
+  endpoint: "{self.field("endpoint")}"
+  source_endpoint: "{self.field("source_endpoint")}"
+  timeout_seconds: {self.field("timeout")}
   auth:
-    mode: "{auth_mode}"
-    username: "{auth_user}"
+    mode: "{self.field("auth_mode")}"
+    username: "{self.field("auth_user")}"
     password: "{auth_password}"
     token: "{auth_token}"
   tls:
-    enabled: {str(tls_enabled).lower()}
-    verify: {str(tls_verify).lower()}
-    ca_cert: "{ca_cert}"
+    enabled: {str(self.field("tls_enabled")).lower()}
+    verify: {str(self.field("tls_verify")).lower()}
+    ca_cert: "{self.field("ca_cert")}"
 
 control:
-  server_url: "{server_url}"
+  server_url: "{self._build_server_url()}"
   require_https: {str(require_https).lower()}
-"""
+  poll_seconds: 30
+  inventory_seconds: 86400
+  dlp_poll_seconds: 900
+  dlp_scan_seconds: 900
 
-    def write_config_file(self):
-        try:
-            import yaml
-        except Exception:
-            return False
-        config_text = self.build_config_preview(mask_secrets=False)
-        try:
-            data = yaml.safe_load(config_text) or {}
-            config_path = Path(DEFAULT_CONFIG_PATH)
-            config_path.parent.mkdir(parents=True, exist_ok=True)
-            config_path.write_text(
-                yaml.safe_dump(data, sort_keys=False, allow_unicode=False),
-                encoding="utf-8",
-            )
-            return True
-        except Exception:
-            return False
+asset_audit:
+  enabled: true
+
+aegis_dlp:
+  enabled: true
+  max_file_size_mb: 10
+  scan_paths: []
+  monitored_extensions:
+    - ".txt"
+    - ".log"
+    - ".csv"
+    - ".json"
+    - ".xml"
+    - ".md"
+    - ".docx"
+    - ".xlsx"
+    - ".pptx"
+    - ".pdf"
+"""
 
     def _build_server_url(self):
         page = self.page(self.PAGE_CONNECTION)
@@ -669,6 +583,58 @@ control:
         host = page.server_host.text().strip()
         port = page.server_port.value()
         return f"{scheme}://{host}:{port}"
+
+    def stage_package(self):
+        try:
+            source_dir = _windows_assets_dir()
+            if not source_dir.exists():
+                return None
+
+            staged_dir = Path(tempfile.gettempdir()) / "vant_opensearch_agent_windows_setup"
+            if staged_dir.exists():
+                shutil.rmtree(staged_dir, ignore_errors=True)
+            shutil.copytree(source_dir, staged_dir)
+
+            config_text = self.build_config_preview(mask_secrets=False)
+            import yaml
+
+            data = yaml.safe_load(config_text) or {}
+            config_path = staged_dir / "config.yaml"
+            config_path.write_text(
+                yaml.safe_dump(data, sort_keys=False, allow_unicode=False),
+                encoding="utf-8",
+            )
+            self._staged_dir = staged_dir
+            return staged_dir
+        except Exception:
+            return None
+
+    def install_windows_package(self, package_dir):
+        install_script = package_dir / "Install-OpenSearchAgent.ps1"
+        if not install_script.exists():
+            return False, f"No se encontro el script de instalacion: {install_script}"
+
+        cmd = [
+            "powershell",
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(install_script),
+            "-RunNow",
+        ]
+        try:
+            result = subprocess.run(
+                cmd,
+                cwd=str(package_dir),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            output = "\n".join(part for part in [result.stdout, result.stderr] if part)
+            return result.returncode == 0, output
+        except Exception as exc:
+            return False, str(exc)
 
 
 def main():

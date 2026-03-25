@@ -21,6 +21,8 @@ from collectors.windows_eventlog import WindowsEventLogCollector
 from collectors.postgres_log import PostgresLogCollector
 from collectors.file_log import FileLogCollector
 from output import OutputClient
+from services.audit_inventory import AuditInventoryService
+from services.aegis_dlp import AegisDlpService
 
 AGENT_VERSION = "v1.01"
 
@@ -143,36 +145,6 @@ def _control_post(url, payload, token, timeout=8):
     return requests.post(url, json=payload, headers=headers, timeout=timeout)
 
 
-def _collect_inventory():
-    info = {
-        "host": socket.gethostname(),
-        "os": platform.platform(),
-        "collected_at": datetime.now(timezone.utc).isoformat(),
-    }
-
-    def run_cmd(cmd):
-        try:
-            out = subprocess.check_output(cmd, shell=True, text=True, stderr=subprocess.STDOUT)
-            return out.strip()
-        except Exception:
-            return ""
-
-    info["bios_serial"] = run_cmd("wmic bios get serialnumber")
-    info["csproduct"] = run_cmd("wmic csproduct get name,uuid")
-    info["cpu"] = run_cmd("wmic cpu get name,ProcessorId")
-    info["baseboard"] = run_cmd("wmic baseboard get product,serialnumber,manufacturer")
-    info["os_details"] = run_cmd("wmic os get Caption,Version,BuildNumber,SerialNumber,InstallDate,LastBootUpTime")
-    info["logged_users"] = run_cmd("query user")
-
-    # Installed apps (best-effort, can be slow on some systems)
-    info["installed_apps"] = run_cmd(
-        'powershell -NoProfile -Command "Get-ItemProperty HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* '
-        '| Select-Object DisplayName,DisplayVersion,Publisher '
-        '| ConvertTo-Json -Compress"'
-    )
-    return info
-
-
 def _current_ips():
     ips = set()
     try:
@@ -218,8 +190,17 @@ def run_with_stop(config_path, stop_event):
         cfg.get("output", {}).get("auth", {}).get("token")
         or control_cfg.get("token", "")
     )
+    inventory_enabled = bool((cfg.get("asset_audit", {}) or {}).get("enabled", True))
+    dlp_enabled = bool((cfg.get("aegis_dlp", {}) or {}).get("enabled", True))
+    inventory_service = AuditInventoryService(config_path) if inventory_enabled else None
+    dlp_service = AegisDlpService(config_path, cfg) if dlp_enabled else None
+    inventory_seconds = int(control_cfg.get("inventory_seconds", 86400))
+    dlp_poll_seconds = int(control_cfg.get("dlp_poll_seconds", max(300, min(inventory_seconds, 3600))))
+    dlp_scan_seconds = int(control_cfg.get("dlp_scan_seconds", max(300, min(inventory_seconds, 1800))))
     next_control = time.time() + control_poll
-    next_inventory = time.time() + int(control_cfg.get("inventory_seconds", 86400))
+    next_inventory = time.time() + inventory_seconds
+    next_dlp_poll = time.time() + min(control_poll, dlp_poll_seconds)
+    next_dlp_scan = time.time() + dlp_scan_seconds
     cycle = 0
 
     logger.info(
@@ -332,18 +313,44 @@ def run_with_stop(config_path, stop_event):
                     logger.warning("control poll failed error=%s", exc)
                 next_control = now + control_poll
 
-            if control_server and now >= next_inventory:
+            if control_server and inventory_service and now >= next_inventory:
                 try:
-                    inv = _collect_inventory()
+                    inv = inventory_service.collect()
                     _control_post(
                         f"{control_server}/api/agent/inventory/",
                         {"agent_id": agent_cfg.get("id", "agent"), "inventory": inv},
                         control_token,
-                        timeout=12,
+                        timeout=30,
                     )
                 except Exception as exc:
                     logger.warning("inventory upload failed error=%s", exc)
-                next_inventory = now + int(control_cfg.get("inventory_seconds", 86400))
+                next_inventory = now + inventory_seconds
+
+            if control_server and dlp_service and now >= next_dlp_poll:
+                try:
+                    dlp_service.fetch_remote_config(
+                        control_server,
+                        control_token,
+                        agent_cfg.get("id", "agent"),
+                    )
+                except Exception as exc:
+                    logger.warning("dlp config poll failed error=%s", exc)
+                next_dlp_poll = now + dlp_poll_seconds
+
+            if control_server and dlp_service and now >= next_dlp_scan:
+                try:
+                    incidents = dlp_service.scan()
+                    if incidents:
+                        _control_post(
+                            f"{control_server}/api/agent/dlp/incidents/",
+                            {"agent_id": agent_cfg.get("id", "agent"), "incidents": incidents},
+                            control_token,
+                            timeout=30,
+                        )
+                        logger.info("dlp incidents uploaded count=%s", len(incidents))
+                except Exception as exc:
+                    logger.warning("dlp incident upload failed error=%s", exc)
+                next_dlp_scan = now + dlp_scan_seconds
 
             _sleep_with_stop(stop_event, interval)
         except Exception as exc:

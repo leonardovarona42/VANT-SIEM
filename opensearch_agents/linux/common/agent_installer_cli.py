@@ -13,8 +13,8 @@ import requests
 import yaml
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-BOOTSTRAP_KEY_PATH = BASE_DIR / "installer" / "bootstrap.key"
+BASE_DIR = Path(__file__).resolve().parents[1]
+BOOTSTRAP_KEY_PATH = BASE_DIR / "common" / "bootstrap.key"
 DEFAULT_AGENT_SHARED_SECRET = "VANT-SIEM-AGENT-BOOTSTRAP-2026"
 
 

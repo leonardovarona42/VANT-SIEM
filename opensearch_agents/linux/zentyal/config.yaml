@@ -29,6 +29,37 @@ control:
   poll_seconds: 30
   inventory_seconds: 86400
 
+aegis_dlp:
+  enabled: true
+  scan_paths:
+    - "/home"
+    - "/root"
+    - "/srv"
+    - "/var/www"
+    - "/mnt"
+    - "/media"
+  monitored_extensions:
+    - ".txt"
+    - ".csv"
+    - ".doc"
+    - ".docx"
+    - ".xls"
+    - ".xlsx"
+    - ".ppt"
+    - ".pptx"
+    - ".pdf"
+    - ".rtf"
+    - ".odt"
+    - ".ods"
+    - ".odp"
+    - ".conf"
+    - ".ini"
+    - ".json"
+    - ".xml"
+    - ".log"
+    - ".md"
+  max_file_size_mb: 25
+
 collectors:
   snort:
     enabled: false

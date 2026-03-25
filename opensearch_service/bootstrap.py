@@ -82,7 +82,7 @@ def start_opensearch_service():
         print("[START] OpenSearch autostart deshabilitado por manage.py disable_opensearch.")
         return
 
-    host = os.getenv("OS_SERVICE_HOST", "192.168.1.12")
+    host = os.getenv("OS_SERVICE_HOST", "192.168.12.43")
     port = int(os.getenv("OS_SERVICE_PORT", "9201"))
     if _is_port_open(host, port):
         print(f"[START] OpenSearch service ya esta activo en {host}:{port}.")

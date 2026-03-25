@@ -2,11 +2,6 @@ agent:
   id: "agent-001"
   host_name: "windows-host-01"
   interval_seconds: 10
-  log_level: "INFO"
-  log_file: "/var/log/vant-siem/agent.log"
-  log_max_bytes: 10485760
-  log_backup_count: 5
-  log_every_cycles: 60
 
 output:
   endpoint: "http://192.168.12.43:9201/api/v1/events/bulk"
@@ -36,45 +31,30 @@ asset_audit:
 
 aegis_dlp:
   enabled: true
-  scan_paths:
-    - "/home"
-    - "/root"
-    - "/srv"
-    - "/var/www"
-    - "/mnt"
-    - "/media"
+  max_file_size_mb: 10
+  scan_paths: []
   monitored_extensions:
     - ".txt"
+    - ".log"
     - ".csv"
-    - ".doc"
-    - ".docx"
-    - ".xls"
-    - ".xlsx"
-    - ".ppt"
-    - ".pptx"
-    - ".pdf"
-    - ".rtf"
-    - ".odt"
-    - ".ods"
-    - ".odp"
-    - ".conf"
-    - ".ini"
     - ".json"
     - ".xml"
-    - ".log"
     - ".md"
-  max_file_size_mb: 25
+    - ".docx"
+    - ".xlsx"
+    - ".pptx"
+    - ".pdf"
 
 collectors:
   snort:
-    enabled: false
-    path: "C:/snort/log/alert"
-    start_position: "end"   # beginning|end
+    enabled: true
+    path: "C:/Snort/log/alerts.fast"
+    start_position: "beginning"   # beginning|end
     max_lines_per_cycle: 400
   suricata:
-    enabled: false
-    path: "C:/suricata/logs/eve.json"
-    start_position: "end"   # beginning|end
+    enabled: true
+    path: "C:/suricata-log/eve.json"
+    start_position: "beginning"   # beginning|end
     max_lines_per_cycle: 600
   windows_eventlog:
     enabled: false
@@ -84,14 +64,3 @@ collectors:
     path: "C:/Program Files/PostgreSQL/16/data/log/postgresql.log"
     start_position: "end"   # beginning|end
     max_lines_per_cycle: 400
-  file_logs:
-    enabled: true
-    items:
-      - enabled: true
-        source_name: "samba-audit"
-        path: "/var/log/samba/audit.log"
-        event_category: "samba.audit"
-        severity: "info"
-        tags: ["samba", "ad", "audit"]
-        start_position: "end"   # beginning|end
-        max_lines_per_cycle: 400

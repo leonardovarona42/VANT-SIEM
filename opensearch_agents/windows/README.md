@@ -1,0 +1,21 @@
+# Windows Agent Setup
+
+Este directorio contiene el flujo de empaquetado e instalacion del agente para Windows.
+
+## Artefacto final
+
+- `opensearch_agent_setup.exe`
+
+## Build
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\opensearch_agents\windows\build_setup.ps1
+```
+
+## Contenido
+
+- `agent_setup_ui.py`: instalador grafico PyQt6
+- `Install-OpenSearchAgent.ps1`: instalacion del agente en el host
+- `Uninstall-OpenSearchAgent.ps1`: desinstalacion
+- `configs/`: plantillas de configuracion Windows
+- `package/`: payload preparado para el setup

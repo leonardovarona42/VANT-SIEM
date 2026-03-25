@@ -22,18 +22,29 @@ sudo VANT_AGENT_WIZARD=0 ./install_agent.sh
 
 Config principal:
 
-`/etc/vant-opensearch-agent/config.yaml`
+`/etc/vant-siem/config.yaml`
+
+La instalacion usa el bundle offline generado en `linux/dist/vant-siem-agent-install/`.
+Primero ejecuta `opensearch_agents/build_linux.sh` en la maquina de empaquetado.
+No hace `apt` ni `pip` en la maquina destino.
 
 ## Tray GUI (auto-arranque)
 
-El instalador copia `VANT-SIEM-Agent-Tray.desktop` a:
+El instalador compartido copia `../common/VANT-SIEM-Agent-Tray.desktop` a:
 
-`/etc/xdg/autostart/vant-opensearch-agent-tray.desktop`
+`/etc/xdg/autostart/vant-siem-agent-tray.desktop`
+
+La instalacion no descarga nada: usa el paquete ya generado en `linux/dist/`
+y ejecuta su `install.sh`.
+
+Ese bundle ya incluye `services/audit_inventory.py` y `services/aegis_dlp.py`.
+Con eso el agente captura una linea de tiempo completa de activos y
+documentos sensibles incluso en despliegues sin internet.
 
 Para desactivar el tray:
 
 ```bash
-sudo rm /etc/xdg/autostart/vant-opensearch-agent-tray.desktop
+sudo rm /etc/xdg/autostart/vant-siem-agent-tray.desktop
 ```
 
 ## 2) Habilitar logs para AD Samba + extras
@@ -72,7 +83,7 @@ Zentyal puede regenerar configuraciones Samba. Si eso pasa:
 ## 5) Verificar
 
 ```bash
-sudo systemctl status vant-opensearch-agent
-sudo journalctl -u vant-opensearch-agent -f
+sudo systemctl status vant-siem-agent
+sudo journalctl -u vant-siem-agent -f
 tail -f /var/log/samba/audit.log
 ```

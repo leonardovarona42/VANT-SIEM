@@ -207,14 +207,57 @@ def agent_inventory(request):
         return JsonResponse({'ok': False, 'error': 'Token invalido'}, status=403)
 
     inventory = payload.get('inventory') or {}
-    from inventory.models import AgentDevice, AgentInventorySnapshot
+    from inventory.models import AgentDevice
+    from inventory.services import process_agent_inventory
 
     device, _ = AgentDevice.objects.get_or_create(agent_id=agent_id)
     device.last_seen = timezone.now()
     device.save()
 
-    AgentInventorySnapshot.objects.create(agent=device, payload=inventory)
+    process_agent_inventory(device, inventory)
     return JsonResponse({'ok': True})
+
+
+@csrf_exempt
+@require_POST
+def agent_dlp_incidents(request):
+    try:
+        payload = json.loads(request.body.decode('utf-8')) if request.body else {}
+    except Exception:
+        payload = {}
+
+    agent_id = payload.get('agent_id', '').strip()
+    auth = _authorize_agent_request(request, agent_id=agent_id)
+    if not auth:
+        return JsonResponse({'ok': False, 'error': 'Token invalido'}, status=403)
+
+    from inventory.models import AgentDevice
+    from inventory.services import process_dlp_incidents
+
+    device, _ = AgentDevice.objects.get_or_create(agent_id=agent_id)
+    device.last_seen = timezone.now()
+    device.save()
+
+    created = process_dlp_incidents(device, payload)
+    return JsonResponse({'ok': True, 'incidents': len(created)})
+
+
+@csrf_exempt
+@require_POST
+def agent_dlp_config(request):
+    try:
+        payload = json.loads(request.body.decode('utf-8')) if request.body else {}
+    except Exception:
+        payload = {}
+
+    agent_id = payload.get('agent_id', '').strip()
+    auth = _authorize_agent_request(request, agent_id=agent_id)
+    if not auth:
+        return JsonResponse({'ok': False, 'error': 'Token invalido'}, status=403)
+
+    from inventory.services import get_aegis_policy_payload
+
+    return JsonResponse({'ok': True, 'config': get_aegis_policy_payload()})
 
 
 @csrf_exempt
@@ -323,7 +366,7 @@ def agent_list(request):
 
 @login_required
 def agent_detail(request, agent_id):
-    from inventory.models import AgentDevice, AgentInventorySnapshot
+    from inventory.models import AegisDlpIncident, AgentDevice, AgentInventorySnapshot, AgentTimelineEvent
     try:
         device = AgentDevice.objects.get(agent_id=agent_id)
     except AgentDevice.DoesNotExist:
@@ -340,6 +383,37 @@ def agent_detail(request, agent_id):
         }
         for s in snapshots
     ]
+    timeline = [
+        {
+            'category': event.category,
+            'event_type': event.event_type,
+            'title': event.title,
+            'description': event.description,
+            'severity': event.severity,
+            'actor': event.actor,
+            'file_path': event.file_path,
+            'file_hash': event.file_hash,
+            'observed_at': event.observed_at.isoformat(),
+            'source_service': event.source_service,
+            'metadata': event.metadata or {},
+        }
+        for event in AgentTimelineEvent.objects.filter(agent=device).order_by('-observed_at')[:100]
+    ]
+    dlp_incidents = [
+        {
+            'classification': incident.classification,
+            'severity': incident.severity,
+            'file_name': incident.file_name,
+            'file_path': incident.file_path,
+            'file_hash': incident.file_hash,
+            'actor': incident.actor,
+            'channel': incident.channel,
+            'status': incident.status,
+            'detected_at': incident.detected_at.isoformat(),
+            'metadata': incident.metadata or {},
+        }
+        for incident in AegisDlpIncident.objects.filter(agent=device).order_by('-detected_at')[:100]
+    ]
     return JsonResponse(
         {
             'ok': True,
@@ -350,16 +424,21 @@ def agent_detail(request, agent_id):
                 'agent_version': device.agent_version,
                 'status': device.status,
                 'last_seen': device.last_seen.isoformat() if device.last_seen else '',
+                'last_inventory_at': device.last_inventory_at.isoformat() if device.last_inventory_at else '',
+                'last_dlp_at': device.last_dlp_at.isoformat() if device.last_dlp_at else '',
                 'known_ips': device.known_ips or [],
+                'latest_inventory': device.latest_inventory or {},
             },
             'history': history,
+            'timeline': timeline,
+            'dlp_incidents': dlp_incidents,
         }
     )
 
 
 @login_required
 def agent_detail_page(request, agent_id):
-    from inventory.models import AgentDevice, AgentInventorySnapshot
+    from inventory.models import AegisDlpIncident, AgentDevice, AgentInventorySnapshot, AgentTimelineEvent
     try:
         device = AgentDevice.objects.get(agent_id=agent_id)
     except AgentDevice.DoesNotExist:
@@ -374,6 +453,8 @@ def agent_detail_page(request, agent_id):
         "device": device,
         "latest_snapshot": latest.payload if latest else {},
         "latest_at": latest.created_at if latest else None,
+        "timeline_events": AgentTimelineEvent.objects.filter(agent=device).order_by("-observed_at")[:100],
+        "dlp_incidents": AegisDlpIncident.objects.filter(agent=device).order_by("-detected_at")[:100],
     }
     return render(request, "agent_detail.html", context)
 

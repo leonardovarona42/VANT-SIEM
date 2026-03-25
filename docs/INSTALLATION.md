@@ -55,7 +55,7 @@ Invoke-RestMethod http://127.0.0.1:9201/health
 ### Windows (installer)
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\dist\opensearch-agent-installer\package\Install-OpenSearchAgent.ps1 -RunNow
+.\opensearch_agents\windows\opensearch_agent_setup.exe
 ```
 
 Configurar `config.yaml` (host, puerto, auth, tls, fuentes).
@@ -63,9 +63,9 @@ Configurar `config.yaml` (host, puerto, auth, tls, fuentes).
 ### Linux
 
 Ver guias por distro en:
-- `opensearch/agent/linux/debian/README.md`
-- `opensearch/agent/linux/ubuntu/README.md`
-- `opensearch/agent/linux/zentyal/README.md`
+- `opensearch_agents/linux/debian/README.md`
+- `opensearch_agents/linux/ubuntu/README.md`
+- `opensearch_agents/linux/zentyal/README.md`
 
 ## 5) OpenSearch UI
 

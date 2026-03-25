@@ -242,7 +242,7 @@ powershell -ExecutionPolicy Bypass -File .\opensearch\service\install_windows_se
 ### Agente OpenSearch (Windows)
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\dist\opensearch-agent-installer\package\Install-OpenSearchAgent.ps1 -RunNow
+.\opensearch_agents\windows\opensearch_agent_setup.exe
 ```
 
 ---

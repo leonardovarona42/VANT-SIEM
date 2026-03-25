@@ -2,8 +2,8 @@
 Type=Application
 Name=VANT-SIEM Agent Tray
 Comment=Control del agente en la bandeja del sistema
-Exec=/opt/vant/opensearch-agent/venv/bin/python /opt/vant/opensearch-agent/agent_tray.py --config /etc/vant-opensearch-agent/config.yaml
-Icon=/opt/vant/opensearch-agent/staticfiles/img/logo.png
+Exec=/opt/vant-siem-agent/venv/bin/python /opt/vant-siem-agent/agent_tray.py --config /etc/vant-siem/config.yaml
+Icon=/opt/vant-siem-agent/staticfiles/img/logo.png
 Terminal=false
 StartupNotify=false
 X-GNOME-Autostart-enabled=true

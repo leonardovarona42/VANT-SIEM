@@ -2,7 +2,7 @@ import os
 
 
 class Settings:
-    SERVICE_HOST = os.getenv("OS_SERVICE_HOST", "192.168.1.12")
+    SERVICE_HOST = os.getenv("OS_SERVICE_HOST", "192.168.12.43")
     SERVICE_PORT = int(os.getenv("OS_SERVICE_PORT", "9201"))
 
     DB_HOST = os.getenv("OS_DB_HOST", "127.0.0.1")
