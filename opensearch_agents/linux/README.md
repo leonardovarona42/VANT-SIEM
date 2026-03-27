@@ -10,14 +10,17 @@ La estructura Linux queda separada asi:
 El instalador compartido vive en `common/install_agent.sh` y cada distro solo
 define su wrapper, su `config.yaml` y su guia operativa.
 Ese wrapper espera que primero se haya generado el bundle con
-`opensearch_agents/build_linux.sh`.
+`opensearch_agents/linux/build_linux.sh`, que por defecto detecta todas las
+distros con `config.yaml` bajo `opensearch_agents/linux/`.
 
-La instalacion en destino es offline: el script busca un paquete ya construido
-en `linux/dist/` y ejecuta el `install.sh` incluido en ese paquete.
+La instalacion en destino es offline: el build deja un `install.sh` en
+`linux/dist/<distro>/` que entra al bundle y ejecuta el `install.sh`
+incluido en `vant-siem-agent-install/`.
 
 Ese instalador ya no descarga nada en la maquina destino. Solo ejecuta el
-bundle offline generado en `linux/dist/vant-siem-agent-install/`, que incluye
-el tray GUI, el venv, `services/` y los scripts necesarios.
+bundle offline generado en `linux/dist/<distro>/vant-siem-agent-install/`, que
+incluye el tray GUI, el venv, `services/`, `desktop/`, `systemd/` y los scripts
+necesarios.
 
 El agente Linux ya sale preparado con dos microservicios internos:
 
@@ -29,12 +32,20 @@ El instalador lo copia automaticamente a:
 
 `/etc/xdg/autostart/vant-siem-agent-tray.desktop`
 
-Los artefactos generados por `build_linux.sh` quedan en `linux/dist/`.
+Los artefactos generados por `build_linux.sh` quedan en `linux/dist/<distro>/`.
 Ese directorio debe copiarse junto al instalador cuando se despliega en una
 maquina sin acceso a internet.
 El directorio reutilizable para instalar sin Internet es:
 
-`linux/dist/vant-siem-agent-install/`
+`linux/dist/<distro>/vant-siem-agent-install/`
+
+Tambien puedes lanzar directamente:
+
+`linux/dist/<distro>/install.sh`
+
+Y para desinstalar:
+
+`linux/dist/<distro>/uninstall.sh`
 
 Si ya tienes un directorio extraido en otra ruta, puedes usar:
 

@@ -7,16 +7,26 @@ This directory now documents the Linux agent packaging flow used for offline tes
 The installer expects an extracted payload named `vant-siem-agent-install/` with:
 
 - `install.sh`
+- `uninstall.sh`
 - `config/agent.yaml`
 - `agent/`
 - `scripts/`
+- `desktop/`
+- `systemd/`
 - `docs/`
+- `manifest.json`
+
+Each distro directory under `linux/dist/<distro>/` also gets:
+
+- `install.sh`
+- `uninstall.sh`
 
 ## Install flow
 
-1. Build the payload on a packaging host with the Linux build pipeline.
-2. Copy `linux/dist/` to the target machine or export the extracted package directory.
-3. Run the distro wrapper from `debian/`, `ubuntu/`, or `zentyal/`.
+1. Build the payload on a packaging host with `opensearch_agents/linux/build_linux.sh`.
+   By default it discovers every distro folder that contains a `config.yaml`.
+2. Copy `linux/dist/<distro>/` to the target machine or export the extracted package directory.
+3. Run `linux/dist/<distro>/install.sh` or the extracted package `install.sh`.
 
 ## Overrides
 

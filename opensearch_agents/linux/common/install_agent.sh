@@ -83,7 +83,7 @@ elif PACKAGE_DIR="$(extract_package_tarball)"; then
   :
 else
   echo "Offline package not found under ${DIST_DIR}."
-  echo "Build it first with: ./opensearch_agents/build_linux.sh"
+  echo "Build it first with: ./opensearch_agents/linux/build_linux.sh"
   exit 1
 fi
 
@@ -96,8 +96,12 @@ fi
 if [[ -t 0 && "${VANT_AGENT_WIZARD:-1}" != "0" ]]; then
   TEMPLATE_PATH="${PACKAGE_DIR}/config/agent.yaml"
   CONFIG_PATH="${PACKAGE_DIR}/config/agent.yaml"
-  WIZARD_BIN="${SCRIPT_DIR}/agent_installer_cli.py"
+  WIZARD_BIN="${PACKAGE_DIR}/scripts/agent_installer_cli.py"
   VENV_PYTHON="${PACKAGE_DIR}/agent/venv/bin/python"
+
+  if [[ ! -f "${WIZARD_BIN}" ]]; then
+    WIZARD_BIN="${SCRIPT_DIR}/agent_installer_cli.py"
+  fi
 
   if [[ -x "${VENV_PYTHON}" && -f "${WIZARD_BIN}" ]]; then
     "${VENV_PYTHON}" "${WIZARD_BIN}" \

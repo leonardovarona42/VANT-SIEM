@@ -24,8 +24,9 @@ Config principal:
 
 `/etc/vant-siem/config.yaml`
 
-La instalacion usa el bundle offline generado en `linux/dist/vant-siem-agent-install/`.
-Primero ejecuta `opensearch_agents/build_linux.sh` en la maquina de empaquetado.
+La instalacion usa el bundle offline generado en `linux/dist/debian/vant-siem-agent-install/`.
+Tambien puedes ejecutar directamente `linux/dist/debian/install.sh`.
+Primero ejecuta `opensearch_agents/linux/build_linux.sh` en la maquina de empaquetado.
 No hace `apt` ni `pip` en la maquina destino.
 Si necesitas instalar desde un directorio ya extraido, usa `VANT_AGENT_PACKAGE_DIR`.
 
@@ -35,8 +36,8 @@ El instalador compartido copia `../common/VANT-SIEM-Agent-Tray.desktop` a:
 
 `/etc/xdg/autostart/vant-siem-agent-tray.desktop`
 
-La instalacion no descarga nada: usa el paquete ya generado en `linux/dist/`
-y ejecuta su `install.sh`.
+La instalacion no descarga nada: usa el paquete ya generado en
+`linux/dist/debian/` y ejecuta su `install.sh`.
 
 Ese bundle ya incluye `services/audit_inventory.py` y `services/aegis_dlp.py`.
 El primero genera la linea de tiempo de hardware, software, red, USB y usuarios.
