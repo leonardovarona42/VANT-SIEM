@@ -1,6 +1,6 @@
 {% extends "dashboard.html" %}
 
-{% block title %}Incidentes DLP | VANT-SIEM{% endblock %}
+{% block title %}OSIC-Threads DLP | VANT-SIEM{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
@@ -13,7 +13,7 @@
 
   <div class="card bg-dark border-secondary">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <strong>Incidentes Aegis DLP</strong>
+      <strong>OSIC-Threads de Aegis DLP</strong>
       <div class="d-flex gap-2 flex-wrap">
         <input class="form-control form-control-sm bg-dark text-light" id="incident-search" placeholder="Buscar archivo, actor o clasificacion" style="max-width: 280px;">
         <select class="form-select form-select-sm bg-dark text-light" id="incident-status" style="max-width: 160px;">
@@ -66,7 +66,7 @@
               </td>
               </tr>
             {% empty %}
-            <tr><td colspan="6" class="text-muted">Sin incidentes DLP.</td></tr>
+            <tr><td colspan="6" class="text-muted">Sin OSIC-Threads DLP.</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -102,7 +102,7 @@
       nextButtonId: "incident-next",
       pageInfoId: "incident-info",
       defaultPageSize: 10,
-      emptyMessage: "Sin incidentes DLP.",
+      emptyMessage: "Sin OSIC-Threads DLP.",
       rowFilter: (row) => {
         const currentStatus = (incidentStatus?.value || "").trim().toLowerCase();
         if (!currentStatus) return true;

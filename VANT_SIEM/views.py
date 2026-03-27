@@ -573,7 +573,7 @@ def dlp_incident_update(request, incident_id):
     if new_status in {"open", "reviewing", "contained", "closed"}:
         incident.status = new_status
         incident.save(update_fields=["status"])
-        messages.success(request, f"Incidente {incident.id} actualizado a {new_status}.")
+        messages.success(request, f"OSIC-Thread {incident.id} actualizado a {new_status}.")
     else:
         messages.error(request, "Estado DLP invalido.")
     return redirect("dlp-incident-list")

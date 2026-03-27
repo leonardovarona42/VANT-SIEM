@@ -82,7 +82,7 @@
         <a class="btn btn-outline-warning btn-sm" href="{% url 'inventory-service-dashboard' %}">Ir a Inventario</a>
         <a class="btn btn-warning btn-sm" href="{% url 'dlp-policy-list' %}">Administrar politicas</a>
         <a class="btn btn-outline-info btn-sm" href="{% url 'dlp-policy-create' %}">Nueva politica</a>
-        <a class="btn btn-outline-light btn-sm" href="{% url 'dlp-incident-list' %}">Ver incidentes</a>
+        <a class="btn btn-outline-light btn-sm" href="{% url 'dlp-incident-list' %}">Ver OSIC-Threads</a>
       </div>
     </div>
   </div>
@@ -90,8 +90,8 @@
   <div class="row g-3 mb-4">
     <div class="col-md-3"><div class="dlp-stat"><h6>Politicas activas</h6><div class="display-6" id="dlp-stat-policies">{{ policies_total }}</div></div></div>
     <div class="col-md-3"><div class="dlp-stat"><h6>Reglas activas</h6><div class="display-6" id="dlp-stat-rules">{{ rules_total }}</div></div></div>
-    <div class="col-md-3"><div class="dlp-stat"><h6>Incidentes abiertos</h6><div class="display-6" id="dlp-stat-open">{{ incidents_open }}</div></div></div>
-    <div class="col-md-3"><div class="dlp-stat"><h6>Incidentes totales</h6><div class="display-6" id="dlp-stat-total">{{ incidents_total }}</div></div></div>
+    <div class="col-md-3"><div class="dlp-stat"><h6>OSIC-Threads abiertos</h6><div class="display-6" id="dlp-stat-open">{{ incidents_open }}</div></div></div>
+    <div class="col-md-3"><div class="dlp-stat"><h6>OSIC-Threads totales</h6><div class="display-6" id="dlp-stat-total">{{ incidents_total }}</div></div></div>
   </div>
 
   <div class="row g-3 mb-4">
@@ -158,7 +158,7 @@
     <div class="col-lg-7">
       <div class="dlp-card">
         <div class="dlp-toolbar justify-content-between">
-          <strong class="me-auto">Incidentes recientes</strong>
+          <strong class="me-auto">OSIC-Threads recientes</strong>
       <div class="d-flex gap-2 flex-wrap">
         <input class="form-control form-control-sm dlp-search" id="dlp-incident-search" placeholder="Buscar incidente, archivo o clasificacion">
         <select class="form-select form-select-sm dlp-search" id="dlp-incident-size" style="width: 90px;">
@@ -185,7 +185,7 @@
                 <td>{{ incident.status }}</td>
               </tr>
               {% empty %}
-              <tr><td colspan="6" class="text-muted">Sin incidentes DLP todavia.</td></tr>
+              <tr><td colspan="6" class="text-muted">Sin OSIC-Threads DLP todavia.</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -200,7 +200,7 @@
       </div>
       <div class="dlp-detail mt-3" id="dlp-incident-detail">
         <strong class="d-block mb-2">Detalle rapido</strong>
-        <div class="text-muted">Selecciona un incidente para ver actor, ruta, politica y regla asociada.</div>
+        <div class="text-muted">Selecciona un OSIC-Thread para ver actor, ruta, politica y regla asociada.</div>
       </div>
     </div>
   </div>
@@ -306,7 +306,7 @@
     const tbody = document.querySelector("#dlp-incidents-table tbody");
     if (!tbody) return;
     if (!incidents.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-muted">Sin incidentes DLP todavia.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="text-muted">Sin OSIC-Threads DLP todavia.</td></tr>';
       incidentInfo.textContent = "0-0 de 0";
       return;
     }
@@ -341,7 +341,7 @@
         nextButtonId: "dlp-incident-next",
         pageInfoId: "dlp-incident-info",
         defaultPageSize: 10,
-        emptyMessage: "Sin incidentes DLP todavia.",
+        emptyMessage: "Sin OSIC-Threads DLP todavia.",
         rowFilter: (row) => {
           if (!statusFilter?.value) return true;
           return (row.dataset.status || "").toLowerCase() === statusFilter.value.toLowerCase();
