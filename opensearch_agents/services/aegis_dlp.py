@@ -3,7 +3,6 @@ import json
 import os
 import re
 import subprocess
-from functools import lru_cache
 from datetime import datetime, timezone
 from pathlib import Path
 from zipfile import ZipFile
@@ -129,7 +128,6 @@ def _expand_scan_paths(paths):
     return expanded
 
 
-@lru_cache(maxsize=1)
 def _windows_fixed_drives():
     if os.name != "nt":
         return []
