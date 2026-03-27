@@ -205,6 +205,7 @@ $packageStaticDir = Join-Path $packageDir "staticfiles\img"
 New-Item -ItemType Directory -Path $packageStaticDir -Force | Out-Null
 Copy-Item $logoAbs (Join-Path $packageStaticDir "logo.png") -Force
 Get-ChildItem $packageDir -File | Copy-Item -Destination $setupPayloadPackage -Force
+New-Item -ItemType Directory -Path (Join-Path $setupPayloadPackage "staticfiles\img") -Force | Out-Null
 Get-ChildItem $packageStaticDir -File | Copy-Item -Destination (Join-Path $setupPayloadPackage "staticfiles\img") -Force
 
 $packagePayloadAbs = (Resolve-Path $setupPayloadPackage).Path
