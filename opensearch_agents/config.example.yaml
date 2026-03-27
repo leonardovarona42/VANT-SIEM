@@ -68,7 +68,7 @@ aegis_dlp:
 collectors:
   snort:
     enabled: false
-    path: "C:/snort/log/alert"
+    path: "C:/Snort"
     start_position: "end"   # beginning|end
     max_lines_per_cycle: 400
   suricata:

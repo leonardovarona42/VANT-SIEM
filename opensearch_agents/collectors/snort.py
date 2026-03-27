@@ -12,8 +12,30 @@ class SnortCollector(CollectorBase):
         self._offset = 0
         self._initialized = False
 
+    def _resolve_path(self):
+        raw = str(self.cfg.get("path", "")).strip()
+        if not raw:
+            return Path()
+        path = Path(raw)
+        if path.is_dir():
+            candidates = [
+                path / "log" / "alerts.fast",
+                path / "log" / "alert.fast",
+                path / "alerts.fast",
+                path / "alert.fast",
+                path / "fast.log",
+            ]
+            for candidate in candidates:
+                if candidate.exists():
+                    return candidate
+            for pattern in ("*.fast", "*.log", "*.txt"):
+                matches = sorted(path.rglob(pattern))
+                if matches:
+                    return matches[0]
+        return path
+
     def collect(self):
-        path = Path(self.cfg.get("path", ""))
+        path = self._resolve_path()
         if not path.exists():
             return []
         if path.stat().st_size < self._offset:

@@ -29,7 +29,7 @@ Assert-BuildDependency -ModuleName "PyQt6"
 
 $repoRoot = (Resolve-Path ".").Path
 $windowsDir = Join-Path $repoRoot "opensearch_agents\windows"
-$buildRoot = Join-Path $windowsDir "build"
+$buildRoot = Join-Path $env:TEMP ("vant-opensearch-build-" + (Get-Date -Format "yyyyMMddHHmmss"))
 $agentWork = Join-Path $buildRoot "agent-work"
 $agentSpec = Join-Path $buildRoot "agent-spec"
 $agentDist = Join-Path $buildRoot "agent-dist"
@@ -41,17 +41,21 @@ $packageDir = Join-Path $windowsDir "package"
 $configsDir = Join-Path $windowsDir "configs"
 $outputExe = Join-Path $windowsDir "opensearch_agent_setup.exe"
 
+if (Test-Path $buildRoot) {
+    Remove-Item $buildRoot -Recurse -Force
+}
+
+if (Test-Path $packageDir) {
+    Remove-Item $packageDir -Recurse -Force
+}
+
 foreach ($path in @($agentWork, $agentSpec, $agentDist, $trayWork, $traySpec, $setupWork, $setupSpec, $packageDir)) {
-    if (Test-Path $path) {
-        Remove-Item $path -Recurse -Force
-    }
+    New-Item -ItemType Directory -Path $path -Force | Out-Null
 }
 
 if (Test-Path $outputExe) {
     Remove-Item $outputExe -Force
 }
-
-New-Item -ItemType Directory -Path $packageDir -Force | Out-Null
 
 & $PythonExe -m PyInstaller `
   --noconfirm `
@@ -77,6 +81,8 @@ if (-not (Test-Path $agentExe)) {
   --onefile `
   --windowed `
   --name "vant-opensearch-agent-tray" `
+  --paths "opensearch_agents" `
+  --hidden-import "agent" `
   --hidden-import "PyQt6.sip" `
   --hidden-import "PyQt6.QtCore" `
   --hidden-import "PyQt6.QtGui" `
@@ -84,9 +90,13 @@ if (-not (Test-Path $agentExe)) {
   --hidden-import "requests" `
   --hidden-import "yaml" `
   --distpath $agentDist `
-  --workpath (Join-Path $buildRoot "tray-work") `
-  --specpath (Join-Path $buildRoot "tray-spec") `
+  --workpath $trayWork `
+  --specpath $traySpec `
   "opensearch_agents\agent_tray.py"
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Fallo PyInstaller al compilar vant-opensearch-agent-tray.exe"
+}
 
 $trayExe = Join-Path $agentDist "vant-opensearch-agent-tray.exe"
 if (-not (Test-Path $trayExe)) {

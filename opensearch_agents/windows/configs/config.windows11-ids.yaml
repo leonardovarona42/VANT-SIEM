@@ -48,7 +48,7 @@ aegis_dlp:
 collectors:
   snort:
     enabled: true
-    path: "C:/Snort/log/alerts.fast"
+    path: "C:/Snort"
     start_position: "beginning"
     max_lines_per_cycle: 400
   suricata:

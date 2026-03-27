@@ -1,4 +1,5 @@
 import argparse
+import importlib
 import os
 import sys
 import threading
@@ -8,10 +9,37 @@ from pathlib import Path
 import requests
 from PyQt6 import QtCore, QtGui, QtWidgets
 
-from agent import run_with_stop
-
-
 _HERE = Path(__file__).resolve().parent
+
+
+def _load_run_with_stop():
+    search_roots = []
+    if getattr(sys, "frozen", False):
+        meipass = Path(getattr(sys, "_MEIPASS", ""))
+        if meipass:
+            search_roots.append(meipass)
+    search_roots.extend([_HERE, _HERE.parent, Path(sys.executable).resolve().parent])
+
+    for root in search_roots:
+        if not root:
+            continue
+        root_str = str(root)
+        if root_str not in sys.path:
+            sys.path.insert(0, root_str)
+        try:
+            module = importlib.import_module("agent")
+            return module.run_with_stop
+        except ModuleNotFoundError as exc:
+            if exc.name != "agent":
+                raise
+        except Exception:
+            continue
+
+    raise ModuleNotFoundError("No module named 'agent'")
+
+
+run_with_stop = _load_run_with_stop()
+
 _CANDIDATES = [
     _HERE / "staticfiles" / "img" / "logo.png",
     _HERE.parent / "staticfiles" / "img" / "logo.png",
