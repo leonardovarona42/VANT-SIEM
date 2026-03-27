@@ -36,6 +36,14 @@ El directorio reutilizable para instalar sin Internet es:
 
 `linux/dist/vant-siem-agent-install/`
 
+Si ya tienes un directorio extraido en otra ruta, puedes usar:
+
+```bash
+sudo VANT_AGENT_PACKAGE_DIR=/ruta/al/vant-siem-agent-install ./install_agent.sh
+```
+
+La guia detallada del layout offline vive en [OFFLINE_PACKAGING.md](./OFFLINE_PACKAGING.md).
+
 Para forzar el asistente CLI durante la instalacion:
 
 ```bash

@@ -10,19 +10,46 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LINUX_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 DIST_DIR="${LINUX_DIR}/dist"
 DISTRO="${VANT_LINUX_DISTRO:-${DISTRO:-}}"
+PACKAGE_OVERRIDE="${VANT_AGENT_PACKAGE_DIR:-}"
 
 if [[ -z "${DISTRO}" ]]; then
   echo "Set VANT_LINUX_DISTRO to debian, ubuntu or zentyal."
   exit 1
 fi
 
+validate_package_dir() {
+  local package_dir="$1"
+  if [[ ! -d "${package_dir}" ]]; then
+    return 1
+  fi
+  if [[ ! -f "${package_dir}/install.sh" ]]; then
+    return 1
+  fi
+  if [[ ! -f "${package_dir}/config/agent.yaml" ]]; then
+    return 1
+  fi
+  if [[ ! -d "${package_dir}/agent" ]]; then
+    return 1
+  fi
+  return 0
+}
+
 find_package_dir() {
   local candidate
   if [[ ! -d "${DIST_DIR}" ]]; then
     return 1
   fi
+  for candidate in \
+    "${PACKAGE_OVERRIDE}" \
+    "${DIST_DIR}/${DISTRO}/vant-siem-agent-install" \
+    "${DIST_DIR}/vant-siem-agent-install"; do
+    if [[ -n "${candidate}" ]] && validate_package_dir "${candidate}"; then
+      echo "${candidate}"
+      return 0
+    fi
+  done
   candidate="$(find "${DIST_DIR}" -maxdepth 1 -type d -name "vant-siem-agent-install" | head -n 1)"
-  if [[ -n "${candidate}" ]]; then
+  if [[ -n "${candidate}" ]] && validate_package_dir "${candidate}"; then
     echo "${candidate}"
     return 0
   fi
@@ -34,7 +61,7 @@ extract_package_tarball() {
   if [[ ! -d "${DIST_DIR}" ]]; then
     return 1
   fi
-  tarball="$(find "${DIST_DIR}" -maxdepth 1 -type f -name "vant-siem-agent-linux-${DISTRO}-*.tar.gz" | head -n 1)"
+  tarball="$(find "${DIST_DIR}" -maxdepth 1 -type f -name "vant-siem-agent-linux-${DISTRO}-*.tar.gz" | sort | tail -n 1)"
   if [[ -z "${tarball}" ]]; then
     return 1
   fi
@@ -42,7 +69,7 @@ extract_package_tarball() {
   workdir="$(mktemp -d /tmp/vant-siem-agent-linux.XXXXXX)"
   tar -xzf "${tarball}" -C "${workdir}"
   extracted="$(find "${workdir}" -maxdepth 1 -type d -name "vant-siem-agent-install" | head -n 1)"
-  if [[ -z "${extracted}" ]]; then
+  if [[ -z "${extracted}" ]] || ! validate_package_dir "${extracted}"; then
     echo "Failed to extract package payload from ${tarball}"
     exit 1
   fi

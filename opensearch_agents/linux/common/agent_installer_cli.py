@@ -172,11 +172,11 @@ def _apply_connection(cfg):
     output_cfg = _ensure_dict(cfg, "output")
     tls_cfg = _ensure_dict(output_cfg, "tls")
 
-    server_host = _prompt("Servidor VANT-SIEM IP", "127.0.0.1")
+    server_host = _prompt("Servidor VANT-SIEM IP", "192.168.12.43")
     server_port = _prompt_int("Servidor VANT-SIEM Puerto", 8000, 1, 65535)
     server_https = _prompt_bool("Usar HTTPS para VANT-SIEM", False)
 
-    opensearch_host = _prompt("OpenSearch IP", "127.0.0.1")
+    opensearch_host = _prompt("OpenSearch IP", "192.168.12.43")
     opensearch_port = _prompt_int("OpenSearch Puerto", 9201, 1, 65535)
     timeout = _prompt_int("Timeout (segundos)", output_cfg.get("timeout_seconds", 10), 1, 120)
 

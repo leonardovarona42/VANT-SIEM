@@ -9,8 +9,8 @@ agent:
   log_every_cycles: 60
 
 output:
-  endpoint: "http://192.168.1.12:9201/api/v1/events/bulk"
-  source_endpoint: "http://192.168.1.12:9201/api/v1/sources/upsert"
+  endpoint: "http://192.168.12.43:9201/api/v1/events/bulk"
+  source_endpoint: "http://192.168.12.43:9201/api/v1/sources/upsert"
   timeout_seconds: 10
   auth:
     mode: "none"   # none|basic|token
@@ -23,7 +23,7 @@ output:
     ca_cert: ""
 
 control:
-  server_url: "http://192.168.1.12:8000"
+  server_url: "http://192.168.12.43:8000"
   require_https: false
   token: ""
   poll_seconds: 30

@@ -27,6 +27,7 @@ Config principal:
 La instalacion usa el bundle offline generado en `linux/dist/vant-siem-agent-install/`.
 Primero ejecuta `opensearch_agents/build_linux.sh` en la maquina de empaquetado.
 No hace `apt` ni `pip` en la maquina destino.
+Si necesitas instalar desde un directorio ya extraido, usa `VANT_AGENT_PACKAGE_DIR`.
 
 ## Tray GUI (auto-arranque)
 
