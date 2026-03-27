@@ -42,6 +42,10 @@ La instalacion no descarga nada: usa el paquete ya generado en
 Ese bundle ya incluye `services/audit_inventory.py` y `services/aegis_dlp.py`.
 El primero genera la linea de tiempo de hardware, software, red, USB y usuarios.
 El segundo revisa documentos locales y dispara incidentes DLP sin depender de internet.
+Tambien trae `sendheartbeat`, `opena_mover` y `opena_checker` en `/opt/vant-siem-agent/bin`
+con enlaces en `/usr/local/bin` para pruebas operativas y migracion de servidor.
+Durante la instalacion, `/opt/vant-siem-agent` queda asignado al usuario que ejecuto
+el `sudo` cuando esa identidad esta disponible.
 
 Para desactivar el tray:
 

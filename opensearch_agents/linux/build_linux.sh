@@ -80,12 +80,16 @@ INSTALL_SOURCE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET_ROOT="/opt/vant-siem-agent"
 TARGET_CFG_DIR="/etc/vant-siem"
 TARGET_LOG_DIR="/var/log/vant-siem"
+TARGET_BIN_DIR="${TARGET_ROOT}/bin"
+INSTALL_OWNER="${SUDO_USER:-$(logname 2>/dev/null || echo root)}"
+INSTALL_GROUP="$(id -gn "${INSTALL_OWNER}" 2>/dev/null || echo "${INSTALL_OWNER}")"
 TRAY_DESKTOP_SRC="${INSTALL_SOURCE}/desktop/vant-siem-agent-tray.desktop"
 TRAY_DESKTOP_DST="/etc/xdg/autostart/vant-siem-agent-tray.desktop"
 SERVICE_SRC="${INSTALL_SOURCE}/systemd/vant-siem-agent.service"
 SERVICE_DST="/etc/systemd/system/vant-siem-agent.service"
+LOCAL_TOOLS=(sendheartbeat opena_mover opena_checker)
 
-mkdir -p "${TARGET_ROOT}" "${TARGET_CFG_DIR}" "${TARGET_LOG_DIR}" /etc/xdg/autostart
+mkdir -p "${TARGET_ROOT}" "${TARGET_CFG_DIR}" "${TARGET_LOG_DIR}" "${TARGET_BIN_DIR}" /etc/xdg/autostart
 mkdir -p "${TARGET_ROOT}/scripts" "${TARGET_ROOT}/docs"
 cp -a "${INSTALL_SOURCE}/agent/." "${TARGET_ROOT}/"
 cp "${INSTALL_SOURCE}/config/agent.yaml" "${TARGET_CFG_DIR}/config.yaml"
@@ -93,6 +97,9 @@ cp "${INSTALL_SOURCE}/uninstall.sh" "${TARGET_ROOT}/uninstall.sh"
 
 if [[ -d "${INSTALL_SOURCE}/scripts" ]]; then
   cp -a "${INSTALL_SOURCE}/scripts/." "${TARGET_ROOT}/scripts/"
+fi
+if [[ -d "${INSTALL_SOURCE}/bin" ]]; then
+  cp -a "${INSTALL_SOURCE}/bin/." "${TARGET_BIN_DIR}/"
 fi
 if [[ -d "${INSTALL_SOURCE}/docs" ]]; then
   cp -a "${INSTALL_SOURCE}/docs/." "${TARGET_ROOT}/docs/"
@@ -109,9 +116,20 @@ chmod +x "${TARGET_ROOT}/agent.py" 2>/dev/null || true
   chmod +x "${TARGET_ROOT}/agent_tray.py" 2>/dev/null || true
   chmod +x "${TARGET_ROOT}/opensearchcheck.py" 2>/dev/null || true
   chmod +x "${TARGET_ROOT}/opensearchmover.py" 2>/dev/null || true
+  chmod +x "${TARGET_BIN_DIR}"/* 2>/dev/null || true
   chmod +x "${TARGET_ROOT}/uninstall.sh" 2>/dev/null || true
   chmod +x "${TARGET_ROOT}/scripts/"*.sh 2>/dev/null || true
   chmod +x "${TARGET_ROOT}/venv/bin/"* 2>/dev/null || true
+
+for tool in "${LOCAL_TOOLS[@]}"; do
+  if [[ -f "${TARGET_BIN_DIR}/${tool}" ]]; then
+    ln -sf "${TARGET_BIN_DIR}/${tool}" "/usr/local/bin/${tool}"
+  fi
+done
+
+if id "${INSTALL_OWNER}" >/dev/null 2>&1; then
+  chown -R "${INSTALL_OWNER}:${INSTALL_GROUP}" "${TARGET_ROOT}" || true
+fi
 
 if command -v systemctl >/dev/null 2>&1 && [[ -f "${SERVICE_DST}" ]]; then
   systemctl daemon-reload || true
@@ -174,7 +192,9 @@ stage_bundle() {
   copy_tree "${AGENTS_DIR}/opensearchmover.py" "${stage_root}/agent/opensearchmover.py"
   copy_tree "${AGENTS_DIR}/requirements.txt" "${stage_root}/agent/requirements.txt"
   copy_tree "${AGENTS_DIR}/linux/common/agent_installer_cli.py" "${stage_root}/scripts/agent_installer_cli.py"
+  copy_tree "${AGENTS_DIR}/linux/common/agent_tools.py" "${stage_root}/scripts/agent_tools.py"
   copy_tree "${AGENTS_DIR}/linux/${distro}/enable_logs.sh" "${stage_root}/scripts/enable_logs.sh"
+  copy_tree "${AGENTS_DIR}/linux/common/bin" "${stage_root}/bin"
   copy_tree "${AGENTS_DIR}/linux/common/VANT-SIEM-Agent-Tray.desktop" "${stage_root}/desktop/vant-siem-agent-tray.desktop"
   copy_tree "${AGENTS_DIR}/linux/${distro}/README.md" "${stage_root}/docs/README-${distro}.md"
   copy_tree "${AGENTS_DIR}/linux/README.md" "${stage_root}/docs/README.md"
@@ -244,6 +264,8 @@ EOF
   "distro": "${distro}",
   "version": "${AGENT_VERSION}",
   "build_timestamp_utc": "${BUILD_TS}",
+  "maintainer_name": "Leonardo L. Varona Tabares",
+  "maintainer_email": "leoanrdovarona42@gmail.com",
   "package": "vant-siem-agent-install"
 }
 EOF
@@ -257,6 +279,10 @@ EOF
     "${stage_root}/agent/agent_tray.py"
     "${stage_root}/agent/venv/bin/python"
     "${stage_root}/scripts/enable_logs.sh"
+    "${stage_root}/scripts/agent_tools.py"
+    "${stage_root}/bin/sendheartbeat"
+    "${stage_root}/bin/opena_mover"
+    "${stage_root}/bin/opena_checker"
     "${stage_root}/desktop/vant-siem-agent-tray.desktop"
     "${stage_root}/systemd/vant-siem-agent.service"
   )
@@ -268,6 +294,9 @@ EOF
   bash -n "${stage_root}/install.sh"
   bash -n "${stage_root}/uninstall.sh"
   bash -n "${stage_root}/scripts/enable_logs.sh"
+  bash -n "${stage_root}/bin/sendheartbeat"
+  bash -n "${stage_root}/bin/opena_mover"
+  bash -n "${stage_root}/bin/opena_checker"
 
   "${venv_dir}/bin/python" - <<PY
 from pathlib import Path

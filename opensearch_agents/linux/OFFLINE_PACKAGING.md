@@ -11,6 +11,7 @@ The installer expects an extracted payload named `vant-siem-agent-install/` with
 - `config/agent.yaml`
 - `agent/`
 - `scripts/`
+- `bin/`
 - `desktop/`
 - `systemd/`
 - `docs/`
@@ -42,3 +43,7 @@ The target machine should not need internet access. The installer only:
 - optionally runs the CLI wizard from the bundle,
 - copies files into `/opt/vant-siem-agent` and `/etc/vant-siem`,
 - installs the tray autostart entry and `systemd` service if present.
+- installs helper commands into `/opt/vant-siem-agent/bin` and links them into
+  `/usr/local/bin`.
+- assigns `/opt/vant-siem-agent` to the invoking `sudo` user when available,
+  while keeping `/etc/vant-siem` root-managed.

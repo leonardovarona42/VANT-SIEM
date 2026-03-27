@@ -27,10 +27,20 @@ El agente Linux ya sale preparado con dos microservicios internos:
 1. `audit_inventory` para inventario de hardware, software, red, USB y usuarios.
 2. `aegis_dlp` para inspeccion DLP offline basada en rutas locales y reglas.
 
+El bundle tambien incluye utilidades operativas para Linux:
+
+1. `sendheartbeat` para forzar un heartbeat manual al servidor.
+2. `opena_mover --host <ip> --port <puerto>` para migrar el agente a otro servidor.
+3. `opena_checker` para validar enrolamiento, conectividad y estado del agente.
+
 El tray GUI tambien es compartido y queda en `common/VANT-SIEM-Agent-Tray.desktop`.
 El instalador lo copia automaticamente a:
 
 `/etc/xdg/autostart/vant-siem-agent-tray.desktop`
+
+Durante la instalacion, el directorio `/opt/vant-siem-agent` se asigna al
+usuario que ejecuto el instalador via `sudo` cuando esa identidad esta
+disponible. La configuracion sensible permanece en `/etc/vant-siem/`.
 
 Los artefactos generados por `build_linux.sh` quedan en `linux/dist/<distro>/`.
 Ese directorio debe copiarse junto al instalador cuando se despliega en una
