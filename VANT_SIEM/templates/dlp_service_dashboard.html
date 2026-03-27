@@ -66,11 +66,21 @@
     border-radius: 12px;
     padding: 14px;
   }
+  .dlp-policy-shell,
+  .dlp-osic-shell {
+    min-height: 100%;
+  }
+  .dlp-osic-table-wrap {
+    overflow-x: auto;
+  }
+  .dlp-osic-table-wrap .table {
+    min-width: 1080px;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container mt-4 pb-5">
   <div class="dlp-hero mb-4">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
       <div>
@@ -120,8 +130,8 @@
   </div>
 
   <div class="row g-3">
-    <div class="col-lg-5">
-      <div class="dlp-card">
+    <div class="col-12">
+      <div class="dlp-card dlp-policy-shell">
         <div class="dlp-toolbar justify-content-between">
           <strong class="me-auto">Politicas desplegadas</strong>
           <span class="dlp-chip">Click para expandir</span>
@@ -155,21 +165,21 @@
         </div>
       </div>
     </div>
-    <div class="col-lg-7">
-      <div class="dlp-card">
+    <div class="col-12">
+      <div class="dlp-card dlp-osic-shell">
         <div class="dlp-toolbar justify-content-between">
           <strong class="me-auto">OSIC-Threads recientes</strong>
-      <div class="d-flex gap-2 flex-wrap">
-        <input class="form-control form-control-sm dlp-search" id="dlp-incident-search" placeholder="Buscar incidente, archivo o clasificacion">
-        <select class="form-select form-select-sm dlp-search" id="dlp-incident-size" style="width: 90px;">
-          <option value="5">5</option>
-          <option value="10" selected>10</option>
-          <option value="20">20</option>
-        </select>
-        <span class="dlp-chip" id="dlp-incident-state">Mostrando todo</span>
-      </div>
+          <div class="d-flex gap-2 flex-wrap">
+            <input class="form-control form-control-sm dlp-search" id="dlp-incident-search" placeholder="Buscar incidente, archivo o clasificacion">
+            <select class="form-select form-select-sm dlp-search" id="dlp-incident-size" style="width: 90px;">
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="20">20</option>
+            </select>
+            <span class="dlp-chip" id="dlp-incident-state">Mostrando todo</span>
+          </div>
         </div>
-        <div class="table-responsive">
+        <div class="dlp-osic-table-wrap">
           <table class="table table-dark table-hover dlp-table" id="dlp-incidents-table">
             <thead><tr><th>Fecha</th><th>Agente</th><th>Clasificacion</th><th>Archivo</th><th>Canal</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
@@ -203,10 +213,10 @@
             <button class="btn btn-outline-info" type="button" id="dlp-incident-next">Siguiente</button>
           </div>
         </div>
-      </div>
-      <div class="dlp-detail mt-3" id="dlp-incident-detail">
+        <div class="dlp-detail mt-3" id="dlp-incident-detail">
         <strong class="d-block mb-2">Detalle rapido</strong>
         <div class="text-muted">Selecciona un OSIC-Thread para ver actor, ruta, politica y regla asociada.</div>
+        </div>
       </div>
     </div>
   </div>

@@ -12,6 +12,7 @@ body.dashboard-shell {
 
 .dashboard-main {
     flex: 1 0 auto;
+    padding-bottom: 2.5rem;
 }
 
 .site-footer {
