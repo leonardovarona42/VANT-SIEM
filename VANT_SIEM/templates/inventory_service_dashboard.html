@@ -39,6 +39,19 @@
     color: #67e8f9;
     font-size: 12px;
   }
+  .inv-list-toolbar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .inv-list-search {
+    background: #0b162a;
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #e5e7eb;
+    min-width: 240px;
+  }
 </style>
 {% endblock %}
 
@@ -113,10 +126,20 @@
     </div>
     <div class="col-lg-6">
       <div class="inv-card">
-        <h5>Timeline reciente</h5>
+        <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-3">
+          <h5 class="mb-0">Timeline reciente</h5>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <input class="form-control form-control-sm inv-list-search" id="inventory-timeline-search" placeholder="Buscar evento, agente o categoria">
+            <select class="form-select form-select-sm inv-filter" id="inventory-timeline-size" style="width: 90px;">
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="20">20</option>
+            </select>
+          </div>
+        </div>
         <ul class="inv-timeline ps-0 mb-0" id="inventory-timeline-list">
           {% for event in recent_timeline %}
-          <li>
+          <li data-search-text="{{ event.title }} {{ event.agent.host_name|default:event.agent.agent_id }} {{ event.category }} {{ event.description }}">
             <div class="d-flex justify-content-between gap-3">
               <strong>{{ event.title }}</strong>
               <small class="text-muted">{{ event.observed_at }}</small>
@@ -127,6 +150,13 @@
           <li class="text-muted">Sin eventos de inventario todavia.</li>
           {% endfor %}
         </ul>
+        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+          <small class="text-muted" id="inventory-timeline-info"></small>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-info" type="button" id="inventory-timeline-prev">Anterior</button>
+            <button class="btn btn-outline-info" type="button" id="inventory-timeline-next">Siguiente</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="col-lg-6">
@@ -285,6 +315,7 @@
 <script>
   const inventorySearch = document.getElementById("inventory-agent-search");
   let inventoryRefreshTimer = null;
+  let inventoryTimelinePager = null;
 
   const inventoryPagers = {
     agents: null,
@@ -405,7 +436,7 @@
         const events = data.recent_timeline || [];
         timelineList.innerHTML = events.length
           ? events.map((event) => `
-              <li>
+              <li data-search-text="${`${event.title || ""} ${event.host_name || event.agent_id || ""} ${event.category || ""} ${event.description || ""}`.toLowerCase()}">
                 <div class="d-flex justify-content-between gap-3">
                   <strong>${event.title || "Evento"}</strong>
                   <small class="text-muted">${event.observed_at || "--"}</small>
@@ -417,12 +448,25 @@
       }
 
       refreshInventoryPagers();
+      inventoryTimelinePager?.refresh?.();
     } catch (error) {
       console.error("Inventory dashboard refresh failed", error);
     }
   }
 
   document.addEventListener("DOMContentLoaded", () => {
+    inventoryTimelinePager = window.VANT_UI.setupElementPager({
+      containerId: "inventory-timeline-list",
+      searchInputId: "inventory-timeline-search",
+      pageSizeSelectId: "inventory-timeline-size",
+      prevButtonId: "inventory-timeline-prev",
+      nextButtonId: "inventory-timeline-next",
+      pageInfoId: "inventory-timeline-info",
+      defaultPageSize: 10,
+      emptyMessage: "Sin eventos de inventario todavia.",
+      emptyTag: "li",
+      emptyClassName: "text-muted",
+    });
     inventoryPagers.agents = window.VANT_UI.setupTablePager({
       tableId: "inventory-agents-table",
       searchInputId: "inventory-agent-search",

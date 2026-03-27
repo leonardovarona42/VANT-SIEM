@@ -396,17 +396,22 @@ def run_with_stop(config_path, stop_event):
                     logger.warning("dlp config poll failed error=%s", exc)
                 next_dlp_poll = now + dlp_poll_seconds
 
-            if control_server and dlp_service and now >= next_dlp_scan:
+            if dlp_service and now >= next_dlp_scan:
                 try:
                     incidents = dlp_service.scan()
                     if incidents:
-                        _control_post(
-                            f"{control_server}/api/agent/dlp/incidents/",
-                            {"agent_id": agent_cfg.get("id", "agent"), "incidents": incidents},
-                            control_token,
-                            timeout=30,
-                        )
-                        logger.info("dlp incidents uploaded count=%s", len(incidents))
+                        logger.info("dlp incidents detected count=%s", len(incidents))
+                    if control_server:
+                        pending = dlp_service.peek_pending_incidents()
+                        if pending:
+                            _control_post(
+                                f"{control_server}/api/agent/dlp/incidents/",
+                                {"agent_id": agent_cfg.get("id", "agent"), "incidents": pending},
+                                control_token,
+                                timeout=30,
+                            )
+                            dlp_service.clear_pending_incidents()
+                            logger.info("dlp incidents uploaded count=%s", len(pending))
                 except Exception as exc:
                     logger.warning("dlp incident upload failed error=%s", exc)
                 next_dlp_scan = now + dlp_scan_seconds

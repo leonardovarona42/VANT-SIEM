@@ -430,6 +430,7 @@ class AegisDlpService:
 
         rules = []
         scan_paths = []
+        default_paths = [str(path) for path in _default_paths()]
         monitored_extensions = set()
         max_file_size_mb = int(dlp_cfg.get("max_file_size_mb", 25) or 25)
         max_files_per_scan = int(dlp_cfg.get("max_files_per_scan", 12000) or 12000)
@@ -440,10 +441,17 @@ class AegisDlpService:
             for rule in policy.get("rules") or []:
                 rules.append((policy, rule))
 
-        if not scan_paths:
-            scan_paths = [str(path) for path in _default_paths()]
+        local_scan_paths = dlp_cfg.get("scan_paths") or []
+        if local_scan_paths:
+            scan_paths = list(local_scan_paths) + scan_paths
 
-        scan_paths.extend(dlp_cfg.get("scan_paths") or [])
+        if not scan_paths:
+            scan_paths = default_paths
+        else:
+            for path in default_paths:
+                if path not in scan_paths:
+                    scan_paths.append(path)
+
         monitored_extensions.update([ext.lower() for ext in (dlp_cfg.get("monitored_extensions") or [])])
         monitored_extensions.update(DEFAULT_DLP_EXTENSIONS)
         paths = _expand_scan_paths(scan_paths)

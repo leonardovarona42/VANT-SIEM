@@ -1615,6 +1615,96 @@ async function updateNotifications() {
  render,
  };
  };
+
+ window.VANT_UI.setupElementPager = function setupElementPager(options) {
+ const container = document.getElementById(options.containerId);
+ if (!container) return null;
+
+ const searchInput = options.searchInputId ? document.getElementById(options.searchInputId) : null;
+ const pageSizeSelect = options.pageSizeSelectId ? document.getElementById(options.pageSizeSelectId) : null;
+ const pageInfo = options.pageInfoId ? document.getElementById(options.pageInfoId) : null;
+ const prevButton = options.prevButtonId ? document.getElementById(options.prevButtonId) : null;
+ const nextButton = options.nextButtonId ? document.getElementById(options.nextButtonId) : null;
+ const emptyMessage = options.emptyMessage || "Sin registros.";
+ const defaultPageSize = Number(pageSizeSelect?.value || options.defaultPageSize || 8);
+ let state = {
+ page: 1,
+ pageSize: defaultPageSize,
+ items: Array.from(container.children).map((item) => item.cloneNode(true)),
+ };
+
+ function getFilteredItems() {
+ const term = (searchInput?.value || "").trim().toLowerCase();
+ return state.items.filter((item) => {
+ const allowed = options.itemFilter ? options.itemFilter(item) : true;
+ if (!allowed) return false;
+ const searchable = (item.dataset.searchText || item.textContent || "").toLowerCase();
+ return !term || searchable.includes(term);
+ });
+ }
+
+ function render() {
+ const filtered = getFilteredItems();
+ const totalPages = Math.max(1, Math.ceil(filtered.length / state.pageSize));
+ state.page = Math.min(Math.max(1, state.page), totalPages);
+ const start = (state.page - 1) * state.pageSize;
+ const pageItems = filtered.slice(start, start + state.pageSize);
+
+ container.innerHTML = "";
+ if (!pageItems.length) {
+ const empty = document.createElement(options.emptyTag || "li");
+ empty.className = options.emptyClassName || "text-muted";
+ empty.textContent = emptyMessage;
+ container.appendChild(empty);
+ } else {
+ pageItems.forEach((item) => container.appendChild(item.cloneNode(true)));
+ }
+
+ if (pageInfo) {
+ const from = filtered.length ? start + 1 : 0;
+ const to = start + pageItems.length;
+ pageInfo.textContent = `${from}-${to} de ${filtered.length}`;
+ }
+ if (prevButton) prevButton.disabled = state.page <= 1;
+ if (nextButton) nextButton.disabled = state.page >= totalPages;
+ if (options.onRender) options.onRender({ filteredCount: filtered.length, page: state.page, totalPages });
+ }
+
+ if (searchInput) {
+ searchInput.addEventListener("input", () => {
+ state.page = 1;
+ render();
+ });
+ }
+ if (pageSizeSelect) {
+ pageSizeSelect.addEventListener("change", () => {
+ state.pageSize = Math.max(1, Number(pageSizeSelect.value || defaultPageSize));
+ state.page = 1;
+ render();
+ });
+ }
+ if (prevButton) {
+ prevButton.addEventListener("click", () => {
+ state.page -= 1;
+ render();
+ });
+ }
+ if (nextButton) {
+ nextButton.addEventListener("click", () => {
+ state.page += 1;
+ render();
+ });
+ }
+
+ render();
+ return {
+ refresh() {
+ state.items = Array.from(container.children).map((item) => item.cloneNode(true));
+ render();
+ },
+ render,
+ };
+ };
  </script>
  </body>
 </html>

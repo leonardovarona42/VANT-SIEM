@@ -60,6 +60,8 @@ $setupSpec = Join-Path $buildRoot "setup-spec"
 $trayWork = Join-Path $buildRoot "tray-work"
 $traySpec = Join-Path $buildRoot "tray-spec"
 $packageDir = Join-Path $windowsDir "package"
+$setupPayloadRoot = Join-Path $buildRoot "setup-payload"
+$setupPayloadPackage = Join-Path $setupPayloadRoot "package"
 $configsDir = Join-Path $windowsDir "configs"
 $outputExe = Join-Path $windowsDir "opensearch_agent_setup.exe"
 $logoAbs = (Resolve-Path "staticfiles\img\logo.png").Path
@@ -74,7 +76,7 @@ if (Test-Path $packageDir) {
     Remove-Item $packageDir -Recurse -Force
 }
 
-foreach ($path in @($agentWork, $agentSpec, $agentDist, $trayWork, $traySpec, $setupWork, $setupSpec, $packageDir)) {
+foreach ($path in @($agentWork, $agentSpec, $agentDist, $trayWork, $traySpec, $setupWork, $setupSpec, $packageDir, $setupPayloadRoot, $setupPayloadPackage)) {
     New-Item -ItemType Directory -Path $path -Force | Out-Null
 }
 
@@ -182,10 +184,30 @@ if (Test-Path $bootstrapKey) {
     Copy-Item $bootstrapKey (Join-Path $packageDir "bootstrap.key") -Force
 }
 
+$requiredPackageFiles = @(
+    @{ Source = (Join-Path $windowsDir "Install-OpenSearchAgent.ps1"); Destination = (Join-Path $packageDir "Install-OpenSearchAgent.ps1") },
+    @{ Source = (Join-Path $windowsDir "Uninstall-OpenSearchAgent.ps1"); Destination = (Join-Path $packageDir "Uninstall-OpenSearchAgent.ps1") },
+    @{ Source = (Join-Path $windowsDir "Configure-Snort.ps1"); Destination = (Join-Path $packageDir "Configure-Snort.ps1") },
+    @{ Source = (Join-Path $configsDir "config.yaml"); Destination = (Join-Path $packageDir "config.yaml") },
+    @{ Source = (Join-Path $configsDir "config.windows-server-ad.yaml"); Destination = (Join-Path $packageDir "config.windows-server-ad.yaml") },
+    @{ Source = (Join-Path $configsDir "config.windows11-ids.yaml"); Destination = (Join-Path $packageDir "config.windows11-ids.yaml") }
+)
+
+foreach ($item in $requiredPackageFiles) {
+    Copy-Item $item.Source $item.Destination -Force
+    if (-not (Test-Path $item.Destination)) {
+        throw "No se pudo preparar el archivo requerido para el paquete: $($item.Destination)"
+    }
+}
+
 $packageAbs = (Resolve-Path $packageDir).Path
 $packageStaticDir = Join-Path $packageDir "staticfiles\img"
 New-Item -ItemType Directory -Path $packageStaticDir -Force | Out-Null
 Copy-Item $logoAbs (Join-Path $packageStaticDir "logo.png") -Force
+Get-ChildItem $packageDir -File | Copy-Item -Destination $setupPayloadPackage -Force
+Get-ChildItem $packageStaticDir -File | Copy-Item -Destination (Join-Path $setupPayloadPackage "staticfiles\img") -Force
+
+$packagePayloadAbs = (Resolve-Path $setupPayloadPackage).Path
 
 & $PythonExe -m PyInstaller `
   --noconfirm `
@@ -204,7 +226,7 @@ Copy-Item $logoAbs (Join-Path $packageStaticDir "logo.png") -Force
   --distpath $windowsDir `
   --workpath $setupWork `
   --specpath $setupSpec `
-  --add-data "${packageAbs};package" `
+  --add-data "${packagePayloadAbs};package" `
   --add-data "${logoAbs};staticfiles\img" `
   "opensearch_agents\windows\agent_setup_ui.py"
 

@@ -213,9 +213,26 @@
 
   <div class="section-title">
     <h5>Historial de inventario</h5>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+      <input class="form-control form-control-sm bg-dark text-light" id="history-search" placeholder="Buscar snapshot, fecha o cambio" style="max-width: 320px;">
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <select class="form-select form-select-sm bg-dark text-light" id="history-size" style="width: 90px;">
+          <option value="5">5</option>
+          <option value="10" selected>10</option>
+          <option value="20">20</option>
+        </select>
+      </div>
+    </div>
     <ul class="compact-list" id="history-list">
       <li class="text-muted">Cargando historial...</li>
     </ul>
+    <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+      <small class="text-muted" id="history-info"></small>
+      <div class="btn-group btn-group-sm">
+        <button class="btn btn-outline-info" type="button" id="history-prev">Anterior</button>
+        <button class="btn btn-outline-info" type="button" id="history-next">Siguiente</button>
+      </div>
+    </div>
   </div>
 
   <div class="section-title">
@@ -258,7 +275,11 @@
 <script>
   const inventorySource = document.getElementById("latest-inventory-data");
   const inventoryData = inventorySource ? JSON.parse(inventorySource.textContent || "{}") : {};
-  document.getElementById("inventory-json").textContent = JSON.stringify(inventoryData, null, 2);
+  let historyPager = null;
+  const inventoryJsonNode = document.getElementById("inventory-json");
+  if (inventoryJsonNode) {
+    inventoryJsonNode.textContent = JSON.stringify(inventoryData, null, 2);
+  }
 
   function parseApps(raw) {
     if (!raw) return [];
@@ -270,6 +291,15 @@
     } catch (err) {
       return [];
     }
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 
   function renderApps(apps) {
@@ -301,11 +331,16 @@
       const history = data.history || [];
       if (!history.length) {
         list.innerHTML = '<li class="text-muted">Sin historial disponible.</li>';
+        historyPager?.refresh?.();
         return;
       }
       list.innerHTML = history
-        .map((h) => `<li><strong>${h.created_at}</strong><div class="text-muted">Snapshot registrado</div></li>`)
+        .map((h) => {
+          const searchText = `${h.created_at || ""} snapshot ${Object.keys(h.payload || {}).join(" ")}`.toLowerCase();
+          return `<li data-search-text="${escapeHtml(searchText)}"><strong>${escapeHtml(h.created_at)}</strong><div class="text-muted">Snapshot registrado</div></li>`;
+        })
         .join("");
+      historyPager?.refresh?.();
       populateSnapshotSelects(history);
       renderTimeline(history);
     } catch (err) {
@@ -355,10 +390,10 @@
         return;
       }
       target.innerHTML = `
-        <div><strong>Desde:</strong> ${data.from}</div>
-        <div><strong>Hasta:</strong> ${data.to}</div>
-        <div class="mt-2"><strong>Apps agregadas:</strong> ${data.apps_added.join(", ") || "Ninguna"}</div>
-        <div><strong>Apps removidas:</strong> ${data.apps_removed.join(", ") || "Ninguna"}</div>
+        <div><strong>Desde:</strong> ${escapeHtml(data.from)}</div>
+        <div><strong>Hasta:</strong> ${escapeHtml(data.to)}</div>
+        <div class="mt-2"><strong>Apps agregadas:</strong> ${escapeHtml((data.apps_added || []).join(", ") || "Ninguna")}</div>
+        <div><strong>Apps removidas:</strong> ${escapeHtml((data.apps_removed || []).join(", ") || "Ninguna")}</div>
       `;
     } catch (err) {
       target.textContent = "Error cargando comparación.";
@@ -400,10 +435,10 @@
         return;
       }
       target.innerHTML = `
-        <div><strong>Desde:</strong> ${data.from}</div>
-        <div><strong>Hasta:</strong> ${data.to}</div>
-        <div class="mt-2"><strong>Apps agregadas:</strong> ${data.apps_added.join(", ") || "Ninguna"}</div>
-        <div><strong>Apps removidas:</strong> ${data.apps_removed.join(", ") || "Ninguna"}</div>
+        <div><strong>Desde:</strong> ${escapeHtml(data.from)}</div>
+        <div><strong>Hasta:</strong> ${escapeHtml(data.to)}</div>
+        <div class="mt-2"><strong>Apps agregadas:</strong> ${escapeHtml((data.apps_added || []).join(", ") || "Ninguna")}</div>
+        <div><strong>Apps removidas:</strong> ${escapeHtml((data.apps_removed || []).join(", ") || "Ninguna")}</div>
       `;
     } catch (err) {
       target.textContent = "Error comparando snapshots.";
@@ -425,10 +460,27 @@
     document.querySelector(".detail-hero").appendChild(container);
   }
 
-  renderApps(parseApps(inventoryData.software || []));
-  loadHistory();
-  loadAppsDiff();
-  renderAlerts();
+  document.addEventListener("DOMContentLoaded", () => {
+    if (!document.getElementById("history-list")) {
+      return;
+    }
+    renderApps(parseApps(inventoryData.software || []));
+    historyPager = window.VANT_UI.setupElementPager({
+      containerId: "history-list",
+      searchInputId: "history-search",
+      pageSizeSelectId: "history-size",
+      prevButtonId: "history-prev",
+      nextButtonId: "history-next",
+      pageInfoId: "history-info",
+      defaultPageSize: 10,
+      emptyMessage: "Sin historial disponible.",
+      emptyTag: "li",
+      emptyClassName: "text-muted",
+    });
+    loadHistory();
+    loadAppsDiff();
+    renderAlerts();
+  });
 
   document.getElementById("agent-export-apps-btn").onclick = () => {
     window.location.href = `/api/agent/inventory/apps/export/{{ device.agent_id }}/`;
