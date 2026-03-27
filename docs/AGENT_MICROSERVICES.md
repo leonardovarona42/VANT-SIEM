@@ -62,6 +62,7 @@ Detected findings generate:
 
 - `AegisDlpIncident`
 - DLP timeline events in `AgentTimelineEvent`
+- EVENT_M reports and incidents when the operator escalates from the OSIC queue
 
 Each incident includes:
 
@@ -72,6 +73,35 @@ Each incident includes:
 - classification
 - severity
 - timestamps
+
+### OSIC-Threads workflow
+
+The Aegis console now exposes DLP findings as `OSIC-Threads` with a direct operational flow:
+
+1. The agent detects a document or file artifact and creates an `AegisDlpIncident`.
+2. The dashboard auto-refreshes the queue and lets the analyst preview local content when available, or inspect structured evidence when it is not.
+3. `Reportar` creates:
+   - an `EVENT_M.Reporte` in state `Atendido`
+   - an `EVENT_M.Incidente` in state `abierto`
+   - a JSON evidence artifact attached to the incident
+4. The originating `AegisDlpIncident` is updated with:
+   - reporting user
+   - reporting timestamp
+   - linked `Reporte`
+   - linked `Incidente`
+   - status `contained`
+
+### Evidence bundle
+
+When the original file is not physically reachable from the Django server, VANT-SIEM still preserves actionable evidence by serializing:
+
+- host name, agent identifier and observed IP
+- actor / file owner
+- path and file hash
+- classification and severity
+- policy and rule
+- matched keywords
+- metadata captured by the endpoint agent
 
 ## Windows Server and Active Directory
 
@@ -107,3 +137,4 @@ Primary UI routes:
 - The Windows installer bundles these modules for offline deployment.
 - Linux packaging scripts are aligned with the same microservice structure.
 - DLP policies can be tuned from the Django admin under `inventory`.
+- Daily OSIC triage no longer depends on the Django admin; operators can preview and escalate directly from the dashboard.

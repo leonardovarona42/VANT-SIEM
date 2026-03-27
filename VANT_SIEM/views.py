@@ -12,6 +12,7 @@ from django.urls import reverse_lazy
 from django.contrib.auth.hashers import make_password
 from django.db import transaction
 from django.utils import timezone
+from django.core.files.base import ContentFile
 from .models import Notification, UserPermission, UserApprovalRequest, NotificationPreference, EmailConfiguration, EmailAlert, EmailLog, AnalysisAPIConfig, NotificationSettings, NotificationChannel, NotificationTemplate, NotificationLog, NotificationQueue, OllamaConfig, LDAPConfig
 from .logging_system import event_logger
 from .email_service import send_user_alert, send_system_alert
@@ -32,6 +33,7 @@ import ssl
 import hmac
 import hashlib
 import time
+from pathlib import Path
 # Optional LDAP support (activated via LDAPConfig)
 try:
     from ldap3 import Server, Connection, ALL, Tls, SUBTREE
@@ -342,11 +344,14 @@ def _serialize_dlp_policy(policy):
 
 
 def _serialize_dlp_incident(incident):
+    metadata = incident.metadata or {}
+    incident_meta = metadata.get("metadata") if isinstance(metadata.get("metadata"), dict) else {}
     return {
         "id": incident.id,
         "detected_at": incident.detected_at.isoformat() if incident.detected_at else "",
         "agent_id": incident.agent.agent_id,
         "host_name": incident.agent.host_name,
+        "host_ip": incident.agent.host_ip,
         "policy_name": incident.policy.name if incident.policy else "",
         "policy_code": incident.policy.code if incident.policy else "",
         "rule_name": incident.rule.name if incident.rule else "",
@@ -357,7 +362,15 @@ def _serialize_dlp_incident(incident):
         "channel": incident.channel,
         "status": incident.status,
         "actor": incident.actor,
-        "metadata": incident.metadata or {},
+        "reported_by": incident.reported_by,
+        "reported_at": incident.reported_at.isoformat() if incident.reported_at else "",
+        "reporte_id": incident.reporte_id,
+        "incidente_id": incident.incidente_id,
+        "matched_keywords": metadata.get("matched_keywords") or [],
+        "file_hash": incident.file_hash,
+        "metadata": metadata,
+        "artifact_meta": incident_meta,
+        "preview_available": Path(incident.file_path).exists() if incident.file_path else False,
     }
 
 
@@ -381,6 +394,258 @@ def _serialize_dlp_dashboard():
         "policies": [_serialize_dlp_policy(policy) for policy in policies],
         "incidents": [_serialize_dlp_incident(incident) for incident in incidents],
     }
+
+
+def _osic_reporter_name(user):
+    full_name = (user.get_full_name() or "").strip()
+    if full_name:
+        return full_name
+    return getattr(user, "username", "") or "Operador VANT-SIEM"
+
+
+def _osic_reporter_email(user):
+    email = (getattr(user, "email", "") or "").strip()
+    if email:
+        return email
+    username = getattr(user, "username", "operador")
+    return f"{username}@vant-siem.local"
+
+
+def _ensure_osic_eventm_defaults():
+    from EVENT_M.models import Area, Categoria, Responsable, Servicio, Subcategoria
+
+    responsable_defaults = {
+        "telefono_particular": "N/A",
+        "telefono_corp": "N/A",
+        "descripcion": "Responsable generado automaticamente por OSIC-Threads.",
+    }
+    cuadro_centro, _ = Responsable.objects.get_or_create(
+        email="osic-cuadro@vant-siem.local",
+        defaults={
+            "nombres": "Centro",
+            "apellidos": "OSIC",
+            "tipo": "Cuadro Centro",
+            **responsable_defaults,
+        },
+    )
+    rsi, _ = Responsable.objects.get_or_create(
+        email="osic-rsi@vant-siem.local",
+        defaults={
+            "nombres": "Analista",
+            "apellidos": "OSIC",
+            "tipo": "RSI",
+            **responsable_defaults,
+        },
+    )
+    admin, _ = Responsable.objects.get_or_create(
+        email="osic-admin@vant-siem.local",
+        defaults={
+            "nombres": "Administrador",
+            "apellidos": "OSIC",
+            "tipo": "Admin",
+            **responsable_defaults,
+        },
+    )
+    area, _ = Area.objects.get_or_create(
+        nombre="OSIC Threat Operations",
+        defaults={
+            "acronimo": "OSIC",
+            "cuadro_centro": cuadro_centro,
+            "rsi": rsi,
+            "admin": admin,
+        },
+    )
+    if not area.acronimo:
+        area.acronimo = "OSIC"
+        area.cuadro_centro = area.cuadro_centro_id and area.cuadro_centro or cuadro_centro
+        area.rsi = area.rsi_id and area.rsi or rsi
+        area.admin = area.admin_id and area.admin or admin
+        area.save()
+
+    servicio, _ = Servicio.objects.get_or_create(
+        nombre="Aegis DLP",
+        defaults={
+            "descripcion": "Servicio soberano de prevencion de fuga de informacion y triage OSIC.",
+            "host": None,
+            "monitorear": False,
+        },
+    )
+    categoria, _ = Categoria.objects.get_or_create(
+        nombre="Fuga de Informacion",
+        defaults={"descripcion": "Categoria para detecciones de exfiltracion, clasificacion y DLP."},
+    )
+    subcategoria, _ = Subcategoria.objects.get_or_create(
+        categoria=categoria,
+        nombre="OSIC Threat",
+        defaults={
+            "descripcion": "Deteccion automatica de documento sensible o clasificado por Aegis DLP.",
+            "nivel_peligrosidad": 9,
+        },
+    )
+    return area, servicio, subcategoria
+
+
+def _build_osic_summary(incident):
+    agent = incident.agent
+    metadata = incident.metadata or {}
+    artifact_meta = metadata.get("metadata") if isinstance(metadata.get("metadata"), dict) else {}
+    matched_keywords = metadata.get("matched_keywords") or []
+    parts = [
+        f"OSIC-Thread detectado por Aegis DLP en {agent.host_name or agent.agent_id}.",
+        f"IP observada: {agent.host_ip or 'N/D'}.",
+        f"Actor observado: {incident.actor or 'N/D'}.",
+        f"Clasificacion: {incident.classification or 'sensible'} ({incident.severity}).",
+        f"Canal: {incident.channel or 'filesystem'}.",
+        f"Archivo: {incident.file_name or 'N/D'}.",
+        f"Ruta: {incident.file_path or 'N/D'}.",
+        f"Hash: {incident.file_hash or 'N/D'}.",
+        f"Politica: {incident.policy.code if incident.policy else 'N/D'}.",
+        f"Regla: {incident.rule.name if incident.rule else 'N/D'}.",
+    ]
+    if matched_keywords:
+        parts.append(f"Coincidencias: {', '.join(matched_keywords)}.")
+    if artifact_meta:
+        parts.append(
+            "Metadatos: "
+            f"tamano={artifact_meta.get('size', 'N/D')}, "
+            f"creado={artifact_meta.get('created_at', 'N/D')}, "
+            f"modificado={artifact_meta.get('modified_at', 'N/D')}."
+        )
+    return "\n".join(parts)
+
+
+def _build_osic_evidence_payload(incident):
+    metadata = incident.metadata or {}
+    return {
+        "osic_thread_id": incident.id,
+        "agent": {
+            "agent_id": incident.agent.agent_id,
+            "host_name": incident.agent.host_name,
+            "host_ip": incident.agent.host_ip,
+        },
+        "classification": incident.classification,
+        "severity": incident.severity,
+        "status": incident.status,
+        "actor": incident.actor,
+        "channel": incident.channel,
+        "file": {
+            "name": incident.file_name,
+            "path": incident.file_path,
+            "hash": incident.file_hash,
+        },
+        "policy": {
+            "name": incident.policy.name if incident.policy else "",
+            "code": incident.policy.code if incident.policy else "",
+        },
+        "rule": {
+            "name": incident.rule.name if incident.rule else "",
+            "classification": incident.rule.classification if incident.rule else "",
+        },
+        "matched_keywords": metadata.get("matched_keywords") or [],
+        "metadata": metadata.get("metadata") if isinstance(metadata.get("metadata"), dict) else metadata,
+        "detected_at": incident.detected_at.isoformat() if incident.detected_at else "",
+        "generated_at": timezone.now().isoformat(),
+    }
+
+
+def _preview_osic_document(incident):
+    response = {
+        "available": False,
+        "content": "",
+        "content_type": "metadata",
+        "message": "El archivo original no esta disponible en el servidor; se muestra evidencia tecnica y metadatos.",
+    }
+    raw_path = (incident.file_path or "").strip()
+    if not raw_path:
+        return response
+    file_path = Path(raw_path)
+    if not file_path.exists() or not file_path.is_file():
+        return response
+    try:
+        content = file_path.read_text(encoding="utf-8", errors="ignore")[:5000]
+        response.update(
+            {
+                "available": True,
+                "content": content,
+                "content_type": "text",
+                "message": "Vista previa local obtenida desde el servidor.",
+            }
+        )
+    except Exception as exc:
+        response["message"] = f"No fue posible leer el archivo localmente: {exc}"
+    return response
+
+
+def _create_osic_event_report(request, incident):
+    from EVENT_M.models import Incidente, Reporte
+    from inventory.models import AgentTimelineEvent
+
+    if incident.incidente_id and incident.reporte_id:
+        return incident.reporte, incident.incidente, False
+
+    area, servicio, subcategoria = _ensure_osic_eventm_defaults()
+    reporter_name = _osic_reporter_name(request.user)
+    reporter_email = _osic_reporter_email(request.user)
+    summary = _build_osic_summary(incident)
+    evidence_payload = _build_osic_evidence_payload(incident)
+    evidence_name = f"osic-thread-{incident.id}.json"
+    evidence_blob = json.dumps(evidence_payload, indent=2, ensure_ascii=False)
+
+    with transaction.atomic():
+        reporte = Reporte.objects.create(
+            nombre_informante=reporter_name,
+            email_informante=reporter_email,
+            area=area,
+            descripcion=summary,
+            estado_solucion="Atendido",
+        )
+        incidente_event = Incidente.objects.create(
+            nombre_incidente=f"OSIC Threat en {incident.agent.host_name or incident.agent.agent_id}",
+            descripcion=summary,
+            reporte=reporte,
+            estado_solucion="abierto",
+            notificado_osri="no",
+        )
+        incidente_event.servicios.add(servicio)
+        incidente_event.areas.add(area)
+        incidente_event.subcategorias.add(subcategoria)
+        incidente_event.evidencia.save(evidence_name, ContentFile(evidence_blob.encode("utf-8")), save=True)
+
+        incident.status = "contained"
+        incident.reporte = reporte
+        incident.incidente = incidente_event
+        incident.reported_by = reporter_name
+        incident.reported_at = timezone.now()
+        incident.save(
+            update_fields=[
+                "status",
+                "reporte",
+                "incidente",
+                "reported_by",
+                "reported_at",
+            ]
+        )
+
+        AgentTimelineEvent.objects.create(
+            agent=incident.agent,
+            category="dlp",
+            event_type="osic_reported",
+            title=f"OSIC-Thread {incident.id} reportado a EVENT_M",
+            description=summary,
+            severity=incident.severity or "high",
+            actor=reporter_name,
+            file_path=incident.file_path,
+            file_hash=incident.file_hash,
+            observed_at=timezone.now(),
+            source_service="osic_threads",
+            metadata={
+                "reporte_id": reporte.id,
+                "incidente_id": incidente_event.id,
+                "reported_by": reporter_name,
+            },
+        )
+
+    return reporte, incidente_event, True
 
 @login_required
 def dlp_rule_save(request, policy_id, rule_id=None):
@@ -556,10 +821,15 @@ def dlp_incident_list(request):
     status_filter = request.GET.get("status", "").strip()
     if status_filter:
         incidents = incidents.filter(status=status_filter)
+    incident_payload = [_serialize_dlp_incident(item) for item in incidents[:200]]
     return render(
         request,
         "dlp_incident_list.html",
-        {"incidents": incidents[:200], "status_filter": status_filter},
+        {
+            "incidents": incidents[:200],
+            "incident_payload": incident_payload,
+            "status_filter": status_filter,
+        },
     )
 
 
@@ -573,9 +843,86 @@ def dlp_incident_update(request, incident_id):
     if new_status in {"open", "reviewing", "contained", "closed"}:
         incident.status = new_status
         incident.save(update_fields=["status"])
-        messages.success(request, f"OSIC-Thread {incident.id} actualizado a {new_status}.")
+        payload = {
+            "ok": True,
+            "message": f"OSIC-Thread {incident.id} actualizado a {new_status}.",
+            "incident": _serialize_dlp_incident(incident),
+        }
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse(payload)
+        messages.success(request, payload["message"])
     else:
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({"ok": False, "message": "Estado DLP invalido."}, status=400)
         messages.error(request, "Estado DLP invalido.")
+    return redirect("dlp-incident-list")
+
+
+@login_required
+@require_GET
+def dlp_incident_feed(request):
+    from inventory.models import AegisDlpIncident
+
+    incidents = AegisDlpIncident.objects.select_related("agent", "policy", "rule").order_by("-detected_at")
+    status_filter = request.GET.get("status", "").strip().lower()
+    if status_filter:
+        incidents = incidents.filter(status=status_filter)
+    classification = request.GET.get("classification", "").strip().lower()
+    if classification:
+        incidents = incidents.filter(classification__icontains=classification)
+    limit = min(max(int(request.GET.get("limit", 120) or 120), 1), 300)
+    return JsonResponse(
+        {
+            "ok": True,
+            "incidents": [_serialize_dlp_incident(item) for item in incidents[:limit]],
+        }
+    )
+
+
+@login_required
+@require_GET
+def dlp_incident_preview(request, incident_id):
+    from inventory.models import AegisDlpIncident
+
+    incident = get_object_or_404(AegisDlpIncident.objects.select_related("agent", "policy", "rule"), id=incident_id)
+    preview = _preview_osic_document(incident)
+    return JsonResponse(
+        {
+            "ok": True,
+            "incident": _serialize_dlp_incident(incident),
+            "preview": preview,
+            "summary": _build_osic_summary(incident),
+        }
+    )
+
+
+@login_required
+@require_POST
+def dlp_incident_report(request, incident_id):
+    from inventory.models import AegisDlpIncident
+
+    incident = get_object_or_404(AegisDlpIncident.objects.select_related("agent", "policy", "rule"), id=incident_id)
+    reporte, incidente_event, created = _create_osic_event_report(request, incident)
+    message = (
+        f"OSIC-Thread {incident.id} reportado a EVENT_M como incidente {incidente_event.codigo_incidente}."
+        if created
+        else f"OSIC-Thread {incident.id} ya estaba vinculado al incidente {incidente_event.codigo_incidente}."
+    )
+    payload = {
+        "ok": True,
+        "created": created,
+        "message": message,
+        "incident": _serialize_dlp_incident(incident),
+        "event_report": {
+            "reporte_id": reporte.id,
+            "incidente_id": incidente_event.id,
+            "codigo_incidente": incidente_event.codigo_incidente,
+            "detail_url": reverse("incidente-detail", kwargs={"pk": incidente_event.id}),
+        },
+    }
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse(payload)
+    messages.success(request, message)
     return redirect("dlp-incident-list")
 
 

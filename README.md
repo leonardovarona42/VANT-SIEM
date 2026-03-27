@@ -144,6 +144,17 @@ VANT-SIEM proporciona una **bitácora completa** de incidentes con:
 
 ---
 
+## 🛡️ OSIC-Threads y Aegis DLP
+
+La plataforma incorpora un flujo operativo para detecciones de fuga de información:
+
+- `Aegis DLP` inspecciona archivos locales y detecta contenido `clasificado`, `secreto`, `restringido` o soberano sensible.
+- Las detecciones llegan al dashboard como `OSIC-Threads` con auto-refresh, filtros, vista previa documental y detalle técnico.
+- Desde la misma vista, `Reportar` crea automáticamente un `Reporte` y un `Incidente` en `EVENT_M` con evidencia serializada, host, IP, usuario, hash, clasificación y contexto del hallazgo.
+- El hilo OSIC queda marcado como `contained` y mantiene trazabilidad hacia el incidente formal.
+
+---
+
 ## 🔍 Análisis de Logs y Observabilidad
 
 ### 🌐 Pipeline de OpenSearch

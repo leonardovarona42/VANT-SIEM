@@ -79,7 +79,7 @@ class Reporte(models.Model):
     estado_solucion = models.CharField(
         max_length=13,
         choices=ESTADO_SOLUCION_CHOICES,
-        default='nuevo',
+        default='Nuevo',
     )
     def __str__(self):
         return self.nombre_informante

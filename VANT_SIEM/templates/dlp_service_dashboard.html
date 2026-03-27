@@ -171,10 +171,10 @@
         </div>
         <div class="table-responsive">
           <table class="table table-dark table-hover dlp-table" id="dlp-incidents-table">
-            <thead><tr><th>Fecha</th><th>Agente</th><th>Clasificacion</th><th>Archivo</th><th>Canal</th><th>Estado</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Agente</th><th>Clasificacion</th><th>Archivo</th><th>Canal</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
               {% for incident in incidents_recent %}
-              <tr data-search-text="{{ incident.classification }} {{ incident.file_name }} {{ incident.file_path }} {{ incident.channel }} {{ incident.policy.code|default:'' }} {{ incident.rule.name|default:'' }}" data-status="{{ incident.status }}" data-detail='{"agent":"{{ incident.agent.host_name|default:incident.agent.agent_id|escapejs }}","classification":"{{ incident.classification|default:"sensible"|escapejs }}","severity":"{{ incident.severity|escapejs }}","file":"{{ incident.file_name|default:"--"|escapejs }}","path":"{{ incident.file_path|default:"--"|escapejs }}","channel":"{{ incident.channel|default:"filesystem"|escapejs }}","status":"{{ incident.status|escapejs }}","actor":"{{ incident.actor|default:"--"|escapejs }}","policy":"{{ incident.policy.code|default:"--"|escapejs }}","rule":"{{ incident.rule.name|default:"--"|escapejs }}","detected_at":"{{ incident.detected_at|escapejs }}"}'>
+              <tr data-id="{{ incident.id }}" data-search-text="{{ incident.classification }} {{ incident.file_name }} {{ incident.file_path }} {{ incident.channel }} {{ incident.policy.code|default:'' }} {{ incident.rule.name|default:'' }}" data-status="{{ incident.status }}" data-detail='{"id":"{{ incident.id }}","agent":"{{ incident.agent.host_name|default:incident.agent.agent_id|escapejs }}","classification":"{{ incident.classification|default:"sensible"|escapejs }}","severity":"{{ incident.severity|escapejs }}","file":"{{ incident.file_name|default:"--"|escapejs }}","path":"{{ incident.file_path|default:"--"|escapejs }}","channel":"{{ incident.channel|default:"filesystem"|escapejs }}","status":"{{ incident.status|escapejs }}","actor":"{{ incident.actor|default:"--"|escapejs }}","policy":"{{ incident.policy.code|default:"--"|escapejs }}","rule":"{{ incident.rule.name|default:"--"|escapejs }}","detected_at":"{{ incident.detected_at|escapejs }}","reported":"{% if incident.incidente_id %}1{% else %}0{% endif %}"}'>
                 <td>{{ incident.detected_at }}</td>
                 <td>{{ incident.agent.host_name|default:incident.agent.agent_id }}</td>
                 <td class="{% if incident.severity == 'critical' %}sev-critical{% elif incident.severity == 'high' %}sev-high{% endif %}">
@@ -183,9 +183,15 @@
                 <td title="{{ incident.file_path }}">{{ incident.file_name|default:"--" }}</td>
                 <td>{{ incident.channel|default:"filesystem" }}</td>
                 <td>{{ incident.status }}</td>
+                <td>
+                  <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn btn-sm btn-outline-info dlp-preview-action" data-id="{{ incident.id }}" type="button">Visualizar</button>
+                    <button class="btn btn-sm btn-warning dlp-report-action" data-id="{{ incident.id }}" type="button">{% if incident.incidente_id %}Abrir{% else %}Reportar{% endif %}</button>
+                  </div>
+                </td>
               </tr>
               {% empty %}
-              <tr><td colspan="6" class="text-muted">Sin OSIC-Threads DLP todavia.</td></tr>
+              <tr><td colspan="7" class="text-muted">Sin OSIC-Threads DLP todavia.</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -215,6 +221,8 @@
   const incidentState = document.getElementById("dlp-incident-state");
   const policyPrev = document.getElementById("dlp-policy-prev");
   const policyNext = document.getElementById("dlp-policy-next");
+  const previewUrlTemplate = "{% url 'dlp-incident-preview' 0 %}";
+  const reportUrlTemplate = "{% url 'dlp-incident-report' 0 %}";
   let dlpRefreshTimer = null;
   let policyPage = 1;
   const policyPageSize = 6;
@@ -306,12 +314,13 @@
     const tbody = document.querySelector("#dlp-incidents-table tbody");
     if (!tbody) return;
     if (!incidents.length) {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-muted">Sin OSIC-Threads DLP todavia.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="text-muted">Sin OSIC-Threads DLP todavia.</td></tr>';
       incidentInfo.textContent = "0-0 de 0";
       return;
     }
     tbody.innerHTML = incidents.map((incident) => `
-      <tr data-search-text="${`${incident.classification} ${incident.file_name} ${incident.file_path} ${incident.channel} ${incident.policy_code} ${incident.rule_name}`.toLowerCase()}" data-status="${incident.status || ""}" data-detail="${encodeURIComponent(JSON.stringify({
+      <tr data-id="${incident.id}" data-search-text="${`${incident.classification} ${incident.file_name} ${incident.file_path} ${incident.channel} ${incident.policy_code} ${incident.rule_name}`.toLowerCase()}" data-status="${incident.status || ""}" data-detail="${encodeURIComponent(JSON.stringify({
+        id: incident.id,
         agent: incident.host_name || incident.agent_id || "--",
         classification: incident.classification || "sensible",
         severity: incident.severity || "--",
@@ -323,6 +332,8 @@
         policy: incident.policy_code || "--",
         rule: incident.rule_name || "--",
         detected_at: incident.detected_at || "--",
+        reported: incident.incidente_id ? "1" : "0",
+        incidenteId: incident.incidente_id || "",
       }))}">
         <td>${incident.detected_at || "--"}</td>
         <td>${incident.host_name || incident.agent_id || "--"}</td>
@@ -330,6 +341,12 @@
         <td title="${incident.file_path || ""}">${incident.file_name || "--"}</td>
         <td>${incident.channel || "filesystem"}</td>
         <td>${incident.status || "--"}</td>
+        <td>
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-sm btn-outline-info dlp-preview-action" data-id="${incident.id}" type="button">Visualizar</button>
+            <button class="btn btn-sm btn-warning dlp-report-action" data-id="${incident.id}" type="button">${incident.incidente_id ? "Abrir" : "Reportar"}</button>
+          </div>
+        </td>
       </tr>
     `).join("");
     if (!incidentPager) {
@@ -364,7 +381,19 @@
     const tbody = document.querySelector("#dlp-incidents-table tbody");
     if (!tbody || tbody.dataset.bound === "1") return;
     tbody.dataset.bound = "1";
-    tbody.addEventListener("click", (event) => {
+    tbody.addEventListener("click", async (event) => {
+      const previewButton = event.target.closest(".dlp-preview-action");
+      if (previewButton) {
+        event.stopPropagation();
+        await openIncidentPreview(Number(previewButton.dataset.id));
+        return;
+      }
+      const reportButton = event.target.closest(".dlp-report-action");
+      if (reportButton) {
+        event.stopPropagation();
+        await reportIncident(Number(reportButton.dataset.id));
+        return;
+      }
       const row = event.target.closest("tr[data-detail]");
       if (!row) return;
       document.querySelectorAll("#dlp-incidents-table tbody tr").forEach((item) => item.classList.remove("dlp-row-active"));
@@ -385,6 +414,10 @@
             <div class="col-md-6"><span class="text-muted">Estado:</span> ${data.status || "--"}</div>
             <div class="col-12"><span class="text-muted">Ruta:</span> ${data.path || "--"}</div>
             <div class="col-12"><span class="text-muted">Fecha:</span> ${data.detected_at || "--"}</div>
+            <div class="col-12 d-flex gap-2 flex-wrap mt-2">
+              <button class="btn btn-sm btn-outline-info dlp-preview-action" data-id="${data.id}" type="button">Visualizar documento</button>
+              <button class="btn btn-sm btn-warning dlp-report-action" data-id="${data.id}" type="button">${data.reported === "1" ? "Abrir reporte" : "Reportar a EVENT_M"}</button>
+            </div>
           </div>
         `;
       } catch (error) {
@@ -395,6 +428,78 @@
       incidentPager?.render?.();
     });
   }
+
+  function csrfToken() {
+    const match = document.cookie.match(/csrftoken=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : "";
+  }
+
+  async function openIncidentPreview(incidentId) {
+    try {
+      const response = await fetch(previewUrlTemplate.replace("/0/", `/${incidentId}/`), {
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      });
+      const data = await response.json();
+      if (!data.ok) throw new Error("preview error");
+      const preview = data.preview || {};
+      const incident = data.incident || {};
+      detailPanel.innerHTML = `
+        <strong class="d-block mb-2">Vista previa documental</strong>
+        <div class="small text-muted mb-2">${incident.host_name || incident.agent_id || "--"} · ${incident.file_name || "--"}</div>
+        <div class="mb-2"><span class="text-muted">Ruta:</span> ${incident.file_path || "--"}</div>
+        <div class="mb-2"><span class="text-muted">Hash:</span> ${incident.file_hash || "--"}</div>
+        <div class="mb-3"><span class="text-muted">Mensaje:</span> ${preview.message || "Sin mensaje"}</div>
+        <pre class="small bg-black rounded p-3" style="max-height:320px;overflow:auto;">${(preview.content || data.summary || "").replace(/[<>&]/g, (char) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[char]))}</pre>
+        <div class="d-flex gap-2 flex-wrap mt-3">
+          <button class="btn btn-sm btn-warning dlp-report-action" data-id="${incidentId}" type="button">${incident.incidente_id ? "Abrir reporte" : "Reportar a EVENT_M"}</button>
+        </div>
+      `;
+    } catch (error) {
+      console.error("Incident preview failed", error);
+    }
+  }
+
+  async function reportIncident(incidentId) {
+    const currentRow = document.querySelector(`#dlp-incidents-table tbody tr[data-id="${incidentId}"]`);
+    try {
+      if (currentRow?.dataset.detail) {
+        const detail = JSON.parse(decodeURIComponent(currentRow.dataset.detail));
+        if (detail.incidenteId) {
+          window.open(`/eventos/incidente/${detail.incidenteId}/`, "_blank");
+          return;
+        }
+      }
+      const response = await fetch(reportUrlTemplate.replace("/0/", `/${incidentId}/`), {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": csrfToken(),
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      });
+      const data = await response.json();
+      if (!data.ok) throw new Error(data.message || "report failed");
+      detailPanel.innerHTML = `
+        <strong class="d-block mb-2">OSIC-Thread reportado</strong>
+        <div class="alert alert-success mb-3">${data.message}</div>
+        <a class="btn btn-sm btn-warning" href="${data.event_report.detail_url}" target="_blank" rel="noopener">Abrir incidente en EVENT_M</a>
+      `;
+      await refreshDlpDashboard();
+    } catch (error) {
+      console.error("Incident report failed", error);
+    }
+  }
+
+  detailPanel?.addEventListener("click", async (event) => {
+    const previewButton = event.target.closest(".dlp-preview-action");
+    if (previewButton) {
+      await openIncidentPreview(Number(previewButton.dataset.id));
+      return;
+    }
+    const reportButton = event.target.closest(".dlp-report-action");
+    if (reportButton) {
+      await reportIncident(Number(reportButton.dataset.id));
+    }
+  });
 
   async function refreshDlpDashboard() {
     try {
