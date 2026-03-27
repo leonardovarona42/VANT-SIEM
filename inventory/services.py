@@ -1,4 +1,5 @@
 import json
+import hashlib
 import re
 from datetime import datetime, timezone as datetime_timezone
 
@@ -324,7 +325,15 @@ def process_dlp_incidents(agent, payload):
             item.get("file_path"),
             item.get("rule_name"),
             item.get("detected_at"),
+            item.get("classification"),
+            item.get("actor"),
+            item.get("channel"),
         )
+        if not fingerprint:
+            fallback_seed = json.dumps(item, sort_keys=True, default=str, ensure_ascii=True)
+            fingerprint = hashlib.sha256(f"{agent.agent_id}:{fallback_seed}".encode("utf-8")).hexdigest()
+            item = dict(item)
+            item["fingerprint"] = fingerprint
         incident, _ = AegisDlpIncident.objects.get_or_create(
             agent=agent,
             fingerprint=fingerprint,

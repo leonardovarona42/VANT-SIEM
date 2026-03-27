@@ -28,6 +28,20 @@
     border: 1px solid rgba(255,255,255,0.08);
     color: #e5e7eb;
   }
+  .assets-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+  .assets-pill {
+    border-radius: 999px;
+    padding: 4px 10px;
+    background: rgba(34, 211, 238, 0.12);
+    border: 1px solid rgba(34, 211, 238, 0.25);
+    color: #67e8f9;
+    font-size: 12px;
+  }
 </style>
 {% endblock %}
 
@@ -39,9 +53,10 @@
         <h2 class="mb-1">Activos Gestionados</h2>
         <p class="text-muted mb-0">Consulta operativa de hardware, software e identidades de red sin salir al admin.</p>
       </div>
-      <div class="d-flex gap-2">
+      <div class="assets-toolbar">
         <input class="form-control assets-filter" id="asset-search" placeholder="Buscar por host, serial, software, usuario o IP">
         <button class="btn btn-outline-info" id="asset-refresh-btn" type="button">Filtrar</button>
+        <span class="assets-pill" id="asset-visible-count">Mostrando todo</span>
       </div>
     </div>
   </div>
@@ -56,7 +71,16 @@
   <div class="row g-3">
     <div class="col-12">
       <div class="assets-card">
-        <h5>Hardware</h5>
+        <div class="d-flex justify-content-between align-items-center gap-2 mb-2 flex-wrap">
+          <h5 class="mb-0">Hardware</h5>
+          <div class="d-flex align-items-center gap-2">
+            <select class="form-select form-select-sm assets-filter" id="hardware-size" style="width: 90px;">
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="20">20</option>
+            </select>
+          </div>
+        </div>
         <div class="table-responsive">
           <table class="table table-dark table-hover assets-table" id="hardware-table">
             <thead><tr><th>Host</th><th>Tipo</th><th>Nombre</th><th>Modelo</th><th>Serial</th><th>Estado</th></tr></thead>
@@ -76,11 +100,25 @@
             </tbody>
           </table>
         </div>
+        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+          <small class="text-muted" id="hardware-info"></small>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-info" type="button" id="hardware-prev">Anterior</button>
+            <button class="btn btn-outline-info" type="button" id="hardware-next">Siguiente</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="col-lg-6">
       <div class="assets-card">
-        <h5>Software</h5>
+        <div class="d-flex justify-content-between align-items-center gap-2 mb-2 flex-wrap">
+          <h5 class="mb-0">Software</h5>
+          <select class="form-select form-select-sm assets-filter" id="software-size" style="width: 90px;">
+            <option value="5">5</option>
+            <option value="10" selected>10</option>
+            <option value="20">20</option>
+          </select>
+        </div>
         <div class="table-responsive">
           <table class="table table-dark table-hover assets-table" id="software-table">
             <thead><tr><th>Host</th><th>Software</th><th>Versión</th><th>Proveedor</th><th>Presente</th></tr></thead>
@@ -99,11 +137,25 @@
             </tbody>
           </table>
         </div>
+        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+          <small class="text-muted" id="software-info"></small>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-info" type="button" id="software-prev">Anterior</button>
+            <button class="btn btn-outline-info" type="button" id="software-next">Siguiente</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="col-lg-6">
       <div class="assets-card">
-        <h5>Red</h5>
+        <div class="d-flex justify-content-between align-items-center gap-2 mb-2 flex-wrap">
+          <h5 class="mb-0">Red</h5>
+          <select class="form-select form-select-sm assets-filter" id="network-size" style="width: 90px;">
+            <option value="5">5</option>
+            <option value="10" selected>10</option>
+            <option value="20">20</option>
+          </select>
+        </div>
         <div class="table-responsive">
           <table class="table table-dark table-hover assets-table" id="network-table">
             <thead><tr><th>Host</th><th>Tipo</th><th>Dirección</th><th>MAC</th><th>Interfaz</th></tr></thead>
@@ -122,13 +174,27 @@
             </tbody>
           </table>
         </div>
+        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+          <small class="text-muted" id="network-info"></small>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-info" type="button" id="network-prev">Anterior</button>
+            <button class="btn btn-outline-info" type="button" id="network-next">Siguiente</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="col-12">
       <div class="assets-card">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
           <h5 class="mb-0">Usuarios logueados</h5>
-          <small class="text-muted">Sesiones detectadas desde el inventario del agente</small>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <small class="text-muted">Sesiones detectadas desde el inventario del agente</small>
+            <select class="form-select form-select-sm assets-filter" id="users-size" style="width: 90px;">
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="20">20</option>
+            </select>
+          </div>
         </div>
         <div class="table-responsive mt-3">
           <table class="table table-dark table-hover assets-table" id="users-table">
@@ -149,6 +215,13 @@
             </tbody>
           </table>
         </div>
+        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+          <small class="text-muted" id="users-info"></small>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-info" type="button" id="users-prev">Anterior</button>
+            <button class="btn btn-outline-info" type="button" id="users-next">Siguiente</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -160,32 +233,42 @@
   const countSoftware = document.getElementById("assets-count-software");
   const countNetwork = document.getElementById("assets-count-network");
   const countUsers = document.getElementById("assets-count-users");
+  const visibleCount = document.getElementById("asset-visible-count");
+  const assetPagers = {};
 
-  function filterTable(tableId, term) {
-    const rows = document.querySelectorAll(`#${tableId} tbody tr`);
-    let visible = 0;
-    rows.forEach((row) => {
-      const match = row.textContent.toLowerCase().includes(term);
-      row.style.display = match ? "" : "none";
-      if (match) {
-        visible += 1;
-      }
+  function updateSearchState() {
+    const term = searchInput.value.trim();
+    visibleCount.textContent = term ? `Filtro: ${term}` : "Mostrando todo";
+  }
+
+  function bindPager(key, tableId, pageSizeSelectId, prevButtonId, nextButtonId, infoId, countNode, emptyMessage) {
+    assetPagers[key] = window.VANT_UI.setupTablePager({
+      tableId,
+      searchInputId: "asset-search",
+      pageSizeSelectId,
+      prevButtonId,
+      nextButtonId,
+      pageInfoId: infoId,
+      defaultPageSize: 10,
+      emptyMessage,
+      onRender: ({ filteredCount }) => {
+        countNode.textContent = filteredCount;
+      },
     });
-    return visible;
   }
 
-  function refreshCounters() {
-    const term = searchInput.value.trim().toLowerCase();
-    countHardware.textContent = filterTable("hardware-table", term);
-    countSoftware.textContent = filterTable("software-table", term);
-    countNetwork.textContent = filterTable("network-table", term);
-    countUsers.textContent = filterTable("users-table", term);
-  }
-
-  searchInput.addEventListener("input", () => {
-    refreshCounters();
+  searchInput.addEventListener("input", updateSearchState);
+  refreshButton?.addEventListener("click", () => {
+    updateSearchState();
+    searchInput.dispatchEvent(new Event("input"));
   });
-  refreshButton?.addEventListener("click", refreshCounters);
-  refreshCounters();
+
+  document.addEventListener("DOMContentLoaded", () => {
+    bindPager("hardware", "hardware-table", "hardware-size", "hardware-prev", "hardware-next", "hardware-info", countHardware, "Sin hardware registrado.");
+    bindPager("software", "software-table", "software-size", "software-prev", "software-next", "software-info", countSoftware, "Sin software registrado.");
+    bindPager("network", "network-table", "network-size", "network-prev", "network-next", "network-info", countNetwork, "Sin identidades de red registradas.");
+    bindPager("users", "users-table", "users-size", "users-prev", "users-next", "users-info", countUsers, "Sin usuarios detectados en los snapshots recientes.");
+    updateSearchState();
+  });
 </script>
 {% endblock %}

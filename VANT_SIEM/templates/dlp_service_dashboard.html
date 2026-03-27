@@ -94,6 +94,12 @@
     <div class="col-md-3"><div class="dlp-stat"><h6>Incidentes totales</h6><div class="display-6" id="dlp-stat-total">{{ incidents_total }}</div></div></div>
   </div>
 
+  <div class="row g-3 mb-4">
+    <div class="col-md-4"><div class="dlp-stat"><h6>Criticos</h6><div class="display-6" id="dlp-stat-critical">{{ incidents_critical }}</div></div></div>
+    <div class="col-md-4"><div class="dlp-stat"><h6>Altos</h6><div class="display-6" id="dlp-stat-high">{{ incidents_high }}</div></div></div>
+    <div class="col-md-4"><div class="dlp-stat"><h6>Políticas habilitadas</h6><div class="display-6">{{ enabled_policies|length }}</div></div></div>
+  </div>
+
   <div class="dlp-card mb-4">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
       <div>
@@ -116,7 +122,7 @@
   <div class="row g-3">
     <div class="col-lg-5">
       <div class="dlp-card">
-        <div class="dlp-toolbar">
+        <div class="dlp-toolbar justify-content-between">
           <strong class="me-auto">Politicas desplegadas</strong>
           <span class="dlp-chip">Click para expandir</span>
         </div>
@@ -140,13 +146,28 @@
           <div class="text-muted">No hay politicas DLP activas.</div>
           {% endfor %}
         </div>
+        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+          <small class="text-muted" id="dlp-policy-info"></small>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-info" type="button" id="dlp-policy-prev">Anterior</button>
+            <button class="btn btn-outline-info" type="button" id="dlp-policy-next">Siguiente</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="col-lg-7">
       <div class="dlp-card">
-        <div class="dlp-toolbar">
+        <div class="dlp-toolbar justify-content-between">
           <strong class="me-auto">Incidentes recientes</strong>
-          <input class="form-control form-control-sm dlp-search" id="dlp-incident-search" placeholder="Buscar incidente, archivo o clasificacion">
+      <div class="d-flex gap-2 flex-wrap">
+        <input class="form-control form-control-sm dlp-search" id="dlp-incident-search" placeholder="Buscar incidente, archivo o clasificacion">
+        <select class="form-select form-select-sm dlp-search" id="dlp-incident-size" style="width: 90px;">
+          <option value="5">5</option>
+          <option value="10" selected>10</option>
+          <option value="20">20</option>
+        </select>
+        <span class="dlp-chip" id="dlp-incident-state">Mostrando todo</span>
+      </div>
         </div>
         <div class="table-responsive">
           <table class="table table-dark table-hover dlp-table" id="dlp-incidents-table">
@@ -169,6 +190,13 @@
             </tbody>
           </table>
         </div>
+        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+          <small class="text-muted" id="dlp-incident-info"></small>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-info" type="button" id="dlp-incident-prev">Anterior</button>
+            <button class="btn btn-outline-info" type="button" id="dlp-incident-next">Siguiente</button>
+          </div>
+        </div>
       </div>
       <div class="dlp-detail mt-3" id="dlp-incident-detail">
         <strong class="d-block mb-2">Detalle rapido</strong>
@@ -182,69 +210,46 @@
   const incidentSearch = document.getElementById("dlp-incident-search");
   const statusFilter = document.getElementById("dlp-status-filter");
   const detailPanel = document.getElementById("dlp-incident-detail");
+  const policyInfo = document.getElementById("dlp-policy-info");
+  const incidentInfo = document.getElementById("dlp-incident-info");
+  const incidentState = document.getElementById("dlp-incident-state");
+  const policyPrev = document.getElementById("dlp-policy-prev");
+  const policyNext = document.getElementById("dlp-policy-next");
   let dlpRefreshTimer = null;
+  let policyPage = 1;
+  const policyPageSize = 6;
+  let incidentPager = null;
 
   function policyCards() {
     return Array.from(document.querySelectorAll("#dlp-policy-list .dlp-policy-card"));
   }
 
-  function incidentRows() {
-    return Array.from(document.querySelectorAll("#dlp-incidents-table tbody tr"));
+  function setPolicyCounter(filteredCount) {
+    const total = policyCards().length || 1;
+    const totalPages = Math.max(1, Math.ceil(filteredCount / policyPageSize));
+    const start = filteredCount ? ((policyPage - 1) * policyPageSize) + 1 : 0;
+    const end = Math.min(policyPage * policyPageSize, filteredCount);
+    if (policyInfo) policyInfo.textContent = `${start}-${end} de ${filteredCount}`;
+    if (policyPrev) policyPrev.disabled = policyPage <= 1;
+    if (policyNext) policyNext.disabled = policyPage >= totalPages;
   }
 
-  function applyDlpFilters() {
-    const term = (dlpSearch?.value || incidentSearch?.value || "").trim().toLowerCase();
-    const incidentTerm = (incidentSearch?.value || dlpSearch?.value || "").trim().toLowerCase();
-    const selectedStatus = (statusFilter?.value || "").trim().toLowerCase();
-
-    policyCards().forEach((node) => {
-      const text = (node.dataset.searchText || node.textContent || "").toLowerCase();
-      const match = !term || text.includes(term);
-      node.style.display = match ? "" : "none";
-      node.classList.toggle("is-expanded", match && !!term);
+  function renderPolicyCards() {
+    const term = (dlpSearch?.value || "").trim().toLowerCase();
+    const cards = policyCards();
+    const visible = cards.filter((card) => {
+      const text = (card.dataset.searchText || card.textContent || "").toLowerCase();
+      return !term || text.includes(term);
     });
-
-    incidentRows().forEach((row) => {
-      const text = (row.dataset.searchText || row.textContent || "").toLowerCase();
-      const matchesText = !incidentTerm || text.includes(incidentTerm);
-      const matchesStatus = !selectedStatus || (row.dataset.status || "").toLowerCase() === selectedStatus;
-      row.style.display = matchesText && matchesStatus ? "" : "none";
+    const totalPages = Math.max(1, Math.ceil(visible.length / policyPageSize));
+    policyPage = Math.min(Math.max(1, policyPage), totalPages);
+    const start = (policyPage - 1) * policyPageSize;
+    const allowed = new Set(visible.slice(start, start + policyPageSize));
+    cards.forEach((card) => {
+      card.style.display = allowed.has(card) ? "" : "none";
+      if (!term) card.classList.remove("is-expanded");
     });
-  }
-
-  function bindIncidentRows() {
-    incidentRows().forEach((row) => {
-      row.addEventListener("click", () => {
-        incidentRows().forEach((item) => item.classList.remove("dlp-row-active"));
-        row.classList.add("dlp-row-active");
-        try {
-          let rawDetail = row.dataset.detail || "{}";
-          let data = {};
-          try {
-            data = JSON.parse(rawDetail);
-          } catch (plainError) {
-            data = JSON.parse(decodeURIComponent(rawDetail || "%7B%7D"));
-          }
-          detailPanel.innerHTML = `
-            <strong class="d-block mb-2">Detalle rapido</strong>
-            <div class="row g-2">
-              <div class="col-md-6"><span class="text-muted">Agente:</span> ${data.agent || "--"}</div>
-              <div class="col-md-6"><span class="text-muted">Clasificacion:</span> ${data.classification || "--"} (${data.severity || "--"})</div>
-              <div class="col-md-6"><span class="text-muted">Archivo:</span> ${data.file || "--"}</div>
-              <div class="col-md-6"><span class="text-muted">Canal:</span> ${data.channel || "--"}</div>
-              <div class="col-md-6"><span class="text-muted">Politica:</span> ${data.policy || "--"}</div>
-              <div class="col-md-6"><span class="text-muted">Regla:</span> ${data.rule || "--"}</div>
-              <div class="col-md-6"><span class="text-muted">Actor:</span> ${data.actor || "--"}</div>
-              <div class="col-md-6"><span class="text-muted">Estado:</span> ${data.status || "--"}</div>
-              <div class="col-12"><span class="text-muted">Ruta:</span> ${data.path || "--"}</div>
-              <div class="col-12"><span class="text-muted">Fecha:</span> ${data.detected_at || "--"}</div>
-            </div>
-          `;
-        } catch (error) {
-          console.error("Incident detail parse failed", error);
-        }
-      });
-    });
+    setPolicyCounter(visible.length);
   }
 
   function renderPolicies(policies) {
@@ -252,6 +257,7 @@
     if (!root) return;
     if (!policies.length) {
       root.innerHTML = '<div class="text-muted">No hay politicas DLP activas.</div>';
+      setPolicyCounter(0);
       return;
     }
     root.innerHTML = policies.map((policy) => `
@@ -270,8 +276,29 @@
         </div>
       </div>
     `).join("");
-    policyCards().forEach((card) => {
-      card.addEventListener("click", () => card.classList.toggle("is-expanded"));
+    renderPolicyCards();
+  }
+
+  function bindPolicyInteractions() {
+    const root = document.getElementById("dlp-policy-list");
+    if (!root || root.dataset.bound === "1") return;
+    root.dataset.bound = "1";
+    root.addEventListener("click", (event) => {
+      const card = event.target.closest(".dlp-policy-card");
+      if (!card) return;
+      card.classList.toggle("is-expanded");
+    });
+    policyPrev?.addEventListener("click", () => {
+      policyPage -= 1;
+      renderPolicyCards();
+    });
+    policyNext?.addEventListener("click", () => {
+      policyPage += 1;
+      renderPolicyCards();
+    });
+    dlpSearch?.addEventListener("input", () => {
+      policyPage = 1;
+      renderPolicyCards();
     });
   }
 
@@ -280,6 +307,7 @@
     if (!tbody) return;
     if (!incidents.length) {
       tbody.innerHTML = '<tr><td colspan="6" class="text-muted">Sin incidentes DLP todavia.</td></tr>';
+      incidentInfo.textContent = "0-0 de 0";
       return;
     }
     tbody.innerHTML = incidents.map((incident) => `
@@ -304,8 +332,68 @@
         <td>${incident.status || "--"}</td>
       </tr>
     `).join("");
-    bindIncidentRows();
-    applyDlpFilters();
+    if (!incidentPager) {
+      incidentPager = window.VANT_UI.setupTablePager({
+        tableId: "dlp-incidents-table",
+        searchInputId: "dlp-incident-search",
+        pageSizeSelectId: "dlp-incident-size",
+        prevButtonId: "dlp-incident-prev",
+        nextButtonId: "dlp-incident-next",
+        pageInfoId: "dlp-incident-info",
+        defaultPageSize: 10,
+        emptyMessage: "Sin incidentes DLP todavia.",
+        rowFilter: (row) => {
+          if (!statusFilter?.value) return true;
+          return (row.dataset.status || "").toLowerCase() === statusFilter.value.toLowerCase();
+        },
+        onRender: ({ filteredCount }) => {
+          if (incidentState) {
+            incidentState.textContent = (incidentSearch?.value || statusFilter?.value)
+              ? `Filtrados: ${filteredCount}`
+              : "Mostrando todo";
+          }
+        },
+      });
+    } else {
+      incidentPager.refresh();
+    }
+    bindIncidentDetails();
+  }
+
+  function bindIncidentDetails() {
+    const tbody = document.querySelector("#dlp-incidents-table tbody");
+    if (!tbody || tbody.dataset.bound === "1") return;
+    tbody.dataset.bound = "1";
+    tbody.addEventListener("click", (event) => {
+      const row = event.target.closest("tr[data-detail]");
+      if (!row) return;
+      document.querySelectorAll("#dlp-incidents-table tbody tr").forEach((item) => item.classList.remove("dlp-row-active"));
+      row.classList.add("dlp-row-active");
+      try {
+        const rawDetail = row.dataset.detail || "{}";
+        const data = JSON.parse(decodeURIComponent(rawDetail));
+        detailPanel.innerHTML = `
+          <strong class="d-block mb-2">Detalle rapido</strong>
+          <div class="row g-2">
+            <div class="col-md-6"><span class="text-muted">Agente:</span> ${data.agent || "--"}</div>
+            <div class="col-md-6"><span class="text-muted">Clasificacion:</span> ${data.classification || "--"} (${data.severity || "--"})</div>
+            <div class="col-md-6"><span class="text-muted">Archivo:</span> ${data.file || "--"}</div>
+            <div class="col-md-6"><span class="text-muted">Canal:</span> ${data.channel || "--"}</div>
+            <div class="col-md-6"><span class="text-muted">Politica:</span> ${data.policy || "--"}</div>
+            <div class="col-md-6"><span class="text-muted">Regla:</span> ${data.rule || "--"}</div>
+            <div class="col-md-6"><span class="text-muted">Actor:</span> ${data.actor || "--"}</div>
+            <div class="col-md-6"><span class="text-muted">Estado:</span> ${data.status || "--"}</div>
+            <div class="col-12"><span class="text-muted">Ruta:</span> ${data.path || "--"}</div>
+            <div class="col-12"><span class="text-muted">Fecha:</span> ${data.detected_at || "--"}</div>
+          </div>
+        `;
+      } catch (error) {
+        console.error("Incident detail parse failed", error);
+      }
+    });
+    statusFilter?.addEventListener("change", () => {
+      incidentPager?.render?.();
+    });
   }
 
   async function refreshDlpDashboard() {
@@ -317,19 +405,19 @@
       document.getElementById("dlp-stat-rules").textContent = data.stats.rules_total ?? 0;
       document.getElementById("dlp-stat-open").textContent = data.stats.incidents_open ?? 0;
       document.getElementById("dlp-stat-total").textContent = data.stats.incidents_total ?? 0;
+      document.getElementById("dlp-stat-critical").textContent = data.stats.incidents_critical ?? 0;
+      document.getElementById("dlp-stat-high").textContent = data.stats.incidents_high ?? 0;
       renderPolicies(data.policies || []);
       renderIncidents(data.incidents || []);
+      bindPolicyInteractions();
     } catch (error) {
       console.error("DLP dashboard refresh failed", error);
     }
   }
 
-  dlpSearch?.addEventListener("input", applyDlpFilters);
-  incidentSearch?.addEventListener("input", applyDlpFilters);
-  statusFilter?.addEventListener("change", applyDlpFilters);
-  policyCards().forEach((card) => card.addEventListener("click", () => card.classList.toggle("is-expanded")));
-  bindIncidentRows();
+  bindPolicyInteractions();
   if (dlpRefreshTimer) clearInterval(dlpRefreshTimer);
   dlpRefreshTimer = setInterval(refreshDlpDashboard, 15000);
+  refreshDlpDashboard();
 </script>
 {% endblock %}
