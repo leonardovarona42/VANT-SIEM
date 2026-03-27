@@ -1,0 +1,191 @@
+{% extends "dashboard.html" %}
+
+{% block title %}Activos Gestionados | VANT-SIEM{% endblock %}
+
+{% block extra_css %}
+<style>
+  .assets-shell {
+    background: linear-gradient(135deg, rgba(8, 47, 73, 0.95), rgba(15, 31, 53, 0.95));
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 18px;
+  }
+  .assets-card {
+    background: #0f1f35;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 16px;
+  }
+  .assets-table th, .assets-table td { color: #e5e7eb; }
+  .assets-count {
+    background: rgba(11, 22, 42, 0.9);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 12px 14px;
+  }
+  .assets-filter {
+    background: #0b162a;
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #e5e7eb;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="assets-shell mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+      <div>
+        <h2 class="mb-1">Activos Gestionados</h2>
+        <p class="text-muted mb-0">Consulta operativa de hardware, software e identidades de red sin salir al admin.</p>
+      </div>
+      <div class="d-flex gap-2">
+        <input class="form-control assets-filter" id="asset-search" placeholder="Buscar por host, serial, software, usuario o IP">
+        <button class="btn btn-outline-info" id="asset-refresh-btn" type="button">Filtrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="assets-count"><h6>Hardware</h6><div class="display-6" id="assets-count-hardware">0</div></div></div>
+    <div class="col-md-3"><div class="assets-count"><h6>Software</h6><div class="display-6" id="assets-count-software">0</div></div></div>
+    <div class="col-md-3"><div class="assets-count"><h6>Red</h6><div class="display-6" id="assets-count-network">0</div></div></div>
+    <div class="col-md-3"><div class="assets-count"><h6>Usuarios</h6><div class="display-6" id="assets-count-users">0</div></div></div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12">
+      <div class="assets-card">
+        <h5>Hardware</h5>
+        <div class="table-responsive">
+          <table class="table table-dark table-hover assets-table" id="hardware-table">
+            <thead><tr><th>Host</th><th>Tipo</th><th>Nombre</th><th>Modelo</th><th>Serial</th><th>Estado</th></tr></thead>
+            <tbody>
+              {% for item in hardware_components %}
+              <tr>
+                <td>{{ item.agent.host_name|default:item.agent.agent_id }}</td>
+                <td>{{ item.component_type }}</td>
+                <td>{{ item.name|default:"--" }}</td>
+                <td>{{ item.model|default:"--" }}</td>
+                <td>{{ item.serial_number|default:"--" }}</td>
+                <td>{{ item.status }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" class="text-muted">Sin hardware registrado.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="assets-card">
+        <h5>Software</h5>
+        <div class="table-responsive">
+          <table class="table table-dark table-hover assets-table" id="software-table">
+            <thead><tr><th>Host</th><th>Software</th><th>Versión</th><th>Proveedor</th><th>Presente</th></tr></thead>
+            <tbody>
+              {% for item in software_records %}
+              <tr>
+                <td>{{ item.agent.host_name|default:item.agent.agent_id }}</td>
+                <td>{{ item.name }}</td>
+                <td>{{ item.version|default:"--" }}</td>
+                <td>{{ item.publisher|default:"--" }}</td>
+                <td>{{ item.is_present|yesno:"si,no" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-muted">Sin software registrado.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="assets-card">
+        <h5>Red</h5>
+        <div class="table-responsive">
+          <table class="table table-dark table-hover assets-table" id="network-table">
+            <thead><tr><th>Host</th><th>Tipo</th><th>Dirección</th><th>MAC</th><th>Interfaz</th></tr></thead>
+            <tbody>
+              {% for item in network_identities %}
+              <tr>
+                <td>{{ item.agent.host_name|default:item.agent.agent_id }}</td>
+                <td>{{ item.address_type }}</td>
+                <td>{{ item.address }}</td>
+                <td>{{ item.mac_address|default:"--" }}</td>
+                <td>{{ item.interface_name|default:"--" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-muted">Sin identidades de red registradas.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-12">
+      <div class="assets-card">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <h5 class="mb-0">Usuarios logueados</h5>
+          <small class="text-muted">Sesiones detectadas desde el inventario del agente</small>
+        </div>
+        <div class="table-responsive mt-3">
+          <table class="table table-dark table-hover assets-table" id="users-table">
+            <thead><tr><th>Host</th><th>Usuario</th><th>Sesion</th><th>Estado</th><th>Idle</th><th>Logon</th></tr></thead>
+            <tbody>
+              {% for user in recent_users %}
+              <tr>
+                <td>{{ user.agent.host_name|default:user.agent.agent_id }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.session_name|default:"--" }}{% if user.session_id %} (#{{ user.session_id }}){% endif %}</td>
+                <td>{{ user.state|default:"--" }}</td>
+                <td>{{ user.idle_time|default:"--" }}</td>
+                <td>{{ user.logon_time|default:"--" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="6" class="text-muted">Sin usuarios detectados en los snapshots recientes.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  const searchInput = document.getElementById("asset-search");
+  const refreshButton = document.getElementById("asset-refresh-btn");
+  const countHardware = document.getElementById("assets-count-hardware");
+  const countSoftware = document.getElementById("assets-count-software");
+  const countNetwork = document.getElementById("assets-count-network");
+  const countUsers = document.getElementById("assets-count-users");
+
+  function filterTable(tableId, term) {
+    const rows = document.querySelectorAll(`#${tableId} tbody tr`);
+    let visible = 0;
+    rows.forEach((row) => {
+      const match = row.textContent.toLowerCase().includes(term);
+      row.style.display = match ? "" : "none";
+      if (match) {
+        visible += 1;
+      }
+    });
+    return visible;
+  }
+
+  function refreshCounters() {
+    const term = searchInput.value.trim().toLowerCase();
+    countHardware.textContent = filterTable("hardware-table", term);
+    countSoftware.textContent = filterTable("software-table", term);
+    countNetwork.textContent = filterTable("network-table", term);
+    countUsers.textContent = filterTable("users-table", term);
+  }
+
+  searchInput.addEventListener("input", () => {
+    refreshCounters();
+  });
+  refreshButton?.addEventListener("click", refreshCounters);
+  refreshCounters();
+</script>
+{% endblock %}

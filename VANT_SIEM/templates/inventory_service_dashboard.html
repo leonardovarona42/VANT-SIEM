@@ -31,6 +31,14 @@
     list-style: none;
   }
   .inv-timeline li:last-child { border-bottom: none; }
+  .inv-chip {
+    border-radius: 999px;
+    padding: 4px 10px;
+    background: rgba(34, 211, 238, 0.12);
+    border: 1px solid rgba(34, 211, 238, 0.25);
+    color: #67e8f9;
+    font-size: 12px;
+  }
 </style>
 {% endblock %}
 
@@ -40,29 +48,37 @@
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
       <div>
         <h2 class="mb-1">Asset Audit & Inventory</h2>
-        <p class="text-muted mb-0">Inventario histórico, hardware, software y trazabilidad operativa de los agentes.</p>
+        <p class="text-muted mb-0">Inventario historico, hardware, software, sesiones y trazabilidad operativa de los agentes.</p>
       </div>
-      <div class="d-flex gap-2">
+      <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="refreshInventoryDashboard()">Actualizar</button>
         <a class="btn btn-outline-info btn-sm" href="{% url 'devices-management' %}">Agentes</a>
+        <a class="btn btn-outline-light btn-sm" href="{% url 'inventory-assets-dashboard' %}">Activos gestionados</a>
         <a class="btn btn-info btn-sm" href="{% url 'dlp-service-dashboard' %}">Ir a Aegis DLP</a>
       </div>
     </div>
   </div>
 
   <div class="row g-3 mb-4">
-    <div class="col-md-3"><div class="inv-stat"><h6>Agentes</h6><div class="display-6">{{ agents_total }}</div><small class="text-muted">{{ agents_online }} online</small></div></div>
-    <div class="col-md-3"><div class="inv-stat"><h6>Hardware activo</h6><div class="display-6">{{ hardware_total }}</div><small class="text-muted">Componentes observados</small></div></div>
-    <div class="col-md-3"><div class="inv-stat"><h6>Software presente</h6><div class="display-6">{{ software_total }}</div><small class="text-muted">Paquetes detectados</small></div></div>
-    <div class="col-md-3"><div class="inv-stat"><h6>Eventos timeline</h6><div class="display-6">{{ timeline_total }}</div><small class="text-muted">Auditoría histórica</small></div></div>
+    <div class="col-md-3"><div class="inv-stat"><h6>Agentes</h6><div class="display-6" id="inv-stat-agents">{{ agents_total }}</div><small class="text-muted"><span id="inv-stat-online">{{ agents_online }}</span> online</small></div></div>
+    <div class="col-md-3"><div class="inv-stat"><h6>Hardware activo</h6><div class="display-6" id="inv-stat-hardware">{{ hardware_total }}</div><small class="text-muted">Componentes observados</small></div></div>
+    <div class="col-md-3"><div class="inv-stat"><h6>Software presente</h6><div class="display-6" id="inv-stat-software">{{ software_total }}</div><small class="text-muted">Paquetes detectados</small></div></div>
+    <div class="col-md-3"><div class="inv-stat"><h6>Eventos timeline</h6><div class="display-6" id="inv-stat-timeline">{{ timeline_total }}</div><small class="text-muted">Auditoria historica</small></div></div>
   </div>
 
   <div class="row g-3">
     <div class="col-lg-6">
       <div class="inv-card">
-        <h5>Agentes recientes</h5>
+        <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+          <h5 class="mb-0">Agentes recientes</h5>
+          <span class="inv-chip">Refresh cada 15s</span>
+        </div>
+        <div class="d-flex gap-2 mb-3">
+          <input class="form-control" id="inventory-agent-search" placeholder="Buscar agente, host, software o usuario">
+        </div>
         <div class="table-responsive">
-          <table class="table table-dark table-hover inv-table">
-            <thead><tr><th>Agente</th><th>Host</th><th>Estado</th><th>Hardware</th><th>Software</th><th>Último inventario</th></tr></thead>
+          <table class="table table-dark table-hover inv-table" id="inventory-agents-table">
+            <thead><tr><th>Agente</th><th>Host</th><th>Estado</th><th>Hardware</th><th>Software</th><th>Ultimo inventario</th></tr></thead>
             <tbody>
               {% for agent in recent_agents %}
               <tr>
@@ -84,26 +100,52 @@
     <div class="col-lg-6">
       <div class="inv-card">
         <h5>Timeline reciente</h5>
-        <ul class="inv-timeline ps-0 mb-0">
+        <ul class="inv-timeline ps-0 mb-0" id="inventory-timeline-list">
           {% for event in recent_timeline %}
           <li>
             <div class="d-flex justify-content-between gap-3">
               <strong>{{ event.title }}</strong>
               <small class="text-muted">{{ event.observed_at }}</small>
             </div>
-            <div class="text-muted">{{ event.agent.host_name|default:event.agent.agent_id }} | {{ event.category }} | {{ event.description|default:"Sin descripción" }}</div>
+            <div class="text-muted">{{ event.agent.host_name|default:event.agent.agent_id }} | {{ event.category }} | {{ event.description|default:"Sin descripcion" }}</div>
           </li>
           {% empty %}
-          <li class="text-muted">Sin eventos de inventario todavía.</li>
+          <li class="text-muted">Sin eventos de inventario todavia.</li>
           {% endfor %}
         </ul>
       </div>
     </div>
     <div class="col-lg-6">
       <div class="inv-card">
+        <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+          <h5 class="mb-0">Usuarios observados</h5>
+          <span class="badge bg-info text-dark" id="inventory-users-count">{{ users_total }}</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-dark table-hover inv-table" id="inventory-users-table">
+            <thead><tr><th>Agente</th><th>Usuario</th><th>Sesion</th><th>Estado</th><th>Ingreso</th></tr></thead>
+            <tbody>
+              {% for item in recent_users %}
+              <tr>
+                <td>{{ item.agent.host_name|default:item.agent.agent_id }}</td>
+                <td>{{ item.username }}</td>
+                <td>{{ item.session_name|default:"--" }}</td>
+                <td>{{ item.state|default:"--" }}</td>
+                <td>{{ item.logon_time|default:"--" }}</td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-muted">Sin sesiones observadas todavia.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="inv-card">
         <h5>Hardware observado</h5>
         <div class="table-responsive">
-          <table class="table table-dark table-hover inv-table">
+          <table class="table table-dark table-hover inv-table" id="inventory-hardware-table">
             <thead><tr><th>Agente</th><th>Tipo</th><th>Nombre</th><th>Serial</th><th>Estado</th></tr></thead>
             <tbody>
               {% for item in recent_hardware %}
@@ -126,8 +168,8 @@
       <div class="inv-card">
         <h5>Software observado</h5>
         <div class="table-responsive">
-          <table class="table table-dark table-hover inv-table">
-            <thead><tr><th>Agente</th><th>Software</th><th>Versión</th><th>Proveedor</th><th>Presente</th></tr></thead>
+          <table class="table table-dark table-hover inv-table" id="inventory-software-table">
+            <thead><tr><th>Agente</th><th>Software</th><th>Version</th><th>Proveedor</th><th>Presente</th></tr></thead>
             <tbody>
               {% for item in recent_software %}
               <tr>
@@ -149,8 +191,8 @@
       <div class="inv-card">
         <h5>Software de mayor actividad</h5>
         <div class="table-responsive">
-          <table class="table table-dark table-hover inv-table">
-            <thead><tr><th>Agente</th><th>Software</th><th>Versión</th><th>Proveedor</th><th>Última observación</th></tr></thead>
+          <table class="table table-dark table-hover inv-table" id="inventory-top-software-table">
+            <thead><tr><th>Agente</th><th>Software</th><th>Version</th><th>Proveedor</th><th>Ultima observacion</th></tr></thead>
             <tbody>
               {% for item in top_software %}
               <tr>
@@ -170,4 +212,146 @@
     </div>
   </div>
 </div>
+<script>
+  const inventorySearch = document.getElementById("inventory-agent-search");
+  let inventoryRefreshTimer = null;
+
+  function filterRows(tableId, term) {
+    const rows = document.querySelectorAll(`#${tableId} tbody tr`);
+    rows.forEach((row) => {
+      row.style.display = row.textContent.toLowerCase().includes(term) ? "" : "none";
+    });
+  }
+
+  function renderInventoryTable(tableId, rows, emptyMessage, colspan = 6) {
+    const tbody = document.querySelector(`#${tableId} tbody`);
+    if (!tbody) return;
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="${colspan}" class="text-muted">${emptyMessage}</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = rows.join("");
+  }
+
+  async function refreshInventoryDashboard() {
+    try {
+      const res = await fetch("{% url 'inventory-dashboard-api' %}");
+      const data = await res.json();
+      if (!data.ok) return;
+
+      document.getElementById("inv-stat-agents").textContent = data.stats.agents_total ?? 0;
+      document.getElementById("inv-stat-online").textContent = data.stats.agents_online ?? 0;
+      document.getElementById("inv-stat-hardware").textContent = data.stats.hardware_total ?? 0;
+      document.getElementById("inv-stat-software").textContent = data.stats.software_total ?? 0;
+      document.getElementById("inv-stat-timeline").textContent = data.stats.timeline_total ?? 0;
+      document.getElementById("inventory-users-count").textContent = data.stats.users_total ?? 0;
+
+      renderInventoryTable(
+        "inventory-agents-table",
+        (data.recent_agents || []).map((agent) => `
+          <tr>
+            <td><a class="link-info" href="/siem/dashboard/devices/management/${agent.agent_id}/">${agent.agent_id}</a></td>
+            <td>${agent.host_name || "--"}</td>
+            <td>${agent.status || "--"}</td>
+            <td>${agent.hardware_count ?? 0}</td>
+            <td>${agent.software_count ?? 0}</td>
+            <td>${agent.last_inventory_at || "--"}</td>
+          </tr>
+        `),
+        "Sin agentes inventariados."
+      );
+
+      renderInventoryTable(
+        "inventory-users-table",
+        (data.recent_users || []).map((item) => `
+          <tr>
+            <td>${item.host_name || item.agent_id || "--"}</td>
+            <td>${item.username || "--"}</td>
+            <td>${item.session_name || item.session || "--"}</td>
+            <td>${item.state || "--"}</td>
+            <td>${item.logon_time || "--"}</td>
+          </tr>
+        `),
+        "Sin sesiones observadas todavia.",
+        5
+      );
+
+      renderInventoryTable(
+        "inventory-hardware-table",
+        (data.recent_hardware || []).map((item) => `
+          <tr>
+            <td>${item.host_name || item.agent_id || "--"}</td>
+            <td>${item.component_type || "--"}</td>
+            <td>${item.name || "--"}</td>
+            <td>${item.serial_number || "--"}</td>
+            <td>${item.status || "--"}</td>
+          </tr>
+        `),
+        "Sin hardware observado.",
+        5
+      );
+
+      renderInventoryTable(
+        "inventory-software-table",
+        (data.recent_software || []).map((item) => `
+          <tr>
+            <td>${item.host_name || item.agent_id || "--"}</td>
+            <td>${item.name || "--"}</td>
+            <td>${item.version || "--"}</td>
+            <td>${item.publisher || "--"}</td>
+            <td>${item.is_present ? "si" : "no"}</td>
+          </tr>
+        `),
+        "Sin software inventariado.",
+        5
+      );
+
+      renderInventoryTable(
+        "inventory-top-software-table",
+        (data.top_software || []).map((item) => `
+          <tr>
+            <td>${item.host_name || item.agent_id || "--"}</td>
+            <td>${item.name || "--"}</td>
+            <td>${item.version || "--"}</td>
+            <td>${item.publisher || "--"}</td>
+            <td>${item.last_seen || "--"}</td>
+          </tr>
+        `),
+        "Sin software inventariado.",
+        5
+      );
+
+      const timelineList = document.getElementById("inventory-timeline-list");
+      if (timelineList) {
+        const events = data.recent_timeline || [];
+        timelineList.innerHTML = events.length
+          ? events.map((event) => `
+              <li>
+                <div class="d-flex justify-content-between gap-3">
+                  <strong>${event.title || "Evento"}</strong>
+                  <small class="text-muted">${event.observed_at || "--"}</small>
+                </div>
+                <div class="text-muted">${event.host_name || event.agent_id || "--"} | ${event.category || "--"} | ${event.description || "Sin descripcion"}</div>
+              </li>
+            `).join("")
+          : '<li class="text-muted">Sin eventos de inventario todavia.</li>';
+      }
+
+      const term = inventorySearch?.value.trim().toLowerCase() || "";
+      ["inventory-agents-table", "inventory-users-table", "inventory-hardware-table", "inventory-software-table", "inventory-top-software-table"]
+        .forEach((id) => filterRows(id, term));
+    } catch (error) {
+      console.error("Inventory dashboard refresh failed", error);
+    }
+  }
+
+  inventorySearch?.addEventListener("input", () => {
+    const term = inventorySearch.value.trim().toLowerCase();
+    ["inventory-agents-table", "inventory-users-table", "inventory-hardware-table", "inventory-software-table", "inventory-top-software-table"]
+      .forEach((id) => filterRows(id, term));
+  });
+
+  if (inventoryRefreshTimer) clearInterval(inventoryRefreshTimer);
+  inventoryRefreshTimer = setInterval(refreshInventoryDashboard, 15000);
+</script>
 {% endblock %}

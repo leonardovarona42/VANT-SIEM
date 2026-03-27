@@ -53,6 +53,34 @@ def inventory_service_dashboard(request):
     recent_timeline = AgentTimelineEvent.objects.exclude(category="dlp").order_by("-observed_at")[:40]
     recent_hardware = AgentHardwareComponent.objects.select_related("agent").order_by("-last_seen")[:30]
     recent_software = AgentSoftwareRecord.objects.select_related("agent").filter(is_present=True).order_by("-last_seen")[:30]
+    recent_users = []
+    seen_users = set()
+    for agent in AgentDevice.objects.order_by("-last_inventory_at", "-last_seen")[:50]:
+        inventory = agent.latest_inventory or {}
+        for user in inventory.get("users") or []:
+            username = (user.get("username") or "").strip()
+            if not username:
+                continue
+            key = (agent.agent_id, username.lower(), user.get("session_id", ""))
+            if key in seen_users:
+                continue
+            seen_users.add(key)
+            recent_users.append(
+                {
+                    "agent": agent,
+                    "username": username,
+                    "session_name": user.get("session_name", ""),
+                    "session_id": user.get("session_id", ""),
+                    "state": user.get("state", ""),
+                    "idle_time": user.get("idle_time", ""),
+                    "logon_time": user.get("logon_time", ""),
+                    "raw": user.get("raw", ""),
+                }
+            )
+            if len(recent_users) >= 30:
+                break
+        if len(recent_users) >= 30:
+            break
     agent_cards = []
     for agent in agents:
         agent_cards.append(
@@ -71,19 +99,72 @@ def inventory_service_dashboard(request):
         "hardware_total": AgentHardwareComponent.objects.filter(status="active").count(),
         "software_total": AgentSoftwareRecord.objects.filter(is_present=True).count(),
         "network_total": AgentNetworkIdentity.objects.filter(is_active=True).count(),
+        "users_total": len(recent_users),
         "timeline_total": AgentTimelineEvent.objects.exclude(category="dlp").count(),
         "recent_agents": agent_cards,
         "recent_timeline": recent_timeline,
         "recent_hardware": recent_hardware,
         "recent_software": recent_software,
+        "recent_users": recent_users,
         "top_software": AgentSoftwareRecord.objects.filter(is_present=True).order_by("-last_seen")[:20],
     }
     return render(request, "inventory_service_dashboard.html", context)
 
 
 @login_required
+@require_GET
+def inventory_dashboard_api(request):
+    return JsonResponse({"ok": True, **_serialize_inventory_dashboard()})
+
+
+@login_required
+def inventory_assets_dashboard(request):
+    from inventory.models import AgentDevice, AgentHardwareComponent, AgentNetworkIdentity, AgentSoftwareRecord
+
+    recent_users = []
+    seen_users = set()
+    for agent in AgentDevice.objects.order_by("-last_inventory_at", "-last_seen")[:80]:
+        inventory = agent.latest_inventory or {}
+        for user in inventory.get("users") or []:
+            username = (user.get("username") or "").strip()
+            if not username:
+                continue
+            key = (agent.agent_id, username.lower(), user.get("session_id", ""))
+            if key in seen_users:
+                continue
+            seen_users.add(key)
+            recent_users.append(
+                {
+                    "agent": agent,
+                    "username": username,
+                    "session_name": user.get("session_name", ""),
+                    "session_id": user.get("session_id", ""),
+                    "state": user.get("state", ""),
+                    "idle_time": user.get("idle_time", ""),
+                    "logon_time": user.get("logon_time", ""),
+                    "raw": user.get("raw", ""),
+                }
+            )
+            if len(recent_users) >= 60:
+                break
+        if len(recent_users) >= 60:
+            break
+
+    context = {
+        "hardware_components": AgentHardwareComponent.objects.select_related("agent").order_by("-last_seen")[:300],
+        "software_records": AgentSoftwareRecord.objects.select_related("agent").order_by("-last_seen")[:300],
+        "network_identities": AgentNetworkIdentity.objects.select_related("agent").order_by("-last_seen")[:300],
+        "recent_users": recent_users,
+    }
+    return render(request, "inventory_assets_dashboard.html", context)
+
+
+@login_required
 def dlp_service_dashboard(request):
     from inventory.models import AegisDlpIncident, AegisDlpPolicy, AegisDlpRule
+    from inventory.services import ensure_default_aegis_policy
+
+    ensure_default_aegis_policy()
 
     incidents = AegisDlpIncident.objects.select_related("agent", "policy", "rule").order_by("-detected_at")[:50]
     context = {
@@ -93,8 +174,15 @@ def dlp_service_dashboard(request):
         "incidents_total": AegisDlpIncident.objects.count(),
         "incidents_recent": incidents,
         "policies": AegisDlpPolicy.objects.prefetch_related("rules").order_by("name"),
+        "enabled_policies": AegisDlpPolicy.objects.filter(enabled=True).prefetch_related("rules").order_by("name"),
     }
     return render(request, "dlp_service_dashboard.html", context)
+
+
+@login_required
+@require_GET
+def dlp_dashboard_api(request):
+    return JsonResponse({"ok": True, **_serialize_dlp_dashboard()})
 
 
 def _split_list_field(value):
@@ -102,6 +190,192 @@ def _split_list_field(value):
         return [item for item in value if str(item).strip()]
     raw = (value or "").replace(";", ",").replace("\n", ",")
     return [item.strip() for item in raw.split(",") if item.strip()]
+
+
+def _serialize_inventory_dashboard():
+    from inventory.models import AgentDevice, AgentHardwareComponent, AgentNetworkIdentity, AgentSoftwareRecord, AgentTimelineEvent
+
+    recent_agents = []
+    recent_users = []
+    for agent in AgentDevice.objects.order_by("-last_seen")[:20]:
+        latest_inventory = agent.latest_inventory or {}
+        users = latest_inventory.get("users") or []
+        agent_users = []
+        for user in users:
+            username = (user or {}).get("username", "")
+            if username:
+                agent_users.append(
+                    {
+                        "username": username,
+                        "raw": (user or {}).get("raw", ""),
+                        "session": (user or {}).get("session", ""),
+                        "session_name": (user or {}).get("session_name", ""),
+                        "session_id": (user or {}).get("session_id", ""),
+                        "state": (user or {}).get("state", ""),
+                        "logon_time": (user or {}).get("logon_time", ""),
+                        "agent_id": agent.agent_id,
+                        "host_name": agent.host_name,
+                    }
+                )
+        recent_users.extend(agent_users)
+        recent_agents.append(
+            {
+                "agent_id": agent.agent_id,
+                "host_name": agent.host_name,
+                "host_ip": agent.host_ip,
+                "status": agent.status,
+                "last_seen": agent.last_seen.isoformat() if agent.last_seen else "",
+                "last_inventory_at": agent.last_inventory_at.isoformat() if agent.last_inventory_at else "",
+                "hardware_count": agent.hardware_components.filter(status="active").count(),
+                "software_count": agent.software_records.filter(is_present=True).count(),
+                "network_count": agent.network_identities.filter(is_active=True).count(),
+                "timeline_count": agent.timeline_events.exclude(category="dlp").count(),
+                "logged_users": agent_users,
+                "latest_inventory": latest_inventory,
+            }
+        )
+
+    recent_timeline = []
+    for event in AgentTimelineEvent.objects.exclude(category="dlp").order_by("-observed_at")[:40]:
+        recent_timeline.append(
+            {
+                "title": event.title,
+                "description": event.description,
+                "category": event.category,
+                "severity": event.severity,
+                "observed_at": event.observed_at.isoformat() if event.observed_at else "",
+                "agent_id": event.agent.agent_id,
+                "host_name": event.agent.host_name,
+            }
+        )
+
+    recent_hardware = []
+    for item in AgentHardwareComponent.objects.select_related("agent").order_by("-last_seen")[:30]:
+        recent_hardware.append(
+            {
+                "agent_id": item.agent.agent_id,
+                "host_name": item.agent.host_name,
+                "component_type": item.component_type,
+                "name": item.name,
+                "serial_number": item.serial_number,
+                "status": item.status,
+            }
+        )
+
+    recent_software = []
+    for item in AgentSoftwareRecord.objects.select_related("agent").filter(is_present=True).order_by("-last_seen")[:30]:
+        recent_software.append(
+            {
+                "agent_id": item.agent.agent_id,
+                "host_name": item.agent.host_name,
+                "name": item.name,
+                "version": item.version,
+                "publisher": item.publisher,
+                "is_present": item.is_present,
+                "last_seen": item.last_seen.isoformat() if item.last_seen else "",
+            }
+        )
+
+    top_software = []
+    for item in AgentSoftwareRecord.objects.select_related("agent").filter(is_present=True).order_by("-last_seen")[:20]:
+        top_software.append(
+            {
+                "agent_id": item.agent.agent_id,
+                "host_name": item.agent.host_name,
+                "name": item.name,
+                "version": item.version,
+                "publisher": item.publisher,
+                "last_seen": item.last_seen.isoformat() if item.last_seen else "",
+            }
+        )
+
+    return {
+        "stats": {
+            "agents_total": AgentDevice.objects.count(),
+            "agents_online": AgentDevice.objects.filter(status="online").count(),
+            "hardware_total": AgentHardwareComponent.objects.filter(status="active").count(),
+            "software_total": AgentSoftwareRecord.objects.filter(is_present=True).count(),
+            "network_total": AgentNetworkIdentity.objects.filter(is_active=True).count(),
+            "timeline_total": AgentTimelineEvent.objects.exclude(category="dlp").count(),
+            "users_total": len(recent_users),
+        },
+        "recent_agents": recent_agents,
+        "recent_timeline": recent_timeline,
+        "recent_hardware": recent_hardware,
+        "recent_software": recent_software,
+        "top_software": top_software,
+        "recent_users": recent_users[:50],
+    }
+
+
+def _serialize_dlp_policy(policy):
+    rules = []
+    for rule in policy.rules.all().order_by("name"):
+        rules.append(
+            {
+                "id": rule.id,
+                "name": rule.name,
+                "classification": rule.classification,
+                "severity": rule.severity,
+                "match_type": rule.match_type,
+                "pattern": rule.pattern,
+                "tags": rule.tags or [],
+                "enabled": rule.enabled,
+            }
+        )
+    return {
+        "id": policy.id,
+        "name": policy.name,
+        "code": policy.code,
+        "description": policy.description,
+        "enabled": policy.enabled,
+        "severity": policy.severity,
+        "scan_paths": policy.scan_paths or [],
+        "monitored_extensions": policy.monitored_extensions or [],
+        "max_file_size_mb": policy.max_file_size_mb,
+        "rule_count": len([rule for rule in rules if rule["enabled"]]),
+        "rules": rules,
+    }
+
+
+def _serialize_dlp_incident(incident):
+    return {
+        "id": incident.id,
+        "detected_at": incident.detected_at.isoformat() if incident.detected_at else "",
+        "agent_id": incident.agent.agent_id,
+        "host_name": incident.agent.host_name,
+        "policy_name": incident.policy.name if incident.policy else "",
+        "policy_code": incident.policy.code if incident.policy else "",
+        "rule_name": incident.rule.name if incident.rule else "",
+        "classification": incident.classification,
+        "severity": incident.severity,
+        "file_name": incident.file_name,
+        "file_path": incident.file_path,
+        "channel": incident.channel,
+        "status": incident.status,
+        "actor": incident.actor,
+        "metadata": incident.metadata or {},
+    }
+
+
+def _serialize_dlp_dashboard():
+    from inventory.models import AegisDlpIncident, AegisDlpPolicy, AegisDlpRule
+    from inventory.services import ensure_default_aegis_policy
+
+    ensure_default_aegis_policy()
+
+    policies = AegisDlpPolicy.objects.prefetch_related("rules").order_by("name")
+    incidents = AegisDlpIncident.objects.select_related("agent", "policy", "rule").order_by("-detected_at")[:50]
+    return {
+        "stats": {
+            "policies_total": AegisDlpPolicy.objects.filter(enabled=True).count(),
+            "rules_total": AegisDlpRule.objects.filter(enabled=True).count(),
+            "incidents_open": AegisDlpIncident.objects.filter(status="open").count(),
+            "incidents_total": AegisDlpIncident.objects.count(),
+        },
+        "policies": [_serialize_dlp_policy(policy) for policy in policies],
+        "incidents": [_serialize_dlp_incident(incident) for incident in incidents],
+    }
 
 @login_required
 def dlp_rule_save(request, policy_id, rule_id=None):
@@ -153,6 +427,9 @@ def dlp_rule_delete(request, policy_id, rule_id):
 @login_required
 def dlp_policy_list(request):
     from inventory.models import AegisDlpPolicy
+    from inventory.services import ensure_default_aegis_policy
+
+    ensure_default_aegis_policy()
 
     if request.method == "POST":
         policy_id = request.POST.get("policy_id", "").strip()
@@ -190,6 +467,9 @@ def dlp_policy_list(request):
 @login_required
 def dlp_policy_create(request):
     from inventory.models import AegisDlpPolicy, AegisDlpRule
+    from inventory.services import ensure_default_aegis_policy
+
+    ensure_default_aegis_policy()
 
     if request.method == "POST":
         scan_paths = [item.strip() for item in request.POST.get("scan_paths", "").splitlines() if item.strip()]
@@ -225,6 +505,9 @@ def dlp_policy_create(request):
 @login_required
 def dlp_policy_edit(request, policy_id):
     from inventory.models import AegisDlpPolicy, AegisDlpRule
+    from inventory.services import ensure_default_aegis_policy
+
+    ensure_default_aegis_policy()
 
     policy = get_object_or_404(AegisDlpPolicy, id=policy_id)
     if request.method == "POST":

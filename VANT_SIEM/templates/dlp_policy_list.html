@@ -1,6 +1,6 @@
 {% extends "dashboard.html" %}
 
-{% block title %}Políticas DLP | VANT-SIEM{% endblock %}
+{% block title %}Politicas DLP | VANT-SIEM{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -28,6 +28,9 @@
     color: #e5e7eb;
     border: 1px solid rgba(255,255,255,0.12);
   }
+  .policy-card[hidden] {
+    display: none !important;
+  }
 </style>
 {% endblock %}
 
@@ -36,18 +39,19 @@
   <div class="policy-shell mb-4">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
       <div>
-        <h2 class="mb-1">Políticas y Reglas Aegis DLP</h2>
-        <p class="text-muted mb-0">Administra las reglas soberanas para información clasificada, secreta y restringida.</p>
+        <h2 class="mb-1">Politicas y Reglas Aegis DLP</h2>
+        <p class="text-muted mb-0">Administra las reglas soberanas para informacion clasificada, secreta y restringida.</p>
       </div>
-      <div class="d-flex gap-2">
+      <div class="d-flex gap-2 flex-wrap">
+        <input class="form-control" id="policy-search" placeholder="Buscar politicas, reglas o patrones" style="max-width: 320px;">
         <a class="btn btn-outline-warning btn-sm" href="{% url 'dlp-service-dashboard' %}">Volver al panel</a>
-        <a class="btn btn-warning btn-sm" href="{% url 'dlp-policy-create' %}">Nueva política</a>
+        <a class="btn btn-warning btn-sm" href="{% url 'dlp-policy-create' %}">Nueva politica</a>
       </div>
     </div>
   </div>
 
   <div class="policy-form mb-4">
-    <h5>{% if edit_policy %}Editar política{% else %}Crear política{% endif %}</h5>
+    <h5>{% if edit_policy %}Editar politica{% else %}Crear politica{% endif %}</h5>
     <form method="post" action="{% if edit_policy %}{% url 'dlp-policy-edit' edit_policy.id %}{% else %}{% url 'dlp-policy-list' %}{% endif %}">
       {% csrf_token %}
       <input type="hidden" name="policy_id" value="{{ edit_policy.id|default:'' }}">
@@ -108,19 +112,19 @@
   </div>
   {% endif %}
 
-  <div class="row g-3">
+  <div class="row g-3" id="policy-grid">
     {% for policy in policies %}
-    <div class="col-12">
+    <div class="col-12 policy-card-wrap" data-search-text="{{ policy.name }} {{ policy.code }} {{ policy.description }} {% for rule in policy.rules.all %}{{ rule.name }} {{ rule.pattern }} {{ rule.classification }} {% endfor %}">
       <div class="policy-card">
         <div class="d-flex justify-content-between flex-wrap gap-3">
           <div>
             <h5 class="mb-1">{{ policy.name }}</h5>
             <div class="text-muted small">{{ policy.code }} | {{ policy.severity }} | {% if policy.enabled %}habilitada{% else %}deshabilitada{% endif %}</div>
-            <div class="text-muted small">{{ policy.description|default:"Sin descripción" }}</div>
+            <div class="text-muted small">{{ policy.description|default:"Sin descripcion" }}</div>
           </div>
           <div class="d-flex gap-2">
             <a class="btn btn-sm btn-outline-info" href="{% url 'dlp-policy-edit' policy.id %}">Editar</a>
-            <form method="post" action="{% url 'dlp-policy-edit' policy.id %}" onsubmit="return confirm('Eliminar esta política?');">
+            <form method="post" action="{% url 'dlp-policy-edit' policy.id %}" onsubmit="return confirm('Eliminar esta politica?');">
               {% csrf_token %}
               <input type="hidden" name="action" value="delete">
               <button class="btn btn-sm btn-outline-danger" type="submit">Eliminar</button>
@@ -145,7 +149,7 @@
           <h6>Reglas</h6>
           <div class="table-responsive">
             <table class="table table-dark table-hover policy-table mb-0">
-              <thead><tr><th>Nombre</th><th>Clasificación</th><th>Severidad</th><th>Tipo</th><th>Patrón</th><th>Estado</th><th></th></tr></thead>
+              <thead><tr><th>Nombre</th><th>Clasificacion</th><th>Severidad</th><th>Tipo</th><th>Patron</th><th>Estado</th><th></th></tr></thead>
               <tbody>
                 {% for rule in policy.rules.all %}
                 <tr>
@@ -177,7 +181,7 @@
             {% csrf_token %}
             <div class="row g-2">
               <div class="col-md-3"><input class="form-control" name="name" placeholder="Nombre"></div>
-              <div class="col-md-3"><input class="form-control" name="classification" placeholder="Clasificación"></div>
+              <div class="col-md-3"><input class="form-control" name="classification" placeholder="Clasificacion"></div>
               <div class="col-md-2"><input class="form-control" name="severity" value="high"></div>
               <div class="col-md-2">
                 <select class="form-select" name="match_type">
@@ -203,9 +207,20 @@
     </div>
     {% empty %}
     <div class="col-12">
-      <div class="policy-card text-muted">No hay políticas definidas.</div>
+      <div class="policy-card text-muted">No hay politicas definidas.</div>
     </div>
     {% endfor %}
   </div>
 </div>
+<script>
+  const policySearch = document.getElementById("policy-search");
+  const policyCards = Array.from(document.querySelectorAll(".policy-card-wrap"));
+  policySearch?.addEventListener("input", () => {
+    const term = policySearch.value.trim().toLowerCase();
+    policyCards.forEach((node) => {
+      const haystack = (node.dataset.searchText || node.textContent || "").toLowerCase();
+      node.hidden = !!term && !haystack.includes(term);
+    });
+  });
+</script>
 {% endblock %}

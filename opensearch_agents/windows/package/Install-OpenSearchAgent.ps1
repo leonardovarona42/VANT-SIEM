@@ -63,11 +63,20 @@ if (Test-Path $traySource) {
 if (Test-Path $cfgSource) {
     Copy-Item $cfgSource (Join-Path $InstallDir "config.yaml") -Force
 }
+if (Test-Path (Join-Path $scriptDir "staticfiles")) {
+    Copy-Item (Join-Path $scriptDir "staticfiles") (Join-Path $InstallDir "staticfiles") -Recurse -Force
+}
 
 $cfgPath = Join-Path $InstallDir "config.yaml"
 $arg = "--config `"$cfgPath`""
 $trayExe = Join-Path $InstallDir "vant-opensearch-agent-tray.exe"
 $trayArg = "--config `"$cfgPath`" --monitor-only"
+$runKeyPath = if ($UserMode) {
+    "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+} else {
+    "HKLM:\Software\Microsoft\Windows\CurrentVersion\Run"
+}
+$runValueName = "VANTOpenSearchAgentTray"
 
 $action = New-ScheduledTaskAction -Execute $exePath -Argument $arg
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1)
@@ -97,6 +106,8 @@ if (Test-Path $trayExe) {
     $shortcut.IconLocation = "$trayExe,0"
     $shortcut.Description = "VANT-SIEM Agent tray"
     $shortcut.Save()
+    New-Item -Path $runKeyPath -Force | Out-Null
+    Set-ItemProperty -Path $runKeyPath -Name $runValueName -Value "`"$trayExe`" $trayArg" -Force
 }
 
 if ($RunNow) {

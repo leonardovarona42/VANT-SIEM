@@ -242,12 +242,12 @@ def run_with_stop(config_path, stop_event):
     inventory_service = AuditInventoryService(config_path) if inventory_enabled else None
     dlp_service = AegisDlpService(config_path, cfg) if dlp_enabled else None
     inventory_seconds = int(control_cfg.get("inventory_seconds", 86400))
-    dlp_poll_seconds = int(control_cfg.get("dlp_poll_seconds", max(300, min(inventory_seconds, 3600))))
-    dlp_scan_seconds = int(control_cfg.get("dlp_scan_seconds", max(300, min(inventory_seconds, 1800))))
+    dlp_poll_seconds = int(control_cfg.get("dlp_poll_seconds", max(30, min(inventory_seconds, 120))))
+    dlp_scan_seconds = int(control_cfg.get("dlp_scan_seconds", max(30, min(inventory_seconds, 60))))
     next_control = time.time() + control_poll
     next_inventory = time.time()
     next_dlp_poll = time.time()
-    next_dlp_scan = time.time() + dlp_scan_seconds
+    next_dlp_scan = time.time()
     cycle = 0
 
     logger.info(

@@ -36,20 +36,56 @@ def _save_state(path, data):
 
 def _expand_scan_paths(paths):
     expanded = []
+    seen = set()
     for path in paths or []:
         value = os.path.expandvars(os.path.expanduser(path))
-        if value:
-            expanded.append(Path(value))
+        if not value:
+            continue
+        resolved = str(Path(value))
+        key = resolved.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        expanded.append(Path(resolved))
     return expanded
 
 
 def _default_paths():
-    userprofile = os.environ.get("USERPROFILE", "")
-    return [
-        Path(userprofile) / "Desktop",
-        Path(userprofile) / "Documents",
-        Path(userprofile) / "Downloads",
-    ]
+    paths = []
+    system_drive = os.environ.get("SystemDrive", "C:").rstrip("\\/")
+    users_root = Path(f"{system_drive}\\") / "Users"
+    public_root = users_root / "Public"
+    for root in (public_root,):
+        paths.extend(
+            [
+                root / "Desktop",
+                root / "Documents",
+                root / "Downloads",
+            ]
+        )
+
+    if users_root.exists():
+        for profile in users_root.iterdir():
+            if not profile.is_dir():
+                continue
+            if profile.name.lower() in {"all users", "default", "default user", "public"}:
+                continue
+            paths.extend(
+                [
+                    profile / "Desktop",
+                    profile / "Documents",
+                    profile / "Downloads",
+                ]
+            )
+
+    program_data = Path(os.environ.get("ProgramData", r"C:\ProgramData"))
+    paths.extend(
+        [
+            program_data / "VANT" / "Drops",
+            Path(os.environ.get("TEMP", r"C:\Temp")),
+        ]
+    )
+    return _expand_scan_paths([str(path) for path in paths])
 
 
 def _iter_files(paths, extensions, max_file_size):
@@ -129,6 +165,26 @@ def _path_channel(path):
     return "filesystem"
 
 
+def _metadata_haystack(path, content):
+    stat = path.stat() if path.exists() else None
+    values = [
+        path.name,
+        str(path),
+        path.suffix.lower(),
+        _file_owner(path),
+        content,
+    ]
+    if stat is not None:
+        values.extend(
+            [
+                str(stat.st_size),
+                datetime.fromtimestamp(stat.st_ctime, tz=timezone.utc).isoformat(),
+                datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
+            ]
+        )
+    return "\n".join([item for item in values if item]).lower()
+
+
 class AegisDlpService:
     module_name = "aegis_dlp"
 
@@ -188,7 +244,7 @@ class AegisDlpService:
         known = set(self.state.get("incident_keys", []))
         for path in _iter_files(paths, monitored_extensions, max_file_size):
             content = _read_file_text(path)
-            haystack = f"{path.name}\n{str(path)}\n{content}".lower()
+            haystack = _metadata_haystack(path, content)
             if not haystack.strip():
                 continue
             for policy, rule in rules:
@@ -196,8 +252,12 @@ class AegisDlpService:
                 if not pattern:
                     continue
                 matched_terms = []
-                if rule.get("match_type") == "regex":
+                match_type = (rule.get("match_type") or "keyword").strip().lower()
+                if match_type == "regex":
                     if re.search(pattern, haystack, flags=re.IGNORECASE):
+                        matched_terms.append(pattern)
+                elif match_type == "metadata":
+                    if pattern.lower() in haystack:
                         matched_terms.append(pattern)
                 else:
                     if pattern.lower() in haystack:

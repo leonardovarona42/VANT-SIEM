@@ -28,6 +28,18 @@ def load_cfg(path):
     return yaml.safe_load(p.read_text(encoding="utf-8")) or {}
 
 
+def _build_tray_icon():
+    for candidate in _CANDIDATES:
+        if candidate.exists():
+            icon = QtGui.QIcon(str(candidate))
+            if not icon.isNull():
+                return icon
+    app = QtWidgets.QApplication.instance()
+    if app is not None:
+        return app.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_ComputerIcon)
+    return QtGui.QIcon()
+
+
 class StopDialog(QtWidgets.QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -65,8 +77,9 @@ class AgentTray(QtWidgets.QSystemTrayIcon):
         self.cfg = load_cfg(config_path)
         self.stop_event = threading.Event()
         self.monitor_only = monitor_only
+        self.tray_available = QtWidgets.QSystemTrayIcon.isSystemTrayAvailable()
 
-        icon = QtGui.QIcon(str(LOGO_PATH)) if LOGO_PATH.exists() else QtGui.QIcon()
+        icon = _build_tray_icon()
         self.setIcon(icon)
         self.setToolTip("VANT-SIEM Agent v1.01")
 
@@ -94,8 +107,22 @@ class AgentTray(QtWidgets.QSystemTrayIcon):
         else:
             self.worker = None
 
-        self.show()
+        self.setVisible(True)
         QtWidgets.QApplication.instance().setQuitOnLastWindowClosed(False)
+        if self.tray_available and not icon.isNull():
+            self.showMessage(
+                "VANT-SIEM Agent",
+                "Agente listo en la bandeja del sistema.",
+                icon,
+                2500,
+            )
+        elif not self.tray_available:
+            QtWidgets.QMessageBox.warning(
+                None,
+                "VANT-SIEM Agent",
+                "La bandeja del sistema no esta disponible en esta sesion. "
+                "El agente seguira ejecutandose, pero no se mostrara icono.",
+            )
 
     def _show_status(self):
         QtWidgets.QMessageBox.information(

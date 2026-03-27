@@ -338,7 +338,10 @@
   }
 
   async function issueCommand(agentId, command) {
-    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    const csrftoken = document.cookie
+      .split("; ")
+      .find((item) => item.startsWith("csrftoken="))
+      ?.split("=")[1];
     const res = await fetch("{% url 'agent-command-issue' %}", {
       method: "POST",
       headers: {
@@ -349,10 +352,11 @@
     });
     const data = await res.json();
     if (data.ok) {
-      alert(`Comando ${command} enviado a ${agentId}`);
-    } else {
-      alert(data.error || "No se pudo enviar el comando");
+      showToast(`Comando ${command} enviado a ${agentId}`);
+      loadAgents();
+      return;
     }
+    showToast(data.error || "No se pudo enviar el comando", "error");
   }
 
   function showToast(message, tone = "info") {

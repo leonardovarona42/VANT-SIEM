@@ -75,14 +75,98 @@ def _normalize_apps(items):
     return apps
 
 
-def _parse_logged_users(raw_text):
+def _collect_text_output(command):
+    raw = _safe_text_command(command)
+    return [line.rstrip() for line in raw.splitlines() if line.strip()]
+
+
+def _normalize_user_name(value):
+    return (value or "").strip().replace("/", "\\")
+
+
+def _collect_cim_logged_users():
+    return _safe_json_command(
+        'powershell -NoProfile -Command "Get-CimInstance Win32_LoggedOnUser | '
+        'ForEach-Object { '
+        '$antecedent = $_.Antecedent; '
+        'if ($antecedent -match \'Domain=\\\"(?<domain>[^\\\"]+)\\\",Name=\\\"(?<name>[^\\\"]+)\\\"\') { '
+        '[PSCustomObject]@{ Username = ($Matches.domain + \'\\\\\' + $Matches.name) } '
+        '} '
+        '} | Sort-Object Username -Unique | ConvertTo-Json -Compress"'
+    )
+
+
+def _collect_process_logged_users():
+    return _safe_json_command(
+        'powershell -NoProfile -Command "Get-Process explorer -IncludeUserName -ErrorAction SilentlyContinue | '
+        'Select-Object -Property UserName,ProcessName | Sort-Object UserName -Unique | ConvertTo-Json -Compress"'
+    )
+
+
+def _parse_logged_users(raw_text, fallback_user=""):
     users = []
+    seen = set()
     for line in raw_text.splitlines():
-        if not line.strip() or line.lower().startswith("username"):
+        cleaned = line.strip()
+        if not cleaned:
             continue
-        parts = [p for p in re.split(r"\s{2,}", line.strip()) if p]
-        if parts:
-            users.append({"username": parts[0], "raw": line.strip()})
+        lower = cleaned.lower()
+        if lower.startswith("username") or lower.startswith("sessionname") or lower.startswith("estado"):
+            continue
+        cleaned = cleaned.lstrip(">").strip()
+        match = re.match(
+            r"^(?P<username>\S+)\s+(?P<session_name>\S+)\s+(?P<session_id>\d+)\s+"
+            r"(?P<state>\S+)\s+(?P<idle_time>\S+)\s+(?P<logon_time>.+)$",
+            cleaned,
+        )
+        if match:
+            item = {
+                "username": match.group("username").strip(),
+                "session_name": match.group("session_name").strip(),
+                "session_id": match.group("session_id").strip(),
+                "state": match.group("state").strip(),
+                "idle_time": match.group("idle_time").strip(),
+                "logon_time": match.group("logon_time").strip(),
+                "raw": line.strip(),
+            }
+        else:
+            parts = [p for p in re.split(r"\s{2,}", cleaned) if p]
+            if not parts:
+                continue
+            item = {
+                "username": parts[0].lstrip(">").strip(),
+                "session_name": parts[1].strip() if len(parts) > 1 else "",
+                "session_id": parts[2].strip() if len(parts) > 2 else "",
+                "state": parts[3].strip() if len(parts) > 3 else "",
+                "idle_time": parts[4].strip() if len(parts) > 4 else "",
+                "logon_time": parts[5].strip() if len(parts) > 5 else "",
+                "raw": line.strip(),
+            }
+        fingerprint = (
+            item["username"].lower(),
+            item.get("session_name", "").lower(),
+            item.get("session_id", ""),
+        )
+        if fingerprint in seen or not item["username"]:
+            continue
+        seen.add(fingerprint)
+        users.append(item)
+
+    if fallback_user:
+        fallback_user = _normalize_user_name(fallback_user)
+        fingerprint = (fallback_user.lower(), "", "")
+        if fallback_user and fingerprint not in seen:
+            users.append(
+                {
+                    "username": fallback_user,
+                    "session_name": "console",
+                    "session_id": "",
+                    "state": "active",
+                    "idle_time": "",
+                    "logon_time": "",
+                    "raw": fallback_user,
+                }
+            )
     return users
 
 
@@ -256,9 +340,52 @@ def _collect_windows_inventory():
             }
         )
 
-    logged_users = _safe_text_command("query user")
-    inventory["raw"]["logged_users"] = logged_users
-    inventory["users"] = _parse_logged_users(logged_users)
+    current_user = _normalize_user_name(_safe_text_command(
+        'powershell -NoProfile -Command "try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8; (Get-CimInstance Win32_ComputerSystem | Select-Object -ExpandProperty UserName) } catch { \"\" }"'
+    ).strip())
+    query_user_lines = _collect_text_output("query user")
+    quser_lines = _collect_text_output("quser")
+    cim_logged_users = _collect_cim_logged_users()
+    process_logged_users = _collect_process_logged_users()
+    inventory["raw"]["logged_users_query"] = "\n".join(query_user_lines)
+    inventory["raw"]["logged_users_quser"] = "\n".join(quser_lines)
+    inventory["raw"]["logged_users_cim"] = cim_logged_users
+    inventory["raw"]["logged_users_process"] = process_logged_users
+    inventory["raw"]["current_user"] = current_user
+    inventory["users"] = _parse_logged_users("\n".join(query_user_lines + quser_lines), fallback_user=current_user)
+    known_users = {item.get("username", "").strip().lower() for item in inventory["users"] if item.get("username")}
+
+    for item in cim_logged_users:
+        username = _normalize_user_name(item.get("Username", ""))
+        if username and username.lower() not in known_users:
+            known_users.add(username.lower())
+            inventory["users"].append(
+                {
+                    "username": username,
+                    "session_name": "cim",
+                    "session_id": "",
+                    "state": "observed",
+                    "idle_time": "",
+                    "logon_time": "",
+                    "raw": username,
+                }
+            )
+
+    for item in process_logged_users:
+        username = _normalize_user_name(item.get("UserName", ""))
+        if username and username.lower() not in known_users:
+            known_users.add(username.lower())
+            inventory["users"].append(
+                {
+                    "username": username,
+                    "session_name": item.get("ProcessName", "explorer"),
+                    "session_id": "",
+                    "state": "interactive",
+                    "idle_time": "",
+                    "logon_time": "",
+                    "raw": username,
+                }
+            )
     return inventory
 
 

@@ -7,12 +7,15 @@
   <div class="card bg-dark border-secondary">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
       <strong>Incidentes Aegis DLP</strong>
-      <a class="btn btn-sm btn-outline-info" href="{% url 'dlp-service-dashboard' %}">Dashboard DLP</a>
+      <div class="d-flex gap-2 flex-wrap">
+        <input class="form-control form-control-sm bg-dark text-light" id="incident-search" placeholder="Buscar archivo, actor o clasificacion" style="max-width: 280px;">
+        <a class="btn btn-sm btn-outline-info" href="{% url 'dlp-service-dashboard' %}">Dashboard DLP</a>
+      </div>
     </div>
     <div class="card-body">
       <form class="row g-2 mb-3" method="get">
         <div class="col-md-4">
-          <select class="form-select bg-dark text-light" name="status">
+          <select class="form-select bg-dark text-light" id="incident-status" name="status">
             <option value="">Todos los estados</option>
             <option value="open" {% if status_filter == "open" %}selected{% endif %}>open</option>
             <option value="reviewing" {% if status_filter == "reviewing" %}selected{% endif %}>reviewing</option>
@@ -25,7 +28,7 @@
         </div>
       </form>
       <div class="table-responsive">
-        <table class="table table-dark table-hover">
+        <table class="table table-dark table-hover" id="incident-table">
           <thead>
             <tr>
               <th>Fecha</th>
@@ -38,11 +41,11 @@
           </thead>
           <tbody>
             {% for incident in incidents %}
-            <tr>
+            <tr data-status="{{ incident.status }}" data-search-text="{{ incident.classification }} {{ incident.file_name }} {{ incident.file_path }} {{ incident.actor }} {{ incident.agent.host_name|default:incident.agent.agent_id }}">
               <td>{{ incident.detected_at }}</td>
               <td>{{ incident.agent.host_name|default:incident.agent.agent_id }}</td>
               <td>{{ incident.classification|default:"sensible" }}</td>
-              <td>{{ incident.file_name|default:"--" }}</td>
+              <td title="{{ incident.file_path }}">{{ incident.file_name|default:"--" }}</td>
               <td>{{ incident.status }}</td>
               <td>
                 <form method="post" action="{% url 'dlp-incident-update' incident.id %}" class="d-flex gap-2">
@@ -66,4 +69,23 @@
     </div>
   </div>
 </div>
+<script>
+  const incidentSearch = document.getElementById("incident-search");
+  const incidentStatus = document.getElementById("incident-status");
+  const incidentRows = Array.from(document.querySelectorAll("#incident-table tbody tr"));
+
+  function applyIncidentFilters() {
+    const term = (incidentSearch?.value || "").trim().toLowerCase();
+    const status = (incidentStatus?.value || "").trim().toLowerCase();
+    incidentRows.forEach((row) => {
+      const haystack = (row.dataset.searchText || row.textContent || "").toLowerCase();
+      const matchesText = !term || haystack.includes(term);
+      const matchesStatus = !status || (row.dataset.status || "").toLowerCase() === status;
+      row.style.display = matchesText && matchesStatus ? "" : "none";
+    });
+  }
+
+  incidentSearch?.addEventListener("input", applyIncidentFilters);
+  incidentStatus?.addEventListener("change", applyIncidentFilters);
+</script>
 {% endblock %}

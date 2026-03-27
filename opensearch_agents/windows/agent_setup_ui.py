@@ -617,8 +617,8 @@ control:
   require_https: {str(require_https).lower()}
   poll_seconds: 30
   inventory_seconds: 86400
-  dlp_poll_seconds: 900
-  dlp_scan_seconds: 900
+  dlp_poll_seconds: 60
+  dlp_scan_seconds: 30
 
 asset_audit:
   enabled: true

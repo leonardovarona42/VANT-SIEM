@@ -36,9 +36,18 @@ $startupDir = if ($UserMode) {
 } else {
     [Environment]::GetFolderPath("CommonStartup")
 }
+$runKeyPath = if ($UserMode) {
+    "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+} else {
+    "HKLM:\Software\Microsoft\Windows\CurrentVersion\Run"
+}
+$runValueName = "VANTOpenSearchAgentTray"
 $shortcutPath = Join-Path $startupDir "VANT-OpenSearch-Agent Tray.lnk"
 if (Test-Path $shortcutPath) {
     Remove-Item $shortcutPath -Force -ErrorAction SilentlyContinue
+}
+if (Test-Path $runKeyPath) {
+    Remove-ItemProperty -Path $runKeyPath -Name $runValueName -ErrorAction SilentlyContinue
 }
 
 if (-not $KeepFiles -and (Test-Path $InstallDir)) {

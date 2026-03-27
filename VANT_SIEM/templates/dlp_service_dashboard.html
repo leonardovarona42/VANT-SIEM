@@ -20,6 +20,52 @@
   .dlp-table th, .dlp-table td { color: #e5e7eb; }
   .sev-critical { color: #fca5a5; }
   .sev-high { color: #fdba74; }
+  .dlp-toolbar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .dlp-policy-card {
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    cursor: pointer;
+  }
+  .dlp-policy-card:last-child {
+    border-bottom: 0;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+  .dlp-policy-card.is-expanded .dlp-policy-extra {
+    display: block;
+  }
+  .dlp-policy-extra {
+    display: none;
+    margin-top: 10px;
+  }
+  .dlp-search {
+    background: #0b162a;
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #e5e7eb;
+  }
+  .dlp-chip {
+    border-radius: 999px;
+    padding: 4px 10px;
+    background: rgba(248, 113, 113, 0.12);
+    border: 1px solid rgba(248, 113, 113, 0.25);
+    color: #fecaca;
+    font-size: 12px;
+  }
+  .dlp-row-active {
+    background: rgba(248, 113, 113, 0.08);
+  }
+  .dlp-detail {
+    background: rgba(11, 22, 42, 0.92);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 14px;
+  }
 </style>
 {% endblock %}
 
@@ -29,51 +75,85 @@
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
       <div>
         <h2 class="mb-1">Aegis DLP</h2>
-        <p class="text-muted mb-0">Protección de información clasificada, secreta, restringida y reglas soberanas personalizadas.</p>
+        <p class="text-muted mb-0">Proteccion de informacion clasificada, secreta, restringida y reglas soberanas personalizadas.</p>
       </div>
-      <div class="d-flex gap-2">
+      <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-outline-secondary btn-sm" type="button" onclick="refreshDlpDashboard()">Actualizar</button>
         <a class="btn btn-outline-warning btn-sm" href="{% url 'inventory-service-dashboard' %}">Ir a Inventario</a>
-        <a class="btn btn-warning btn-sm" href="/admin/inventory/aegisdlppolicy/">Administrar políticas</a>
+        <a class="btn btn-warning btn-sm" href="{% url 'dlp-policy-list' %}">Administrar politicas</a>
+        <a class="btn btn-outline-info btn-sm" href="{% url 'dlp-policy-create' %}">Nueva politica</a>
+        <a class="btn btn-outline-light btn-sm" href="{% url 'dlp-incident-list' %}">Ver incidentes</a>
       </div>
     </div>
   </div>
 
   <div class="row g-3 mb-4">
-    <div class="col-md-3"><div class="dlp-stat"><h6>Políticas activas</h6><div class="display-6">{{ policies_total }}</div></div></div>
-    <div class="col-md-3"><div class="dlp-stat"><h6>Reglas activas</h6><div class="display-6">{{ rules_total }}</div></div></div>
-    <div class="col-md-3"><div class="dlp-stat"><h6>Incidentes abiertos</h6><div class="display-6">{{ incidents_open }}</div></div></div>
-    <div class="col-md-3"><div class="dlp-stat"><h6>Incidentes totales</h6><div class="display-6">{{ incidents_total }}</div></div></div>
+    <div class="col-md-3"><div class="dlp-stat"><h6>Politicas activas</h6><div class="display-6" id="dlp-stat-policies">{{ policies_total }}</div></div></div>
+    <div class="col-md-3"><div class="dlp-stat"><h6>Reglas activas</h6><div class="display-6" id="dlp-stat-rules">{{ rules_total }}</div></div></div>
+    <div class="col-md-3"><div class="dlp-stat"><h6>Incidentes abiertos</h6><div class="display-6" id="dlp-stat-open">{{ incidents_open }}</div></div></div>
+    <div class="col-md-3"><div class="dlp-stat"><h6>Incidentes totales</h6><div class="display-6" id="dlp-stat-total">{{ incidents_total }}</div></div></div>
+  </div>
+
+  <div class="dlp-card mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <h5 class="mb-1">Explorador DLP</h5>
+        <small class="text-muted">Busca politicas, reglas, clasificaciones, archivos y canales desde la misma vista.</small>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <input class="form-control dlp-search" id="dlp-search" placeholder="Filtrar politicas, reglas, archivos o clasificaciones" style="max-width: 380px;">
+        <select class="form-select dlp-search" id="dlp-status-filter" style="max-width: 180px;">
+          <option value="">Todos los estados</option>
+          <option value="open">open</option>
+          <option value="reviewing">reviewing</option>
+          <option value="contained">contained</option>
+          <option value="closed">closed</option>
+        </select>
+      </div>
+    </div>
   </div>
 
   <div class="row g-3">
     <div class="col-lg-5">
       <div class="dlp-card">
-        <h5>Políticas desplegadas</h5>
-        {% for policy in policies %}
-        <div class="mb-3 pb-3 border-bottom border-secondary">
-          <div class="d-flex justify-content-between gap-2">
-            <strong>{{ policy.name }}</strong>
-            <span class="badge bg-danger">{{ policy.severity }}</span>
-          </div>
-          <div class="text-muted small mb-2">{{ policy.description|default:"Sin descripción" }}</div>
-          <div class="small text-info mb-1">Código: {{ policy.code }}</div>
-          <div class="small text-muted">Extensiones: {{ policy.monitored_extensions|join:", " }}</div>
-          <div class="small text-muted">Reglas: {{ policy.rules.count }}</div>
+        <div class="dlp-toolbar">
+          <strong class="me-auto">Politicas desplegadas</strong>
+          <span class="dlp-chip">Click para expandir</span>
         </div>
-        {% empty %}
-        <div class="text-muted">No hay políticas DLP activas.</div>
-        {% endfor %}
+        <div id="dlp-policy-list">
+          {% for policy in enabled_policies %}
+          <div class="dlp-policy-card" data-search-text="{{ policy.name }} {{ policy.code }} {{ policy.description }} {% for rule in policy.rules.all %}{{ rule.name }} {{ rule.pattern }} {{ rule.classification }} {% endfor %}">
+            <div class="d-flex justify-content-between gap-2">
+              <strong>{{ policy.name }}</strong>
+              <span class="badge bg-danger">{{ policy.severity }}</span>
+            </div>
+            <div class="text-muted small mb-2">{{ policy.description|default:"Sin descripcion" }}</div>
+            <div class="small text-info mb-1">Codigo: {{ policy.code }}</div>
+            <div class="small text-muted">Extensiones: {{ policy.monitored_extensions|join:", " }}</div>
+            <div class="small text-muted">Reglas: {{ policy.rules.count }}</div>
+            <div class="dlp-policy-extra">
+              <div class="small text-muted"><strong>Rutas:</strong> {{ policy.scan_paths|join:", "|default:"Sin rutas definidas" }}</div>
+              <div class="small text-muted"><strong>Reglas activas:</strong> {% for rule in policy.rules.all %}{{ rule.name }}{% if not forloop.last %}, {% endif %}{% empty %}Sin reglas{% endfor %}</div>
+            </div>
+          </div>
+          {% empty %}
+          <div class="text-muted">No hay politicas DLP activas.</div>
+          {% endfor %}
+        </div>
       </div>
     </div>
     <div class="col-lg-7">
       <div class="dlp-card">
-        <h5>Incidentes recientes</h5>
+        <div class="dlp-toolbar">
+          <strong class="me-auto">Incidentes recientes</strong>
+          <input class="form-control form-control-sm dlp-search" id="dlp-incident-search" placeholder="Buscar incidente, archivo o clasificacion">
+        </div>
         <div class="table-responsive">
-          <table class="table table-dark table-hover dlp-table">
-            <thead><tr><th>Fecha</th><th>Agente</th><th>Clasificación</th><th>Archivo</th><th>Canal</th><th>Estado</th></tr></thead>
+          <table class="table table-dark table-hover dlp-table" id="dlp-incidents-table">
+            <thead><tr><th>Fecha</th><th>Agente</th><th>Clasificacion</th><th>Archivo</th><th>Canal</th><th>Estado</th></tr></thead>
             <tbody>
               {% for incident in incidents_recent %}
-              <tr>
+              <tr data-search-text="{{ incident.classification }} {{ incident.file_name }} {{ incident.file_path }} {{ incident.channel }} {{ incident.policy.code|default:'' }} {{ incident.rule.name|default:'' }}" data-status="{{ incident.status }}" data-detail='{"agent":"{{ incident.agent.host_name|default:incident.agent.agent_id|escapejs }}","classification":"{{ incident.classification|default:"sensible"|escapejs }}","severity":"{{ incident.severity|escapejs }}","file":"{{ incident.file_name|default:"--"|escapejs }}","path":"{{ incident.file_path|default:"--"|escapejs }}","channel":"{{ incident.channel|default:"filesystem"|escapejs }}","status":"{{ incident.status|escapejs }}","actor":"{{ incident.actor|default:"--"|escapejs }}","policy":"{{ incident.policy.code|default:"--"|escapejs }}","rule":"{{ incident.rule.name|default:"--"|escapejs }}","detected_at":"{{ incident.detected_at|escapejs }}"}'>
                 <td>{{ incident.detected_at }}</td>
                 <td>{{ incident.agent.host_name|default:incident.agent.agent_id }}</td>
                 <td class="{% if incident.severity == 'critical' %}sev-critical{% elif incident.severity == 'high' %}sev-high{% endif %}">
@@ -84,13 +164,172 @@
                 <td>{{ incident.status }}</td>
               </tr>
               {% empty %}
-              <tr><td colspan="6" class="text-muted">Sin incidentes DLP todavía.</td></tr>
+              <tr><td colspan="6" class="text-muted">Sin incidentes DLP todavia.</td></tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
       </div>
+      <div class="dlp-detail mt-3" id="dlp-incident-detail">
+        <strong class="d-block mb-2">Detalle rapido</strong>
+        <div class="text-muted">Selecciona un incidente para ver actor, ruta, politica y regla asociada.</div>
+      </div>
     </div>
   </div>
 </div>
+<script>
+  const dlpSearch = document.getElementById("dlp-search");
+  const incidentSearch = document.getElementById("dlp-incident-search");
+  const statusFilter = document.getElementById("dlp-status-filter");
+  const detailPanel = document.getElementById("dlp-incident-detail");
+  let dlpRefreshTimer = null;
+
+  function policyCards() {
+    return Array.from(document.querySelectorAll("#dlp-policy-list .dlp-policy-card"));
+  }
+
+  function incidentRows() {
+    return Array.from(document.querySelectorAll("#dlp-incidents-table tbody tr"));
+  }
+
+  function applyDlpFilters() {
+    const term = (dlpSearch?.value || incidentSearch?.value || "").trim().toLowerCase();
+    const incidentTerm = (incidentSearch?.value || dlpSearch?.value || "").trim().toLowerCase();
+    const selectedStatus = (statusFilter?.value || "").trim().toLowerCase();
+
+    policyCards().forEach((node) => {
+      const text = (node.dataset.searchText || node.textContent || "").toLowerCase();
+      const match = !term || text.includes(term);
+      node.style.display = match ? "" : "none";
+      node.classList.toggle("is-expanded", match && !!term);
+    });
+
+    incidentRows().forEach((row) => {
+      const text = (row.dataset.searchText || row.textContent || "").toLowerCase();
+      const matchesText = !incidentTerm || text.includes(incidentTerm);
+      const matchesStatus = !selectedStatus || (row.dataset.status || "").toLowerCase() === selectedStatus;
+      row.style.display = matchesText && matchesStatus ? "" : "none";
+    });
+  }
+
+  function bindIncidentRows() {
+    incidentRows().forEach((row) => {
+      row.addEventListener("click", () => {
+        incidentRows().forEach((item) => item.classList.remove("dlp-row-active"));
+        row.classList.add("dlp-row-active");
+        try {
+          let rawDetail = row.dataset.detail || "{}";
+          let data = {};
+          try {
+            data = JSON.parse(rawDetail);
+          } catch (plainError) {
+            data = JSON.parse(decodeURIComponent(rawDetail || "%7B%7D"));
+          }
+          detailPanel.innerHTML = `
+            <strong class="d-block mb-2">Detalle rapido</strong>
+            <div class="row g-2">
+              <div class="col-md-6"><span class="text-muted">Agente:</span> ${data.agent || "--"}</div>
+              <div class="col-md-6"><span class="text-muted">Clasificacion:</span> ${data.classification || "--"} (${data.severity || "--"})</div>
+              <div class="col-md-6"><span class="text-muted">Archivo:</span> ${data.file || "--"}</div>
+              <div class="col-md-6"><span class="text-muted">Canal:</span> ${data.channel || "--"}</div>
+              <div class="col-md-6"><span class="text-muted">Politica:</span> ${data.policy || "--"}</div>
+              <div class="col-md-6"><span class="text-muted">Regla:</span> ${data.rule || "--"}</div>
+              <div class="col-md-6"><span class="text-muted">Actor:</span> ${data.actor || "--"}</div>
+              <div class="col-md-6"><span class="text-muted">Estado:</span> ${data.status || "--"}</div>
+              <div class="col-12"><span class="text-muted">Ruta:</span> ${data.path || "--"}</div>
+              <div class="col-12"><span class="text-muted">Fecha:</span> ${data.detected_at || "--"}</div>
+            </div>
+          `;
+        } catch (error) {
+          console.error("Incident detail parse failed", error);
+        }
+      });
+    });
+  }
+
+  function renderPolicies(policies) {
+    const root = document.getElementById("dlp-policy-list");
+    if (!root) return;
+    if (!policies.length) {
+      root.innerHTML = '<div class="text-muted">No hay politicas DLP activas.</div>';
+      return;
+    }
+    root.innerHTML = policies.map((policy) => `
+      <div class="dlp-policy-card" data-search-text="${`${policy.name} ${policy.code} ${policy.description} ${(policy.rules || []).map((rule) => `${rule.name} ${rule.pattern} ${rule.classification}`).join(" ")}`.toLowerCase()}">
+        <div class="d-flex justify-content-between gap-2">
+          <strong>${policy.name}</strong>
+          <span class="badge bg-danger">${policy.severity || "high"}</span>
+        </div>
+        <div class="text-muted small mb-2">${policy.description || "Sin descripcion"}</div>
+        <div class="small text-info mb-1">Codigo: ${policy.code || "--"}</div>
+        <div class="small text-muted">Extensiones: ${(policy.monitored_extensions || []).join(", ") || "Sin extensiones"}</div>
+        <div class="small text-muted">Reglas: ${(policy.rules || []).length}</div>
+        <div class="dlp-policy-extra">
+          <div class="small text-muted"><strong>Rutas:</strong> ${(policy.scan_paths || []).join(", ") || "Sin rutas definidas"}</div>
+          <div class="small text-muted"><strong>Reglas activas:</strong> ${(policy.rules || []).map((rule) => rule.name).join(", ") || "Sin reglas"}</div>
+        </div>
+      </div>
+    `).join("");
+    policyCards().forEach((card) => {
+      card.addEventListener("click", () => card.classList.toggle("is-expanded"));
+    });
+  }
+
+  function renderIncidents(incidents) {
+    const tbody = document.querySelector("#dlp-incidents-table tbody");
+    if (!tbody) return;
+    if (!incidents.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-muted">Sin incidentes DLP todavia.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = incidents.map((incident) => `
+      <tr data-search-text="${`${incident.classification} ${incident.file_name} ${incident.file_path} ${incident.channel} ${incident.policy_code} ${incident.rule_name}`.toLowerCase()}" data-status="${incident.status || ""}" data-detail="${encodeURIComponent(JSON.stringify({
+        agent: incident.host_name || incident.agent_id || "--",
+        classification: incident.classification || "sensible",
+        severity: incident.severity || "--",
+        file: incident.file_name || "--",
+        path: incident.file_path || "--",
+        channel: incident.channel || "filesystem",
+        status: incident.status || "--",
+        actor: incident.actor || "--",
+        policy: incident.policy_code || "--",
+        rule: incident.rule_name || "--",
+        detected_at: incident.detected_at || "--",
+      }))}">
+        <td>${incident.detected_at || "--"}</td>
+        <td>${incident.host_name || incident.agent_id || "--"}</td>
+        <td class="${incident.severity === "critical" ? "sev-critical" : (incident.severity === "high" ? "sev-high" : "")}">${incident.classification || "sensible"}</td>
+        <td title="${incident.file_path || ""}">${incident.file_name || "--"}</td>
+        <td>${incident.channel || "filesystem"}</td>
+        <td>${incident.status || "--"}</td>
+      </tr>
+    `).join("");
+    bindIncidentRows();
+    applyDlpFilters();
+  }
+
+  async function refreshDlpDashboard() {
+    try {
+      const res = await fetch("{% url 'dlp-dashboard-api' %}");
+      const data = await res.json();
+      if (!data.ok) return;
+      document.getElementById("dlp-stat-policies").textContent = data.stats.policies_total ?? 0;
+      document.getElementById("dlp-stat-rules").textContent = data.stats.rules_total ?? 0;
+      document.getElementById("dlp-stat-open").textContent = data.stats.incidents_open ?? 0;
+      document.getElementById("dlp-stat-total").textContent = data.stats.incidents_total ?? 0;
+      renderPolicies(data.policies || []);
+      renderIncidents(data.incidents || []);
+    } catch (error) {
+      console.error("DLP dashboard refresh failed", error);
+    }
+  }
+
+  dlpSearch?.addEventListener("input", applyDlpFilters);
+  incidentSearch?.addEventListener("input", applyDlpFilters);
+  statusFilter?.addEventListener("change", applyDlpFilters);
+  policyCards().forEach((card) => card.addEventListener("click", () => card.classList.toggle("is-expanded")));
+  bindIncidentRows();
+  if (dlpRefreshTimer) clearInterval(dlpRefreshTimer);
+  dlpRefreshTimer = setInterval(refreshDlpDashboard, 15000);
+</script>
 {% endblock %}

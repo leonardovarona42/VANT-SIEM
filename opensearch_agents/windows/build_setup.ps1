@@ -108,6 +108,9 @@ if (Test-Path $bootstrapKey) {
 
 $packageAbs = (Resolve-Path $packageDir).Path
 $logoAbs = (Resolve-Path "staticfiles\img\logo.png").Path
+$packageStaticDir = Join-Path $packageDir "staticfiles\img"
+New-Item -ItemType Directory -Path $packageStaticDir -Force | Out-Null
+Copy-Item $logoAbs (Join-Path $packageStaticDir "logo.png") -Force
 
 & $PythonExe -m PyInstaller `
   --noconfirm `
