@@ -71,7 +71,14 @@
       <div class="inv-card">
         <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
           <h5 class="mb-0">Agentes recientes</h5>
-          <span class="inv-chip">Refresh cada 15s</span>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="inv-chip">Refresh cada 15s</span>
+            <select class="form-select form-select-sm inv-filter" id="inventory-agents-size" style="width: 90px;">
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="20">20</option>
+            </select>
+          </div>
         </div>
         <div class="d-flex gap-2 mb-3">
           <input class="form-control" id="inventory-agent-search" placeholder="Buscar agente, host, software o usuario">
@@ -94,6 +101,13 @@
               {% endfor %}
             </tbody>
           </table>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+          <small class="text-muted" id="inventory-agents-info"></small>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-info" type="button" id="inventory-agents-prev">Anterior</button>
+            <button class="btn btn-outline-info" type="button" id="inventory-agents-next">Siguiente</button>
+          </div>
         </div>
       </div>
     </div>
@@ -119,7 +133,14 @@
       <div class="inv-card">
         <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
           <h5 class="mb-0">Usuarios observados</h5>
-          <span class="badge bg-info text-dark" id="inventory-users-count">{{ users_total }}</span>
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="badge bg-info text-dark" id="inventory-users-count">{{ users_total }}</span>
+            <select class="form-select form-select-sm inv-filter" id="inventory-users-size" style="width: 90px;">
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="20">20</option>
+            </select>
+          </div>
         </div>
         <div class="table-responsive">
           <table class="table table-dark table-hover inv-table" id="inventory-users-table">
@@ -139,11 +160,25 @@
             </tbody>
           </table>
         </div>
+        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+          <small class="text-muted" id="inventory-users-info"></small>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-info" type="button" id="inventory-users-prev">Anterior</button>
+            <button class="btn btn-outline-info" type="button" id="inventory-users-next">Siguiente</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="col-lg-6">
       <div class="inv-card">
-        <h5>Hardware observado</h5>
+        <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+          <h5 class="mb-0">Hardware observado</h5>
+          <select class="form-select form-select-sm inv-filter" id="inventory-hardware-size" style="width: 90px;">
+            <option value="5">5</option>
+            <option value="10" selected>10</option>
+            <option value="20">20</option>
+          </select>
+        </div>
         <div class="table-responsive">
           <table class="table table-dark table-hover inv-table" id="inventory-hardware-table">
             <thead><tr><th>Agente</th><th>Tipo</th><th>Nombre</th><th>Serial</th><th>Estado</th></tr></thead>
@@ -162,11 +197,25 @@
             </tbody>
           </table>
         </div>
+        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+          <small class="text-muted" id="inventory-hardware-info"></small>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-info" type="button" id="inventory-hardware-prev">Anterior</button>
+            <button class="btn btn-outline-info" type="button" id="inventory-hardware-next">Siguiente</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="col-lg-6">
       <div class="inv-card">
-        <h5>Software observado</h5>
+        <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+          <h5 class="mb-0">Software observado</h5>
+          <select class="form-select form-select-sm inv-filter" id="inventory-software-size" style="width: 90px;">
+            <option value="5">5</option>
+            <option value="10" selected>10</option>
+            <option value="20">20</option>
+          </select>
+        </div>
         <div class="table-responsive">
           <table class="table table-dark table-hover inv-table" id="inventory-software-table">
             <thead><tr><th>Agente</th><th>Software</th><th>Version</th><th>Proveedor</th><th>Presente</th></tr></thead>
@@ -185,11 +234,25 @@
             </tbody>
           </table>
         </div>
+        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+          <small class="text-muted" id="inventory-software-info"></small>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-info" type="button" id="inventory-software-prev">Anterior</button>
+            <button class="btn btn-outline-info" type="button" id="inventory-software-next">Siguiente</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="col-12">
       <div class="inv-card">
-        <h5>Software de mayor actividad</h5>
+        <div class="d-flex justify-content-between align-items-center gap-2 mb-3 flex-wrap">
+          <h5 class="mb-0">Software de mayor actividad</h5>
+          <select class="form-select form-select-sm inv-filter" id="inventory-top-software-size" style="width: 90px;">
+            <option value="5">5</option>
+            <option value="10" selected>10</option>
+            <option value="20">20</option>
+          </select>
+        </div>
         <div class="table-responsive">
           <table class="table table-dark table-hover inv-table" id="inventory-top-software-table">
             <thead><tr><th>Agente</th><th>Software</th><th>Version</th><th>Proveedor</th><th>Ultima observacion</th></tr></thead>
@@ -208,6 +271,13 @@
             </tbody>
           </table>
         </div>
+        <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+          <small class="text-muted" id="inventory-top-software-info"></small>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-outline-info" type="button" id="inventory-top-software-prev">Anterior</button>
+            <button class="btn btn-outline-info" type="button" id="inventory-top-software-next">Siguiente</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -216,12 +286,13 @@
   const inventorySearch = document.getElementById("inventory-agent-search");
   let inventoryRefreshTimer = null;
 
-  function filterRows(tableId, term) {
-    const rows = document.querySelectorAll(`#${tableId} tbody tr`);
-    rows.forEach((row) => {
-      row.style.display = row.textContent.toLowerCase().includes(term) ? "" : "none";
-    });
-  }
+  const inventoryPagers = {
+    agents: null,
+    hardware: null,
+    software: null,
+    topSoftware: null,
+    users: null,
+  };
 
   function renderInventoryTable(tableId, rows, emptyMessage, colspan = 6) {
     const tbody = document.querySelector(`#${tableId} tbody`);
@@ -233,23 +304,31 @@
     tbody.innerHTML = rows.join("");
   }
 
+  function updateInventoryStats(data) {
+    document.getElementById("inv-stat-agents").textContent = data.stats.agents_total ?? 0;
+    document.getElementById("inv-stat-online").textContent = data.stats.agents_online ?? 0;
+    document.getElementById("inv-stat-hardware").textContent = data.stats.hardware_total ?? 0;
+    document.getElementById("inv-stat-software").textContent = data.stats.software_total ?? 0;
+    document.getElementById("inv-stat-timeline").textContent = data.stats.timeline_total ?? 0;
+    document.getElementById("inventory-users-count").textContent = data.stats.users_total ?? 0;
+  }
+
+  function refreshInventoryPagers() {
+    Object.values(inventoryPagers).forEach((pager) => pager?.refresh?.());
+  }
+
   async function refreshInventoryDashboard() {
     try {
       const res = await fetch("{% url 'inventory-dashboard-api' %}");
       const data = await res.json();
       if (!data.ok) return;
 
-      document.getElementById("inv-stat-agents").textContent = data.stats.agents_total ?? 0;
-      document.getElementById("inv-stat-online").textContent = data.stats.agents_online ?? 0;
-      document.getElementById("inv-stat-hardware").textContent = data.stats.hardware_total ?? 0;
-      document.getElementById("inv-stat-software").textContent = data.stats.software_total ?? 0;
-      document.getElementById("inv-stat-timeline").textContent = data.stats.timeline_total ?? 0;
-      document.getElementById("inventory-users-count").textContent = data.stats.users_total ?? 0;
+      updateInventoryStats(data);
 
       renderInventoryTable(
         "inventory-agents-table",
         (data.recent_agents || []).map((agent) => `
-          <tr>
+          <tr data-search-text="${`${agent.agent_id} ${agent.host_name || ""} ${agent.host_ip || ""} ${agent.status || ""}`.toLowerCase()}">
             <td><a class="link-info" href="/siem/dashboard/devices/management/${agent.agent_id}/">${agent.agent_id}</a></td>
             <td>${agent.host_name || "--"}</td>
             <td>${agent.status || "--"}</td>
@@ -264,7 +343,7 @@
       renderInventoryTable(
         "inventory-users-table",
         (data.recent_users || []).map((item) => `
-          <tr>
+          <tr data-search-text="${`${item.host_name || ""} ${item.agent_id || ""} ${item.username || ""} ${item.session_name || ""} ${item.state || ""}`.toLowerCase()}">
             <td>${item.host_name || item.agent_id || "--"}</td>
             <td>${item.username || "--"}</td>
             <td>${item.session_name || item.session || "--"}</td>
@@ -279,7 +358,7 @@
       renderInventoryTable(
         "inventory-hardware-table",
         (data.recent_hardware || []).map((item) => `
-          <tr>
+          <tr data-search-text="${`${item.host_name || ""} ${item.agent_id || ""} ${item.component_type || ""} ${item.name || ""} ${item.serial_number || ""}`.toLowerCase()}">
             <td>${item.host_name || item.agent_id || "--"}</td>
             <td>${item.component_type || "--"}</td>
             <td>${item.name || "--"}</td>
@@ -294,7 +373,7 @@
       renderInventoryTable(
         "inventory-software-table",
         (data.recent_software || []).map((item) => `
-          <tr>
+          <tr data-search-text="${`${item.host_name || ""} ${item.agent_id || ""} ${item.name || ""} ${item.version || ""} ${item.publisher || ""}`.toLowerCase()}">
             <td>${item.host_name || item.agent_id || "--"}</td>
             <td>${item.name || "--"}</td>
             <td>${item.version || "--"}</td>
@@ -309,7 +388,7 @@
       renderInventoryTable(
         "inventory-top-software-table",
         (data.top_software || []).map((item) => `
-          <tr>
+          <tr data-search-text="${`${item.host_name || ""} ${item.agent_id || ""} ${item.name || ""} ${item.version || ""} ${item.publisher || ""}`.toLowerCase()}">
             <td>${item.host_name || item.agent_id || "--"}</td>
             <td>${item.name || "--"}</td>
             <td>${item.version || "--"}</td>
@@ -337,21 +416,66 @@
           : '<li class="text-muted">Sin eventos de inventario todavia.</li>';
       }
 
-      const term = inventorySearch?.value.trim().toLowerCase() || "";
-      ["inventory-agents-table", "inventory-users-table", "inventory-hardware-table", "inventory-software-table", "inventory-top-software-table"]
-        .forEach((id) => filterRows(id, term));
+      refreshInventoryPagers();
     } catch (error) {
       console.error("Inventory dashboard refresh failed", error);
     }
   }
 
-  inventorySearch?.addEventListener("input", () => {
-    const term = inventorySearch.value.trim().toLowerCase();
-    ["inventory-agents-table", "inventory-users-table", "inventory-hardware-table", "inventory-software-table", "inventory-top-software-table"]
-      .forEach((id) => filterRows(id, term));
+  document.addEventListener("DOMContentLoaded", () => {
+    inventoryPagers.agents = window.VANT_UI.setupTablePager({
+      tableId: "inventory-agents-table",
+      searchInputId: "inventory-agent-search",
+      pageSizeSelectId: "inventory-agents-size",
+      prevButtonId: "inventory-agents-prev",
+      nextButtonId: "inventory-agents-next",
+      pageInfoId: "inventory-agents-info",
+      defaultPageSize: 10,
+      emptyMessage: "Sin agentes inventariados.",
+    });
+    inventoryPagers.hardware = window.VANT_UI.setupTablePager({
+      tableId: "inventory-hardware-table",
+      searchInputId: "inventory-agent-search",
+      pageSizeSelectId: "inventory-hardware-size",
+      prevButtonId: "inventory-hardware-prev",
+      nextButtonId: "inventory-hardware-next",
+      pageInfoId: "inventory-hardware-info",
+      defaultPageSize: 10,
+      emptyMessage: "Sin hardware observado.",
+    });
+    inventoryPagers.software = window.VANT_UI.setupTablePager({
+      tableId: "inventory-software-table",
+      searchInputId: "inventory-agent-search",
+      pageSizeSelectId: "inventory-software-size",
+      prevButtonId: "inventory-software-prev",
+      nextButtonId: "inventory-software-next",
+      pageInfoId: "inventory-software-info",
+      defaultPageSize: 10,
+      emptyMessage: "Sin software inventariado.",
+    });
+    inventoryPagers.topSoftware = window.VANT_UI.setupTablePager({
+      tableId: "inventory-top-software-table",
+      searchInputId: "inventory-agent-search",
+      pageSizeSelectId: "inventory-top-software-size",
+      prevButtonId: "inventory-top-software-prev",
+      nextButtonId: "inventory-top-software-next",
+      pageInfoId: "inventory-top-software-info",
+      defaultPageSize: 10,
+      emptyMessage: "Sin software inventariado.",
+    });
+    inventoryPagers.users = window.VANT_UI.setupTablePager({
+      tableId: "inventory-users-table",
+      searchInputId: "inventory-agent-search",
+      pageSizeSelectId: "inventory-users-size",
+      prevButtonId: "inventory-users-prev",
+      nextButtonId: "inventory-users-next",
+      pageInfoId: "inventory-users-info",
+      defaultPageSize: 10,
+      emptyMessage: "Sin sesiones observadas todavia.",
+    });
+    refreshInventoryDashboard();
+    if (inventoryRefreshTimer) clearInterval(inventoryRefreshTimer);
+    inventoryRefreshTimer = setInterval(refreshInventoryDashboard, 15000);
   });
-
-  if (inventoryRefreshTimer) clearInterval(inventoryRefreshTimer);
-  inventoryRefreshTimer = setInterval(refreshInventoryDashboard, 15000);
 </script>
 {% endblock %}

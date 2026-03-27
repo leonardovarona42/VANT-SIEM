@@ -27,6 +27,28 @@ Assert-BuildDependency -ModuleName "requests"
 Assert-BuildDependency -ModuleName "yaml" -PipName "pyyaml"
 Assert-BuildDependency -ModuleName "PyQt6"
 
+function New-LogoIcon {
+    param(
+        [string]$PngPath,
+        [string]$IcoPath
+    )
+
+    Add-Type -AssemblyName System.Drawing
+    $bitmap = [System.Drawing.Bitmap]::FromFile($PngPath)
+    try {
+        $icon = [System.Drawing.Icon]::FromHandle($bitmap.GetHicon())
+        $stream = [System.IO.File]::Open($IcoPath, [System.IO.FileMode]::Create)
+        try {
+            $icon.Save($stream)
+        } finally {
+            $stream.Dispose()
+            $icon.Dispose()
+        }
+    } finally {
+        $bitmap.Dispose()
+    }
+}
+
 $repoRoot = (Resolve-Path ".").Path
 $windowsDir = Join-Path $repoRoot "opensearch_agents\windows"
 $buildRoot = Join-Path $env:TEMP ("vant-opensearch-build-" + (Get-Date -Format "yyyyMMddHHmmss"))
@@ -40,6 +62,9 @@ $traySpec = Join-Path $buildRoot "tray-spec"
 $packageDir = Join-Path $windowsDir "package"
 $configsDir = Join-Path $windowsDir "configs"
 $outputExe = Join-Path $windowsDir "opensearch_agent_setup.exe"
+$logoAbs = (Resolve-Path "staticfiles\img\logo.png").Path
+$iconPath = Join-Path $buildRoot "vant_logo.ico"
+$versionFile = Join-Path $buildRoot "version_info.txt"
 
 if (Test-Path $buildRoot) {
     Remove-Item $buildRoot -Recurse -Force
@@ -53,6 +78,42 @@ foreach ($path in @($agentWork, $agentSpec, $agentDist, $trayWork, $traySpec, $s
     New-Item -ItemType Directory -Path $path -Force | Out-Null
 }
 
+New-LogoIcon -PngPath $logoAbs -IcoPath $iconPath
+@"
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(1, 0, 2, 0),
+    prodvers=(1, 0, 2, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo(
+      [
+        StringTable(
+          '040904B0',
+          [
+            StringStruct('CompanyName', 'Leonardo L. Varona Tabares'),
+            StringStruct('FileDescription', 'VANT-SIEM OpenSearch Agent'),
+            StringStruct('FileVersion', '1.0.2'),
+            StringStruct('InternalName', 'vant-opensearch-agent'),
+            StringStruct('OriginalFilename', 'vant-opensearch-agent.exe'),
+            StringStruct('ProductName', 'VANT-SIEM OpenSearch Agent'),
+            StringStruct('ProductVersion', '1.0.2'),
+            StringStruct('Comments', 'Contacto: leonardovarona42@gmail.com')
+          ]
+        )
+      ]
+    ),
+    VarFileInfo([VarStruct('Translation', [1033, 1200])])
+  ]
+)
+"@ | Set-Content -Path $versionFile -Encoding ASCII
+
 if (Test-Path $outputExe) {
     Remove-Item $outputExe -Force
 }
@@ -62,6 +123,8 @@ if (Test-Path $outputExe) {
   --clean `
   --onefile `
   --name "vant-opensearch-agent" `
+  --icon $iconPath `
+  --version-file $versionFile `
   --paths "opensearch_agents" `
   --hidden-import "yaml" `
   --hidden-import "requests" `
@@ -81,6 +144,8 @@ if (-not (Test-Path $agentExe)) {
   --onefile `
   --windowed `
   --name "vant-opensearch-agent-tray" `
+  --icon $iconPath `
+  --version-file $versionFile `
   --paths "opensearch_agents" `
   --hidden-import "agent" `
   --hidden-import "PyQt6.sip" `
@@ -107,6 +172,7 @@ Copy-Item $agentExe (Join-Path $packageDir "vant-opensearch-agent.exe") -Force
 Copy-Item $trayExe (Join-Path $packageDir "vant-opensearch-agent-tray.exe") -Force
 Copy-Item (Join-Path $windowsDir "Install-OpenSearchAgent.ps1") (Join-Path $packageDir "Install-OpenSearchAgent.ps1") -Force
 Copy-Item (Join-Path $windowsDir "Uninstall-OpenSearchAgent.ps1") (Join-Path $packageDir "Uninstall-OpenSearchAgent.ps1") -Force
+Copy-Item (Join-Path $windowsDir "Configure-Snort.ps1") (Join-Path $packageDir "Configure-Snort.ps1") -Force
 Copy-Item (Join-Path $configsDir "config.yaml") (Join-Path $packageDir "config.yaml") -Force
 Copy-Item (Join-Path $configsDir "config.windows-server-ad.yaml") (Join-Path $packageDir "config.windows-server-ad.yaml") -Force
 Copy-Item (Join-Path $configsDir "config.windows11-ids.yaml") (Join-Path $packageDir "config.windows11-ids.yaml") -Force
@@ -117,7 +183,6 @@ if (Test-Path $bootstrapKey) {
 }
 
 $packageAbs = (Resolve-Path $packageDir).Path
-$logoAbs = (Resolve-Path "staticfiles\img\logo.png").Path
 $packageStaticDir = Join-Path $packageDir "staticfiles\img"
 New-Item -ItemType Directory -Path $packageStaticDir -Force | Out-Null
 Copy-Item $logoAbs (Join-Path $packageStaticDir "logo.png") -Force
@@ -128,6 +193,8 @@ Copy-Item $logoAbs (Join-Path $packageStaticDir "logo.png") -Force
   --onefile `
   --windowed `
   --name "opensearch_agent_setup" `
+  --icon $iconPath `
+  --version-file $versionFile `
   --hidden-import "PyQt6.sip" `
   --hidden-import "PyQt6.QtCore" `
   --hidden-import "PyQt6.QtGui" `

@@ -57,7 +57,7 @@ def _is_admin():
 
 def _default_paths():
     return {
-        "snort": "C:/Snort/log/alerts.fast",
+        "snort": "C:/Snort",
         "suricata": "C:/suricata/logs/eve.json",
         "postgres": "C:/Program Files/PostgreSQL/16/data/log/postgresql.log",
         "file_logs": "C:/ProgramData/VANT/logs/audit.log",

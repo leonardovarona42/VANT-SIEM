@@ -1502,7 +1502,7 @@
  });
 
  // Funcion para actualizar notificaciones
- async function updateNotifications() {
+async function updateNotifications() {
  try {
  const response = await fetch('{% url "get-notifications" %}');
  const data = await response.json();
@@ -1518,6 +1518,103 @@
  console.error("Error al actualizar notificaciones:", error);
  }
  }
+
+ window.VANT_UI = window.VANT_UI || {};
+ window.VANT_UI.setupTablePager = function setupTablePager(options) {
+ const table = document.getElementById(options.tableId);
+ if (!table || !table.tBodies.length) return null;
+
+ const tbody = table.tBodies[0];
+ const headers = table.querySelectorAll("thead th").length || 1;
+ const searchInput = options.searchInputId ? document.getElementById(options.searchInputId) : null;
+ const pageSizeSelect = options.pageSizeSelectId ? document.getElementById(options.pageSizeSelectId) : null;
+ const pageInfo = options.pageInfoId ? document.getElementById(options.pageInfoId) : null;
+ const prevButton = options.prevButtonId ? document.getElementById(options.prevButtonId) : null;
+ const nextButton = options.nextButtonId ? document.getElementById(options.nextButtonId) : null;
+ const rowFilter = options.rowFilter || null;
+ const emptyMessage = options.emptyMessage || "Sin registros.";
+ const defaultPageSize = Number(pageSizeSelect?.value || options.defaultPageSize || 8);
+ let state = {
+ page: 1,
+ pageSize: defaultPageSize,
+ rows: Array.from(tbody.querySelectorAll("tr")).map((row) => row.cloneNode(true)),
+ };
+
+ function getFilteredRows() {
+ const term = (searchInput?.value || "").trim().toLowerCase();
+ return state.rows.filter((row) => {
+ const allowed = rowFilter ? rowFilter(row) : true;
+ if (!allowed) return false;
+ const searchable = (row.dataset.searchText || row.textContent || "").toLowerCase();
+ return !term || searchable.includes(term);
+ });
+ }
+
+ function render() {
+ const filtered = getFilteredRows();
+ const totalPages = Math.max(1, Math.ceil(filtered.length / state.pageSize));
+ state.page = Math.min(Math.max(1, state.page), totalPages);
+ const start = (state.page - 1) * state.pageSize;
+ const pageRows = filtered.slice(start, start + state.pageSize);
+
+ tbody.innerHTML = "";
+ if (!pageRows.length) {
+ const row = document.createElement("tr");
+ const cell = document.createElement("td");
+ cell.colSpan = headers;
+ cell.className = "text-muted";
+ cell.textContent = emptyMessage;
+ row.appendChild(cell);
+ tbody.appendChild(row);
+ } else {
+ pageRows.forEach((row) => tbody.appendChild(row.cloneNode(true)));
+ }
+
+ if (pageInfo) {
+ const from = filtered.length ? start + 1 : 0;
+ const to = start + pageRows.length;
+ pageInfo.textContent = `${from}-${to} de ${filtered.length}`;
+ }
+ if (prevButton) prevButton.disabled = state.page <= 1;
+ if (nextButton) nextButton.disabled = state.page >= totalPages;
+ if (options.onRender) options.onRender({ filteredCount: filtered.length, page: state.page, totalPages });
+ }
+
+ if (searchInput) {
+ searchInput.addEventListener("input", () => {
+ state.page = 1;
+ render();
+ });
+ }
+ if (pageSizeSelect) {
+ pageSizeSelect.addEventListener("change", () => {
+ state.pageSize = Math.max(1, Number(pageSizeSelect.value || defaultPageSize));
+ state.page = 1;
+ render();
+ });
+ }
+ if (prevButton) {
+ prevButton.addEventListener("click", () => {
+ state.page -= 1;
+ render();
+ });
+ }
+ if (nextButton) {
+ nextButton.addEventListener("click", () => {
+ state.page += 1;
+ render();
+ });
+ }
+
+ render();
+ return {
+ refresh() {
+ state.rows = Array.from(tbody.querySelectorAll("tr")).map((row) => row.cloneNode(true));
+ render();
+ },
+ render,
+ };
+ };
  </script>
  </body>
 </html>

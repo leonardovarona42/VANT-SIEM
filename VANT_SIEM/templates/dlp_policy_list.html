@@ -112,6 +112,14 @@
   </div>
   {% endif %}
 
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <small class="text-muted" id="policy-info"></small>
+    <div class="btn-group btn-group-sm">
+      <button class="btn btn-outline-info" type="button" id="policy-prev">Anterior</button>
+      <button class="btn btn-outline-info" type="button" id="policy-next">Siguiente</button>
+    </div>
+  </div>
+
   <div class="row g-3" id="policy-grid">
     {% for policy in policies %}
     <div class="col-12 policy-card-wrap" data-search-text="{{ policy.name }} {{ policy.code }} {{ policy.description }} {% for rule in policy.rules.all %}{{ rule.name }} {{ rule.pattern }} {{ rule.classification }} {% endfor %}">
@@ -214,13 +222,47 @@
 </div>
 <script>
   const policySearch = document.getElementById("policy-search");
+  const policyPrev = document.getElementById("policy-prev");
+  const policyNext = document.getElementById("policy-next");
+  const policyInfo = document.getElementById("policy-info");
   const policyCards = Array.from(document.querySelectorAll(".policy-card-wrap"));
-  policySearch?.addEventListener("input", () => {
+  const policyPageSize = 4;
+  let policyPage = 1;
+
+  function renderPolicyCards() {
     const term = policySearch.value.trim().toLowerCase();
-    policyCards.forEach((node) => {
+    const visible = policyCards.filter((node) => {
       const haystack = (node.dataset.searchText || node.textContent || "").toLowerCase();
-      node.hidden = !!term && !haystack.includes(term);
+      return !term || haystack.includes(term);
     });
+    const totalPages = Math.max(1, Math.ceil(visible.length / policyPageSize));
+    policyPage = Math.min(Math.max(1, policyPage), totalPages);
+    const start = (policyPage - 1) * policyPageSize;
+    const allowed = new Set(visible.slice(start, start + policyPageSize));
+    policyCards.forEach((node) => {
+      node.hidden = !allowed.has(node);
+    });
+    if (policyInfo) {
+      const from = visible.length ? start + 1 : 0;
+      const to = Math.min(start + policyPageSize, visible.length);
+      policyInfo.textContent = `${from}-${to} de ${visible.length}`;
+    }
+    if (policyPrev) policyPrev.disabled = policyPage <= 1;
+    if (policyNext) policyNext.disabled = policyPage >= totalPages;
+  }
+
+  policySearch?.addEventListener("input", () => {
+    policyPage = 1;
+    renderPolicyCards();
   });
+  policyPrev?.addEventListener("click", () => {
+    policyPage -= 1;
+    renderPolicyCards();
+  });
+  policyNext?.addEventListener("click", () => {
+    policyPage += 1;
+    renderPolicyCards();
+  });
+  renderPolicyCards();
 </script>
 {% endblock %}

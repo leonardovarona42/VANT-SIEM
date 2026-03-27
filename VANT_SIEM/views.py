@@ -49,10 +49,10 @@ def devices_management(request):
 def inventory_service_dashboard(request):
     from inventory.models import AgentDevice, AgentHardwareComponent, AgentNetworkIdentity, AgentSoftwareRecord, AgentTimelineEvent
 
-    agents = AgentDevice.objects.order_by("-last_seen")[:20]
-    recent_timeline = AgentTimelineEvent.objects.exclude(category="dlp").order_by("-observed_at")[:40]
-    recent_hardware = AgentHardwareComponent.objects.select_related("agent").order_by("-last_seen")[:30]
-    recent_software = AgentSoftwareRecord.objects.select_related("agent").filter(is_present=True).order_by("-last_seen")[:30]
+    agents = AgentDevice.objects.order_by("-last_seen")[:40]
+    recent_timeline = AgentTimelineEvent.objects.exclude(category="dlp").order_by("-observed_at")[:80]
+    recent_hardware = AgentHardwareComponent.objects.select_related("agent").order_by("-last_seen")[:60]
+    recent_software = AgentSoftwareRecord.objects.select_related("agent").filter(is_present=True).order_by("-last_seen")[:60]
     recent_users = []
     seen_users = set()
     for agent in AgentDevice.objects.order_by("-last_inventory_at", "-last_seen")[:50]:
@@ -77,9 +77,9 @@ def inventory_service_dashboard(request):
                     "raw": user.get("raw", ""),
                 }
             )
-            if len(recent_users) >= 30:
+            if len(recent_users) >= 60:
                 break
-        if len(recent_users) >= 30:
+        if len(recent_users) >= 60:
             break
     agent_cards = []
     for agent in agents:
@@ -106,7 +106,7 @@ def inventory_service_dashboard(request):
         "recent_hardware": recent_hardware,
         "recent_software": recent_software,
         "recent_users": recent_users,
-        "top_software": AgentSoftwareRecord.objects.filter(is_present=True).order_by("-last_seen")[:20],
+        "top_software": AgentSoftwareRecord.objects.filter(is_present=True).order_by("-last_seen")[:40],
     }
     return render(request, "inventory_service_dashboard.html", context)
 
@@ -167,11 +167,14 @@ def dlp_service_dashboard(request):
     ensure_default_aegis_policy()
 
     incidents = AegisDlpIncident.objects.select_related("agent", "policy", "rule").order_by("-detected_at")[:50]
+    incidents_qs = AegisDlpIncident.objects.all()
     context = {
         "policies_total": AegisDlpPolicy.objects.filter(enabled=True).count(),
         "rules_total": AegisDlpRule.objects.filter(enabled=True).count(),
-        "incidents_open": AegisDlpIncident.objects.filter(status="open").count(),
-        "incidents_total": AegisDlpIncident.objects.count(),
+        "incidents_open": incidents_qs.filter(status="open").count(),
+        "incidents_total": incidents_qs.count(),
+        "incidents_critical": incidents_qs.filter(severity="critical").count(),
+        "incidents_high": incidents_qs.filter(severity="high").count(),
         "incidents_recent": incidents,
         "policies": AegisDlpPolicy.objects.prefetch_related("rules").order_by("name"),
         "enabled_policies": AegisDlpPolicy.objects.filter(enabled=True).prefetch_related("rules").order_by("name"),
@@ -197,7 +200,7 @@ def _serialize_inventory_dashboard():
 
     recent_agents = []
     recent_users = []
-    for agent in AgentDevice.objects.order_by("-last_seen")[:20]:
+    for agent in AgentDevice.objects.order_by("-last_seen")[:40]:
         latest_inventory = agent.latest_inventory or {}
         users = latest_inventory.get("users") or []
         agent_users = []
@@ -236,7 +239,7 @@ def _serialize_inventory_dashboard():
         )
 
     recent_timeline = []
-    for event in AgentTimelineEvent.objects.exclude(category="dlp").order_by("-observed_at")[:40]:
+    for event in AgentTimelineEvent.objects.exclude(category="dlp").order_by("-observed_at")[:80]:
         recent_timeline.append(
             {
                 "title": event.title,
@@ -250,7 +253,7 @@ def _serialize_inventory_dashboard():
         )
 
     recent_hardware = []
-    for item in AgentHardwareComponent.objects.select_related("agent").order_by("-last_seen")[:30]:
+    for item in AgentHardwareComponent.objects.select_related("agent").order_by("-last_seen")[:60]:
         recent_hardware.append(
             {
                 "agent_id": item.agent.agent_id,
@@ -263,7 +266,7 @@ def _serialize_inventory_dashboard():
         )
 
     recent_software = []
-    for item in AgentSoftwareRecord.objects.select_related("agent").filter(is_present=True).order_by("-last_seen")[:30]:
+    for item in AgentSoftwareRecord.objects.select_related("agent").filter(is_present=True).order_by("-last_seen")[:60]:
         recent_software.append(
             {
                 "agent_id": item.agent.agent_id,
@@ -277,7 +280,7 @@ def _serialize_inventory_dashboard():
         )
 
     top_software = []
-    for item in AgentSoftwareRecord.objects.select_related("agent").filter(is_present=True).order_by("-last_seen")[:20]:
+    for item in AgentSoftwareRecord.objects.select_related("agent").filter(is_present=True).order_by("-last_seen")[:40]:
         top_software.append(
             {
                 "agent_id": item.agent.agent_id,
@@ -372,6 +375,8 @@ def _serialize_dlp_dashboard():
             "rules_total": AegisDlpRule.objects.filter(enabled=True).count(),
             "incidents_open": AegisDlpIncident.objects.filter(status="open").count(),
             "incidents_total": AegisDlpIncident.objects.count(),
+            "incidents_critical": AegisDlpIncident.objects.filter(severity="critical").count(),
+            "incidents_high": AegisDlpIncident.objects.filter(severity="high").count(),
         },
         "policies": [_serialize_dlp_policy(policy) for policy in policies],
         "incidents": [_serialize_dlp_incident(incident) for incident in incidents],

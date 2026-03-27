@@ -67,6 +67,23 @@
     flex-wrap: wrap;
     margin-bottom: 12px;
   }
+  .agent-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+  .agent-kpi {
+    background: var(--agent-panel);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+  .agent-kpi small {
+    color: #9ca3af;
+    display: block;
+    margin-bottom: 4px;
+  }
   .agent-search {
     background: #0b162a;
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -211,6 +228,25 @@
       </div>
   </div>
 
+  <div class="agent-stats">
+    <div class="agent-kpi">
+      <small>Total visibles</small>
+      <div class="h3 mb-0" id="agent-kpi-visible">0</div>
+    </div>
+    <div class="agent-kpi">
+      <small>Online</small>
+      <div class="h3 mb-0" id="agent-kpi-online">0</div>
+    </div>
+    <div class="agent-kpi">
+      <small>Offline</small>
+      <div class="h3 mb-0" id="agent-kpi-offline">0</div>
+    </div>
+    <div class="agent-kpi">
+      <small>Filtrado</small>
+      <div class="h3 mb-0" id="agent-kpi-filter">Todos</div>
+    </div>
+  </div>
+
   <div class="card bg-dark border-secondary">
     <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-3">
       <strong>Lista de agentes</strong>
@@ -222,13 +258,18 @@
           <option value="offline">Offline</option>
           <option value="unknown">Unknown</option>
         </select>
+        <select class="agent-search" id="agent-page-size">
+          <option value="5">5 por pagina</option>
+          <option value="10" selected>10 por pagina</option>
+          <option value="20">20 por pagina</option>
+        </select>
         <button class="btn btn-sm btn-outline-info" onclick="loadAgents()">Actualizar</button>
       </div>
     </div>
     <div class="card-body">
       <div class="agent-grid mb-3 d-none" id="agent-mini-grid"></div>
       <div class="table-responsive">
-        <table class="table table-dark table-hover device-table">
+        <table class="table table-dark table-hover device-table" id="agent-table">
           <thead>
             <tr>
               <th>ID</th>
@@ -247,6 +288,13 @@
           </tbody>
         </table>
       </div>
+      <div class="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+        <small class="text-muted" id="agent-page-info"></small>
+        <div class="btn-group btn-group-sm">
+          <button class="btn btn-outline-info" type="button" id="agent-page-prev">Anterior</button>
+          <button class="btn btn-outline-info" type="button" id="agent-page-next">Siguiente</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -254,6 +302,7 @@
 <script>
   let agentsCache = [];
   let autoRefreshTimer = null;
+  let agentPager = null;
 
   function statusPill(status) {
     if (status === "online") return '<span class="agent-pill pill-online">online</span>';
@@ -272,6 +321,9 @@
     document.getElementById("stat-active").textContent = online;
     document.getElementById("stat-offline").textContent = offline;
     document.getElementById("stat-last").textContent = last || "--";
+    document.getElementById("agent-kpi-visible").textContent = devices.length;
+    document.getElementById("agent-kpi-online").textContent = online;
+    document.getElementById("agent-kpi-offline").textContent = offline;
   }
 
   function renderMiniCards(devices) {
@@ -280,23 +332,33 @@
 
   function renderAgents(devices) {
     const tbody = document.querySelector(".device-table tbody");
-    const query = document.getElementById("agent-search").value.trim().toLowerCase();
-    const filter = document.getElementById("agent-filter").value;
-    const filtered = devices.filter((d) => {
-      const hay = `${d.agent_id} ${d.host_name} ${d.host_ip}`.toLowerCase();
-      const matchesQuery = hay.includes(query);
-      const matchesStatus = filter === "all" ? true : (d.status || "unknown") === filter;
-      return matchesQuery && matchesStatus;
-    });
-    if (!filtered.length) {
-      tbody.innerHTML =
-        '<tr><td colspan="7" class="text-center text-muted">Sin agentes registrados.</td></tr>';
-      return;
+    if (!agentPager) {
+      agentPager = window.VANT_UI.setupTablePager({
+        tableId: "agent-table",
+        searchInputId: "agent-search",
+        pageSizeSelectId: "agent-page-size",
+        prevButtonId: "agent-page-prev",
+        nextButtonId: "agent-page-next",
+        pageInfoId: "agent-page-info",
+        defaultPageSize: 10,
+        emptyMessage: "Sin agentes registrados.",
+        rowFilter: (row) => {
+          const currentFilter = document.getElementById("agent-filter").value;
+          if (currentFilter === "all") return true;
+          return (row.dataset.status || "unknown") === currentFilter;
+        },
+        onRender: ({ filteredCount }) => {
+          document.getElementById("agent-kpi-visible").textContent = filteredCount;
+          const currentFilter = document.getElementById("agent-filter").value;
+          document.getElementById("agent-kpi-filter").textContent =
+            currentFilter === "all" ? "Todos" : currentFilter;
+        },
+      });
     }
-    tbody.innerHTML = filtered
+    tbody.innerHTML = devices
       .map((d) => {
         return `
-          <tr>
+          <tr data-status="${d.status || "unknown"}" data-search-text="${`${d.agent_id} ${d.host_name || ""} ${d.host_ip || ""} ${d.agent_version || ""}`.toLowerCase()}">
             <td>${d.agent_id}</td>
             <td>${d.host_name || "-"}</td>
             <td>${d.host_ip || "-"}</td>
@@ -313,6 +375,10 @@
           `;
         })
         .join("");
+    agentPager?.refresh?.();
+    const currentFilter = document.getElementById("agent-filter").value;
+    document.getElementById("agent-kpi-filter").textContent =
+      currentFilter === "all" ? "Todos" : currentFilter;
   }
 
   async function loadAgents() {
@@ -378,8 +444,7 @@
   }
 
   loadAgents();
-  document.getElementById("agent-search").addEventListener("input", () => renderAgents(agentsCache));
-  document.getElementById("agent-filter").addEventListener("change", () => renderAgents(agentsCache));
+  document.getElementById("agent-filter").addEventListener("change", () => agentPager?.render?.());
   startAutoRefresh();
 </script>
 {% endblock %}
