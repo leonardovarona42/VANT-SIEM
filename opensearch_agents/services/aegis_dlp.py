@@ -3,11 +3,90 @@ import json
 import os
 import re
 import subprocess
+from functools import lru_cache
 from datetime import datetime, timezone
 from pathlib import Path
 from zipfile import ZipFile
 
 import requests
+
+
+DEFAULT_DLP_EXTENSIONS = {
+    ".txt",
+    ".log",
+    ".csv",
+    ".json",
+    ".xml",
+    ".md",
+    ".doc",
+    ".docx",
+    ".docm",
+    ".rtf",
+    ".xls",
+    ".xlsx",
+    ".xlsm",
+    ".ppt",
+    ".pptx",
+    ".pptm",
+    ".pdf",
+    ".odt",
+    ".ods",
+    ".odp",
+    ".ini",
+    ".conf",
+    ".cfg",
+    ".yaml",
+    ".yml",
+    ".ps1",
+    ".bat",
+    ".cmd",
+    ".sql",
+    ".env",
+    ".properties",
+}
+
+DEFAULT_DLP_KEYWORDS = [
+    {
+        "name": "Clasificado",
+        "classification": "clasificado",
+        "severity": "critical",
+        "match_type": "keyword",
+        "pattern": "informacion clasificada",
+        "tags": ["estado", "clasificado"],
+    },
+    {
+        "name": "Confidential",
+        "classification": "confidential",
+        "severity": "critical",
+        "match_type": "regex",
+        "pattern": r"\b(confidential|classified|secret|restricted)\b",
+        "tags": ["english", "sensitive"],
+    },
+    {
+        "name": "Secreto",
+        "classification": "secreto",
+        "severity": "critical",
+        "match_type": "keyword",
+        "pattern": "secreto",
+        "tags": ["estado", "secreto"],
+    },
+    {
+        "name": "Seguridad del Estado",
+        "classification": "seguridad_del_estado",
+        "severity": "critical",
+        "match_type": "keyword",
+        "pattern": "seguridad del estado",
+        "tags": ["estado", "seguridad"],
+    },
+    {
+        "name": "Restringido",
+        "classification": "restringido",
+        "severity": "high",
+        "match_type": "keyword",
+        "pattern": "restringido",
+        "tags": ["restringido"],
+    },
+]
 
 
 def _utc_now():
@@ -50,19 +129,48 @@ def _expand_scan_paths(paths):
     return expanded
 
 
-def _default_paths():
-    paths = []
+@lru_cache(maxsize=1)
+def _windows_fixed_drives():
+    if os.name != "nt":
+        return []
+    try:
+        import ctypes
+        import string
+
+        drive_mask = ctypes.windll.kernel32.GetLogicalDrives()
+    except Exception:
+        return []
+
+    drives = []
+    for index, letter in enumerate(string.ascii_uppercase):
+        if not (drive_mask & (1 << index)):
+            continue
+        root = f"{letter}:\\"
+        try:
+            drive_type = ctypes.windll.kernel32.GetDriveTypeW(root)
+        except Exception:
+            continue
+        if drive_type in (2, 3):
+            drives.append(Path(root))
+    return drives
+
+
+def _windows_scan_roots():
+    if os.name != "nt":
+        return []
+
+    roots = []
     system_drive = os.environ.get("SystemDrive", "C:").rstrip("\\/")
     users_root = Path(f"{system_drive}\\") / "Users"
     public_root = users_root / "Public"
-    for root in (public_root,):
-        paths.extend(
-            [
-                root / "Desktop",
-                root / "Documents",
-                root / "Downloads",
-            ]
-        )
+    roots.extend(
+        [
+            public_root / "Desktop",
+            public_root / "Documents",
+            public_root / "Downloads",
+            public_root / "OneDrive",
+        ]
+    )
 
     if users_root.exists():
         for profile in users_root.iterdir():
@@ -70,30 +178,77 @@ def _default_paths():
                 continue
             if profile.name.lower() in {"all users", "default", "default user", "public"}:
                 continue
-            paths.extend(
+            roots.extend(
                 [
                     profile / "Desktop",
                     profile / "Documents",
                     profile / "Downloads",
+                    profile / "OneDrive",
+                    profile / "OneDrive - Personal",
                 ]
             )
 
     program_data = Path(os.environ.get("ProgramData", r"C:\ProgramData"))
-    paths.extend(
+    roots.extend(
         [
-            program_data / "VANT" / "Drops",
+            program_data,
+            program_data / "VANT",
             Path(os.environ.get("TEMP", r"C:\Temp")),
+            Path(os.environ.get("TMP", r"C:\Temp")),
         ]
     )
-    return _expand_scan_paths([str(path) for path in paths])
+    roots.extend(_windows_fixed_drives())
+    return _expand_scan_paths([str(path) for path in roots])
 
 
-def _iter_files(paths, extensions, max_file_size):
+def _default_paths():
+    paths = _windows_scan_roots()
+    if not paths:
+        paths = _expand_scan_paths([str(Path.home()), str(Path(os.environ.get("TEMP", r"C:\Temp")))])
+    return paths
+
+
+def _default_policy():
+    return {
+        "code": "aegis-local-shield",
+        "name": "Aegis Local Shield",
+        "severity": "critical",
+        "scan_paths": [str(path) for path in _default_paths()],
+        "monitored_extensions": sorted(DEFAULT_DLP_EXTENSIONS),
+        "rules": DEFAULT_DLP_KEYWORDS,
+    }
+
+
+def _iter_files(paths, extensions, max_file_size, max_files_per_scan=12000):
+    excluded_tokens = (
+        "\\$recycle.bin",
+        "\\system volume information",
+        "\\windows\\winsxs",
+        "\\windows\\servicing",
+        "\\windows\\softwaredistribution\\download",
+        "\\programdata\\package cache",
+        "\\programdata\\microsoft\\windows\\wer",
+        "\\programdata\\microsoft\\windows defender",
+    )
     seen = set()
+    yielded = 0
     for base in paths:
-        if not base.exists():
+        try:
+            base_exists = base.exists()
+        except Exception:
             continue
-        for root, _, files in os.walk(base):
+        if not base_exists:
+            continue
+        for root, dirs, files in os.walk(base, topdown=True, onerror=lambda _exc: None):
+            root_path = Path(root)
+            root_low = str(root_path).lower()
+            if any(token in root_low for token in excluded_tokens):
+                continue
+            dirs[:] = [
+                d
+                for d in dirs
+                if not any(token in f"{root_low}\\{d.lower()}" for token in excluded_tokens)
+            ]
             for name in files:
                 path = Path(root) / name
                 if str(path) in seen:
@@ -107,6 +262,9 @@ def _iter_files(paths, extensions, max_file_size):
                 except Exception:
                     continue
                 yield path
+                yielded += 1
+                if yielded >= max_files_per_scan:
+                    return
 
 
 def _read_file_text(path):
@@ -122,10 +280,39 @@ def _read_file_text(path):
                         except Exception:
                             continue
             return "\n".join(text_parts)
-        return path.read_text(encoding="utf-8", errors="ignore")
+        if suffix == ".pdf":
+            try:
+                from pypdf import PdfReader
+
+                reader = PdfReader(str(path))
+                text_parts = []
+                for page in reader.pages[:50]:
+                    try:
+                        text_parts.append(page.extract_text() or "")
+                    except Exception:
+                        continue
+                text = "\n".join(text_parts).strip()
+                if text:
+                    return text
+            except Exception:
+                pass
+        if suffix == ".rtf":
+            return path.read_text(encoding="utf-8", errors="ignore")
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        if text.strip():
+            return text
+        raise ValueError("empty_text")
     except Exception:
         try:
-            return path.read_bytes().decode("utf-8", errors="ignore")
+            data = path.read_bytes()
+            text = data.decode("utf-8", errors="ignore")
+            chunks = [
+                chunk.decode("latin1", errors="ignore")
+                for chunk in re.findall(rb"[ -~]{6,}", data)
+            ]
+            if chunks:
+                text = "\n".join([text, *chunks[:800]])
+            return text
         except Exception:
             return ""
 
@@ -212,6 +399,26 @@ class AegisDlpService:
             return self.remote_config
         return self.remote_config
 
+    def queue_incidents(self, incidents):
+        pending = self.state.get("pending_incidents") or []
+        existing = {item.get("fingerprint", "") for item in pending}
+        for incident in incidents or []:
+            fingerprint = incident.get("fingerprint", "")
+            if not fingerprint or fingerprint in existing:
+                continue
+            pending.append(incident)
+            existing.add(fingerprint)
+        self.state["pending_incidents"] = pending[-5000:]
+        _save_state(self.state_path, self.state)
+        return self.state["pending_incidents"]
+
+    def peek_pending_incidents(self):
+        return list(self.state.get("pending_incidents") or [])
+
+    def clear_pending_incidents(self):
+        self.state["pending_incidents"] = []
+        _save_state(self.state_path, self.state)
+
     def scan(self):
         dlp_cfg = self.cfg.get(self.module_name, {}) or {}
         if not dlp_cfg.get("enabled", True):
@@ -219,12 +426,13 @@ class AegisDlpService:
 
         policies = (self.remote_config or {}).get("policies") or []
         if not policies:
-            return []
+            policies = [_default_policy()]
 
         rules = []
         scan_paths = []
         monitored_extensions = set()
-        max_file_size_mb = int(dlp_cfg.get("max_file_size_mb", 10) or 10)
+        max_file_size_mb = int(dlp_cfg.get("max_file_size_mb", 25) or 25)
+        max_files_per_scan = int(dlp_cfg.get("max_files_per_scan", 12000) or 12000)
         for policy in policies:
             scan_paths.extend(policy.get("scan_paths") or [])
             monitored_extensions.update([ext.lower() for ext in (policy.get("monitored_extensions") or [])])
@@ -237,12 +445,24 @@ class AegisDlpService:
 
         scan_paths.extend(dlp_cfg.get("scan_paths") or [])
         monitored_extensions.update([ext.lower() for ext in (dlp_cfg.get("monitored_extensions") or [])])
+        monitored_extensions.update(DEFAULT_DLP_EXTENSIONS)
         paths = _expand_scan_paths(scan_paths)
         max_file_size = max_file_size_mb * 1024 * 1024
 
         incidents = []
         known = set(self.state.get("incident_keys", []))
-        for path in _iter_files(paths, monitored_extensions, max_file_size):
+        scan_cache = self.state.get("scan_cache") or {}
+        updated_cache = {}
+        for path in _iter_files(paths, monitored_extensions, max_file_size, max_files_per_scan=max_files_per_scan):
+            try:
+                stat = path.stat()
+                cache_value = f"{int(stat.st_mtime)}:{stat.st_size}"
+            except Exception:
+                continue
+            cache_key = str(path).lower()
+            updated_cache[cache_key] = cache_value
+            if scan_cache.get(cache_key) == cache_value:
+                continue
             content = _read_file_text(path)
             haystack = _metadata_haystack(path, content)
             if not haystack.strip():
@@ -296,6 +516,8 @@ class AegisDlpService:
                         },
                     }
                 )
+        self.queue_incidents(incidents)
         self.state["incident_keys"] = sorted(list(known))[-5000:]
+        self.state["scan_cache"] = dict(list(updated_cache.items())[-25000:])
         _save_state(self.state_path, self.state)
         return incidents

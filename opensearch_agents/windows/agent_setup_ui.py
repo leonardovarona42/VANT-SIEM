@@ -625,7 +625,8 @@ asset_audit:
 
 aegis_dlp:
   enabled: true
-  max_file_size_mb: 10
+  max_file_size_mb: 25
+  max_files_per_scan: 12000
   scan_paths: []
   monitored_extensions:
     - ".txt"
@@ -634,9 +635,32 @@ aegis_dlp:
     - ".json"
     - ".xml"
     - ".md"
+    - ".doc"
     - ".docx"
+    - ".docm"
+    - ".rtf"
+    - ".xls"
     - ".xlsx"
+    - ".xlsm"
+    - ".ppt"
     - ".pptx"
+    - ".pptm"
+    - ".odt"
+    - ".ods"
+    - ".odp"
+    - ".ini"
+    - ".conf"
+    - ".cfg"
+    - ".yaml"
+    - ".yml"
+    - ".ps1"
+    - ".bat"
+    - ".cmd"
+    - ".sql"
+    - ".env"
+    - ".properties"
+    - ".html"
+    - ".htm"
     - ".pdf"
 
 collectors:
