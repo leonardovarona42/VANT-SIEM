@@ -627,6 +627,7 @@ aegis_dlp:
   enabled: true
   max_file_size_mb: 25
   max_files_per_scan: 12000
+  max_scan_seconds: 20
   scan_paths: []
   monitored_extensions:
     - ".txt"

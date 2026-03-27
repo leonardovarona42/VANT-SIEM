@@ -426,6 +426,8 @@ def run(config_path):
     class _Stop:
         def is_set(self):
             return False
+        def set(self):
+            return None
 
     run_with_stop(config_path, _Stop())
 

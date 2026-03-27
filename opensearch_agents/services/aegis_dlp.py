@@ -3,6 +3,7 @@ import json
 import os
 import re
 import subprocess
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from zipfile import ZipFile
@@ -432,6 +433,7 @@ class AegisDlpService:
         monitored_extensions = set()
         max_file_size_mb = int(dlp_cfg.get("max_file_size_mb", 25) or 25)
         max_files_per_scan = int(dlp_cfg.get("max_files_per_scan", 12000) or 12000)
+        max_scan_seconds = int(dlp_cfg.get("max_scan_seconds", 20) or 20)
         for policy in policies:
             scan_paths.extend(policy.get("scan_paths") or [])
             monitored_extensions.update([ext.lower() for ext in (policy.get("monitored_extensions") or [])])
@@ -459,7 +461,10 @@ class AegisDlpService:
         known = set(self.state.get("incident_keys", []))
         scan_cache = self.state.get("scan_cache") or {}
         updated_cache = {}
+        started_at = time.monotonic()
         for path in _iter_files(paths, monitored_extensions, max_file_size, max_files_per_scan=max_files_per_scan):
+            if max_scan_seconds > 0 and (time.monotonic() - started_at) >= max_scan_seconds:
+                break
             try:
                 stat = path.stat()
                 cache_value = f"{int(stat.st_mtime)}:{stat.st_size}"
@@ -522,6 +527,9 @@ class AegisDlpService:
                         },
                     }
                 )
+                if len(incidents) >= 25:
+                    self.queue_incidents(incidents)
+                    incidents = []
         self.queue_incidents(incidents)
         self.state["incident_keys"] = sorted(list(known))[-5000:]
         self.state["scan_cache"] = dict(list(updated_cache.items())[-25000:])
