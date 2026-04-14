@@ -980,6 +980,16 @@ def _load_agent_allowlist():
     return [item.strip() for item in raw.split(',') if item.strip()]
 
 
+def _agent_is_allowed(agent_id='', host_name=''):
+    allowlist = _load_agent_allowlist()
+    if not allowlist:
+        return True
+    normalized = {item.strip().lower() for item in allowlist if item.strip()}
+    agent_id_norm = (agent_id or '').strip().lower()
+    host_name_norm = (host_name or '').strip().lower()
+    return agent_id_norm in normalized or host_name_norm in normalized
+
+
 def _get_bearer_token(request):
     auth = request.headers.get('Authorization', '')
     if auth.lower().startswith('bearer '):
@@ -1030,10 +1040,8 @@ def agent_enroll(request):
     if not hmac.compare_digest(expected, signature):
         return JsonResponse({'ok': False, 'error': 'Firma invalida'}, status=403)
 
-    allowlist = _load_agent_allowlist()
-    if allowlist:
-        if agent_id not in allowlist and host_name not in allowlist:
-            return JsonResponse({'ok': False, 'error': 'Agente no autorizado'}, status=403)
+    if not _agent_is_allowed(agent_id=agent_id, host_name=host_name):
+        return JsonResponse({'ok': False, 'error': 'Agente no autorizado'}, status=403)
 
     agent_token_payload = {
         'agent_id': agent_id,
@@ -1047,7 +1055,7 @@ def agent_enroll(request):
             'ok': True,
             'token': agent_token,
             'token_type': 'signed',
-            'expires_in': 86400,
+            'expires_in': 86400 * 30,
         }
     )
 
@@ -1056,11 +1064,11 @@ def agent_enroll(request):
 @require_GET
 def agent_bootstrap_secret(request):
     agent_id = request.headers.get("X-Agent-Id", "").strip()
+    host_name = request.headers.get("X-Agent-Host", "").strip()
     if not agent_id:
         return JsonResponse({'ok': False, 'error': 'X-Agent-Id requerido'}, status=400)
 
-    allowlist = _load_agent_allowlist()
-    if allowlist and agent_id not in allowlist:
+    if not _agent_is_allowed(agent_id=agent_id, host_name=host_name):
         return JsonResponse({'ok': False, 'error': 'Agente no autorizado'}, status=403)
 
     secret = _load_agent_shared_secret()

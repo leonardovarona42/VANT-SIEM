@@ -16,11 +16,12 @@ Sustituir la ingesta legacy por una arquitectura de microservicio + agente, con 
 
 - `GET /health`
 - `POST /api/v1/events/bulk`
+- `POST /api/v1/sources/upsert`
 
 ## Configuracion recomendada
 
 Base de datos dedicada:
-- DB: `opensearch`
+- DB: `vant_opensearch`
 - tablas principales: `os_events_raw`, `os_sources`
 
 Variables de entorno servicio:
@@ -42,6 +43,19 @@ Agente soporta:
 - TLS on/off
 - verify cert on/off
 - CA custom
+
+Control y enrolamiento desde Django:
+- `GET /api/agent/bootstrap/`
+- `POST /api/agent/enroll/`
+- `POST /api/agent/heartbeat/`
+- `POST /api/agent/inventory/`
+- `POST /api/agent/commands/pull/`
+- `POST /api/agent/commands/ack/`
+
+Variables del backend de enrolamiento:
+- `VANT_AGENT_ALLOWED`
+- `VANT_AGENT_SHARED_SECRET`
+- `VANT_AGENT_REQUIRE_ENROLLMENT_TICKET=1`
 
 ## Arranque rapido
 
@@ -81,3 +95,7 @@ OpenSearch ahora es una app Django (`opensearch_service`) que se gestiona desde 
 - Linux Zentyal
 
 Ver guias en `opensearch_agents/linux/*/README.md`.
+
+Resumen del estado actual:
+- Windows usa wizard grafico con enrolamiento y persistencia de token.
+- Linux usa bundle offline con `sendheartbeat`, `opena_mover`, `opena_checker` y `opena_enroll`.

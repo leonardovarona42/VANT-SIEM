@@ -13,6 +13,100 @@ function Test-Admin {
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
+function Get-OwnerAccountFromConfig {
+    param(
+        [string]$ConfigPath
+    )
+
+    $fallback = if ($env:USERDOMAIN -and $env:USERNAME) {
+        "$($env:USERDOMAIN)\$($env:USERNAME)"
+    } else {
+        $env:USERNAME
+    }
+
+    if (-not (Test-Path $ConfigPath)) {
+        return $fallback
+    }
+
+    try {
+        $match = Select-String -Path $ConfigPath -Pattern '^\s*owner_account:\s*"?(.*?)"?\s*$' | Select-Object -First 1
+        if ($match -and $match.Matches.Count -gt 0) {
+            $candidate = $match.Matches[0].Groups[1].Value.Trim()
+            if ($candidate) {
+                return $candidate
+            }
+        }
+    } catch {}
+
+    return $fallback
+}
+
+function Set-SecureInstallAcl {
+    param(
+        [string]$TargetPath,
+        [string]$OwnerAccount
+    )
+
+    if (-not (Test-Path $TargetPath)) {
+        return
+    }
+
+    if (-not $OwnerAccount) {
+        $OwnerAccount = if ($env:USERDOMAIN -and $env:USERNAME) {
+            "$($env:USERDOMAIN)\$($env:USERNAME)"
+        } else {
+            $env:USERNAME
+        }
+    }
+
+    Write-Host "Applying secure ACL to $TargetPath for owner $OwnerAccount"
+    $systemSid = "*S-1-5-18"
+    $adminsSid = "*S-1-5-32-544"
+    $usersSid = "*S-1-5-32-545"
+    $ownerGrant = "${OwnerAccount}:(OI)(CI)M"
+
+    # First ensure well-known administrative SIDs are granted using language-independent identifiers.
+    & icacls.exe $TargetPath /grant:r "${systemSid}:(OI)(CI)F" "${adminsSid}:(OI)(CI)F" $ownerGrant "${usersSid}:(OI)(CI)RX" /T /C 2>$null | Out-Null
+    & icacls.exe $TargetPath /inheritance:r /T /C 2>$null | Out-Null
+    & icacls.exe $TargetPath /setowner $OwnerAccount /T /C 2>$null | Out-Null
+}
+
+function Register-UninstallEntry {
+    param(
+        [string]$InstallDir,
+        [string]$DisplayVersion,
+        [bool]$IsUserMode
+    )
+
+    $uninstallScript = Join-Path $InstallDir "Uninstall-OpenSearchAgent.ps1"
+    if (-not (Test-Path $uninstallScript)) {
+        return
+    }
+
+    $iconPath = Join-Path $InstallDir "vant-opensearch-agent-tray.exe"
+    if (-not (Test-Path $iconPath)) {
+        $iconPath = Join-Path $InstallDir "vant-opensearch-agent.exe"
+    }
+
+    $regPath = if ($IsUserMode) {
+        "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\VANTOpenSearchAgent"
+    } else {
+        "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\VANTOpenSearchAgent"
+    }
+    $uninstallCommand = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$uninstallScript`""
+
+    New-Item -Path $regPath -Force | Out-Null
+    New-ItemProperty -Path $regPath -Name "DisplayName" -Value "VANT OpenSearch Agent" -PropertyType String -Force | Out-Null
+    New-ItemProperty -Path $regPath -Name "DisplayVersion" -Value $DisplayVersion -PropertyType String -Force | Out-Null
+    New-ItemProperty -Path $regPath -Name "Publisher" -Value "Leonardo L. Varona Tabares" -PropertyType String -Force | Out-Null
+    New-ItemProperty -Path $regPath -Name "InstallLocation" -Value $InstallDir -PropertyType String -Force | Out-Null
+    New-ItemProperty -Path $regPath -Name "DisplayIcon" -Value $iconPath -PropertyType String -Force | Out-Null
+    New-ItemProperty -Path $regPath -Name "UninstallString" -Value $uninstallCommand -PropertyType String -Force | Out-Null
+    New-ItemProperty -Path $regPath -Name "QuietUninstallString" -Value $uninstallCommand -PropertyType String -Force | Out-Null
+    New-ItemProperty -Path $regPath -Name "NoModify" -Value 1 -PropertyType DWord -Force | Out-Null
+    New-ItemProperty -Path $regPath -Name "NoRepair" -Value 1 -PropertyType DWord -Force | Out-Null
+}
+
 if ($UserMode) {
     if ($InstallDir -eq "$env:ProgramFiles\VANT\OpenSearchAgent") {
         $InstallDir = "$env:LOCALAPPDATA\VANT\OpenSearchAgent"
@@ -28,6 +122,12 @@ $exeSource = Join-Path $scriptDir "vant-opensearch-agent.exe"
 $traySource = Join-Path $scriptDir "vant-opensearch-agent-tray.exe"
 $dirSource = Join-Path $scriptDir "vant-opensearch-agent"
 $cfgSource = Join-Path $scriptDir "config.yaml"
+$heartbeatSource = Join-Path $scriptDir "sendheartbeat.exe"
+$heartbeatLegacySource = Join-Path $scriptDir "sendhearbet.exe"
+$checkerSource = Join-Path $scriptDir "opena_checker.exe"
+$checkerLegacySource = Join-Path $scriptDir "opena_cheker.exe"
+$moverSource = Join-Path $scriptDir "opena_mover.exe"
+$uninstallSource = Join-Path $scriptDir "Uninstall-OpenSearchAgent.ps1"
 
 if (-not (Test-Path $exeSource) -and -not (Test-Path (Join-Path $dirSource "vant-opensearch-agent.exe"))) {
     throw "Agent binary not found in package."
@@ -63,11 +163,42 @@ if (Test-Path $traySource) {
 if (Test-Path $cfgSource) {
     Copy-Item $cfgSource (Join-Path $InstallDir "config.yaml") -Force
 }
+if (Test-Path $uninstallSource) {
+    Copy-Item $uninstallSource (Join-Path $InstallDir "Uninstall-OpenSearchAgent.ps1") -Force
+    Set-Content -Path (Join-Path $InstallDir "Uninstall-VANT-OpenSearch-Agent.cmd") -Value "@echo off`r`npowershell.exe -NoProfile -ExecutionPolicy Bypass -File `"%~dp0Uninstall-OpenSearchAgent.ps1`" %*" -Encoding ASCII
+}
+if (Test-Path $heartbeatSource) {
+    Copy-Item $heartbeatSource (Join-Path $InstallDir "sendheartbeat.exe") -Force
+    Copy-Item $heartbeatSource (Join-Path $InstallDir "sendhearbet.exe") -Force
+} elseif (Test-Path $heartbeatLegacySource) {
+    Copy-Item $heartbeatLegacySource (Join-Path $InstallDir "sendheartbeat.exe") -Force
+    Copy-Item $heartbeatLegacySource (Join-Path $InstallDir "sendhearbet.exe") -Force
+}
+if (Test-Path $checkerSource) {
+    Copy-Item $checkerSource (Join-Path $InstallDir "opena_checker.exe") -Force
+    Copy-Item $checkerSource (Join-Path $InstallDir "opena_cheker.exe") -Force
+} elseif (Test-Path $checkerLegacySource) {
+    Copy-Item $checkerLegacySource (Join-Path $InstallDir "opena_checker.exe") -Force
+    Copy-Item $checkerLegacySource (Join-Path $InstallDir "opena_cheker.exe") -Force
+}
+if (Test-Path $moverSource) {
+    Copy-Item $moverSource (Join-Path $InstallDir "opena_mover.exe") -Force
+}
 if (Test-Path (Join-Path $scriptDir "staticfiles")) {
     Copy-Item (Join-Path $scriptDir "staticfiles") (Join-Path $InstallDir "staticfiles") -Recurse -Force
 }
 
 $cfgPath = Join-Path $InstallDir "config.yaml"
+$ownerAccount = Get-OwnerAccountFromConfig -ConfigPath $cfgPath
+$ownerInfoPath = Join-Path $InstallDir "install_owner.txt"
+Set-Content -Path $ownerInfoPath -Value @(
+    "owner_account=$ownerAccount"
+    "installed_at=$(Get-Date -Format s)"
+    "install_dir=$InstallDir"
+) -Encoding ASCII
+Set-SecureInstallAcl -TargetPath $InstallDir -OwnerAccount $ownerAccount
+Register-UninstallEntry -InstallDir $InstallDir -DisplayVersion "1.0.4" -IsUserMode $UserMode
+
 $arg = "--config `"$cfgPath`""
 $trayExe = Join-Path $InstallDir "vant-opensearch-agent-tray.exe"
 $trayArg = "--config `"$cfgPath`" --monitor-only"
@@ -121,4 +252,5 @@ Write-Host "Installed OpenSearch agent."
 Write-Host "InstallDir: $InstallDir"
 Write-Host "TaskName: $TaskName"
 Write-Host "Mode: $(if ($UserMode) { 'UserMode' } else { 'SystemMode' })"
+Write-Host "OwnerAccount: $ownerAccount"
 Write-Host "Edit config: $cfgPath"

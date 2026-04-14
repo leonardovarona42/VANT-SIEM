@@ -14,7 +14,8 @@
 
 Desde marzo de 2026, el modulo de logs activo es OpenSearch:
 
-- `opensearch/` -> microservicio + agentes de recoleccion.
+- `opensearch_service/` -> microservicio y bootstrap del servicio de ingesta.
+- `opensearch_agents/` -> agentes, installers y tooling operativo.
 - `opensearch_ui/` -> dashboard y Discovery en Django.
 - `inventory/` -> gestion de dispositivos, inventario y comandos del agente.
 - `inventory/` -> tambien modela timeline de activos, incidentes DLP y politicas Aegis.
@@ -30,7 +31,7 @@ Desde marzo de 2026, el modulo de logs activo es OpenSearch:
 
 ## Referencias de detalle
 
-- `../opensearch/README.md`
+- `../opensearch_service/README.md`
 - `../opensearch_ui/README.md`
 - `OPENSEARCH_FEATURE.md`
 - `AGENT_MICROSERVICES.md`

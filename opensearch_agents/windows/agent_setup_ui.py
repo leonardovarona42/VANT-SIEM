@@ -33,12 +33,30 @@ def _windows_assets_dir():
     return _source_windows_dir() / "package"
 
 
+def _resolve_windows_assets_dir():
+    candidates = [
+        _windows_assets_dir(),
+        _runtime_root() / "package",
+        _runtime_root(),
+        _source_windows_dir() / "package",
+    ]
+    seen = set()
+    for candidate in candidates:
+        key = str(candidate)
+        if key in seen:
+            continue
+        seen.add(key)
+        if (candidate / "Install-OpenSearchAgent.ps1").exists() and (candidate / "config.yaml").exists():
+            return candidate
+    return candidates[0]
+
+
 def _logo_path():
     return _runtime_root() / "staticfiles" / "img" / "logo.png"
 
 
 def _bootstrap_key_path():
-    bundled = _windows_assets_dir() / "bootstrap.key"
+    bundled = _resolve_windows_assets_dir() / "bootstrap.key"
     if bundled.exists():
         return bundled
     return _source_windows_dir() / "bootstrap.key"
@@ -276,11 +294,14 @@ class ConnectionPage(QtWidgets.QWizardPage):
     def _probe_endpoint(self, endpoint):
         try:
             parsed = urlparse(endpoint)
-            if not parsed.hostname or not parsed.port:
+            if not parsed.scheme or not parsed.hostname:
                 return False
-            sock = socket.create_connection((parsed.hostname, parsed.port), timeout=3)
-            sock.close()
-            return True
+            probe_url = f"{parsed.scheme}://{parsed.hostname}:{parsed.port or 9201}/health"
+            verify = False
+            if self.tls_enabled.isChecked():
+                verify = self.ca_cert.text().strip() or self.tls_verify.isChecked()
+            response = requests.get(probe_url, timeout=5, verify=verify)
+            return response.ok
         except Exception:
             return False
 
@@ -303,6 +324,7 @@ class ConnectionPage(QtWidgets.QWizardPage):
                 "host_name": wizard.field("host_name"),
                 "timestamp": timestamp,
                 "signature": signature,
+                "install_owner_account": self._owner_account(),
             }
             try:
                 response = requests.post(self._build_enroll_url(), json=payload, timeout=8)
@@ -316,7 +338,7 @@ class ConnectionPage(QtWidgets.QWizardPage):
                 if response.status_code == 400 and "HTTPS" in response.text:
                     self.test_status.setText("Servidor en HTTP. Desactiva HTTPS o inicia run_https.ps1.")
                 else:
-                    self.test_status.setText("Agente no autorizado para enrolamiento.")
+                    self.test_status.setText(data.get("error") or "Agente no autorizado para enrolamiento.")
                 self.test_status.setStyleSheet("color: #dc2626;")
                 return
 
@@ -330,6 +352,16 @@ class ConnectionPage(QtWidgets.QWizardPage):
         else:
             self.test_status.setText("Token obtenido, pero endpoint no responde.")
             self.test_status.setStyleSheet("color: #f59e0b;")
+
+    def _owner_account(self):
+        installed_by_user = os.environ.get("USERNAME", "").strip()
+        installed_by_domain = (
+            os.environ.get("USERDOMAIN", "").strip()
+            or os.environ.get("COMPUTERNAME", "").strip()
+        )
+        if installed_by_domain and installed_by_user:
+            return f"{installed_by_domain}\\{installed_by_user}"
+        return installed_by_user
 
 
 class AuthPage(QtWidgets.QWizardPage):
@@ -502,7 +534,9 @@ class ProgressPage(QtWidgets.QWizardPage):
 
         package_dir = self.wizard().stage_package()
         if not package_dir:
+            error_text = self.wizard().stage_error() or "Error no especificado al preparar el payload."
             self.log.appendPlainText("No se pudo preparar el paquete del agente.")
+            self.log.appendPlainText(error_text)
             self.completeChanged.emit()
             return
 
@@ -547,6 +581,7 @@ class AgentInstallerWizard(QtWidgets.QWizard):
     def __init__(self):
         super().__init__()
         self._staged_dir = None
+        self._stage_error = ""
         self.setWindowTitle("VANT-SIEM Windows Agent Setup")
         self.setWizardStyle(QtWidgets.QWizard.WizardStyle.ModernStyle)
 
@@ -579,8 +614,18 @@ class AgentInstallerWizard(QtWidgets.QWizard):
         super().accept()
 
     def build_config_preview(self, mask_secrets=False):
+        import yaml
+
+        data = self.build_config_data(mask_secrets=mask_secrets)
+        return yaml.safe_dump(data, sort_keys=False, allow_unicode=False)
+
+    def build_config_data(self, mask_secrets=False):
         auth_password = self.field("auth_password") or ""
         auth_token = self.field("auth_token") or ""
+        installed_by_user = os.environ.get("USERNAME", "").strip()
+        installed_by_domain = os.environ.get("USERDOMAIN", "").strip()
+        owner_account = f"{installed_by_domain}\\{installed_by_user}" if installed_by_domain and installed_by_user else installed_by_user
+        generated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         if mask_secrets:
             auth_password = "******" if auth_password else ""
             auth_token = "******" if auth_token else ""
@@ -592,111 +637,100 @@ class AgentInstallerWizard(QtWidgets.QWizard):
             for line in collectors_page.winlog_channels.toPlainText().splitlines()
             if line.strip()
         ]
-        winlog_channels_block = "\n".join([f'      - "{channel}"' for channel in winlog_channels]) or '      - "Security"'
-        return f"""agent:
-  id: "{self.field("agent_id")}"
-  host_name: "{self.field("host_name")}"
-  interval_seconds: {self.field("interval")}
-
-output:
-  endpoint: "{self.field("endpoint")}"
-  source_endpoint: "{self.field("source_endpoint")}"
-  timeout_seconds: {self.field("timeout")}
-  auth:
-    mode: "{self.field("auth_mode")}"
-    username: "{self.field("auth_user")}"
-    password: "{auth_password}"
-    token: "{auth_token}"
-  tls:
-    enabled: {str(self.field("tls_enabled")).lower()}
-    verify: {str(self.field("tls_verify")).lower()}
-    ca_cert: "{self.field("ca_cert")}"
-
-control:
-  server_url: "{self._build_server_url()}"
-  require_https: {str(require_https).lower()}
-  poll_seconds: 30
-  inventory_seconds: 86400
-  dlp_poll_seconds: 60
-  dlp_scan_seconds: 30
-
-asset_audit:
-  enabled: true
-
-aegis_dlp:
-  enabled: true
-  max_file_size_mb: 25
-  max_files_per_scan: 12000
-  max_scan_seconds: 20
-  scan_paths: []
-  monitored_extensions:
-    - ".txt"
-    - ".log"
-    - ".csv"
-    - ".json"
-    - ".xml"
-    - ".md"
-    - ".doc"
-    - ".docx"
-    - ".docm"
-    - ".rtf"
-    - ".xls"
-    - ".xlsx"
-    - ".xlsm"
-    - ".ppt"
-    - ".pptx"
-    - ".pptm"
-    - ".odt"
-    - ".ods"
-    - ".odp"
-    - ".ini"
-    - ".conf"
-    - ".cfg"
-    - ".yaml"
-    - ".yml"
-    - ".ps1"
-    - ".bat"
-    - ".cmd"
-    - ".sql"
-    - ".env"
-    - ".properties"
-    - ".html"
-    - ".htm"
-    - ".pdf"
-
-collectors:
-  snort:
-    enabled: {str(self.field("snort_enabled")).lower()}
-    path: "{self.field("snort_path")}"
-    start_position: "beginning"
-    max_lines_per_cycle: 400
-  suricata:
-    enabled: {str(self.field("suricata_enabled")).lower()}
-    path: "{self.field("suricata_path")}"
-    start_position: "beginning"
-    max_lines_per_cycle: 600
-  windows_eventlog:
-    enabled: {str(self.field("winlog_enabled")).lower()}
-    channel: "{self.field("winlog_channel")}"
-    channels:
-{winlog_channels_block}
-  postgres:
-    enabled: {str(self.field("postgres_enabled")).lower()}
-    path: "{self.field("postgres_path")}"
-    start_position: "end"
-    max_lines_per_cycle: 400
-  file_logs:
-    enabled: {str(self.field("file_logs_enabled")).lower()}
-    items:
-      - enabled: {str(self.field("file_logs_enabled")).lower()}
-        source_name: "windows-custom-audit"
-        path: "{self.field("file_logs_path")}"
-        event_category: "windows.custom.audit"
-        severity: "info"
-        tags: ["windows", "audit", "custom"]
-        start_position: "end"
-        max_lines_per_cycle: 400
-"""
+        return {
+            "agent": {
+                "id": self.field("agent_id"),
+                "host_name": self.field("host_name"),
+                "interval_seconds": int(self.field("interval")),
+            },
+            "output": {
+                "endpoint": self.field("endpoint"),
+                "source_endpoint": self.field("source_endpoint"),
+                "timeout_seconds": int(self.field("timeout")),
+                "auth": {
+                    "mode": self.field("auth_mode"),
+                    "username": self.field("auth_user"),
+                    "password": auth_password,
+                    "token": auth_token,
+                },
+                "tls": {
+                    "enabled": bool(self.field("tls_enabled")),
+                    "verify": bool(self.field("tls_verify")),
+                    "ca_cert": self.field("ca_cert"),
+                },
+            },
+            "control": {
+                "server_url": self._build_server_url(),
+                "require_https": bool(require_https),
+                "poll_seconds": 30,
+                "inventory_seconds": 86400,
+                "dlp_poll_seconds": 60,
+                "dlp_scan_seconds": 30,
+            },
+            "asset_audit": {
+                "enabled": True,
+            },
+            "aegis_dlp": {
+                "enabled": True,
+                "max_file_size_mb": 25,
+                "max_files_per_scan": 12000,
+                "max_scan_seconds": 20,
+                "scan_paths": [],
+                "monitored_extensions": [
+                    ".txt", ".log", ".csv", ".json", ".xml", ".md", ".doc", ".docx", ".docm", ".rtf",
+                    ".xls", ".xlsx", ".xlsm", ".ppt", ".pptx", ".pptm", ".odt", ".ods", ".odp", ".ini",
+                    ".conf", ".cfg", ".yaml", ".yml", ".ps1", ".bat", ".cmd", ".sql", ".env", ".properties",
+                    ".html", ".htm", ".pdf",
+                ],
+            },
+            "install_metadata": {
+                "owner_account": owner_account,
+                "enrolled_by_user": installed_by_user,
+                "enrolled_by_domain": installed_by_domain,
+                "generated_at": generated_at,
+                "installer_profile": "windows_gui",
+            },
+            "collectors": {
+                "snort": {
+                    "enabled": bool(self.field("snort_enabled")),
+                    "path": self.field("snort_path"),
+                    "start_position": "beginning",
+                    "max_lines_per_cycle": 400,
+                },
+                "suricata": {
+                    "enabled": bool(self.field("suricata_enabled")),
+                    "path": self.field("suricata_path"),
+                    "start_position": "beginning",
+                    "max_lines_per_cycle": 600,
+                },
+                "windows_eventlog": {
+                    "enabled": bool(self.field("winlog_enabled")),
+                    "channel": self.field("winlog_channel"),
+                    "channels": winlog_channels or ["Security"],
+                },
+                "postgres": {
+                    "enabled": bool(self.field("postgres_enabled")),
+                    "path": self.field("postgres_path"),
+                    "start_position": "end",
+                    "max_lines_per_cycle": 400,
+                },
+                "file_logs": {
+                    "enabled": bool(self.field("file_logs_enabled")),
+                    "items": [
+                        {
+                            "enabled": bool(self.field("file_logs_enabled")),
+                            "source_name": "windows-custom-audit",
+                            "path": self.field("file_logs_path"),
+                            "event_category": "windows.custom.audit",
+                            "severity": "info",
+                            "tags": ["windows", "audit", "custom"],
+                            "start_position": "end",
+                            "max_lines_per_cycle": 400,
+                        }
+                    ],
+                },
+            },
+        }
 
     def _build_server_url(self):
         page = self.page(self.PAGE_CONNECTION)
@@ -706,20 +740,39 @@ collectors:
         return f"{scheme}://{host}:{port}"
 
     def stage_package(self):
+        self._stage_error = ""
         try:
-            source_dir = _windows_assets_dir()
+            source_dir = _resolve_windows_assets_dir()
             if not source_dir.exists():
+                self._stage_error = f"No se encontro el payload embebido del instalador: {source_dir}"
+                return None
+            required_files = [
+                "Install-OpenSearchAgent.ps1",
+                "Uninstall-OpenSearchAgent.ps1",
+                "vant-opensearch-agent.exe",
+                "vant-opensearch-agent-tray.exe",
+                "config.yaml",
+                "sendheartbeat.exe",
+                "sendhearbet.exe",
+                "opena_mover.exe",
+                "opena_checker.exe",
+                "opena_cheker.exe",
+            ]
+            missing = [name for name in required_files if not (source_dir / name).exists()]
+            if missing:
+                self._stage_error = "Faltan archivos del payload embebido: " + ", ".join(missing)
                 return None
 
-            staged_dir = Path(tempfile.gettempdir()) / "vant_opensearch_agent_windows_setup"
-            if staged_dir.exists():
-                shutil.rmtree(staged_dir, ignore_errors=True)
+            if self._staged_dir and Path(self._staged_dir).exists():
+                shutil.rmtree(self._staged_dir, ignore_errors=True)
+
+            staged_root = Path(tempfile.mkdtemp(prefix="vant_opensearch_agent_setup_"))
+            staged_dir = staged_root / "package"
             shutil.copytree(source_dir, staged_dir)
 
-            config_text = self.build_config_preview(mask_secrets=False)
             import yaml
 
-            data = yaml.safe_load(config_text) or {}
+            data = self.build_config_data(mask_secrets=False)
             config_path = staged_dir / "config.yaml"
             config_path.write_text(
                 yaml.safe_dump(data, sort_keys=False, allow_unicode=False),
@@ -727,8 +780,12 @@ collectors:
             )
             self._staged_dir = staged_dir
             return staged_dir
-        except Exception:
+        except Exception as exc:
+            self._stage_error = str(exc)
             return None
+
+    def stage_error(self):
+        return self._stage_error
 
     def install_windows_package(self, package_dir):
         install_script = package_dir / "Install-OpenSearchAgent.ps1"

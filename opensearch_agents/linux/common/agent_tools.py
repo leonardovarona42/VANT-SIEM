@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import argparse
+import hashlib
+import hmac
 import json
 import os
 import socket
@@ -11,6 +13,8 @@ from urllib.parse import urlparse
 
 import requests
 import yaml
+
+DEFAULT_AGENT_SHARED_SECRET = "VANT-SIEM-AGENT-BOOTSTRAP-2026"
 
 
 def _default_config_paths():
@@ -79,6 +83,61 @@ def _auth_headers(config):
     return {}
 
 
+def _build_bootstrap_url(config):
+    server_url = _api_url(config)
+    return f"{server_url}/api/agent/bootstrap/" if server_url else ""
+
+
+def _build_enroll_url(config):
+    server_url = _api_url(config)
+    return f"{server_url}/api/agent/enroll/" if server_url else ""
+
+
+def _owner_account():
+    sudo_user = os.environ.get("SUDO_USER", "").strip()
+    user = sudo_user or os.environ.get("USER", "").strip() or os.environ.get("USERNAME", "").strip()
+    if not user:
+        return ""
+    return user
+
+
+def _load_bootstrap_key(override=""):
+    if override:
+        return override.strip()
+    env_key = os.environ.get("VANT_AGENT_BOOTSTRAP_KEY", "").strip()
+    if env_key:
+        return env_key
+    env_shared = os.environ.get("VANT_AGENT_SHARED_SECRET", "").strip()
+    if env_shared:
+        return env_shared
+    return ""
+
+
+def _fetch_bootstrap_secret(config, agent_id):
+    url = _build_bootstrap_url(config)
+    if not url:
+        return ""
+    try:
+        response = requests.get(
+            url,
+            headers={"X-Agent-Id": agent_id},
+            timeout=8,
+        )
+        if "application/json" not in response.headers.get("Content-Type", ""):
+            return ""
+        data = response.json()
+        if response.status_code == 200 and data.get("ok") and data.get("secret"):
+            return data.get("secret", "")
+    except Exception:
+        return ""
+    return ""
+
+
+def _sign_enrollment(secret, agent_id, host_name, timestamp):
+    message = f"{agent_id}:{host_name}:{timestamp}".encode("utf-8")
+    return hmac.new(secret.encode("utf-8"), message, hashlib.sha256).hexdigest()
+
+
 def _current_ips():
     ips = set()
     try:
@@ -137,6 +196,56 @@ def send_heartbeat(config_path=None):
     print(f"Heartbeat sent from {payload['host_name']} via {resolved}")
 
 
+def enroll_agent(config_path=None, bootstrap_key="", enrollment_code="", backup=True):
+    config, resolved = load_config(config_path)
+    server_url = _api_url(config)
+    if not server_url:
+        raise SystemExit("control.server_url not configured")
+
+    agent = config.setdefault("agent", {})
+    output = config.setdefault("output", {})
+    auth = output.setdefault("auth", {})
+    agent_id = agent.get("id", "agent")
+    host_name = agent.get("host_name") or socket.gethostname()
+    timestamp = str(int(time.time()))
+
+    shared_secret = _load_bootstrap_key(bootstrap_key)
+    if not shared_secret:
+        shared_secret = _fetch_bootstrap_secret(config, agent_id)
+    if not shared_secret:
+        shared_secret = DEFAULT_AGENT_SHARED_SECRET
+
+    payload = {
+        "agent_id": agent_id,
+        "host_name": host_name,
+        "timestamp": timestamp,
+        "signature": _sign_enrollment(shared_secret, agent_id, host_name, timestamp),
+        "install_owner_account": _owner_account(),
+    }
+    if enrollment_code:
+        payload["enrollment_code"] = enrollment_code
+
+    response = requests.post(_build_enroll_url(config), json=payload, timeout=8)
+    data = response.json() if "application/json" in response.headers.get("Content-Type", "") else {}
+    if response.status_code != 200 or not data.get("ok") or not data.get("token"):
+        error = data.get("error") or response.text or f"Enrollment failed with status {response.status_code}"
+        raise SystemExit(error)
+
+    auth["mode"] = "token"
+    auth["token"] = data.get("token", "")
+    auth["username"] = ""
+    auth["password"] = ""
+
+    if backup:
+        backup_path = resolved.with_suffix(".yaml.bak")
+        backup_path.write_text(resolved.read_text(encoding="utf-8"), encoding="utf-8")
+    save_config(config, resolved)
+
+    print(f"Agent enrolled successfully via {server_url}")
+    print(f"Config updated: {resolved}")
+    print(f"Issued by: {data.get('issued_by', '')}")
+
+
 def move_server(config_path=None, host=None, port=None, https=False, backup=True):
     config, resolved = load_config(config_path)
     output = config.setdefault("output", {})
@@ -190,7 +299,11 @@ def check_agent(config_path=None):
                 print(f"Endpoint unreachable: {exc}")
     if server_url:
         try:
-            response = requests.get(f"{server_url}/api/agent/bootstrap-secret/", headers=_auth_headers(config), timeout=8)
+            response = requests.get(
+                f"{server_url}/api/agent/bootstrap/",
+                headers={"X-Agent-Id": agent.get("id", "")},
+                timeout=8,
+            )
             print(f"Bootstrap endpoint status: {response.status_code}")
         except Exception as exc:
             print(f"Bootstrap endpoint error: {exc}")
@@ -204,6 +317,11 @@ def main():
 
     sub.add_parser("heartbeat", help="Send a manual heartbeat")
 
+    enroll = sub.add_parser("enroll", help="Enroll agent and store token in config")
+    enroll.add_argument("--bootstrap-key", default="", help="Shared secret override for enrollment")
+    enroll.add_argument("--enrollment-code", default="", help="Enrollment ticket/code if required by server")
+    enroll.add_argument("--no-backup", action="store_true")
+
     move = sub.add_parser("move", help="Move agent to a new server")
     move.add_argument("--host", required=True)
     move.add_argument("--port", type=int, default=None)
@@ -215,6 +333,8 @@ def main():
     args = parser.parse_args()
     if args.command == "heartbeat":
         send_heartbeat(args.config or None)
+    elif args.command == "enroll":
+        enroll_agent(args.config or None, args.bootstrap_key, args.enrollment_code, not args.no_backup)
     elif args.command == "move":
         move_server(args.config or None, args.host, args.port, args.https, not args.no_backup)
     elif args.command == "check":

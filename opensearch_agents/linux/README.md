@@ -32,6 +32,15 @@ El bundle tambien incluye utilidades operativas para Linux:
 1. `sendheartbeat` para forzar un heartbeat manual al servidor.
 2. `opena_mover --host <ip> --port <puerto>` para migrar el agente a otro servidor.
 3. `opena_checker` para validar enrolamiento, conectividad y estado del agente.
+4. `opena_enroll` para enrolar el agente desde terminal y guardar el token en `/etc/vant-siem/config.yaml`.
+
+Ejemplos de enrolamiento manual:
+
+```bash
+sudo opena_enroll
+sudo opena_enroll --enrollment-code CODIGO-DEL-TICKET
+sudo opena_enroll --bootstrap-key MI-SECRETO-COMPARTIDO
+```
 
 El tray GUI tambien es compartido y queda en `common/VANT-SIEM-Agent-Tray.desktop`.
 El instalador lo copia automaticamente a:

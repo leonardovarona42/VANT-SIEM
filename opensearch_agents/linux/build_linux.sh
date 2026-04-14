@@ -87,7 +87,7 @@ TRAY_DESKTOP_SRC="${INSTALL_SOURCE}/desktop/vant-siem-agent-tray.desktop"
 TRAY_DESKTOP_DST="/etc/xdg/autostart/vant-siem-agent-tray.desktop"
 SERVICE_SRC="${INSTALL_SOURCE}/systemd/vant-siem-agent.service"
 SERVICE_DST="/etc/systemd/system/vant-siem-agent.service"
-LOCAL_TOOLS=(sendheartbeat opena_mover opena_checker)
+LOCAL_TOOLS=(sendheartbeat opena_mover opena_checker opena_enroll)
 
 mkdir -p "${TARGET_ROOT}" "${TARGET_CFG_DIR}" "${TARGET_LOG_DIR}" "${TARGET_BIN_DIR}" /etc/xdg/autostart
 mkdir -p "${TARGET_ROOT}/scripts" "${TARGET_ROOT}/docs"
@@ -283,6 +283,7 @@ EOF
     "${stage_root}/bin/sendheartbeat"
     "${stage_root}/bin/opena_mover"
     "${stage_root}/bin/opena_checker"
+    "${stage_root}/bin/opena_enroll"
     "${stage_root}/desktop/vant-siem-agent-tray.desktop"
     "${stage_root}/systemd/vant-siem-agent.service"
   )
@@ -297,6 +298,7 @@ EOF
   bash -n "${stage_root}/bin/sendheartbeat"
   bash -n "${stage_root}/bin/opena_mover"
   bash -n "${stage_root}/bin/opena_checker"
+  bash -n "${stage_root}/bin/opena_enroll"
 
   "${venv_dir}/bin/python" - <<PY
 from pathlib import Path

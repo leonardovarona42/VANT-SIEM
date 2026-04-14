@@ -43,11 +43,19 @@ $runKeyPath = if ($UserMode) {
 }
 $runValueName = "VANTOpenSearchAgentTray"
 $shortcutPath = Join-Path $startupDir "VANT-OpenSearch-Agent Tray.lnk"
+if ($UserMode) {
+    $uninstallKeyPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\VANTOpenSearchAgent"
+} else {
+    $uninstallKeyPath = "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\VANTOpenSearchAgent"
+}
 if (Test-Path $shortcutPath) {
     Remove-Item $shortcutPath -Force -ErrorAction SilentlyContinue
 }
 if (Test-Path $runKeyPath) {
     Remove-ItemProperty -Path $runKeyPath -Name $runValueName -ErrorAction SilentlyContinue
+}
+if (Test-Path $uninstallKeyPath) {
+    Remove-Item -Path $uninstallKeyPath -Recurse -Force -ErrorAction SilentlyContinue
 }
 
 if (-not $KeepFiles -and (Test-Path $InstallDir)) {

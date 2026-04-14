@@ -90,11 +90,11 @@ WSGI_APPLICATION = 'CORE.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'vant_test1',           
-        'USER': 'postgres', 
-        'PASSWORD': 'postgres',   
-        'HOST': 'localhost',           
-        'PORT': '5432',               
+        'NAME': 'vant_siem',
+        'USER': 'vantsiem',
+        'PASSWORD': 'vantsiem123',
+        'HOST': 'localhost',
+        'PORT': '5432',
     },
     'opensearch': {
         'ENGINE': 'django.db.backends.postgresql',

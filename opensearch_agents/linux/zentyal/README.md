@@ -42,10 +42,17 @@ La instalacion no descarga nada: usa el paquete ya generado en
 Ese bundle ya incluye `services/audit_inventory.py` y `services/aegis_dlp.py`.
 Con eso el agente captura una linea de tiempo completa de activos y
 documentos sensibles incluso en despliegues sin internet.
-Tambien incluye `sendheartbeat`, `opena_mover` y `opena_checker` en
+Tambien incluye `sendheartbeat`, `opena_mover`, `opena_checker` y `opena_enroll` en
 `/opt/vant-siem-agent/bin` con atajos en `/usr/local/bin`.
 Durante la instalacion, `/opt/vant-siem-agent` queda asignado al usuario que
 ejecuto `sudo` cuando esa identidad esta disponible.
+
+Para enrolar manualmente desde terminal:
+
+```bash
+sudo opena_enroll
+sudo opena_enroll --enrollment-code CODIGO-DEL-TICKET
+```
 
 Para desactivar el tray:
 
