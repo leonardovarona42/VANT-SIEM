@@ -7,6 +7,31 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+function Invoke-IcaclsSafe {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$Arguments
+    )
+
+    $nativePrefDefined = $null -ne (Get-Variable PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue)
+    if ($nativePrefDefined) {
+        $previousNativePref = $global:PSNativeCommandUseErrorActionPreference
+        $global:PSNativeCommandUseErrorActionPreference = $false
+    }
+
+    try {
+        $output = & icacls.exe @Arguments 2>&1
+        $exitCode = $LASTEXITCODE
+        if ($exitCode -ne 0) {
+            Write-Warning ("icacls returned exit code {0}: {1}" -f $exitCode, (($output | Out-String).Trim()))
+        }
+    } finally {
+        if ($nativePrefDefined) {
+            $global:PSNativeCommandUseErrorActionPreference = $previousNativePref
+        }
+    }
+}
+
 function Test-Admin {
     $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = New-Object Security.Principal.WindowsPrincipal($currentUser)
@@ -66,9 +91,9 @@ function Set-SecureInstallAcl {
     $ownerGrant = "${OwnerAccount}:(OI)(CI)M"
 
     # First ensure well-known administrative SIDs are granted using language-independent identifiers.
-    & icacls.exe $TargetPath /grant:r "${systemSid}:(OI)(CI)F" "${adminsSid}:(OI)(CI)F" $ownerGrant "${usersSid}:(OI)(CI)RX" /T /C 2>$null | Out-Null
-    & icacls.exe $TargetPath /inheritance:r /T /C 2>$null | Out-Null
-    & icacls.exe $TargetPath /setowner $OwnerAccount /T /C 2>$null | Out-Null
+    Invoke-IcaclsSafe -Arguments @($TargetPath, "/grant:r", "${systemSid}:(OI)(CI)F", "${adminsSid}:(OI)(CI)F", $ownerGrant, "${usersSid}:(OI)(CI)RX", "/T", "/C")
+    Invoke-IcaclsSafe -Arguments @($TargetPath, "/inheritance:r", "/T", "/C")
+    Invoke-IcaclsSafe -Arguments @($TargetPath, "/setowner", $OwnerAccount, "/T", "/C")
 }
 
 function Register-UninstallEntry {

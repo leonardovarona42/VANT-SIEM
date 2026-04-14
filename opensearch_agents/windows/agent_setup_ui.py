@@ -801,6 +801,8 @@ class AgentInstallerWizard(QtWidgets.QWizard):
             str(install_script),
             "-RunNow",
         ]
+        if not _is_admin():
+            cmd.append("-UserMode")
         try:
             result = subprocess.run(
                 cmd,
@@ -810,6 +812,15 @@ class AgentInstallerWizard(QtWidgets.QWizard):
                 check=False,
             )
             output = "\n".join(part for part in [result.stdout, result.stderr] if part)
+            if (not _is_admin()) and result.returncode == 0:
+                output = "\n".join(
+                    part
+                    for part in [
+                        "Instalacion ejecutada en modo usuario porque el setup no estaba elevado.",
+                        output,
+                    ]
+                    if part
+                )
             return result.returncode == 0, output
         except Exception as exc:
             return False, str(exc)

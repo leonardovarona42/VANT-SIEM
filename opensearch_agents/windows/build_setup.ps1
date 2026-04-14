@@ -1,8 +1,42 @@
 param(
-    [string]$PythonExe = "C:\Users\leonardo.varona\3D Objects\develop\venv\Scripts\python.exe"
+    [string]$PythonExe
 )
 
 $ErrorActionPreference = "Stop"
+
+function Resolve-PythonExe {
+    param(
+        [string]$RequestedPython
+    )
+
+    if ($RequestedPython) {
+        if (-not (Test-Path $RequestedPython)) {
+            throw "Python executable not found: $RequestedPython"
+        }
+        return (Resolve-Path $RequestedPython).Path
+    }
+
+    $activeVenv = $env:VIRTUAL_ENV
+    if ($activeVenv) {
+        $activeVenvPython = Join-Path $activeVenv "Scripts\python.exe"
+        if (Test-Path $activeVenvPython) {
+            return (Resolve-Path $activeVenvPython).Path
+        }
+    }
+
+    $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
+    $repoPython = Join-Path $repoRoot "venv\Scripts\python.exe"
+    if (Test-Path $repoPython) {
+        return (Resolve-Path $repoPython).Path
+    }
+
+    $pythonCommand = Get-Command python -ErrorAction SilentlyContinue
+    if ($pythonCommand) {
+        return $pythonCommand.Source
+    }
+
+    throw "Python not found. Activate a virtualenv, provide -PythonExe, or create venv\\Scripts\\python.exe."
+}
 
 function Assert-BuildDependency {
     param(
@@ -10,7 +44,10 @@ function Assert-BuildDependency {
         [string]$PipName = $ModuleName
     )
 
-    & $PythonExe -c "import $ModuleName" 2>$null
+    $previousPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    & $PythonExe -c "import $ModuleName" *> $null
+    $ErrorActionPreference = $previousPreference
     if ($LASTEXITCODE -eq 0) {
         return
     }
@@ -21,6 +58,8 @@ function Assert-BuildDependency {
         throw "No se pudo instalar la dependencia requerida: $PipName"
     }
 }
+
+$PythonExe = Resolve-PythonExe -RequestedPython $PythonExe
 
 Assert-BuildDependency -ModuleName "PyInstaller"
 Assert-BuildDependency -ModuleName "requests"
@@ -49,7 +88,7 @@ function New-LogoIcon {
     }
 }
 
-$repoRoot = (Resolve-Path ".").Path
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $windowsDir = Join-Path $repoRoot "opensearch_agents\windows"
 $buildRoot = Join-Path $env:TEMP ("vant-opensearch-build-" + (Get-Date -Format "yyyyMMddHHmmss"))
 $agentWork = Join-Path $buildRoot "agent-work"
@@ -69,7 +108,7 @@ $setupDist = Join-Path $buildRoot "setup-dist"
 $configsDir = Join-Path $windowsDir "configs"
 $outputExe = Join-Path $windowsDir "opensearch_agent_setup.exe"
 $finalOutputExe = $outputExe
-$logoAbs = (Resolve-Path "staticfiles\img\logo.png").Path
+$logoAbs = (Resolve-Path (Join-Path $repoRoot "staticfiles\img\logo.png")).Path
 $iconPath = Join-Path $buildRoot "vant_logo.ico"
 $versionFile = Join-Path $buildRoot "version_info.txt"
 

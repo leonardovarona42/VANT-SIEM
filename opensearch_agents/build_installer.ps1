@@ -1,7 +1,14 @@
 param(
-    [string]$PythonExe = "C:\Users\leonardo.varona\3D Objects\develop\venv\Scripts\python.exe"
+    [string]$PythonExe
 )
 
 $ErrorActionPreference = "Stop"
 
-powershell -ExecutionPolicy Bypass -File ".\opensearch_agents\windows\build_setup.ps1" -PythonExe $PythonExe
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$buildScript = Join-Path $repoRoot "opensearch_agents\windows\build_setup.ps1"
+
+if ($PythonExe) {
+    powershell -ExecutionPolicy Bypass -File $buildScript -PythonExe $PythonExe
+} else {
+    powershell -ExecutionPolicy Bypass -File $buildScript
+}
