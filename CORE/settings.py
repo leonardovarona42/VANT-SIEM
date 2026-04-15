@@ -166,3 +166,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = '/siem/dashboard/login/'
 LOGIN_REDIRECT_URL = '/siem/dashboard/' 
 LOGOUT_REDIRECT_URL = '/siem/login/'
+
+# Logging configuration
+from logging_config import LOGGING
+LOGGING_CONFIG = None
+LOGGING = LOGGING
