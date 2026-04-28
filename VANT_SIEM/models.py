@@ -710,3 +710,145 @@ class LDAPConfig(models.Model):
     def __str__(self):
         return f"{self.nombre} ({self.servidor})"
 
+
+class NetworkSite(models.Model):
+    """Sede o segmento administrativo para la gestion de red."""
+
+    name = models.CharField(max_length=120, unique=True)
+    code = models.CharField(max_length=30, unique=True)
+    location = models.CharField(max_length=255, blank=True)
+    description = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Network Site"
+        verbose_name_plural = "Network Sites"
+        ordering = ["name"]
+
+    def __str__(self):
+        return f"{self.code} - {self.name}"
+
+
+class NetworkVLAN(models.Model):
+    """VLAN modelada como dominio logico de segmentacion."""
+
+    site = models.ForeignKey(NetworkSite, on_delete=models.CASCADE, related_name="vlans")
+    vlan_id = models.PositiveIntegerField()
+    name = models.CharField(max_length=120)
+    vrf = models.CharField(max_length=120, blank=True)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Network VLAN"
+        verbose_name_plural = "Network VLANs"
+        ordering = ["site__name", "vlan_id"]
+        unique_together = [("site", "vlan_id")]
+
+    def __str__(self):
+        return f"VLAN {self.vlan_id} - {self.name}"
+
+
+class NetworkSubnet(models.Model):
+    """Subred administrada por el modulo de gestion de red."""
+
+    STATUS_CHOICES = [
+        ("planning", "Planning"),
+        ("active", "Active"),
+        ("reserved", "Reserved"),
+        ("deprecated", "Deprecated"),
+    ]
+
+    site = models.ForeignKey(NetworkSite, on_delete=models.CASCADE, related_name="subnets")
+    vlan = models.ForeignKey(
+        NetworkVLAN,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="subnets",
+    )
+    name = models.CharField(max_length=120)
+    cidr = models.CharField(max_length=64, unique=True)
+    gateway_ip = models.GenericIPAddressField(blank=True, null=True)
+    dhcp_enabled = models.BooleanField(default=False)
+    dhcp_range_start = models.GenericIPAddressField(blank=True, null=True)
+    dhcp_range_end = models.GenericIPAddressField(blank=True, null=True)
+    dns_servers = models.JSONField(default=list, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active")
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Network Subnet"
+        verbose_name_plural = "Network Subnets"
+        ordering = ["site__name", "cidr"]
+
+    def __str__(self):
+        return f"{self.name} ({self.cidr})"
+
+
+class NetworkIPAddress(models.Model):
+    """Direccion IP modelada dentro de una subred."""
+
+    STATUS_CHOICES = [
+        ("assigned", "Assigned"),
+        ("reserved", "Reserved"),
+        ("available", "Available"),
+        ("conflict", "Conflict"),
+        ("quarantine", "Quarantine"),
+    ]
+
+    subnet = models.ForeignKey(NetworkSubnet, on_delete=models.CASCADE, related_name="ip_addresses")
+    ip_address = models.GenericIPAddressField()
+    hostname = models.CharField(max_length=255, blank=True)
+    dns_name = models.CharField(max_length=255, blank=True)
+    mac_address = models.CharField(max_length=17, blank=True)
+    device_role = models.CharField(max_length=120, blank=True)
+    assigned_to = models.CharField(max_length=255, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="assigned")
+    source = models.CharField(max_length=120, blank=True, help_text="Origen del dato: agente, manual, importacion")
+    description = models.TextField(blank=True)
+    last_seen = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Network IP Address"
+        verbose_name_plural = "Network IP Addresses"
+        ordering = ["subnet__cidr", "ip_address"]
+        unique_together = [("subnet", "ip_address")]
+
+    def __str__(self):
+        return f"{self.ip_address} ({self.hostname or self.status})"
+
+
+class NetworkChangeEvent(models.Model):
+    """Bitacora corta de cambios operativos del modulo."""
+
+    EVENT_CHOICES = [
+        ("site_created", "Site Created"),
+        ("vlan_created", "VLAN Created"),
+        ("subnet_created", "Subnet Created"),
+        ("ip_created", "IP Created"),
+    ]
+
+    event_type = models.CharField(max_length=40, choices=EVENT_CHOICES)
+    summary = models.CharField(max_length=255)
+    details = models.JSONField(default=dict, blank=True)
+    actor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Network Change Event"
+        verbose_name_plural = "Network Change Events"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.summary
+

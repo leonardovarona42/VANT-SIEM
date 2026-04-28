@@ -13,7 +13,7 @@ from django.contrib.auth.hashers import make_password
 from django.db import transaction
 from django.utils import timezone
 from django.core.files.base import ContentFile
-from .models import Notification, UserPermission, UserApprovalRequest, NotificationPreference, EmailConfiguration, EmailAlert, EmailLog, AnalysisAPIConfig, NotificationSettings, NotificationChannel, NotificationTemplate, NotificationLog, NotificationQueue, OllamaConfig, LDAPConfig
+from .models import Notification, UserPermission, UserApprovalRequest, NotificationPreference, EmailConfiguration, EmailAlert, EmailLog, AnalysisAPIConfig, NotificationSettings, NotificationChannel, NotificationTemplate, NotificationLog, NotificationQueue, OllamaConfig, LDAPConfig, NetworkSite, NetworkVLAN, NetworkSubnet, NetworkIPAddress, NetworkChangeEvent
 from .logging_system import event_logger
 from .email_service import send_user_alert, send_system_alert
 from .enhanced_notification_service import enhanced_notification_service
@@ -40,6 +40,215 @@ try:
 except Exception:
     Server = Connection = Tls = SUBTREE = None
 # IDS features removed per user request
+
+
+def _split_newline_csv(value):
+    return [item.strip() for item in (value or "").replace(";", ",").split(",") if item.strip()]
+
+
+def _network_subnet_capacity(cidr):
+    try:
+        network = ipaddress.ip_network(cidr, strict=False)
+    except ValueError:
+        return 0
+    if network.version == 4 and network.prefixlen <= 30:
+        return max(network.num_addresses - 2, 0)
+    return network.num_addresses
+
+
+def _network_dashboard_context():
+    subnet_rows = []
+    for subnet in NetworkSubnet.objects.select_related("site", "vlan").prefetch_related("ip_addresses").order_by("site__name", "cidr"):
+        capacity = _network_subnet_capacity(subnet.cidr)
+        assigned_count = subnet.ip_addresses.exclude(status="available").count()
+        usage = round((assigned_count / capacity) * 100, 1) if capacity else 0
+        subnet_rows.append(
+            {
+                "obj": subnet,
+                "capacity": capacity,
+                "assigned_count": assigned_count,
+                "usage": usage,
+            }
+        )
+
+    return {
+        "sites": NetworkSite.objects.order_by("name"),
+        "vlans": NetworkVLAN.objects.select_related("site").order_by("site__name", "vlan_id")[:100],
+        "subnets": subnet_rows,
+        "ip_addresses": NetworkIPAddress.objects.select_related("subnet", "subnet__site").order_by("-updated_at")[:120],
+        "recent_changes": NetworkChangeEvent.objects.select_related("actor").order_by("-created_at")[:12],
+        "sites_total": NetworkSite.objects.count(),
+        "vlans_total": NetworkVLAN.objects.count(),
+        "subnets_total": NetworkSubnet.objects.count(),
+        "ips_total": NetworkIPAddress.objects.count(),
+        "assigned_ips_total": NetworkIPAddress.objects.exclude(status="available").count(),
+        "conflict_ips_total": NetworkIPAddress.objects.filter(status="conflict").count(),
+    }
+
+
+@login_required
+def network_management_dashboard(request):
+    context = _network_dashboard_context()
+    return render(request, "network_management.html", context)
+
+
+@login_required
+@require_POST
+def network_site_create(request):
+    name = (request.POST.get("name") or "").strip()
+    code = (request.POST.get("code") or "").strip().upper()
+    location = (request.POST.get("location") or "").strip()
+    description = (request.POST.get("description") or "").strip()
+    if not name or not code:
+        messages.error(request, "Site y code son obligatorios para crear la sede.")
+        return redirect("network-management")
+    site = NetworkSite.objects.create(
+        name=name,
+        code=code,
+        location=location,
+        description=description,
+        created_by=request.user,
+    )
+    NetworkChangeEvent.objects.create(
+        event_type="site_created",
+        summary=f"Site {site.code} creado",
+        details={"site": site.name, "location": site.location},
+        actor=request.user,
+    )
+    messages.success(request, f"Site {site.code} creado correctamente.")
+    return redirect("network-management")
+
+
+@login_required
+@require_POST
+def network_vlan_create(request):
+    site_id = request.POST.get("site_id")
+    name = (request.POST.get("name") or "").strip()
+    vlan_id_raw = (request.POST.get("vlan_id") or "").strip()
+    vrf = (request.POST.get("vrf") or "").strip()
+    description = (request.POST.get("description") or "").strip()
+    if not site_id or not name or not vlan_id_raw:
+        messages.error(request, "Site, VLAN ID y nombre son obligatorios.")
+        return redirect("network-management")
+    try:
+        vlan_id = int(vlan_id_raw)
+    except ValueError:
+        messages.error(request, "El VLAN ID debe ser numerico.")
+        return redirect("network-management")
+    site = get_object_or_404(NetworkSite, pk=site_id)
+    vlan = NetworkVLAN.objects.create(
+        site=site,
+        vlan_id=vlan_id,
+        name=name,
+        vrf=vrf,
+        description=description,
+    )
+    NetworkChangeEvent.objects.create(
+        event_type="vlan_created",
+        summary=f"VLAN {vlan.vlan_id} creada en {site.code}",
+        details={"site": site.code, "name": vlan.name, "vrf": vlan.vrf},
+        actor=request.user,
+    )
+    messages.success(request, f"VLAN {vlan.vlan_id} creada correctamente.")
+    return redirect("network-management")
+
+
+@login_required
+@require_POST
+def network_subnet_create(request):
+    site = get_object_or_404(NetworkSite, pk=request.POST.get("site_id"))
+    vlan_id = request.POST.get("vlan_id")
+    name = (request.POST.get("name") or "").strip()
+    cidr = (request.POST.get("cidr") or "").strip()
+    gateway_ip = (request.POST.get("gateway_ip") or "").strip()
+    dhcp_range_start = (request.POST.get("dhcp_range_start") or "").strip()
+    dhcp_range_end = (request.POST.get("dhcp_range_end") or "").strip()
+    notes = (request.POST.get("notes") or "").strip()
+    dns_servers = _split_newline_csv(request.POST.get("dns_servers"))
+    status = (request.POST.get("status") or "active").strip()
+    dhcp_enabled = request.POST.get("dhcp_enabled") == "on"
+    try:
+        network = ipaddress.ip_network(cidr, strict=False)
+    except ValueError:
+        messages.error(request, "El CIDR indicado no es valido.")
+        return redirect("network-management")
+    if gateway_ip:
+        try:
+            if ipaddress.ip_address(gateway_ip) not in network:
+                raise ValueError
+        except ValueError:
+            messages.error(request, "La puerta de enlace no pertenece a la subred.")
+            return redirect("network-management")
+    vlan = None
+    if vlan_id:
+        vlan = get_object_or_404(NetworkVLAN, pk=vlan_id)
+    subnet = NetworkSubnet.objects.create(
+        site=site,
+        vlan=vlan,
+        name=name or cidr,
+        cidr=str(network),
+        gateway_ip=gateway_ip or None,
+        dhcp_enabled=dhcp_enabled,
+        dhcp_range_start=dhcp_range_start or None,
+        dhcp_range_end=dhcp_range_end or None,
+        dns_servers=dns_servers,
+        status=status,
+        notes=notes,
+        created_by=request.user,
+    )
+    NetworkChangeEvent.objects.create(
+        event_type="subnet_created",
+        summary=f"Subred {subnet.cidr} creada",
+        details={"site": site.code, "vlan": vlan.vlan_id if vlan else None},
+        actor=request.user,
+    )
+    messages.success(request, f"Subred {subnet.cidr} creada correctamente.")
+    return redirect("network-management")
+
+
+@login_required
+@require_POST
+def network_ip_create(request):
+    subnet = get_object_or_404(NetworkSubnet, pk=request.POST.get("subnet_id"))
+    ip_raw = (request.POST.get("ip_address") or "").strip()
+    hostname = (request.POST.get("hostname") or "").strip()
+    dns_name = (request.POST.get("dns_name") or "").strip()
+    mac_address = (request.POST.get("mac_address") or "").strip()
+    device_role = (request.POST.get("device_role") or "").strip()
+    assigned_to = (request.POST.get("assigned_to") or "").strip()
+    status = (request.POST.get("status") or "assigned").strip()
+    source = (request.POST.get("source") or "").strip()
+    description = (request.POST.get("description") or "").strip()
+    try:
+        ip_value = ipaddress.ip_address(ip_raw)
+        network = ipaddress.ip_network(subnet.cidr, strict=False)
+        if ip_value not in network:
+            raise ValueError
+    except ValueError:
+        messages.error(request, "La direccion IP no pertenece a la subred seleccionada.")
+        return redirect("network-management")
+    ip_item = NetworkIPAddress.objects.create(
+        subnet=subnet,
+        ip_address=str(ip_value),
+        hostname=hostname,
+        dns_name=dns_name,
+        mac_address=mac_address,
+        device_role=device_role,
+        assigned_to=assigned_to,
+        status=status,
+        source=source,
+        description=description,
+        created_by=request.user,
+        last_seen=timezone.now(),
+    )
+    NetworkChangeEvent.objects.create(
+        event_type="ip_created",
+        summary=f"IP {ip_item.ip_address} registrada en {subnet.cidr}",
+        details={"hostname": hostname, "status": status, "assigned_to": assigned_to},
+        actor=request.user,
+    )
+    messages.success(request, f"IP {ip_item.ip_address} registrada correctamente.")
+    return redirect("network-management")
 
 
 @login_required
