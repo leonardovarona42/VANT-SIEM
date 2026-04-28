@@ -1,0 +1,3 @@
+*.sh text eol=lf
+opensearch_agents/linux/common/bin/* text eol=lf
+opensearch_agents/linux/build_linux.sh text eol=lf

@@ -9,79 +9,136 @@ La estructura Linux queda separada asi:
 
 El instalador compartido vive en `common/install_agent.sh` y cada distro solo
 define su wrapper, su `config.yaml` y su guia operativa.
-Ese wrapper espera que primero se haya generado el bundle con
-`opensearch_agents/linux/build_linux.sh`, que por defecto detecta todas las
-distros con `config.yaml` bajo `opensearch_agents/linux/`.
 
-La instalacion en destino es offline: el build deja un `install.sh` en
-`linux/dist/<distro>/` que entra al bundle y ejecuta el `install.sh`
-incluido en `vant-siem-agent-install/`.
+## Artefactos generados
 
-Ese instalador ya no descarga nada en la maquina destino. Solo ejecuta el
-bundle offline generado en `linux/dist/<distro>/vant-siem-agent-install/`, que
-incluye el tray GUI, el venv, `services/`, `desktop/`, `systemd/` y los scripts
-necesarios.
+`opensearch_agents/linux/build_linux.sh` genera por distro:
 
-El agente Linux ya sale preparado con dos microservicios internos:
+1. `linux/dist/<distro>/install.sh`
+2. `linux/dist/<distro>/uninstall.sh`
+3. `linux/dist/<distro>/vant-siem-agent-install/`
+4. `linux/dist/vant-siem-agent-<distro>_1.0.0_all.deb`
+5. `linux/dist/vant-siem-agent-<distro>.tar.gz`
 
-1. `audit_inventory` para inventario de hardware, software, red, USB y usuarios.
-2. `aegis_dlp` para inspeccion DLP offline basada en rutas locales y reglas.
+El bundle y el `.deb` son offline. La maquina cliente no necesita `apt`, `pip`
+ni acceso a internet para completar la instalacion del agente.
 
-El bundle tambien incluye utilidades operativas para Linux:
+## Como instalar en cliente
 
-1. `sendheartbeat` para forzar un heartbeat manual al servidor.
-2. `opena_mover --host <ip> --port <puerto>` para migrar el agente a otro servidor.
-3. `opena_checker` para validar enrolamiento, conectividad y estado del agente.
-4. `opena_enroll` para enrolar el agente desde terminal y guardar el token en `/etc/vant-siem/config.yaml`.
+Tienes dos formas soportadas.
 
-Ejemplos de enrolamiento manual:
+### Opcion 1: bundle extraido
+
+Con entorno grafico:
 
 ```bash
-sudo opena_enroll
-sudo opena_enroll --enrollment-code CODIGO-DEL-TICKET
-sudo opena_enroll --bootstrap-key MI-SECRETO-COMPARTIDO
+cd linux/dist/<distro>
+sudo ./install.sh
 ```
 
-El tray GUI tambien es compartido y queda en `common/VANT-SIEM-Agent-Tray.desktop`.
-El instalador lo copia automaticamente a:
-
-`/etc/xdg/autostart/vant-siem-agent-tray.desktop`
-
-Durante la instalacion, el directorio `/opt/vant-siem-agent` se asigna al
-usuario que ejecuto el instalador via `sudo` cuando esa identidad esta
-disponible. La configuracion sensible permanece en `/etc/vant-siem/`.
-
-Los artefactos generados por `build_linux.sh` quedan en `linux/dist/<distro>/`.
-Ese directorio debe copiarse junto al instalador cuando se despliega en una
-maquina sin acceso a internet.
-El directorio reutilizable para instalar sin Internet es:
-
-`linux/dist/<distro>/vant-siem-agent-install/`
-
-Tambien puedes lanzar directamente:
-
-`linux/dist/<distro>/install.sh`
-
-Y para desinstalar:
-
-`linux/dist/<distro>/uninstall.sh`
-
-Si ya tienes un directorio extraido en otra ruta, puedes usar:
+Sin entorno grafico o forzando modo terminal:
 
 ```bash
-sudo VANT_AGENT_PACKAGE_DIR=/ruta/al/vant-siem-agent-install ./install_agent.sh
+cd linux/dist/<distro>
+sudo ./install.sh --gdisable
+```
+
+### Opcion 2: paquete `.deb`
+
+Instalacion normal:
+
+```bash
+sudo dpkg -i linux/dist/vant-siem-agent-<distro>_1.0.0_all.deb
+```
+
+Instalacion headless:
+
+```bash
+sudo VANT_AGENT_GDISABLE=1 dpkg -i linux/dist/vant-siem-agent-<distro>_1.0.0_all.deb
+```
+
+`dpkg` no acepta una bandera propia del paquete, por eso el modo headless en el
+`.deb` se activa con `VANT_AGENT_GDISABLE=1`.
+
+## Comportamiento del asistente
+
+Durante la instalacion, si hay terminal interactiva disponible, se ejecuta el
+asistente CLI del agente. Ese flujo:
+
+1. Pide host y puerto del servidor de control y del endpoint OpenSearch.
+2. Prueba conectividad con el servidor destino.
+3. Intenta enrolar automaticamente el agente durante la prueba.
+4. Guarda la configuracion en `/etc/vant-siem/config.yaml`.
+
+Si el enrolamiento automatico no consigue token, la instalacion igual termina y
+puedes reenrolar despues con `sudo opena_enroll`.
+
+Para instalaciones desatendidas:
+
+```bash
+sudo VANT_AGENT_WIZARD=0 ./install.sh --gdisable
+sudo VANT_AGENT_WIZARD=0 VANT_AGENT_GDISABLE=1 dpkg -i linux/dist/vant-siem-agent-<distro>_1.0.0_all.deb
+```
+
+## GUI vs headless
+
+Modo normal:
+
+1. Instala el servicio del agente.
+2. Deja habilitado el tray GUI.
+3. Crea `/etc/xdg/autostart/vant-siem-agent-tray.desktop`.
+
+Modo `--gdisable` o `VANT_AGENT_GDISABLE=1`:
+
+1. Instala el mismo servicio del agente.
+2. Deshabilita el tray GUI.
+3. Deja toda la configuracion y operacion desde terminal.
+
+## Utilidades disponibles tras instalar
+
+El paquete deja disponibles en `/usr/local/bin`:
+
+1. `sendheartbeat` para forzar heartbeat manual.
+2. `opena_mover --host <ip> --port <puerto>` para migrar el agente.
+3. `opena_checker` para validar enrolamiento y conectividad.
+4. `opena_enroll` para reenrolar o enrolar manualmente.
+5. `vant-agent-cli` para reabrir el asistente desde terminal.
+
+Ejemplos:
+
+```bash
+sudo opena_checker
+sudo sendheartbeat
+sudo opena_mover --host 192.168.12.43 --port 9201
+sudo opena_enroll --enrollment-code CODIGO-DEL-TICKET
+```
+
+## Layout instalado
+
+La instalacion deja principalmente:
+
+1. `/opt/vant-siem-agent/` con binarios y runtime del agente.
+2. `/etc/vant-siem/config.yaml` con la configuracion operativa.
+3. `/usr/local/bin/` con los comandos auxiliares.
+4. `/etc/systemd/system/vant-siem-agent.service` para el servicio.
+
+Durante la instalacion, `/opt/vant-siem-agent` se asigna al usuario que ejecuto
+el `sudo` cuando esa identidad esta disponible. La configuracion sensible queda
+en `/etc/vant-siem/`.
+
+## Desinstalacion
+
+Bundle:
+
+```bash
+cd linux/dist/<distro>
+sudo ./uninstall.sh
+```
+
+Paquete `.deb`:
+
+```bash
+sudo dpkg -r vant-siem-agent-<distro>
 ```
 
 La guia detallada del layout offline vive en [OFFLINE_PACKAGING.md](./OFFLINE_PACKAGING.md).
-
-Para forzar el asistente CLI durante la instalacion:
-
-```bash
-sudo VANT_AGENT_WIZARD=1 ./install_agent.sh
-```
-
-Para desactivarlo:
-
-```bash
-sudo VANT_AGENT_WIZARD=0 ./install_agent.sh
-```

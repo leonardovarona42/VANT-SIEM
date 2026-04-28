@@ -13,22 +13,37 @@ function Invoke-IcaclsSafe {
         [string[]]$Arguments
     )
 
-    $nativePrefDefined = $null -ne (Get-Variable PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue)
-    if ($nativePrefDefined) {
-        $previousNativePref = $global:PSNativeCommandUseErrorActionPreference
-        $global:PSNativeCommandUseErrorActionPreference = $false
-    }
-
     try {
-        $output = & icacls.exe @Arguments 2>&1
+        $output = cmd.exe /c ('icacls ' + (($Arguments | ForEach-Object {
+            if ($_ -match '\s') { '"' + $_ + '"' } else { $_ }
+        }) -join ' ') + ' 2>&1')
         $exitCode = $LASTEXITCODE
         if ($exitCode -ne 0) {
             Write-Warning ("icacls returned exit code {0}: {1}" -f $exitCode, (($output | Out-String).Trim()))
         }
-    } finally {
-        if ($nativePrefDefined) {
-            $global:PSNativeCommandUseErrorActionPreference = $previousNativePref
+    } catch {
+        Write-Warning ("icacls invocation failed: {0}" -f $_.Exception.Message)
+    }
+}
+
+function Invoke-NativeCommandSafe {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$FilePath,
+        [string[]]$Arguments = @()
+    )
+
+    try {
+        $output = & $FilePath @Arguments 2>&1
+        $exitCode = $LASTEXITCODE
+        if ($exitCode -ne 0) {
+            Write-Warning ("{0} exited with code {1}: {2}" -f $FilePath, $exitCode, (($output | Out-String).Trim()))
+            return $false
         }
+        return $true
+    } catch {
+        Write-Warning ("Unable to execute {0}: {1}" -f $FilePath, $_.Exception.Message)
+        return $false
     }
 }
 
@@ -36,6 +51,140 @@ function Test-Admin {
     $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = New-Object Security.Principal.WindowsPrincipal($currentUser)
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+function Stop-AgentProcesses {
+    $processNames = @(
+        "vant-opensearch-agent",
+        "vant-opensearch-agent-tray",
+        "sendheartbeat",
+        "opena_checker",
+        "opena_cheker",
+        "opena_mover"
+    )
+
+    foreach ($name in $processNames) {
+        try {
+            Get-Process -Name $name -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        } catch {}
+    }
+}
+
+function Reset-InstallPermissions {
+    param(
+        [string]$TargetPath
+    )
+
+    if (-not (Test-Path $TargetPath)) {
+        return
+    }
+
+    Write-Host "Resetting ownership and ACLs for $TargetPath"
+    Invoke-NativeCommandSafe -FilePath "takeown.exe" -Arguments @("/F", $TargetPath, "/R", "/A") | Out-Null
+    Invoke-IcaclsSafe -Arguments @($TargetPath, "/inheritance:e", "/T", "/C")
+    Invoke-IcaclsSafe -Arguments @($TargetPath, "/grant:r", "*S-1-5-18:(OI)(CI)F", "*S-1-5-32-544:(OI)(CI)F", "*S-1-5-32-545:(OI)(CI)RX", "/T", "/C")
+}
+
+function Invoke-UninstallCommandSafe {
+    param(
+        [string]$FilePath,
+        [string[]]$Arguments = @()
+    )
+
+    if (-not (Test-Path $FilePath)) {
+        return $false
+    }
+
+    try {
+        $process = Start-Process -FilePath $FilePath -ArgumentList $Arguments -Wait -PassThru -WindowStyle Hidden
+        if ($null -ne $process -and $process.ExitCode -eq 0) {
+            return $true
+        }
+
+        Write-Warning ("Uninstall command exited with code {0}: {1}" -f $process.ExitCode, $FilePath)
+    } catch {
+        Write-Warning ("Unable to execute uninstall command {0}: {1}" -f $FilePath, $_.Exception.Message)
+    }
+
+    return $false
+}
+
+function Uninstall-ExistingInstall {
+    param(
+        [string]$TargetInstallDir,
+        [string]$TargetTaskName,
+        [bool]$IsUserMode
+    )
+
+    if (-not (Test-Path $TargetInstallDir)) {
+        return
+    }
+
+    $existingConfig = Join-Path $TargetInstallDir "config.yaml"
+    $existingUninstallExe = Join-Path $TargetInstallDir "Uninstall-VANT-OpenSearch-Agent.exe"
+    $existingUninstallScript = Join-Path $TargetInstallDir "Uninstall-OpenSearchAgent.ps1"
+    $existingUserMode = $IsUserMode
+
+    if ((-not $existingUserMode) -and $TargetInstallDir -like "$env:LOCALAPPDATA*") {
+        $existingUserMode = $true
+    }
+
+    Write-Host "Existing installation detected in $TargetInstallDir. Removing it before reinstalling."
+    Write-Host ("Installer admin token: {0}" -f (Test-Admin))
+    Write-Host ("Installer identity: {0}" -f [Security.Principal.WindowsIdentity]::GetCurrent().Name)
+
+    try {
+        Stop-ScheduledTask -TaskName $TargetTaskName -ErrorAction SilentlyContinue
+    } catch {}
+    Stop-AgentProcesses
+    Start-Sleep -Seconds 2
+    Reset-InstallPermissions -TargetPath $TargetInstallDir
+
+    $uninstallSucceeded = $false
+
+    if (Test-Path $existingUninstallExe) {
+        $arguments = @("--noprompt")
+        if ($existingUserMode) {
+            $arguments += "--user-mode"
+        }
+        if (Test-Path $existingConfig) {
+            $arguments += @("--install-dir", $TargetInstallDir)
+        }
+
+        $uninstallSucceeded = Invoke-UninstallCommandSafe -FilePath $existingUninstallExe -Arguments $arguments
+        if (-not $uninstallSucceeded) {
+            Write-Warning "Falling back to the PowerShell uninstall script."
+        }
+    }
+
+    if ((-not $uninstallSucceeded) -and (Test-Path $existingUninstallScript)) {
+        $scriptArgs = @(
+            "-NoProfile",
+            "-ExecutionPolicy", "Bypass",
+            "-File", $existingUninstallScript,
+            "-TaskName", $TargetTaskName
+        )
+        if ($existingUserMode) {
+            $scriptArgs += "-UserMode"
+        }
+
+        if (Test-Path $existingConfig) {
+            $scriptArgs += @("-InstallDir", $TargetInstallDir)
+        }
+
+        $uninstallSucceeded = Invoke-UninstallCommandSafe -FilePath "powershell.exe" -Arguments $scriptArgs
+    }
+
+    if (Test-Path $TargetInstallDir) {
+        Start-Sleep -Seconds 2
+        Stop-AgentProcesses
+        Reset-InstallPermissions -TargetPath $TargetInstallDir
+        Remove-Item -Path $TargetInstallDir -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
+    if (Test-Path $TargetInstallDir) {
+        throw "Could not remove the previous installation in $TargetInstallDir. Close any running agent processes and try again."
+    }
 }
 
 function Get-OwnerAccountFromConfig {
@@ -84,16 +233,15 @@ function Set-SecureInstallAcl {
         }
     }
 
-    Write-Host "Applying secure ACL to $TargetPath for owner $OwnerAccount"
+    Write-Host "Applying install ACL to $TargetPath for owner $OwnerAccount"
     $systemSid = "*S-1-5-18"
     $adminsSid = "*S-1-5-32-544"
     $usersSid = "*S-1-5-32-545"
     $ownerGrant = "${OwnerAccount}:(OI)(CI)M"
 
-    # First ensure well-known administrative SIDs are granted using language-independent identifiers.
+    # Preserve inherited Program Files permissions and add explicit grants needed by the installer/owner.
     Invoke-IcaclsSafe -Arguments @($TargetPath, "/grant:r", "${systemSid}:(OI)(CI)F", "${adminsSid}:(OI)(CI)F", $ownerGrant, "${usersSid}:(OI)(CI)RX", "/T", "/C")
-    Invoke-IcaclsSafe -Arguments @($TargetPath, "/inheritance:r", "/T", "/C")
-    Invoke-IcaclsSafe -Arguments @($TargetPath, "/setowner", $OwnerAccount, "/T", "/C")
+    Invoke-IcaclsSafe -Arguments @($TargetPath, "/inheritance:e", "/T", "/C")
 }
 
 function Register-UninstallEntry {
@@ -104,7 +252,8 @@ function Register-UninstallEntry {
     )
 
     $uninstallScript = Join-Path $InstallDir "Uninstall-OpenSearchAgent.ps1"
-    if (-not (Test-Path $uninstallScript)) {
+    $uninstallExe = Join-Path $InstallDir "Uninstall-VANT-OpenSearch-Agent.exe"
+    if ((-not (Test-Path $uninstallScript)) -and (-not (Test-Path $uninstallExe))) {
         return
     }
 
@@ -118,7 +267,16 @@ function Register-UninstallEntry {
     } else {
         "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\VANTOpenSearchAgent"
     }
-    $uninstallCommand = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$uninstallScript`""
+    if (Test-Path $uninstallExe) {
+        $uninstallCommand = "`"$uninstallExe`" --noprompt"
+        if ($IsUserMode) {
+            $uninstallCommand += " --user-mode"
+        }
+        $quietUninstallCommand = $uninstallCommand
+    } else {
+        $uninstallCommand = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$uninstallScript`""
+        $quietUninstallCommand = $uninstallCommand
+    }
 
     New-Item -Path $regPath -Force | Out-Null
     New-ItemProperty -Path $regPath -Name "DisplayName" -Value "VANT OpenSearch Agent" -PropertyType String -Force | Out-Null
@@ -127,19 +285,27 @@ function Register-UninstallEntry {
     New-ItemProperty -Path $regPath -Name "InstallLocation" -Value $InstallDir -PropertyType String -Force | Out-Null
     New-ItemProperty -Path $regPath -Name "DisplayIcon" -Value $iconPath -PropertyType String -Force | Out-Null
     New-ItemProperty -Path $regPath -Name "UninstallString" -Value $uninstallCommand -PropertyType String -Force | Out-Null
-    New-ItemProperty -Path $regPath -Name "QuietUninstallString" -Value $uninstallCommand -PropertyType String -Force | Out-Null
+    New-ItemProperty -Path $regPath -Name "QuietUninstallString" -Value $quietUninstallCommand -PropertyType String -Force | Out-Null
     New-ItemProperty -Path $regPath -Name "NoModify" -Value 1 -PropertyType DWord -Force | Out-Null
     New-ItemProperty -Path $regPath -Name "NoRepair" -Value 1 -PropertyType DWord -Force | Out-Null
 }
 
-if ($UserMode) {
-    if ($InstallDir -eq "$env:ProgramFiles\VANT\OpenSearchAgent") {
-        $InstallDir = "$env:LOCALAPPDATA\VANT\OpenSearchAgent"
-    }
+$defaultSystemInstallDir = "$env:ProgramFiles\VANT\OpenSearchAgent"
+$defaultUserInstallDir = "$env:LOCALAPPDATA\VANT\OpenSearchAgent"
+$isAdmin = Test-Admin
+
+if ($UserMode -and $InstallDir -eq $defaultSystemInstallDir) {
+    $InstallDir = $defaultUserInstallDir
 }
 
-if (-not $UserMode -and -not (Test-Admin)) {
-    throw "Run PowerShell as Administrator."
+if ((-not $UserMode) -and (-not $isAdmin)) {
+    if ($InstallDir -eq $defaultSystemInstallDir) {
+        Write-Warning "No admin privileges detected. Switching install to user mode under $defaultUserInstallDir."
+        $UserMode = $true
+        $InstallDir = $defaultUserInstallDir
+    } else {
+        throw "Run PowerShell as Administrator or use -UserMode for custom non-admin installs."
+    }
 }
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -153,6 +319,7 @@ $checkerSource = Join-Path $scriptDir "opena_checker.exe"
 $checkerLegacySource = Join-Path $scriptDir "opena_cheker.exe"
 $moverSource = Join-Path $scriptDir "opena_mover.exe"
 $uninstallSource = Join-Path $scriptDir "Uninstall-OpenSearchAgent.ps1"
+$uninstallExeSource = Join-Path $scriptDir "Uninstall-VANT-OpenSearch-Agent.exe"
 
 if (-not (Test-Path $exeSource) -and -not (Test-Path (Join-Path $dirSource "vant-opensearch-agent.exe"))) {
     throw "Agent binary not found in package."
@@ -163,6 +330,9 @@ try {
     Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 2
 } catch {}
+Stop-AgentProcesses
+
+Uninstall-ExistingInstall -TargetInstallDir $InstallDir -TargetTaskName $TaskName -IsUserMode ([bool]$UserMode)
 
 New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
 New-Item -ItemType Directory -Path (Join-Path $InstallDir "logs") -Force | Out-Null
@@ -191,6 +361,9 @@ if (Test-Path $cfgSource) {
 if (Test-Path $uninstallSource) {
     Copy-Item $uninstallSource (Join-Path $InstallDir "Uninstall-OpenSearchAgent.ps1") -Force
     Set-Content -Path (Join-Path $InstallDir "Uninstall-VANT-OpenSearch-Agent.cmd") -Value "@echo off`r`npowershell.exe -NoProfile -ExecutionPolicy Bypass -File `"%~dp0Uninstall-OpenSearchAgent.ps1`" %*" -Encoding ASCII
+}
+if (Test-Path $uninstallExeSource) {
+    Copy-Item $uninstallExeSource (Join-Path $InstallDir "Uninstall-VANT-OpenSearch-Agent.exe") -Force
 }
 if (Test-Path $heartbeatSource) {
     Copy-Item $heartbeatSource (Join-Path $InstallDir "sendheartbeat.exe") -Force
@@ -234,7 +407,7 @@ $runKeyPath = if ($UserMode) {
 }
 $runValueName = "VANTOpenSearchAgentTray"
 
-$action = New-ScheduledTaskAction -Execute $exePath -Argument $arg
+$action = New-ScheduledTaskAction -Execute $exePath -Argument $arg -WorkingDirectory $InstallDir
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1)
 if ($UserMode) {
     $trigger = New-ScheduledTaskTrigger -AtLogOn
@@ -269,7 +442,11 @@ if (Test-Path $trayExe) {
 if ($RunNow) {
     Start-ScheduledTask -TaskName $TaskName
     if ((Test-Path $trayExe) -and [Environment]::UserInteractive) {
-        Start-Process -FilePath $trayExe -ArgumentList $trayArg -WorkingDirectory $InstallDir
+        try {
+            Start-Process -FilePath $trayExe -ArgumentList $trayArg -WorkingDirectory $InstallDir -ErrorAction Stop | Out-Null
+        } catch {
+            Write-Warning ("Tray launch skipped: {0}" -f $_.Exception.Message)
+        }
     }
 }
 

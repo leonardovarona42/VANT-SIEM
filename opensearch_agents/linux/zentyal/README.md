@@ -2,85 +2,126 @@
 
 ## 1) Instalar agente
 
+### Opcion A: bundle offline
+
+Con GUI:
+
 ```bash
-cd opensearch_agents/linux/zentyal
-sudo chmod +x install_agent.sh enable_logs.sh
-sudo ./install_agent.sh
+cd opensearch_agents/linux/dist/zentyal
+sudo ./install.sh
 ```
 
-Para forzar el asistente CLI (similar al UI de Windows):
+Sin GUI o servidor headless:
 
 ```bash
-sudo VANT_AGENT_WIZARD=1 ./install_agent.sh
+cd opensearch_agents/linux/dist/zentyal
+sudo ./install.sh --gdisable
 ```
 
-Para desactivar el asistente (modo no interactivo):
+### Opcion B: paquete `.deb`
+
+Normal:
 
 ```bash
-sudo VANT_AGENT_WIZARD=0 ./install_agent.sh
+sudo dpkg -i opensearch_agents/linux/dist/vant-siem-agent-zentyal_1.0.0_all.deb
+```
+
+Headless:
+
+```bash
+sudo VANT_AGENT_GDISABLE=1 dpkg -i opensearch_agents/linux/dist/vant-siem-agent-zentyal_1.0.0_all.deb
 ```
 
 Config principal:
 
 `/etc/vant-siem/config.yaml`
 
-La instalacion usa el bundle offline generado en `linux/dist/zentyal/vant-siem-agent-install/`.
-Tambien puedes ejecutar directamente `linux/dist/zentyal/install.sh`.
-Primero ejecuta `opensearch_agents/linux/build_linux.sh` en la maquina de empaquetado.
-No hace `apt` ni `pip` en la maquina destino.
-Si necesitas instalar desde un directorio ya extraido, usa `VANT_AGENT_PACKAGE_DIR`.
+La maquina destino no necesita internet. El paquete ya incluye los binarios del
+agente, el tray Linux, las herramientas operativas y los servicios necesarios.
 
-## Tray GUI (auto-arranque)
+## 2) Asistente y enrolamiento
 
-El instalador compartido copia `../common/VANT-SIEM-Agent-Tray.desktop` a:
+Si instalas desde una terminal interactiva, el instalador abre el asistente CLI
+para pedir:
 
-`/etc/xdg/autostart/vant-siem-agent-tray.desktop`
+1. Host y puerto del servidor de control.
+2. Host y puerto del endpoint de eventos.
+3. Metodo de autenticacion.
+4. Prueba de conectividad.
+5. Enrolamiento automatico durante la prueba.
 
-La instalacion no descarga nada: usa el paquete ya generado en
-`linux/dist/zentyal/` y ejecuta su `install.sh`.
+Ese flujo replica el comportamiento del instalador de Windows: durante el test
+de conexion intenta enrolar automaticamente el agente.
 
-Ese bundle ya incluye `services/audit_inventory.py` y `services/aegis_dlp.py`.
-Con eso el agente captura una linea de tiempo completa de activos y
-documentos sensibles incluso en despliegues sin internet.
-Tambien incluye `sendheartbeat`, `opena_mover`, `opena_checker` y `opena_enroll` en
-`/opt/vant-siem-agent/bin` con atajos en `/usr/local/bin`.
-Durante la instalacion, `/opt/vant-siem-agent` queda asignado al usuario que
-ejecuto `sudo` cuando esa identidad esta disponible.
+Si necesitas desactivar el asistente:
 
-Para enrolar manualmente desde terminal:
+```bash
+sudo VANT_AGENT_WIZARD=0 ./install.sh --gdisable
+sudo VANT_AGENT_WIZARD=0 VANT_AGENT_GDISABLE=1 dpkg -i opensearch_agents/linux/dist/vant-siem-agent-zentyal_1.0.0_all.deb
+```
+
+Si el enrolamiento automatico falla, puedes completarlo despues:
 
 ```bash
 sudo opena_enroll
 sudo opena_enroll --enrollment-code CODIGO-DEL-TICKET
+sudo opena_enroll --bootstrap-key MI-SECRETO-COMPARTIDO
 ```
 
-Para desactivar el tray:
+## 3) GUI vs modo terminal
+
+Modo normal:
+
+1. Instala el servicio del agente.
+2. Deja activo el tray GUI.
+3. Crea `/etc/xdg/autostart/vant-siem-agent-tray.desktop`.
+
+Modo `--gdisable` o `VANT_AGENT_GDISABLE=1`:
+
+1. Instala el mismo servicio del agente.
+2. No deja tray grafico.
+3. Toda la administracion queda disponible por terminal.
+
+## 4) Utilidades instaladas
+
+Despues de instalar quedan disponibles en `/usr/local/bin`:
+
+1. `sendheartbeat`
+2. `opena_mover`
+3. `opena_checker`
+4. `opena_enroll`
+5. `vant-agent-cli`
+
+Ejemplos:
 
 ```bash
-sudo rm /etc/xdg/autostart/vant-siem-agent-tray.desktop
+sudo opena_checker
+sudo sendheartbeat
+sudo opena_mover --host 192.168.12.43 --port 9201
 ```
 
-## 2) Habilitar logs para AD Samba + extras
+## 5) Habilitar logs para AD Samba + extras
 
 ```bash
+cd opensearch_agents/linux/zentyal
 sudo ./enable_logs.sh
 ```
 
 Este script:
 
 1. Crea `/etc/samba/smb.conf.d/99-vant-audit.conf`.
-2. Agrega include en `/etc/samba/smb.conf` (si no existe).
+2. Agrega include en `/etc/samba/smb.conf` si no existe.
 3. Configura `rsyslog` para enviar `local5.notice` a `/var/log/samba/audit.log`.
-4. Reinicia `rsyslog` y `samba-ad-dc`/`smbd`.
+4. Reinicia `rsyslog` y `samba-ad-dc` o `smbd`.
 
-## 3) Consideracion importante de Zentyal
+## 6) Consideracion importante de Zentyal
 
 Zentyal puede regenerar configuraciones Samba. Si eso pasa:
 
 1. Reaplica `enable_logs.sh`.
 2. O mueve estos ajustes a plantillas persistentes de Zentyal.
 
-## 4) Otras fuentes
+## 7) Otras fuentes
 
 ### PostgreSQL
 
@@ -93,7 +134,7 @@ Zentyal puede regenerar configuraciones Samba. Si eso pasa:
 2. Suricata `eve.json` en `/var/log/suricata/eve.json`.
 3. Activar en `config.yaml`.
 
-## 5) Verificar
+## 8) Verificar
 
 ```bash
 sudo systemctl status vant-siem-agent

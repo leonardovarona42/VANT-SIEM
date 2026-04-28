@@ -17,6 +17,7 @@ class LoggingMiddleware(MiddlewareMixin):
         allowed_prefixes = [
             '/siem/dashboard/login/',
             '/siem/login/',
+            '/api/agent/',
             (settings.STATIC_URL or '/static/'),
             (getattr(settings, 'MEDIA_URL', '/media/') or '/media/'),
         ]

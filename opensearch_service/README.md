@@ -64,6 +64,61 @@ Variables del backend de enrolamiento:
 3. Configurar `opensearch_agents/config.yaml`.
 4. Iniciar agente y verificar ingesta.
 
+## Despliegue como servicio
+
+### Debian / Linux
+
+Ejemplo de unidad `systemd` para el microservicio:
+
+```ini
+[Unit]
+Description=VANT-SIEM OpenSearch Microservice
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/vant-siem/opensearch_service/service
+Environment=OS_SERVICE_HOST=192.168.12.43
+Environment=OS_SERVICE_PORT=9201
+Environment=OS_DB_HOST=127.0.0.1
+Environment=OS_DB_PORT=5432
+Environment=OS_DB_NAME=vant_opensearch
+Environment=OS_DB_USER=postgres
+Environment=OS_DB_PASSWORD=postgres
+Environment=OS_AUTH_MODE=none
+ExecStart=/opt/vant-siem/.venv/bin/python /opt/vant-siem/opensearch_service/service/app.py
+Restart=always
+RestartSec=5
+User=root
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Comandos:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now vant-opensearch.service
+sudo systemctl status vant-opensearch.service --no-pager
+curl http://192.168.12.43:9201/health
+```
+
+### Windows
+
+Instalacion del servicio en Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\opensearch_service\service\install_windows_service.ps1
+```
+
+Validacion:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:9201/health
+```
+
 ## Autostart OpenSearch desde Django
 
 Por defecto, al ejecutar `python manage.py runserver` se inicia el servicio OpenSearch en segundo plano
@@ -99,3 +154,21 @@ Ver guias en `opensearch_agents/linux/*/README.md`.
 Resumen del estado actual:
 - Windows usa wizard grafico con enrolamiento y persistencia de token.
 - Linux usa bundle offline con `sendheartbeat`, `opena_mover`, `opena_checker` y `opena_enroll`.
+
+## Comandos de enrolamiento del agente
+
+Los comandos mas importantes del agente Linux son:
+
+```bash
+sudo opena_enroll
+sudo opena_enroll --enrollment-code CODIGO-DEL-TICKET
+sudo opena_enroll --bootstrap-key MI-SECRETO
+sudo opena_enroll --config /etc/vant-siem-agent/config.yaml
+sudo opena_checker
+sudo sendheartbeat --config /etc/vant-siem-agent/config.yaml
+```
+
+Para una referencia completa de despliegue y enrolamiento:
+
+- `opensearch_agents/AGENT_MANUAL.md`
+- `opensearch_agents/linux/debian/README.md`

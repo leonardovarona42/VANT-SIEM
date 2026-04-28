@@ -101,6 +101,8 @@ $setupWork = Join-Path $buildRoot "setup-work"
 $setupSpec = Join-Path $buildRoot "setup-spec"
 $trayWork = Join-Path $buildRoot "tray-work"
 $traySpec = Join-Path $buildRoot "tray-spec"
+$uninstallWork = Join-Path $buildRoot "uninstall-work"
+$uninstallSpec = Join-Path $buildRoot "uninstall-spec"
 $packageDir = Join-Path $windowsDir "package"
 $setupPayloadRoot = Join-Path $buildRoot "setup-payload"
 $setupPayloadPackage = Join-Path $setupPayloadRoot "package"
@@ -120,7 +122,7 @@ if (Test-Path $packageDir) {
     Remove-Item $packageDir -Recurse -Force
 }
 
-foreach ($path in @($agentWork, $agentSpec, $agentDist, $toolsWork, $toolsSpec, $toolsDist, $trayWork, $traySpec, $setupWork, $setupSpec, $setupDist, $packageDir, $setupPayloadRoot, $setupPayloadPackage)) {
+foreach ($path in @($agentWork, $agentSpec, $agentDist, $toolsWork, $toolsSpec, $toolsDist, $trayWork, $traySpec, $uninstallWork, $uninstallSpec, $setupWork, $setupSpec, $setupDist, $packageDir, $setupPayloadRoot, $setupPayloadPackage)) {
     New-Item -ItemType Directory -Path $path -Force | Out-Null
 }
 
@@ -219,6 +221,24 @@ if (-not (Test-Path $trayExe)) {
     throw "No se pudo generar vant-opensearch-agent-tray.exe"
 }
 
+& $PythonExe -m PyInstaller `
+  --noconfirm `
+  --clean `
+  --onefile `
+  --name "Uninstall-VANT-OpenSearch-Agent" `
+  --icon $iconPath `
+  --version-file $versionFile `
+  --hidden-import "ctypes" `
+  --distpath $toolsDist `
+  --workpath $uninstallWork `
+  --specpath $uninstallSpec `
+  "opensearch_agents\windows\uninstall_wrapper.py"
+
+$uninstallExe = Join-Path $toolsDist "Uninstall-VANT-OpenSearch-Agent.exe"
+if (-not (Test-Path $uninstallExe)) {
+    throw "No se pudo generar Uninstall-VANT-OpenSearch-Agent.exe"
+}
+
 $toolDefinitions = @(
   @{ Name = "sendheartbeat"; Script = "opensearch_agents\sendheartbeat.py"; VersionName = "sendheartbeat.exe" },
   @{ Name = "opena_mover"; Script = "opensearch_agents\opensearchmover.py"; VersionName = "opena_mover.exe" },
@@ -257,6 +277,7 @@ Copy-Item (Join-Path $packageDir "opena_checker.exe") (Join-Path $packageDir "op
 
 Copy-Item $agentExe (Join-Path $packageDir "vant-opensearch-agent.exe") -Force
 Copy-Item $trayExe (Join-Path $packageDir "vant-opensearch-agent-tray.exe") -Force
+Copy-Item $uninstallExe (Join-Path $packageDir "Uninstall-VANT-OpenSearch-Agent.exe") -Force
 Copy-Item (Join-Path $windowsDir "Install-OpenSearchAgent.ps1") (Join-Path $packageDir "Install-OpenSearchAgent.ps1") -Force
 Copy-Item (Join-Path $windowsDir "Uninstall-OpenSearchAgent.ps1") (Join-Path $packageDir "Uninstall-OpenSearchAgent.ps1") -Force
 Copy-Item (Join-Path $windowsDir "Configure-Snort.ps1") (Join-Path $packageDir "Configure-Snort.ps1") -Force

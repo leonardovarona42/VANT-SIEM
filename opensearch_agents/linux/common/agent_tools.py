@@ -101,6 +101,23 @@ def _owner_account():
     return user
 
 
+def _build_enrollment_payload(config, shared_secret, enrollment_code=""):
+    agent = config.setdefault("agent", {})
+    agent_id = agent.get("id", "agent")
+    host_name = agent.get("host_name") or socket.gethostname()
+    timestamp = str(int(time.time()))
+    payload = {
+        "agent_id": agent_id,
+        "host_name": host_name,
+        "timestamp": timestamp,
+        "signature": _sign_enrollment(shared_secret, agent_id, host_name, timestamp),
+        "install_owner_account": _owner_account(),
+    }
+    if enrollment_code:
+        payload["enrollment_code"] = enrollment_code
+    return payload
+
+
 def _load_bootstrap_key(override=""):
     if override:
         return override.strip()
@@ -196,18 +213,16 @@ def send_heartbeat(config_path=None):
     print(f"Heartbeat sent from {payload['host_name']} via {resolved}")
 
 
-def enroll_agent(config_path=None, bootstrap_key="", enrollment_code="", backup=True):
+def enroll_agent(config_path=None, bootstrap_key="", enrollment_code="", backup=True, quiet=False):
     config, resolved = load_config(config_path)
     server_url = _api_url(config)
     if not server_url:
         raise SystemExit("control.server_url not configured")
 
-    agent = config.setdefault("agent", {})
     output = config.setdefault("output", {})
     auth = output.setdefault("auth", {})
+    agent = config.setdefault("agent", {})
     agent_id = agent.get("id", "agent")
-    host_name = agent.get("host_name") or socket.gethostname()
-    timestamp = str(int(time.time()))
 
     shared_secret = _load_bootstrap_key(bootstrap_key)
     if not shared_secret:
@@ -215,16 +230,7 @@ def enroll_agent(config_path=None, bootstrap_key="", enrollment_code="", backup=
     if not shared_secret:
         shared_secret = DEFAULT_AGENT_SHARED_SECRET
 
-    payload = {
-        "agent_id": agent_id,
-        "host_name": host_name,
-        "timestamp": timestamp,
-        "signature": _sign_enrollment(shared_secret, agent_id, host_name, timestamp),
-        "install_owner_account": _owner_account(),
-    }
-    if enrollment_code:
-        payload["enrollment_code"] = enrollment_code
-
+    payload = _build_enrollment_payload(config, shared_secret, enrollment_code)
     response = requests.post(_build_enroll_url(config), json=payload, timeout=8)
     data = response.json() if "application/json" in response.headers.get("Content-Type", "") else {}
     if response.status_code != 200 or not data.get("ok") or not data.get("token"):
@@ -241,9 +247,11 @@ def enroll_agent(config_path=None, bootstrap_key="", enrollment_code="", backup=
         backup_path.write_text(resolved.read_text(encoding="utf-8"), encoding="utf-8")
     save_config(config, resolved)
 
-    print(f"Agent enrolled successfully via {server_url}")
-    print(f"Config updated: {resolved}")
-    print(f"Issued by: {data.get('issued_by', '')}")
+    if not quiet:
+        print(f"Agent enrolled successfully via {server_url}")
+        print(f"Config updated: {resolved}")
+        print(f"Issued by: {data.get('issued_by', '')}")
+    return data
 
 
 def move_server(config_path=None, host=None, port=None, https=False, backup=True):
@@ -321,6 +329,7 @@ def main():
     enroll.add_argument("--bootstrap-key", default="", help="Shared secret override for enrollment")
     enroll.add_argument("--enrollment-code", default="", help="Enrollment ticket/code if required by server")
     enroll.add_argument("--no-backup", action="store_true")
+    enroll.add_argument("--quiet", action="store_true", help="Reduce output for unattended installs")
 
     move = sub.add_parser("move", help="Move agent to a new server")
     move.add_argument("--host", required=True)
@@ -334,7 +343,13 @@ def main():
     if args.command == "heartbeat":
         send_heartbeat(args.config or None)
     elif args.command == "enroll":
-        enroll_agent(args.config or None, args.bootstrap_key, args.enrollment_code, not args.no_backup)
+        enroll_agent(
+            args.config or None,
+            args.bootstrap_key,
+            args.enrollment_code,
+            not args.no_backup,
+            args.quiet,
+        )
     elif args.command == "move":
         move_server(args.config or None, args.host, args.port, args.https, not args.no_backup)
     elif args.command == "check":

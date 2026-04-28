@@ -13,6 +13,23 @@ function Test-Admin {
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
+function Stop-AgentProcesses {
+    $processNames = @(
+        "vant-opensearch-agent",
+        "vant-opensearch-agent-tray",
+        "sendheartbeat",
+        "opena_checker",
+        "opena_cheker",
+        "opena_mover"
+    )
+
+    foreach ($name in $processNames) {
+        try {
+            Get-Process -Name $name -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        } catch {}
+    }
+}
+
 if ($UserMode) {
     if ($InstallDir -eq "$env:ProgramFiles\VANT\OpenSearchAgent") {
         $InstallDir = "$env:LOCALAPPDATA\VANT\OpenSearchAgent"
@@ -26,6 +43,8 @@ if (-not $UserMode -and -not (Test-Admin)) {
 try {
     Stop-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
 } catch {}
+Stop-AgentProcesses
+Start-Sleep -Seconds 2
 
 try {
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue

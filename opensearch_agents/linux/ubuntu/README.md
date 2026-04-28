@@ -2,76 +2,119 @@
 
 ## 1) Instalar agente
 
+### Opcion A: bundle offline
+
+Con GUI:
+
 ```bash
-cd opensearch_agents/linux/ubuntu
-sudo chmod +x install_agent.sh enable_logs.sh
-sudo ./install_agent.sh
+cd opensearch_agents/linux/dist/ubuntu
+sudo ./install.sh
 ```
 
-Para forzar el asistente CLI (similar al UI de Windows):
+Sin GUI o servidor headless:
 
 ```bash
-sudo VANT_AGENT_WIZARD=1 ./install_agent.sh
+cd opensearch_agents/linux/dist/ubuntu
+sudo ./install.sh --gdisable
 ```
 
-Para desactivar el asistente (modo no interactivo):
+### Opcion B: paquete `.deb`
+
+Normal:
 
 ```bash
-sudo VANT_AGENT_WIZARD=0 ./install_agent.sh
+sudo dpkg -i opensearch_agents/linux/dist/vant-siem-agent-ubuntu_1.0.0_all.deb
+```
+
+Headless:
+
+```bash
+sudo VANT_AGENT_GDISABLE=1 dpkg -i opensearch_agents/linux/dist/vant-siem-agent-ubuntu_1.0.0_all.deb
 ```
 
 Config principal:
 
 `/etc/vant-siem/config.yaml`
 
-La instalacion usa el bundle offline generado en `linux/dist/ubuntu/vant-siem-agent-install/`.
-Tambien puedes ejecutar directamente `linux/dist/ubuntu/install.sh`.
-Primero ejecuta `opensearch_agents/linux/build_linux.sh` en la maquina de empaquetado.
-No hace `apt` ni `pip` en la maquina destino.
-Si necesitas instalar desde un directorio ya extraido, usa `VANT_AGENT_PACKAGE_DIR`.
+La maquina destino no necesita internet. El paquete ya incluye los binarios del
+agente, el tray Linux, las herramientas operativas y los servicios necesarios.
 
-## Tray GUI (auto-arranque)
+## 2) Asistente y enrolamiento
 
-El instalador compartido copia `../common/VANT-SIEM-Agent-Tray.desktop` a:
+Si instalas desde una terminal interactiva, el instalador abre el asistente CLI
+para pedir:
 
-`/etc/xdg/autostart/vant-siem-agent-tray.desktop`
+1. Host y puerto del servidor de control.
+2. Host y puerto del endpoint de eventos.
+3. Metodo de autenticacion.
+4. Prueba de conectividad.
+5. Enrolamiento automatico durante la prueba.
 
-La instalacion no descarga nada: usa el paquete ya generado en
-`linux/dist/ubuntu/` y ejecuta su `install.sh`.
+Ese flujo replica el comportamiento del instalador de Windows: durante el test
+de conexion intenta enrolar automaticamente el agente.
 
-Ese bundle ya incluye `services/audit_inventory.py` y `services/aegis_dlp.py`.
-El inventario deja una linea de tiempo de hardware, software, red, USB y usuarios.
-El modulo DLP revisa rutas locales y genera incidentes sin depender de internet.
-Tambien incluye `sendheartbeat`, `opena_mover`, `opena_checker` y `opena_enroll` en
-`/opt/vant-siem-agent/bin` con atajos en `/usr/local/bin`.
-Durante la instalacion, `/opt/vant-siem-agent` queda asignado al usuario que
-ejecuto `sudo` cuando esa identidad esta disponible.
+Si necesitas desactivar el asistente:
 
-Para enrolar manualmente desde terminal:
+```bash
+sudo VANT_AGENT_WIZARD=0 ./install.sh --gdisable
+sudo VANT_AGENT_WIZARD=0 VANT_AGENT_GDISABLE=1 dpkg -i opensearch_agents/linux/dist/vant-siem-agent-ubuntu_1.0.0_all.deb
+```
+
+Si el enrolamiento automatico falla, puedes completarlo despues:
 
 ```bash
 sudo opena_enroll
 sudo opena_enroll --enrollment-code CODIGO-DEL-TICKET
+sudo opena_enroll --bootstrap-key MI-SECRETO-COMPARTIDO
 ```
 
-Para desactivar el tray:
+## 3) GUI vs modo terminal
+
+Modo normal:
+
+1. Instala el servicio del agente.
+2. Deja activo el tray GUI.
+3. Crea `/etc/xdg/autostart/vant-siem-agent-tray.desktop`.
+
+Modo `--gdisable` o `VANT_AGENT_GDISABLE=1`:
+
+1. Instala el mismo servicio del agente.
+2. No deja tray grafico.
+3. Toda la administracion queda disponible por terminal.
+
+## 4) Utilidades instaladas
+
+Despues de instalar quedan disponibles en `/usr/local/bin`:
+
+1. `sendheartbeat`
+2. `opena_mover`
+3. `opena_checker`
+4. `opena_enroll`
+5. `vant-agent-cli`
+
+Ejemplos:
 
 ```bash
-sudo rm /etc/xdg/autostart/vant-siem-agent-tray.desktop
+sudo opena_checker
+sudo sendheartbeat
+sudo opena_mover --host 192.168.12.43 --port 9201
 ```
 
-## 2) Habilitar fuentes de logs
+## 5) Habilitar fuentes de logs
 
 ```bash
+cd opensearch_agents/linux/ubuntu
 sudo ./enable_logs.sh
 ```
 
 ### Snort
 
 1. En `snort.conf`, habilitar:
+
 ```conf
 output alert_fast: /var/log/snort/alert
 ```
+
 2. Reiniciar `snort`.
 
 ### Suricata
@@ -82,10 +125,12 @@ output alert_fast: /var/log/snort/alert
 ### PostgreSQL
 
 1. En `postgresql.conf`:
+
 ```conf
 logging_collector = on
 log_statement = 'all'
 ```
+
 2. Reiniciar PostgreSQL.
 3. Ajustar `collectors.postgres.path` si cambia nombre del archivo.
 
@@ -95,7 +140,7 @@ log_statement = 'all'
 2. Guardar auditoria en `/var/log/samba/audit.log`.
 3. Activar entrada `file_logs` para ese archivo.
 
-## 3) Verificar
+## 6) Verificar
 
 ```bash
 sudo systemctl status vant-siem-agent

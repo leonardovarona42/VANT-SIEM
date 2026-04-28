@@ -82,6 +82,11 @@ def _default_paths():
     }
 
 
+def _system_install_dir():
+    program_files = os.environ.get("ProgramFiles", r"C:\Program Files")
+    return Path(program_files) / "VANT" / "OpenSearchAgent"
+
+
 def _ad_event_channels():
     return [
         "Security",
@@ -551,6 +556,9 @@ class ProgressPage(QtWidgets.QWizardPage):
             return
 
         self.log.appendPlainText("Ejecutando instalador PowerShell del agente...")
+        self.log.appendPlainText(
+            f"Diagnostico setup: elevated={_is_admin()} user={os.environ.get('USERNAME', '')}"
+        )
         ok, output = self.wizard().install_windows_package(package_dir)
         if output.strip():
             self.log.appendPlainText(output.strip())
@@ -749,6 +757,7 @@ class AgentInstallerWizard(QtWidgets.QWizard):
             required_files = [
                 "Install-OpenSearchAgent.ps1",
                 "Uninstall-OpenSearchAgent.ps1",
+                "Uninstall-VANT-OpenSearch-Agent.exe",
                 "vant-opensearch-agent.exe",
                 "vant-opensearch-agent-tray.exe",
                 "config.yaml",
@@ -791,6 +800,49 @@ class AgentInstallerWizard(QtWidgets.QWizard):
         install_script = package_dir / "Install-OpenSearchAgent.ps1"
         if not install_script.exists():
             return False, f"No se encontro el script de instalacion: {install_script}"
+
+        existing_system_install = _system_install_dir().exists()
+        requires_elevation = (not _is_admin()) and existing_system_install
+
+        if requires_elevation:
+            stdout_path = package_dir / "install-elevated.stdout.log"
+            stderr_path = package_dir / "install-elevated.stderr.log"
+            install_script_arg = str(install_script).replace("'", "''")
+            package_dir_arg = str(package_dir).replace("'", "''")
+            stdout_arg = str(stdout_path).replace("'", "''")
+            stderr_arg = str(stderr_path).replace("'", "''")
+            inner_cmd = (
+                "Start-Process powershell.exe "
+                f"-Verb RunAs -WorkingDirectory '{package_dir_arg}' -Wait -PassThru "
+                f"-RedirectStandardOutput '{stdout_arg}' "
+                f"-RedirectStandardError '{stderr_arg}' "
+                f"-ArgumentList '-NoProfile -ExecutionPolicy Bypass -File \"{install_script_arg}\" -RunNow'"
+            )
+
+            try:
+                result = subprocess.run(
+                    ["powershell", "-NoProfile", "-Command", inner_cmd],
+                    cwd=str(package_dir),
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+                stdout_text = stdout_path.read_text(encoding="utf-8", errors="replace") if stdout_path.exists() else ""
+                stderr_text = stderr_path.read_text(encoding="utf-8", errors="replace") if stderr_path.exists() else ""
+                shell_text = "\n".join(part for part in [result.stdout, result.stderr] if part)
+                output = "\n".join(
+                    part
+                    for part in [
+                        "Se detecto una instalacion previa en Program Files. Solicitando elevacion UAC para reinstalar.",
+                        stdout_text.strip(),
+                        stderr_text.strip(),
+                        shell_text.strip() if result.returncode != 0 else "",
+                    ]
+                    if part
+                )
+                return result.returncode == 0, output
+            except Exception as exc:
+                return False, str(exc)
 
         cmd = [
             "powershell",

@@ -113,6 +113,32 @@ Ademas instala:
 - `asset_audit`
 - `aegis_dlp`
 
+Modos de instalacion:
+
+- elevado: `C:\Program Files\VANT\OpenSearchAgent`
+- sin elevar: `%LOCALAPPDATA%\VANT\OpenSearchAgent`
+
+El instalador ahora detiene la tarea y los procesos del agente/tray antes de
+copiar binarios para evitar fallos de `Access denied` durante actualizaciones.
+
+Instalacion manual:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\opensearch_agents\windows\Install-OpenSearchAgent.ps1 -RunNow
+```
+
+Instalacion manual en modo usuario:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\opensearch_agents\windows\Install-OpenSearchAgent.ps1 -UserMode -RunNow
+```
+
+Reenrolamiento en Windows:
+
+No existe un `opena_enroll.exe` separado en Windows. El reenrolamiento se hace
+desde el setup con `Probar conexion`, que vuelve a ejecutar bootstrap, enroll y
+persistencia del token en el `config.yaml`.
+
 ### Active Directory
 
 Canales recomendados:
@@ -162,6 +188,53 @@ sudo opena_enroll --bootstrap-key MI_SECRETO
 ```
 
 El comando actualiza `/etc/vant-siem/config.yaml`.
+
+### Debian WSL como servidor de testing
+
+Si Debian WSL sera el servidor donde corren Django, el microservicio OpenSearch
+y ademas un agente Linux local, el orden recomendado es:
+
+1. Instalar `python3`, `python3-venv`, `python3-pip`, `postgresql`,
+   `build-essential` y `libpq-dev`.
+2. Crear `vant_siem`, `vant_opensearch` y las credenciales:
+   `vantsiem / vantsiem123` y `postgres / postgres`.
+3. Copiar el proyecto a `/opt/vant-siem` en vez de ejecutarlo desde `/mnt/c/...`.
+4. Crear un venv en `/opt/vant-siem/.venv`.
+5. Instalar el stack minimo:
+   `Django`, `django-sslserver`, `requests`, `pandas`, `scikit-learn`, `Flask`.
+6. Ejecutar `python manage.py migrate --noinput`.
+7. Crear superusuario.
+8. Asignar `192.168.12.43` a Debian WSL con un servicio `systemd` oneshot.
+9. Levantar `vant-opensearch.service`.
+10. Levantar `vant-siem.service`.
+11. Crear `/etc/vant-siem-agent/config.yaml`.
+12. Ejecutar:
+
+```bash
+cd /opt/vant-siem
+source .venv/bin/activate
+python opensearch_agents/linux/common/agent_tools.py --config /etc/vant-siem-agent/config.yaml enroll
+python opensearch_agents/linux/common/agent_tools.py --config /etc/vant-siem-agent/config.yaml check
+python opensearch_agents/linux/common/agent_tools.py --config /etc/vant-siem-agent/config.yaml heartbeat
+```
+
+13. Levantar `vant-siem-agent.service`.
+
+En este escenario los endpoints recomendados del agente son:
+
+```yaml
+output:
+  endpoint: "http://192.168.12.43:9201/api/v1/events/bulk"
+  source_endpoint: "http://192.168.12.43:9201/api/v1/sources/upsert"
+
+control:
+  server_url: "http://192.168.12.43:8000"
+```
+
+Los comandos completos quedaron documentados en:
+
+- `opensearch_agents/linux/debian/README.md`
+- `docs/INSTALLATION.md`
 
 ## Herramientas operativas
 

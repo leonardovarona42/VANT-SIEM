@@ -1,49 +1,91 @@
 # Linux Offline Packaging
 
-This directory now documents the Linux agent packaging flow used for offline tests.
+Este documento resume el flujo vigente de empaquetado offline para los agentes Linux.
 
-## Package layout
+## Layout del paquete
 
-The installer expects an extracted payload named `vant-siem-agent-install/` with:
+Cada distro genera un payload `vant-siem-agent-install/` con:
 
 - `install.sh`
 - `uninstall.sh`
 - `config/agent.yaml`
-- `agent/`
-- `scripts/`
 - `bin/`
 - `desktop/`
 - `systemd/`
 - `docs/`
 - `manifest.json`
 
-Each distro directory under `linux/dist/<distro>/` also gets:
+Dentro de `bin/` ya viajan los binarios autocontenidos del agente:
+
+- `vant-opensearch-agent`
+- `vant-opensearch-agent-tray`
+- `vant-agent-tools`
+- `vant-agent-cli`
+
+Cada distro en `linux/dist/<distro>/` tambien recibe:
 
 - `install.sh`
 - `uninstall.sh`
 
-## Install flow
+Y en `linux/dist/` quedan los paquetes:
 
-1. Build the payload on a packaging host with `opensearch_agents/linux/build_linux.sh`.
-   By default it discovers every distro folder that contains a `config.yaml`.
-2. Copy `linux/dist/<distro>/` to the target machine or export the extracted package directory.
-3. Run `linux/dist/<distro>/install.sh` or the extracted package `install.sh`.
+- `vant-siem-agent-<distro>_1.0.0_all.deb`
+- `vant-siem-agent-<distro>.tar.gz`
 
-## Overrides
+## Flujo de instalacion soportado
 
-- `VANT_LINUX_DISTRO` selects `debian`, `ubuntu`, or `zentyal`.
-- `VANT_AGENT_PACKAGE_DIR` points the installer to a pre-extracted package directory.
-- `VANT_AGENT_WIZARD=0` disables the interactive CLI wizard.
+1. Construir el payload en la maquina de empaquetado con `opensearch_agents/linux/build_linux.sh`.
+2. Copiar `linux/dist/<distro>/` o el `.deb` a la maquina cliente.
+3. Instalar con una de estas dos opciones:
 
-## Offline verification
+Bundle:
 
-The target machine should not need internet access. The installer only:
+```bash
+sudo ./install.sh
+sudo ./install.sh --gdisable
+```
 
-- locates a prebuilt bundle,
-- optionally runs the CLI wizard from the bundle,
-- copies files into `/opt/vant-siem-agent` and `/etc/vant-siem`,
-- installs the tray autostart entry and `systemd` service if present.
-- installs helper commands into `/opt/vant-siem-agent/bin` and links them into
-  `/usr/local/bin`.
-- assigns `/opt/vant-siem-agent` to the invoking `sudo` user when available,
-  while keeping `/etc/vant-siem` root-managed.
+Paquete `.deb`:
+
+```bash
+sudo dpkg -i vant-siem-agent-<distro>_1.0.0_all.deb
+sudo VANT_AGENT_GDISABLE=1 dpkg -i vant-siem-agent-<distro>_1.0.0_all.deb
+```
+
+## Overrides soportados
+
+- `VANT_LINUX_DISTRO` selecciona `debian`, `ubuntu` o `zentyal`.
+- `VANT_AGENT_PACKAGE_DIR` apunta a un bundle ya extraido.
+- `VANT_AGENT_WIZARD=0` desactiva el asistente interactivo.
+- `VANT_AGENT_GDISABLE=1` fuerza instalacion headless en `.deb`.
+
+## Que hace el instalador offline
+
+La maquina destino no necesita internet. El instalador solo:
+
+- localiza un bundle precompilado o usa el contenido del `.deb`,
+- ejecuta `vant-agent-cli` si hay terminal interactiva y el wizard esta habilitado,
+- guarda la configuracion en `/etc/vant-siem/config.yaml`,
+- prueba conectividad con el servidor configurado,
+- intenta enrolar automaticamente durante la prueba,
+- copia archivos a `/opt/vant-siem-agent`,
+- instala el servicio `systemd`,
+- instala el tray GUI solo si no se activa `--gdisable` o `VANT_AGENT_GDISABLE=1`,
+- instala `sendheartbeat`, `opena_mover`, `opena_checker`, `opena_enroll` y `vant-agent-cli` en `/usr/local/bin`.
+
+## Verificacion offline
+
+Tras instalar, deben quedar disponibles:
+
+```bash
+sudo systemctl status vant-siem-agent
+sudo opena_checker
+sudo sendheartbeat
+```
+
+Si el auto-enrolamiento no logra token, la instalacion sigue siendo valida y el
+agente puede completarse despues con:
+
+```bash
+sudo opena_enroll
+```

@@ -7,7 +7,11 @@ from datetime import datetime, timedelta
 from typing import Dict, Any
 
 import pytz
-import psycopg2
+try:
+    import psycopg2
+except Exception:
+    psycopg2 = None
+    from psycopg import connect as psycopg_connect
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.utils import timezone
@@ -73,6 +77,14 @@ def _serialize_saved_dashboard(item):
 
 
 def _get_opensearch_pg_conn():
+    if psycopg2 is None:
+        return psycopg_connect(
+            host=os.getenv('OS_DB_HOST', '127.0.0.1'),
+            port=int(os.getenv('OS_DB_PORT', '5432')),
+            dbname=os.getenv('OS_DB_NAME', 'vant_opensearch'),
+            user=os.getenv('OS_DB_USER', 'postgres'),
+            password=os.getenv('OS_DB_PASSWORD', 'postgres'),
+        )
     return psycopg2.connect(
         host=os.getenv('OS_DB_HOST', '127.0.0.1'),
         port=int(os.getenv('OS_DB_PORT', '5432')),

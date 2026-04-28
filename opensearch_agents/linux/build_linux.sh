@@ -66,8 +66,86 @@ prepare_venv() {
   # shellcheck disable=SC1091
   source "${venv_dir}/bin/activate"
   pip install --upgrade pip >/dev/null
-  pip install pyyaml requests PyQt6 >/dev/null
+  pip install pyyaml requests PyQt6 pyinstaller >/dev/null
   deactivate
+}
+
+build_linux_binaries() {
+  local venv_dir="$1"
+  local build_root="$2"
+  local dist_dir="${build_root}/pyinstaller-dist"
+  local work_dir="${build_root}/pyinstaller-work"
+  local spec_dir="${build_root}/pyinstaller-spec"
+  local pyinstaller_python="${venv_dir}/bin/python"
+  local add_data_sep=":"
+
+  rm -rf "${dist_dir}" "${work_dir}" "${spec_dir}"
+  mkdir -p "${dist_dir}" "${work_dir}" "${spec_dir}"
+
+  info "Compiling Linux binaries with PyInstaller"
+  "${pyinstaller_python}" -m PyInstaller \
+    --noconfirm \
+    --clean \
+    --onefile \
+    --name "vant-opensearch-agent" \
+    --paths "${AGENTS_DIR}" \
+    --hidden-import yaml \
+    --hidden-import requests \
+    --distpath "${dist_dir}" \
+    --workpath "${work_dir}/agent" \
+    --specpath "${spec_dir}" \
+    "${AGENTS_DIR}/agent.py" >/dev/null
+
+  "${pyinstaller_python}" -m PyInstaller \
+    --noconfirm \
+    --clean \
+    --onefile \
+    --windowed \
+    --name "vant-opensearch-agent-tray" \
+    --paths "${AGENTS_DIR}" \
+    --hidden-import agent \
+    --hidden-import requests \
+    --hidden-import yaml \
+    --hidden-import PyQt6.sip \
+    --hidden-import PyQt6.QtCore \
+    --hidden-import PyQt6.QtGui \
+    --hidden-import PyQt6.QtWidgets \
+    --add-data "${REPO_DIR}/staticfiles/img/logo.png${add_data_sep}staticfiles/img/logo.png" \
+    --distpath "${dist_dir}" \
+    --workpath "${work_dir}/tray" \
+    --specpath "${spec_dir}" \
+    "${AGENTS_DIR}/agent_tray.py" >/dev/null
+
+  "${pyinstaller_python}" -m PyInstaller \
+    --noconfirm \
+    --clean \
+    --onefile \
+    --name "vant-agent-tools" \
+    --paths "${AGENTS_DIR}" \
+    --hidden-import yaml \
+    --hidden-import requests \
+    --distpath "${dist_dir}" \
+    --workpath "${work_dir}/tools" \
+    --specpath "${spec_dir}" \
+    "${AGENTS_DIR}/linux/common/agent_tools.py" >/dev/null
+
+  "${pyinstaller_python}" -m PyInstaller \
+    --noconfirm \
+    --clean \
+    --onefile \
+    --name "vant-agent-cli" \
+    --paths "${AGENTS_DIR}" \
+    --hidden-import yaml \
+    --hidden-import requests \
+    --distpath "${dist_dir}" \
+    --workpath "${work_dir}/cli" \
+    --specpath "${spec_dir}" \
+    "${AGENTS_DIR}/linux/common/agent_installer_cli.py" >/dev/null
+
+  [[ -x "${dist_dir}/vant-opensearch-agent" ]] || die "Missing compiled agent binary"
+  [[ -x "${dist_dir}/vant-opensearch-agent-tray" ]] || die "Missing compiled tray binary"
+  [[ -x "${dist_dir}/vant-agent-tools" ]] || die "Missing compiled tools binary"
+  [[ -x "${dist_dir}/vant-agent-cli" ]] || die "Missing compiled installer CLI binary"
 }
 
 write_install_script() {
@@ -76,11 +154,41 @@ write_install_script() {
 #!/usr/bin/env bash
 set -euo pipefail
 
+GUI_DISABLED="${VANT_AGENT_GDISABLE:-0}"
+RUN_WIZARD="${VANT_AGENT_WIZARD:-1}"
+NON_INTERACTIVE=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --gdisable)
+      GUI_DISABLED=1
+      shift
+      ;;
+    --gui)
+      GUI_DISABLED=0
+      shift
+      ;;
+    --non-interactive)
+      NON_INTERACTIVE=1
+      shift
+      ;;
+    --skip-wizard)
+      RUN_WIZARD=0
+      shift
+      ;;
+    *)
+      echo "Unknown installer option: $1"
+      exit 1
+      ;;
+  esac
+done
+
 INSTALL_SOURCE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET_ROOT="/opt/vant-siem-agent"
 TARGET_CFG_DIR="/etc/vant-siem"
 TARGET_LOG_DIR="/var/log/vant-siem"
 TARGET_BIN_DIR="${TARGET_ROOT}/bin"
+TARGET_INSTALL_META="${TARGET_CFG_DIR}/install-meta.env"
 INSTALL_OWNER="${SUDO_USER:-$(logname 2>/dev/null || echo root)}"
 INSTALL_GROUP="$(id -gn "${INSTALL_OWNER}" 2>/dev/null || echo "${INSTALL_OWNER}")"
 TRAY_DESKTOP_SRC="${INSTALL_SOURCE}/desktop/vant-siem-agent-tray.desktop"
@@ -105,9 +213,6 @@ if [[ -d "${INSTALL_SOURCE}/docs" ]]; then
   cp -a "${INSTALL_SOURCE}/docs/." "${TARGET_ROOT}/docs/"
 fi
 
-if [[ -f "${TRAY_DESKTOP_SRC}" ]]; then
-  cp "${TRAY_DESKTOP_SRC}" "${TRAY_DESKTOP_DST}"
-fi
 if [[ -f "${SERVICE_SRC}" ]]; then
   cp "${SERVICE_SRC}" "${SERVICE_DST}"
 fi
@@ -116,20 +221,106 @@ chmod +x "${TARGET_ROOT}/agent.py" 2>/dev/null || true
   chmod +x "${TARGET_ROOT}/agent_tray.py" 2>/dev/null || true
   chmod +x "${TARGET_ROOT}/opensearchcheck.py" 2>/dev/null || true
   chmod +x "${TARGET_ROOT}/opensearchmover.py" 2>/dev/null || true
+  chmod +x "${TARGET_ROOT}/vant-opensearch-agent" 2>/dev/null || true
+  chmod +x "${TARGET_ROOT}/vant-opensearch-agent-tray" 2>/dev/null || true
+  chmod +x "${TARGET_ROOT}/vant-agent-tools" 2>/dev/null || true
+  chmod +x "${TARGET_ROOT}/vant-agent-cli" 2>/dev/null || true
   chmod +x "${TARGET_BIN_DIR}"/* 2>/dev/null || true
   chmod +x "${TARGET_ROOT}/uninstall.sh" 2>/dev/null || true
   chmod +x "${TARGET_ROOT}/scripts/"*.sh 2>/dev/null || true
   chmod +x "${TARGET_ROOT}/venv/bin/"* 2>/dev/null || true
+
+run_cli_wizard() {
+  local cli_bin="${TARGET_ROOT}/vant-agent-cli"
+  local config_path="${TARGET_CFG_DIR}/config.yaml"
+
+  if [[ "${RUN_WIZARD}" = "0" || "${NON_INTERACTIVE}" = "1" || ! -t 0 ]]; then
+    return 1
+  fi
+  if [[ ! -x "${cli_bin}" || ! -f "${config_path}" ]]; then
+    echo "Interactive CLI unavailable; using existing config."
+    return 1
+  fi
+
+  local cmd=("${cli_bin}" "--config" "${config_path}" "--template" "${config_path}")
+  if [[ "${GUI_DISABLED}" = "1" ]]; then
+    cmd+=("--gdisable")
+  fi
+  "${cmd[@]}"
+  return 0
+}
+
+configure_graphics_mode() {
+  cat > "${TARGET_INSTALL_META}" <<META
+VANT_AGENT_GDISABLE=${GUI_DISABLED}
+META
+
+  if [[ "${GUI_DISABLED}" = "1" ]]; then
+    rm -f "${TRAY_DESKTOP_DST}"
+    echo "Graphic tray disabled by --gdisable."
+  elif [[ -f "${TRAY_DESKTOP_SRC}" ]]; then
+    cp "${TRAY_DESKTOP_SRC}" "${TRAY_DESKTOP_DST}"
+    echo "Graphic tray enabled."
+  fi
+}
 
 for tool in "${LOCAL_TOOLS[@]}"; do
   if [[ -f "${TARGET_BIN_DIR}/${tool}" ]]; then
     ln -sf "${TARGET_BIN_DIR}/${tool}" "/usr/local/bin/${tool}"
   fi
 done
+ln -sf "${TARGET_ROOT}/vant-agent-tools" "/usr/local/bin/vant-agent-tools"
+ln -sf "${TARGET_ROOT}/vant-agent-cli" "/usr/local/bin/vant-agent-cli"
+
+auto_enroll() {
+  local config_path="${TARGET_CFG_DIR}/config.yaml"
+  local tools_bin="${TARGET_ROOT}/vant-agent-tools"
+  local python_bin="${TARGET_ROOT}/venv/bin/python"
+  local tools_path="${TARGET_ROOT}/scripts/agent_tools.py"
+  local bootstrap_key="${VANT_AGENT_BOOTSTRAP_KEY:-}"
+  local enrollment_code="${VANT_AGENT_ENROLLMENT_CODE:-}"
+  local cmd=()
+  local token_present=0
+
+  if [[ "${VANT_AGENT_AUTO_ENROLL:-1}" = "0" ]]; then
+    echo "Auto-enrollment skipped by VANT_AGENT_AUTO_ENROLL=0"
+    return 0
+  fi
+  if grep -q "token:" "${config_path}" 2>/dev/null && ! grep -q "token: ''" "${config_path}" 2>/dev/null; then
+    token_present=1
+  fi
+  if [[ "${token_present}" = "1" ]]; then
+    echo "Enrollment already present in config."
+    return 0
+  fi
+  if [[ -x "${tools_bin}" ]]; then
+    cmd=("${tools_bin}" --config "${config_path}" enroll --quiet)
+  elif [[ -x "${python_bin}" && -f "${tools_path}" ]]; then
+    cmd=("${python_bin}" "${tools_path}" --config "${config_path}" enroll --quiet)
+  fi
+  if [[ ${#cmd[@]} -eq 0 || ! -f "${config_path}" ]]; then
+    echo "Auto-enrollment unavailable: missing runtime files."
+    return 0
+  fi
+
+  if [[ -n "${enrollment_code}" ]]; then
+    cmd+=(--enrollment-code "${enrollment_code}")
+  fi
+
+  if VANT_AGENT_BOOTSTRAP_KEY="${bootstrap_key}" "${cmd[@]}"; then
+    echo "Agent enrolled automatically."
+  else
+    echo "Warning: automatic enrollment failed. Run 'sudo opena_enroll' after installation."
+  fi
+}
 
 if id "${INSTALL_OWNER}" >/dev/null 2>&1; then
   chown -R "${INSTALL_OWNER}:${INSTALL_GROUP}" "${TARGET_ROOT}" || true
 fi
+
+run_cli_wizard || true
+configure_graphics_mode
+auto_enroll
 
 if command -v systemctl >/dev/null 2>&1 && [[ -f "${SERVICE_DST}" ]]; then
   systemctl daemon-reload || true
@@ -171,6 +362,7 @@ stage_bundle() {
   local stage_root="${DIST_DIR}/${distro}/vant-siem-agent-install"
   local build_root="${BUILD_ROOT}/${distro}"
   local venv_dir="${build_root}/venv"
+  local binary_dist="${build_root}/pyinstaller-dist"
   local deb_dir="${DIST_DIR}/${distro}/deb-root"
 
   [[ -f "${distro_dir}/config.yaml" ]] || die "Missing config for distro: ${distro}"
@@ -179,8 +371,9 @@ stage_bundle() {
   mkdir -p "${stage_root}/agent" "${stage_root}/config" "${stage_root}/scripts" \
     "${stage_root}/docs" "${stage_root}/desktop" "${stage_root}/systemd" "${build_root}"
 
-  info "Creating virtualenv for ${distro}"
+  info "Preparing build environment for ${distro}"
   prepare_venv "${venv_dir}"
+  build_linux_binaries "${venv_dir}" "${build_root}"
 
   info "Copying runtime files for ${distro}"
   copy_tree "${AGENTS_DIR}/agent.py" "${stage_root}/agent/agent.py"
@@ -201,8 +394,11 @@ stage_bundle() {
   copy_tree "${AGENTS_DIR}/linux/OFFLINE_PACKAGING.md" "${stage_root}/docs/OFFLINE_PACKAGING.md"
   copy_tree "${AGENTS_DIR}/AGENT_MANUAL.md" "${stage_root}/docs/AGENT_MANUAL.md"
   copy_tree "${REPO_DIR}/staticfiles/img/logo.png" "${stage_root}/agent/staticfiles/img/logo.png"
-  copy_tree "${venv_dir}" "${stage_root}/agent/venv"
   copy_tree "${distro_dir}/config.yaml" "${stage_root}/config/agent.yaml"
+  copy_tree "${binary_dist}/vant-opensearch-agent" "${stage_root}/agent/vant-opensearch-agent"
+  copy_tree "${binary_dist}/vant-opensearch-agent-tray" "${stage_root}/agent/vant-opensearch-agent-tray"
+  copy_tree "${binary_dist}/vant-agent-tools" "${stage_root}/agent/vant-agent-tools"
+  copy_tree "${binary_dist}/vant-agent-cli" "${stage_root}/agent/vant-agent-cli"
 
   cat > "${stage_root}/systemd/vant-siem-agent.service" <<'EOF'
 [Unit]
@@ -213,12 +409,28 @@ Wants=network-online.target
 [Service]
 Type=simple
 WorkingDirectory=/opt/vant-siem-agent
-ExecStart=/opt/vant-siem-agent/venv/bin/python /opt/vant-siem-agent/agent.py --config /etc/vant-siem/config.yaml
+ExecStart=/opt/vant-siem-agent/vant-opensearch-agent --config /etc/vant-siem/config.yaml
 Restart=always
 RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
+EOF
+
+  cat > "${stage_root}/desktop/vant-siem-agent-tray.desktop" <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=VANT-SIEM Agent Tray
+Comment=Control del agente en la bandeja del sistema
+Exec=/opt/vant-siem-agent/vant-opensearch-agent-tray --config /etc/vant-siem/config.yaml
+Icon=/opt/vant-siem-agent/staticfiles/img/logo.png
+Terminal=false
+StartupNotify=false
+X-GNOME-Autostart-enabled=true
+X-GNOME-Autostart-Delay=5
+X-KDE-autostart-after=panel
+X-KDE-StartupNotify=false
+Categories=Utility;
 EOF
 
   write_install_script "${stage_root}"
@@ -277,7 +489,10 @@ EOF
     "${stage_root}/config/agent.yaml"
     "${stage_root}/agent/agent.py"
     "${stage_root}/agent/agent_tray.py"
-    "${stage_root}/agent/venv/bin/python"
+    "${stage_root}/agent/vant-opensearch-agent"
+    "${stage_root}/agent/vant-opensearch-agent-tray"
+    "${stage_root}/agent/vant-agent-tools"
+    "${stage_root}/agent/vant-agent-cli"
     "${stage_root}/scripts/enable_logs.sh"
     "${stage_root}/scripts/agent_tools.py"
     "${stage_root}/bin/sendheartbeat"
@@ -312,17 +527,34 @@ print("YAML validation ok for ${distro}")
 PY
 
   if [[ "${BUILD_DEB}" -eq 1 ]] && command -v dpkg-deb >/dev/null 2>&1; then
+    local deb_build_dir="/tmp/vant-siem-agent-${distro}-${BUILD_TS}"
     info "Creating .deb layout for ${distro}"
-    mkdir -p "${deb_dir}/opt/vant-siem-agent" "${deb_dir}/etc/vant-siem" "${deb_dir}/etc/xdg/autostart" \
-      "${deb_dir}/usr/local/bin" "${deb_dir}/lib/systemd/system"
-    cp -a "${stage_root}/agent/." "${deb_dir}/opt/vant-siem-agent/"
-    cp "${stage_root}/config/agent.yaml" "${deb_dir}/etc/vant-siem/config.yaml"
-    cp "${stage_root}/desktop/vant-siem-agent-tray.desktop" "${deb_dir}/etc/xdg/autostart/vant-siem-agent-tray.desktop"
-    cp "${stage_root}/systemd/vant-siem-agent.service" "${deb_dir}/lib/systemd/system/vant-siem-agent.service"
-    cp "${stage_root}/scripts/enable_logs.sh" "${deb_dir}/usr/local/bin/vant-siem-enable-logs.sh"
-    chmod +x "${deb_dir}/usr/local/bin/vant-siem-enable-logs.sh"
-    mkdir -p "${deb_dir}/DEBIAN"
-    cat > "${deb_dir}/DEBIAN/control" <<EOF
+    rm -rf "${deb_build_dir}"
+    mkdir -p "${deb_build_dir}/opt/vant-siem-agent" "${deb_build_dir}/etc/vant-siem" "${deb_build_dir}/etc/xdg/autostart" \
+      "${deb_build_dir}/usr/local/bin" "${deb_build_dir}/lib/systemd/system"
+    cp -a "${stage_root}/agent/." "${deb_build_dir}/opt/vant-siem-agent/"
+    cp -a "${stage_root}/scripts" "${deb_build_dir}/opt/vant-siem-agent/scripts"
+    cp -a "${stage_root}/bin" "${deb_build_dir}/opt/vant-siem-agent/bin"
+    cp -a "${stage_root}/docs" "${deb_build_dir}/opt/vant-siem-agent/docs"
+    cp "${stage_root}/uninstall.sh" "${deb_build_dir}/opt/vant-siem-agent/uninstall.sh"
+    cp "${stage_root}/config/agent.yaml" "${deb_build_dir}/etc/vant-siem/config.yaml"
+    cp "${stage_root}/desktop/vant-siem-agent-tray.desktop" "${deb_build_dir}/etc/xdg/autostart/vant-siem-agent-tray.desktop"
+    cp "${stage_root}/systemd/vant-siem-agent.service" "${deb_build_dir}/lib/systemd/system/vant-siem-agent.service"
+    cp "${stage_root}/scripts/enable_logs.sh" "${deb_build_dir}/usr/local/bin/vant-siem-enable-logs.sh"
+    cp "${stage_root}/bin/sendheartbeat" "${deb_build_dir}/usr/local/bin/sendheartbeat"
+    cp "${stage_root}/bin/opena_mover" "${deb_build_dir}/usr/local/bin/opena_mover"
+    cp "${stage_root}/bin/opena_checker" "${deb_build_dir}/usr/local/bin/opena_checker"
+    cp "${stage_root}/bin/opena_enroll" "${deb_build_dir}/usr/local/bin/opena_enroll"
+    chmod +x "${deb_build_dir}/usr/local/bin/vant-siem-enable-logs.sh"
+    chmod +x "${deb_build_dir}/usr/local/bin/sendheartbeat" "${deb_build_dir}/usr/local/bin/opena_mover" \
+      "${deb_build_dir}/usr/local/bin/opena_checker" "${deb_build_dir}/usr/local/bin/opena_enroll"
+    chmod +x "${deb_build_dir}/opt/vant-siem-agent/vant-opensearch-agent" \
+      "${deb_build_dir}/opt/vant-siem-agent/vant-opensearch-agent-tray" \
+      "${deb_build_dir}/opt/vant-siem-agent/vant-agent-tools" \
+      "${deb_build_dir}/opt/vant-siem-agent/uninstall.sh"
+    mkdir -p "${deb_build_dir}/DEBIAN"
+    chmod 755 "${deb_build_dir}/DEBIAN"
+    cat > "${deb_build_dir}/DEBIAN/control" <<EOF
 Package: vant-siem-agent
 Version: ${AGENT_VERSION}
 Section: net
@@ -331,17 +563,46 @@ Architecture: all
 Maintainer: Leonardo L. Varona Tabares <leonardovarona42@gmail.com>
 Description: VANT-SIEM OpenSearch agent for offline Linux deployments
 EOF
-    cat > "${deb_dir}/DEBIAN/postinst" <<'EOF'
+    cat > "${deb_build_dir}/DEBIAN/postinst" <<'EOF'
 #!/bin/sh
 set -e
+chmod +x /opt/vant-siem-agent/vant-opensearch-agent /opt/vant-siem-agent/vant-opensearch-agent-tray /opt/vant-siem-agent/vant-agent-tools 2>/dev/null || true
+chmod +x /opt/vant-siem-agent/vant-agent-cli 2>/dev/null || true
+mkdir -p /etc/vant-siem /etc/xdg/autostart
+printf 'VANT_AGENT_GDISABLE=%s\n' "${VANT_AGENT_GDISABLE:-0}" > /etc/vant-siem/install-meta.env
+if [ "${VANT_AGENT_GDISABLE:-0}" = "1" ]; then
+  rm -f /etc/xdg/autostart/vant-siem-agent-tray.desktop
+fi
+if [ "${VANT_AGENT_WIZARD:-1}" != "0" ] && [ -t 0 ] && [ -x /opt/vant-siem-agent/vant-agent-cli ]; then
+  if [ "${VANT_AGENT_GDISABLE:-0}" = "1" ]; then
+    /opt/vant-siem-agent/vant-agent-cli --config /etc/vant-siem/config.yaml --template /etc/vant-siem/config.yaml --gdisable || true
+  else
+    /opt/vant-siem-agent/vant-agent-cli --config /etc/vant-siem/config.yaml --template /etc/vant-siem/config.yaml || true
+  fi
+fi
+if [ -x /opt/vant-siem-agent/vant-agent-tools ]; then
+  /opt/vant-siem-agent/vant-agent-tools --config /etc/vant-siem/config.yaml enroll --quiet >/dev/null 2>&1 || true
+fi
 if command -v systemctl >/dev/null 2>&1; then
   systemctl daemon-reload || true
   systemctl enable --now vant-siem-agent.service || true
 fi
 exit 0
 EOF
-    chmod 755 "${deb_dir}/DEBIAN/postinst"
-    dpkg-deb --build "${deb_dir}" "${DIST_DIR}/vant-siem-agent-${distro}_${AGENT_VERSION}_all.deb" >/dev/null
+    chmod 755 "${deb_build_dir}/DEBIAN/postinst"
+    cat > "${deb_build_dir}/DEBIAN/prerm" <<'EOF'
+#!/bin/sh
+set -e
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl stop vant-siem-agent.service 2>/dev/null || true
+  systemctl disable vant-siem-agent.service 2>/dev/null || true
+  systemctl daemon-reload 2>/dev/null || true
+fi
+exit 0
+EOF
+    chmod 755 "${deb_build_dir}/DEBIAN/prerm"
+    dpkg-deb --build "${deb_build_dir}" "${DIST_DIR}/vant-siem-agent-${distro}_${AGENT_VERSION}_all.deb" >/dev/null
+    rm -rf "${deb_build_dir}"
     ok "Built .deb for ${distro}"
   fi
 

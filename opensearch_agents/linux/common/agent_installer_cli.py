@@ -117,6 +117,12 @@ def _sign_request(secret, agent_id, host_name, timestamp):
     return hmac.new(secret.encode("utf-8"), message, hashlib.sha256).hexdigest()
 
 
+def _owner_account():
+    sudo_user = os.environ.get("SUDO_USER", "").strip()
+    user = sudo_user or os.environ.get("USER", "").strip() or os.environ.get("USERNAME", "").strip()
+    return user
+
+
 def _probe_endpoint(endpoint):
     try:
         parsed = urlparse(endpoint)
@@ -127,6 +133,15 @@ def _probe_endpoint(endpoint):
         return True
     except Exception:
         return False
+
+
+def _probe_control_server(host, port, https_enabled, agent_id):
+    url = _build_bootstrap_url(host, port, https_enabled)
+    try:
+        response = requests.get(url, headers={"X-Agent-Id": agent_id}, timeout=6)
+        return True, response.status_code
+    except Exception as exc:
+        return False, str(exc)
 
 
 def _ensure_dict(root, *keys):
@@ -209,6 +224,8 @@ def _apply_auth(cfg, connection_info, agent_id, host_name):
     auth_cfg = _ensure_dict(cfg, "output", "auth")
     auth_mode = _prompt_choice("Modo auth", ["none", "basic", "token"], auth_cfg.get("mode", "none"))
     auth_cfg["mode"] = auth_mode
+    enrollment_code = ""
+    bootstrap_key = ""
 
     if auth_mode == "basic":
         auth_cfg["username"] = _prompt("Usuario", auth_cfg.get("username", ""))
@@ -222,13 +239,26 @@ def _apply_auth(cfg, connection_info, agent_id, host_name):
         auth_cfg["username"] = ""
         auth_cfg["password"] = ""
         auth_cfg["token"] = ""
+        enrollment_code = _prompt("Codigo de enrolamiento (opcional)", "")
+        bootstrap_key = _prompt("Bootstrap key (opcional)", "")
 
     should_test = _prompt_bool("Probar conexion y enrolar", True)
     if not should_test:
-        return
+        return False
+
+    control_ok, control_info = _probe_control_server(
+        connection_info["server_host"],
+        connection_info["server_port"],
+        connection_info["server_https"],
+        agent_id,
+    )
+    if control_ok:
+        print(f"  Control server responde. Bootstrap status: {control_info}")
+    else:
+        print(f"  Control server no responde: {control_info}")
 
     if auth_mode == "none":
-        shared_secret = _load_bootstrap_key()
+        shared_secret = bootstrap_key.strip() or _load_bootstrap_key()
         if not shared_secret:
             shared_secret = _fetch_bootstrap_secret(
                 connection_info["server_host"],
@@ -246,7 +276,10 @@ def _apply_auth(cfg, connection_info, agent_id, host_name):
             "host_name": host_name,
             "timestamp": timestamp,
             "signature": signature,
+            "install_owner_account": _owner_account(),
         }
+        if enrollment_code:
+            payload["enrollment_code"] = enrollment_code
         enroll_url = _build_enroll_url(
             connection_info["server_host"],
             connection_info["server_port"],
@@ -264,15 +297,20 @@ def _apply_auth(cfg, connection_info, agent_id, host_name):
                 auth_cfg["password"] = ""
                 print("  Token obtenido correctamente.")
             else:
-                print("  No se pudo enrolar el agente.")
+                print(f"  No se pudo enrolar el agente. Status: {response.status_code}")
         except Exception as exc:
             print(f"  Error al enrolar: {exc}")
+    elif auth_mode == "token" and auth_cfg.get("token", "").strip():
+        print("  Token configurado manualmente.")
+    else:
+        print("  Modo basic configurado; el enrolamiento automatico se omite.")
 
     endpoint = cfg.get("output", {}).get("endpoint", "")
     if _probe_endpoint(endpoint):
         print("  Endpoint OpenSearch responde.")
     else:
         print("  Endpoint OpenSearch no responde.")
+    return bool(auth_cfg.get("token", "").strip())
 
 
 def _apply_collectors(cfg):
@@ -330,6 +368,7 @@ def main():
     parser.add_argument("--config", required=True, help="Ruta de config.yaml")
     parser.add_argument("--template", default="", help="Ruta de template base")
     parser.add_argument("--non-interactive", action="store_true")
+    parser.add_argument("--gdisable", action="store_true", help="Deshabilitar integracion grafica/tray")
     args = parser.parse_args()
 
     config_path = Path(args.config).resolve()
@@ -347,13 +386,17 @@ def main():
 
     print("VANT-SIEM Agent Installer (Linux CLI)")
     print("Presiona Enter para mantener valores por defecto.\n")
+    print(f"Modo grafico: {'deshabilitado' if args.gdisable else 'habilitado'}\n")
 
     _apply_agent_identity(base)
     connection_info = _apply_connection(base)
     agent_id = base.get("agent", {}).get("id", "agent-001")
     host_name = base.get("agent", {}).get("host_name", socket.gethostname())
-    _apply_auth(base, connection_info, agent_id, host_name)
+    enrolled = _apply_auth(base, connection_info, agent_id, host_name)
     _apply_collectors(base)
+    install_cfg = _ensure_dict(base, "install")
+    install_cfg["graphics_disabled"] = bool(args.gdisable)
+    install_cfg["last_enrollment_ok"] = bool(enrolled)
     _show_summary(base)
 
     if not _prompt_bool("Guardar configuracion", True):

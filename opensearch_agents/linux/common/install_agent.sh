@@ -11,6 +11,7 @@ LINUX_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 DIST_DIR="${LINUX_DIR}/dist"
 DISTRO="${VANT_LINUX_DISTRO:-${DISTRO:-}}"
 PACKAGE_OVERRIDE="${VANT_AGENT_PACKAGE_DIR:-}"
+INSTALL_ARGS=("$@")
 
 if [[ -z "${DISTRO}" ]]; then
   echo "Set VANT_LINUX_DISTRO to debian, ubuntu or zentyal."
@@ -93,27 +94,8 @@ if [[ ! -f "${INSTALL_SCRIPT}" ]]; then
   exit 1
 fi
 
-if [[ -t 0 && "${VANT_AGENT_WIZARD:-1}" != "0" ]]; then
-  TEMPLATE_PATH="${PACKAGE_DIR}/config/agent.yaml"
-  CONFIG_PATH="${PACKAGE_DIR}/config/agent.yaml"
-  WIZARD_BIN="${PACKAGE_DIR}/scripts/agent_installer_cli.py"
-  VENV_PYTHON="${PACKAGE_DIR}/agent/venv/bin/python"
-
-  if [[ ! -f "${WIZARD_BIN}" ]]; then
-    WIZARD_BIN="${SCRIPT_DIR}/agent_installer_cli.py"
-  fi
-
-  if [[ -x "${VENV_PYTHON}" && -f "${WIZARD_BIN}" ]]; then
-    "${VENV_PYTHON}" "${WIZARD_BIN}" \
-      --config "${CONFIG_PATH}" \
-      --template "${TEMPLATE_PATH}"
-  else
-    echo "Wizard unavailable in offline package; using bundled defaults."
-  fi
-fi
-
 chmod +x "${INSTALL_SCRIPT}"
-(cd "${PACKAGE_DIR}" && bash "./install.sh")
+(cd "${PACKAGE_DIR}" && bash "./install.sh" "${INSTALL_ARGS[@]}")
 
 echo "Installed from offline package: ${PACKAGE_DIR}"
 echo "Edit /etc/vant-siem/config.yaml to adjust the agent."
