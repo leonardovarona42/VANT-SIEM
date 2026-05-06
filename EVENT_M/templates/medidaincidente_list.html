@@ -1,63 +1,64 @@
 {% extends "dashboard.html" %}
 {% block title %}Listado de Medidas de Incidente | VANT-SIEM{% endblock %}
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="card bg-secondary shadow">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 text-info fw-bold">Listado de Medidas de Incidente</h5>
-                <a href="{% url 'medidaincidente-create' %}" class="btn btn-primary btn-sm">
-                    <i class="fas fa-plus"></i> Nueva Medida de Incidente
-                </a>
+<div class="glass-card">
+    <div class="px-6 py-4 flex justify-between items-center border-b dark:border-surface-800 border-surface-200">
+        <h5 class="mb-0 text-lg font-bold dark:text-white text-surface-900">Listado de Medidas de Incidente</h5>
+        <a href="{% url 'medidaincidente-create' %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors">
+            <i class="fas fa-plus mr-1"></i> Nueva Medida de Incidente
+        </a>
+    </div>
+    <div class="p-6">
+        {% if object_list %}
+            <div class="overflow-x-auto">
+                <table class="w-full divide-y dark:divide-surface-800 divide-surface-200" id="medidas-incidentes-table">
+                    <thead class="dark:bg-surface-800 bg-surface-100">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true" data-type="number">ID</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true">Incidente</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true">Medida</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true">Responsable</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true" data-type="date">Fecha Cumplimiento</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true">Estado</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="dark:divide-surface-800 divide-surface-200">
+                        {% for medidaincidente in object_list %}
+                        <tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors">
+                            <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ medidaincidente.id }}</td>
+                            <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ medidaincidente.incidente.nombre_incidente }}</td>
+                            <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ medidaincidente.medida.nombre }}</td>
+                            <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ medidaincidente.responsable.nombres }} {{ medidaincidente.responsable.apellidos }}</td>
+                            <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ medidaincidente.fecha_cumplimiento }}</td>
+                            <td class="px-4 py-3 text-sm">
+                                {% if medidaincidente.estado_cumplimiento %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-600 text-white">Cumplido</span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-600 text-white">Pendiente</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-sm space-x-1">
+                                <a href="{% url 'medidaincidente-detail' medidaincidente.pk %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors">Ver</a>
+                                <a href="{% url 'medidaincidente-update' medidaincidente.pk %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-500 dark:hover:bg-yellow-600 rounded-lg transition-colors">Editar</a>
+                                <a href="{% url 'medidaincidente-delete' medidaincidente.pk %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 rounded-lg transition-colors">Eliminar</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            <div class="card-body">
-                {% if object_list %}
-                    <div class="table-responsive">
-                        <table class="table table-dark table-striped">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Incidente</th>
-                                    <th>Medida</th>
-                                    <th>Responsable</th>
-                                    <th>Fecha Cumplimiento</th>
-                                    <th>Estado</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for medidaincidente in object_list %}
-                                <tr>
-                                    <td>{{ medidaincidente.id }}</td>
-                                    <td>{{ medidaincidente.incidente.nombre_incidente }}</td>
-                                    <td>{{ medidaincidente.medida.nombre }}</td>
-                                    <td>{{ medidaincidente.responsable.nombres }} {{ medidaincidente.responsable.apellidos }}</td>
-                                    <td>{{ medidaincidente.fecha_cumplimiento }}</td>
-                                    <td>
-                                        {% if medidaincidente.estado_cumplimiento %}
-                                            <span class="badge bg-success">Cumplido</span>
-                                        {% else %}
-                                            <span class="badge bg-warning">Pendiente</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <a href="{% url 'medidaincidente-detail' medidaincidente.pk %}" class="btn btn-info btn-sm">Ver</a>
-                                        <a href="{% url 'medidaincidente-update' medidaincidente.pk %}" class="btn btn-warning btn-sm">Editar</a>
-                                        <a href="{% url 'medidaincidente-delete' medidaincidente.pk %}" class="btn btn-danger btn-sm">Eliminar</a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <div class="text-center py-4">
-                        <p class="text-muted">No hay medidas de incidente registradas.</p>
-                        <a href="{% url 'medidaincidente-create' %}" class="btn btn-primary">Crear Primera Medida de Incidente</a>
-                    </div>
-                {% endif %}
+        {% else %}
+            <div class="text-center py-4">
+                <p class="dark:text-surface-400 text-surface-500">No hay medidas de incidente registradas.</p>
+                <a href="{% url 'medidaincidente-create' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors mt-2">Crear Primera Medida de Incidente</a>
             </div>
-        </div>
+        {% endif %}
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    VANT_UI.initSortableTables({ tableId: 'medidas-incidentes-table' });
+});
+</script>
 {% endblock %}

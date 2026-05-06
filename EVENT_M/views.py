@@ -1,9 +1,10 @@
 import logging
+import json
 from django.shortcuts import render
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 from django.core.paginator import Paginator
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Avg
 from django.contrib import messages
 from django.shortcuts import redirect
 from django.http import JsonResponse
@@ -13,8 +14,10 @@ from datetime import datetime, timedelta
 from .models import (
     Categoria, Subcategoria, Servicio, Responsable, Area,
     Medida, Reporte, Incidente, MedidaIncidente,
-    Involucrado, InvolucradoIncidente
+    Involucrado, InvolucradoIncidente, ServicioIP, PuertoDispositivo,
+    ConexionTopologica
 )
+from .forms import ServicioForm
 from VANT_SIEM.email_service import send_system_alert
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -240,22 +243,44 @@ class ServicioListView(ListView):
         return context
 
     def render_to_response(self, context, **response_kwargs):
-        # Check if this is an AJAX request
         if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            # Return JSON data for AJAX requests
             servicios_data = []
-            for servicio in context['object_list']:
+            for s in context['object_list']:
+                tipo_badge = s.get_tipo_display()
+                ip_display = s.host or s.network or 'N/A'
+                if s.subnet_mask:
+                    ip_display += s.subnet_mask
+                if s.tipo in ['switch', 'router', 'firewall', 'host', 'storage']:
+                    detalle = f"{s.fabricante or ''} {s.modelo or ''}".strip()
+                    if s.num_puertos:
+                        detalle += f" ({s.num_puertos}p)"
+                elif s.es_red():
+                    detalle = s.get_red_tipo_display() or '-'
+                    if s.vlan_id:
+                        detalle += f" (VLAN {s.vlan_id})"
+                else:
+                    detalle = '-'
+                monitoreo_badge = ''
+                if s.monitorear:
+                    icon = 'check' if s.estado_monitoreo else 'times'
+                    color = 'green' if s.estado_monitoreo else 'red'
+                    status = 'Online' if s.estado_monitoreo else 'Offline'
+                    monitoreo_badge = f'<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-{color}-100 text-{color}-800 dark:bg-{color}-900/30 dark:text-{color}-300"><i class="fas fa-{icon} mr-1"></i>{status}</span>'
+                else:
+                    monitoreo_badge = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-100 text-surface-500 dark:bg-surface-700 dark:text-surface-400">Desactivado</span>'
+                activo_badge = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Si</span>' if s.activo else '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">No</span>'
                 servicios_data.append({
-                    'id': servicio.id,
-                    'nombre': servicio.nombre,
-                    'descripcion': servicio.descripcion,
-                    'host': servicio.host or 'N/A',
-                    'monitorear': servicio.monitorear,
-                    'detail_url': reverse('servicio-detail', args=[servicio.id]),
-                    'update_url': reverse('servicio-update', args=[servicio.id]),
-                    'delete_url': reverse('servicio-delete', args=[servicio.id])
+                    'id': s.id,
+                    'nombre': s.nombre,
+                    'tipo_badge': f'<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-surface-100 text-surface-800 dark:bg-surface-700 dark:text-surface-300">{tipo_badge}</span>',
+                    'host': ip_display,
+                    'detalle': detalle,
+                    'monitoreo_badge': monitoreo_badge,
+                    'activo_badge': activo_badge,
+                    'detail_url': reverse('servicio-detail', args=[s.id]),
+                    'update_url': reverse('servicio-update', args=[s.id]),
+                    'delete_url': reverse('servicio-delete', args=[s.id])
                 })
-
             data = {
                 'servicios': servicios_data,
                 'has_next': context['page_obj'].has_next(),
@@ -266,7 +291,6 @@ class ServicioListView(ListView):
             }
             return JsonResponse(data)
         else:
-            # Return normal HTML response
             return super().render_to_response(context, **response_kwargs)
 
 class ServicioDetailView(DetailView):
@@ -275,7 +299,7 @@ class ServicioDetailView(DetailView):
 
 class ServicioCreateView(CreateView):
     model = Servicio
-    fields = '__all__'
+    form_class = ServicioForm
     success_url = reverse_lazy('servicio-list')
     template_name = 'servicio_form.html'
     
@@ -286,7 +310,7 @@ class ServicioCreateView(CreateView):
 
 class ServicioUpdateView(UpdateView):
     model = Servicio
-    fields = '__all__'
+    form_class = ServicioForm
     success_url = reverse_lazy('servicio-list')
     template_name = 'servicio_form.html'
     
@@ -311,6 +335,412 @@ class ServicioDeleteView(DeleteView):
         response = super().delete(request, *args, **kwargs)
         messages.success(request, f'Servicio "{servicio_nombre}" eliminado exitosamente.')
         return response
+
+# Servicios de Red (subred, red, segmento, vlan)
+class RedServicioListView(ListView):
+    model = Servicio
+    template_name = 'red_list.html'
+    paginate_by = 20
+    context_object_name = 'object_list'
+
+    def get_queryset(self):
+        queryset = super().get_queryset().filter(tipo__in=['subred', 'red', 'segmento', 'vlan'])
+        q = self.request.GET.get('q')
+        if q:
+            queryset = queryset.filter(
+                Q(nombre__icontains=q) |
+                Q(network__icontains=q) |
+                Q(subnet_mask__icontains=q) |
+                Q(red_tipo__icontains=q) |
+                Q(tipo__icontains=q)
+            )
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('q', '')
+
+        redes = list(self.get_queryset().select_related('servicio_padre').prefetch_related('subservicios', 'ips'))
+        
+        # Count by type
+        redes_list = [r for r in redes if r.tipo == 'red']
+        subredes_list = [r for r in redes if r.tipo == 'subred']
+        vlans_list = [r for r in redes if r.tipo == 'vlan']
+        segmentos_list = [r for r in redes if r.tipo == 'segmento']
+        
+        context['redes'] = redes_list
+        context['subredes'] = subredes_list
+        context['vlans'] = vlans_list
+        context['segmentos'] = segmentos_list
+
+        # Build tree: root redes (no parent) + their children
+        redes_map = {r.id: r for r in redes}
+        root_redes = [r for r in redes if r.servicio_padre is None]
+        
+        total_dispositivos = 0
+        redes_tree = []
+        
+        for red in root_redes:
+            total_ips = red.total_ips()
+            ips_asignadas = red.ips.count()
+            ips_libres = max(total_ips - ips_asignadas, 0) if total_ips > 0 else 0
+            porcentaje_uso = round((ips_asignadas / total_ips * 100), 1) if total_ips > 0 else 0
+            
+            hijos = list(red.subservicios.filter(activo=True))
+            total_dispositivos += len(hijos)
+            
+            hijos_data = []
+            for h in hijos:
+                hijos_data.append({
+                    'id': h.id,
+                    'nombre': h.nombre,
+                    'tipo': h.tipo,
+                    'tipo_display': h.get_tipo_display(),
+                    'host': h.host or '',
+                    'activo': h.activo,
+                    'estado_monitoreo': h.estado_monitoreo,
+                    'monitorear': h.monitorear,
+                })
+            
+            redes_tree.append({
+                'id': red.id,
+                'nombre': red.nombre,
+                'tipo': red.tipo,
+                'get_tipo_display': red.get_tipo_display(),
+                'network': red.network,
+                'subnet_mask': red.subnet_mask,
+                'vlan_id': red.vlan_id,
+                'gateway': red.gateway,
+                'dhcp_activo': red.dhcp_activo,
+                'get_red_tipo_display': red.get_red_tipo_display(),
+                'total_ips': total_ips,
+                'ips_asignadas': ips_asignadas,
+                'ips_libres': ips_libres,
+                'porcentaje_uso': porcentaje_uso,
+                'num_hijos': len(hijos),
+                'hijos': hijos_data,
+            })
+
+        context['redes_tree'] = redes_tree
+        context['total_dispositivos'] = total_dispositivos
+
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            data = []
+            for s in context['object_list']:
+                data.append({
+                    'id': s.id,
+                    'nombre': s.nombre,
+                    'network': s.network or '-',
+                    'subnet_mask': s.subnet_mask or '-',
+                    'gateway': s.gateway or '-',
+                    'red_tipo': s.red_tipo or '-',
+                    'red_tipo_display': s.get_red_tipo_display() or '-',
+                    'tipo': s.tipo,
+                    'tipo_display': s.get_tipo_display(),
+                    'vlan_id': s.vlan_id or '-',
+                    'dhcp_activo': s.dhcp_activo,
+                    'total_ips': s.total_ips(),
+                    'dispositivos_activos': s.total_dispositivos_activos(),
+                    'detail_url': reverse('red-detail', args=[s.id]),
+                    'update_url': reverse('servicio-update', args=[s.id]),
+                    'delete_url': reverse('servicio-delete', args=[s.id]),
+                })
+            return JsonResponse({'redes': data, 'count': len(data)})
+        return super().render_to_response(context, **response_kwargs)
+
+class RedDetailView(DetailView):
+    model = Servicio
+    template_name = 'red_detail.html'
+    context_object_name = 'red'
+
+    def get_queryset(self):
+        return Servicio.objects.filter(tipo__in=['subred', 'red', 'segmento', 'vlan'])
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        red = self.object
+
+        ips = list(red.ips.all().order_by('ip_address'))
+        total_ips = red.total_ips()
+        ips_asignadas = len(ips)
+        ips_libres = max(total_ips - ips_asignadas, 0) if total_ips > 0 else 0
+        porcentaje_uso = round((ips_asignadas / total_ips * 100), 1) if total_ips > 0 else 0
+
+        hosts_activos = [ip for ip in ips if ip.estado == 'activo']
+        hosts_inactivos = [ip for ip in ips if ip.estado == 'inactivo']
+        hosts_reservados = [ip for ip in ips if ip.estado == 'reservado']
+
+        hijos = list(red.subservicios.filter(activo=True).select_related('responsable'))
+        hijos_inactivos = list(red.subservicios.filter(activo=False))
+
+        ips_data = []
+        for ip in ips:
+            last_act = None
+            if ip.ultima_actividad:
+                last_act = ip.ultima_actividad.strftime('%d/%m/%Y %H:%M')
+            ips_data.append({
+                'id': ip.id,
+                'ip': ip.ip_address,
+                'hostname': ip.hostname or '-',
+                'mac': ip.mac_address or '-',
+                'estado': ip.estado,
+                'estado_display': ip.get_estado_display(),
+                'monitorear': ip.monitorear,
+                'descripcion': ip.descripcion or '-',
+                'fecha_asignacion': ip.fecha_asignacion.strftime('%d/%m/%Y') if ip.fecha_asignacion else '-',
+                'ultima_actividad': last_act or '-',
+            })
+
+        hijos_data = []
+        for h in hijos:
+            hijos_data.append({
+                'id': h.id,
+                'nombre': h.nombre,
+                'tipo': h.tipo,
+                'tipo_display': h.get_tipo_display(),
+                'host': h.host or '-',
+                'activo': h.activo,
+                'estado_monitoreo': h.estado_monitoreo,
+                'monitorear': h.monitorear,
+            })
+
+        ips_page = int(self.request.GET.get('page', 1))
+        ips_per_page = 25
+        paginator = Paginator(ips_data, ips_per_page)
+        page_obj = paginator.get_page(ips_page)
+
+        context['total_ips'] = total_ips
+        context['ips_asignadas'] = ips_asignadas
+        context['ips_libres'] = ips_libres
+        context['porcentaje_uso'] = porcentaje_uso
+        context['hosts_activos'] = len(hosts_activos)
+        context['hosts_inactivos'] = len(hosts_inactivos)
+        context['hosts_reservados'] = len(hosts_reservados)
+        context['hijos'] = hijos_data
+        context['hijos_inactivos'] = len(hijos_inactivos)
+        context['ips_list'] = list(page_obj)
+        context['ips_page'] = page_obj
+        context['ips_paginator'] = paginator
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            ips_page = int(self.request.GET.get('page', 1))
+            ips_per_page = 25
+            paginator = Paginator(context['ips_list'] if 'ips_list' in context else [], ips_per_page)
+            page_obj = paginator.get_page(ips_page)
+            return JsonResponse({
+                'ips': list(page_obj),
+                'page': page_obj.number,
+                'total_pages': paginator.num_pages,
+                'has_previous': page_obj.has_previous(),
+                'has_next': page_obj.has_next(),
+                'previous_page': page_obj.previous_page_number() if page_obj.has_previous() else None,
+                'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
+            })
+        return super().render_to_response(context, **response_kwargs)
+
+# Topologia / Esquemas
+class TopologiaView(ListView):
+    model = Servicio
+    template_name = 'esquema.html'
+    context_object_name = 'servicios'
+
+    def get_queryset(self):
+        return Servicio.objects.filter(activo=True).select_related('servicio_padre')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['esquema_tipo'] = self.kwargs.get('tipo', 'fisica')
+        
+        # Build nodes for the topology graph
+        servicios = list(self.get_queryset())
+        nodes = []
+        for s in servicios:
+            if context['esquema_tipo'] == 'fisica':
+                x, y = s.coordenadas_x, s.coordenadas_y
+            else:
+                x, y = s.coordenadas_logicas_x, s.coordenadas_logicas_y
+
+            # Get network info
+            network_info = ''
+            total_ips_red = 0
+            if s.es_red():
+                network_info = f"{s.network or ''}{s.subnet_mask or ''}"
+                total_ips_red = s.total_ips()
+
+            # Last activity
+            last_act = None
+            if s.ultima_actividad:
+                last_act = s.ultima_actividad.strftime('%d/%m/%Y %H:%M')
+            elif s.ips.filter(ultima_actividad__isnull=False).exists():
+                last_ip = s.ips.filter(ultima_actividad__isnull=False).order_by('-ultima_actividad').first()
+                last_act = last_ip.ultima_actividad.strftime('%d/%m/%Y %H:%M')
+
+            # Total active devices
+            active_devices = s.total_dispositivos_activos()
+
+            nodes.append({
+                'id': s.id,
+                'label': s.nombre,
+                'tipo': s.tipo,
+                'tipo_display': dict(Servicio.TIPO_CHOICES).get(s.tipo, s.tipo),
+                'host': s.host or '',
+                'vlan_id': s.vlan_id or '',
+                'ip': s.host,
+                'num_puertos': s.num_puertos or 0,
+                'fabricante': s.fabricante or '',
+                'modelo': s.modelo or '',
+                'monitorear': s.monitorear,
+                'estado_monitoreo': s.estado_monitoreo,
+                'activo': s.activo,
+                'nivel_red': s.nivel_red,
+                'x': x,
+                'y': y,
+                'color': self._get_node_color(s),
+                'network': network_info,
+                'total_ips_red': total_ips_red,
+                'active_devices': active_devices,
+                'ultima_actividad': last_act or '-',
+                'edificio': s.edificio or '-',
+                'rack': s.rack or '-',
+                'posicion_rack': s.posicion_rack or '-',
+            })
+
+        # Build edges
+        conexiones = ConexionTopologica.objects.filter(
+            origen__in=servicios, destino__in=servicios
+        )
+        edges = []
+        for c in conexiones:
+            edges.append({
+                'from': c.origen_id,
+                'to': c.destino_id,
+                'tipo': c.tipo,
+                'medio': c.medio or '',
+                'ancho_banda': c.ancho_banda or '',
+                'descripcion': c.descripcion or '',
+                'activa': c.activa,
+            })
+
+        # Redes data (servicios tipo subred/red/segmento/vlan)
+        redes = list(Servicio.objects.filter(tipo__in=['subred', 'red', 'segmento', 'vlan'], activo=True))
+        redes_data = []
+        for r in redes:
+            last_ip = r.ips.filter(ultima_actividad__isnull=False).order_by('-ultima_actividad').first()
+            redes_data.append({
+                'id': r.id,
+                'nombre': r.nombre,
+                'network': r.network or '-',
+                'subnet_mask': r.subnet_mask or '-',
+                'gateway': r.gateway or '-',
+                'red_tipo': r.red_tipo or '-',
+                'red_tipo_display': r.get_red_tipo_display() or '-',
+                'tipo': r.tipo,
+                'tipo_display': r.get_tipo_display(),
+                'vlan_id': r.vlan_id or '-',
+                'dhcp_activo': r.dhcp_activo,
+                'total_ips': r.total_ips(),
+                'dispositivos_activos': r.total_dispositivos_activos(),
+                'servicio_padre': r.servicio_padre.nombre if r.servicio_padre else '-',
+                'ultima_actividad': last_ip.ultima_actividad.strftime('%d/%m/%Y %H:%M') if last_ip else '-',
+                'detail_url': reverse('red-detail', args=[r.id]),
+            })
+
+        # Pagination for redes
+        redes_page = int(self.request.GET.get('red_page', 1))
+        redes_per_page = 10
+        from django.core.paginator import Paginator
+        paginator = Paginator(redes_data, redes_per_page)
+        page_obj = paginator.get_page(redes_page)
+        context['redes_json'] = json.dumps(list(page_obj))
+        context['redes_page'] = page_obj
+        context['redes_paginator'] = paginator
+        context['redes_total'] = len(redes_data)
+
+        context['nodes_json'] = json.dumps(nodes)
+        context['edges_json'] = json.dumps(edges)
+        context['total_servicios'] = len(nodes)
+        context['total_conexiones'] = len(edges)
+        context['monitoreados'] = len([n for n in nodes if n['monitorear']])
+        context['total_redes'] = len(redes_data)
+        context['total_dispositivos'] = sum([n['active_devices'] for n in nodes])
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            redes_page = int(self.request.GET.get('red_page', 1))
+            redes_per_page = 10
+            from django.core.paginator import Paginator
+            redes = list(Servicio.objects.filter(tipo__in=['subred', 'red', 'segmento', 'vlan'], activo=True))
+            redes_data = []
+            for r in redes:
+                last_ip = r.ips.filter(ultima_actividad__isnull=False).order_by('-ultima_actividad').first()
+                redes_data.append({
+                    'id': r.id,
+                    'nombre': r.nombre,
+                    'network': r.network or '-',
+                    'subnet_mask': r.subnet_mask or '-',
+                    'gateway': r.gateway or '-',
+                    'red_tipo': r.red_tipo or '-',
+                    'red_tipo_display': r.get_red_tipo_display() or '-',
+                    'tipo': r.tipo,
+                    'tipo_display': r.get_tipo_display(),
+                    'vlan_id': r.vlan_id or '-',
+                    'dhcp_activo': r.dhcp_activo,
+                    'total_ips': r.total_ips(),
+                    'dispositivos_activos': r.total_dispositivos_activos(),
+                    'servicio_padre': r.servicio_padre.nombre if r.servicio_padre else '-',
+                    'ultima_actividad': last_ip.ultima_actividad.strftime('%d/%m/%Y %H:%M') if last_ip else '-',
+                    'detail_url': reverse('red-detail', args=[r.id]),
+                })
+            paginator = Paginator(redes_data, redes_per_page)
+            page_obj = paginator.get_page(redes_page)
+            return JsonResponse({
+                'redes': list(page_obj),
+                'page': page_obj.number,
+                'total_pages': paginator.num_pages,
+                'has_previous': page_obj.has_previous(),
+                'has_next': page_obj.has_next(),
+                'previous_page': page_obj.previous_page_number() if page_obj.has_previous() else None,
+                'next_page': page_obj.next_page_number() if page_obj.has_next() else None,
+                'start_index': page_obj.start_index(),
+                'end_index': page_obj.end_index(),
+                'total_count': paginator.count,
+            })
+        return super().render_to_response(context, **response_kwargs)
+
+    def _get_node_color(self, servicio):
+        colors = {
+            'host': '#3b82f6',
+            'switch': '#f59e0b',
+            'router': '#f97316',
+            'firewall': '#ef4444',
+            'access_point': '#10b981',
+            'ups': '#8b5cf6',
+            'storage': '#6366f1',
+            'vlan': '#8b5cf6',
+            'segmento': '#a78bfa',
+            'subred': '#ec4899',
+            'red': '#06b6d4',
+            'cluster': '#10b981',
+            'plataforma': '#14b8a6',
+            'servicio_externo': '#6b7280',
+        }
+        return colors.get(servicio.tipo, '#6b7280')
+
+class TopologiaFisicaView(TopologiaView):
+    def get_context_data(self, **kwargs):
+        self.kwargs['tipo'] = 'fisica'
+        return super().get_context_data(**kwargs)
+
+class TopologiaLogicaView(TopologiaView):
+    def get_context_data(self, **kwargs):
+        self.kwargs['tipo'] = 'logica'
+        return super().get_context_data(**kwargs)
 
 # Responsable
 class ResponsableListView(ListView):
@@ -615,7 +1045,7 @@ class ReporteListView(ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().order_by('-fecha_hora')
         q = self.request.GET.get('q')
         if q:
             queryset = queryset.filter(
@@ -628,13 +1058,112 @@ class ReporteListView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # Totales por estado
         totales = (
             Reporte.objects.values('estado_solucion')
             .annotate(total=Count('id'))
         )
-        # Diccionario estado: total
         context['totales'] = {t['estado_solucion']: t['total'] for t in totales}
+
+        with_res = Reporte.objects.filter(fecha_atencion__isnull=False)
+        if with_res.exists():
+            tiempos_atencion = []
+            for r in with_res:
+                diff = (r.fecha_atencion - r.fecha_hora).total_seconds() / 3600
+                if diff > 0:
+                    tiempos_atencion.append(diff)
+
+            if tiempos_atencion:
+                context['promedio_atencion_horas'] = round(sum(tiempos_atencion) / len(tiempos_atencion), 1)
+                context['min_atencion_horas'] = round(min(tiempos_atencion), 1)
+                context['max_atencion_horas'] = round(max(tiempos_atencion), 1)
+
+                now = timezone.now()
+                current_month_res = with_res.filter(fecha_hora__month=now.month, fecha_hora__year=now.year)
+                tiempos_mes = []
+                for r in current_month_res:
+                    diff = (r.fecha_atencion - r.fecha_hora).total_seconds() / 3600
+                    if diff > 0:
+                        tiempos_mes.append(diff)
+                context['gauge_atencion_horas'] = round(sum(tiempos_mes) / len(tiempos_mes), 1) if tiempos_mes else context['promedio_atencion_horas']
+            else:
+                context['promedio_atencion_horas'] = 0
+                context['min_atencion_horas'] = 0
+                context['max_atencion_horas'] = 0
+                context['gauge_atencion_horas'] = 0
+        else:
+            context['promedio_atencion_horas'] = 0
+            context['min_atencion_horas'] = 0
+            context['max_atencion_horas'] = 0
+
+        with_sol = Reporte.objects.filter(fecha_solucion__isnull=False)
+        if with_sol.exists():
+            tiempos_solucion = []
+            for r in with_sol:
+                diff = (r.fecha_solucion - r.fecha_hora).total_seconds() / 3600
+                if diff > 0:
+                    tiempos_solucion.append(diff)
+
+            if tiempos_solucion:
+                context['promedio_solucion_horas'] = round(sum(tiempos_solucion) / len(tiempos_solucion), 1)
+                context['min_solucion_horas'] = round(min(tiempos_solucion), 1)
+                context['max_solucion_horas'] = round(max(tiempos_solucion), 1)
+            total_reportes = Reporte.objects.count()
+            resueltos = with_sol.count()
+            context['tasa_resolucion'] = round((resueltos / total_reportes) * 100, 1) if total_reportes else 0
+        else:
+            context['promedio_solucion_horas'] = 0
+            context['min_solucion_horas'] = 0
+            context['max_solucion_horas'] = 0
+            context['tasa_resolucion'] = 0
+
+        from django.db.models.functions import TruncMonth
+        monthly_atencion = (
+            Reporte.objects.filter(fecha_atencion__isnull=False)
+            .annotate(month=TruncMonth('fecha_hora'))
+            .values('month')
+            .order_by('month')
+        )
+        mensual_dict = {}
+        for r in monthly_atencion:
+            mes = r['month']
+            reports = Reporte.objects.filter(
+                fecha_atencion__isnull=False,
+                fecha_hora__month=mes.month,
+                fecha_hora__year=mes.year
+            )
+            tiempos = [(r2.fecha_atencion - r2.fecha_hora).total_seconds() / 3600 for r2 in reports]
+            mensual_dict[mes] = sum(tiempos) / len(tiempos) if tiempos else 0
+        context['mensual_atencion'] = [
+            {
+                'mes': k.strftime('%b %Y') if k else 'N/A',
+                'horas': round(v, 1)
+            }
+            for k, v in sorted(mensual_dict.items())
+        ]
+
+        monthly_solucion = (
+            Reporte.objects.filter(fecha_solucion__isnull=False)
+            .annotate(month=TruncMonth('fecha_hora'))
+            .values('month')
+            .order_by('month')
+        )
+        mensual_sol_dict = {}
+        for r in monthly_solucion:
+            mes = r['month']
+            reports = Reporte.objects.filter(
+                fecha_solucion__isnull=False,
+                fecha_hora__month=mes.month,
+                fecha_hora__year=mes.year
+            )
+            tiempos = [(r2.fecha_solucion - r2.fecha_hora).total_seconds() / 3600 for r2 in reports]
+            mensual_sol_dict[mes] = sum(tiempos) / len(tiempos) if tiempos else 0
+        context['mensual_solucion'] = [
+            {
+                'mes': k.strftime('%b %Y') if k else 'N/A',
+                'horas': round(v, 1)
+            }
+            for k, v in sorted(mensual_sol_dict.items())
+        ]
         return context
 
 class ReporteDetailView(DetailView):
@@ -688,7 +1217,11 @@ class ReporteUpdateView(UpdateView):
         return context
     
     def form_valid(self, form):
+        old_estado = self.object.estado_solucion if self.object.pk else None
         response = super().form_valid(form)
+        if old_estado != 'Rechazado' and self.object.estado_solucion == 'Rechazado':
+            self.object.fecha_solucion = timezone.now()
+            self.object.save(update_fields=['fecha_solucion'])
         messages.success(self.request, f'Reporte de "{self.object.nombre_informante}" actualizado exitosamente.')
         try:
             subject = "VANT-SIEM - Reporte Actualizado"
@@ -734,7 +1267,7 @@ class IncidenteListView(ListView):
     context_object_name = 'object_list'
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().order_by('-fecha_hora')
         q = self.request.GET.get('q')
         if q:
             queryset = queryset.filter(
@@ -755,14 +1288,116 @@ class IncidenteListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['search_query'] = self.request.GET.get('q', '')
+
+        totales = (
+            Incidente.objects.values('estado_solucion')
+            .annotate(total=Count('id'))
+        )
+        context['totales'] = {t['estado_solucion']: t['total'] for t in totales}
+
+        with_res = Incidente.objects.filter(fecha_atencion__isnull=False)
+        if with_res.exists():
+            tiempos_atencion = []
+            for r in with_res:
+                diff = (r.fecha_atencion - r.fecha_hora).total_seconds() / 3600
+                if diff > 0:
+                    tiempos_atencion.append(diff)
+
+            if tiempos_atencion:
+                context['promedio_atencion_horas'] = round(sum(tiempos_atencion) / len(tiempos_atencion), 1)
+                context['min_atencion_horas'] = round(min(tiempos_atencion), 1)
+                context['max_atencion_horas'] = round(max(tiempos_atencion), 1)
+
+                now = timezone.now()
+                current_month_res = with_res.filter(fecha_hora__month=now.month, fecha_hora__year=now.year)
+                tiempos_mes = []
+                for r in current_month_res:
+                    diff = (r.fecha_atencion - r.fecha_hora).total_seconds() / 3600
+                    if diff > 0:
+                        tiempos_mes.append(diff)
+                context['gauge_atencion_horas'] = round(sum(tiempos_mes) / len(tiempos_mes), 1) if tiempos_mes else context['promedio_atencion_horas']
+            else:
+                context['promedio_atencion_horas'] = 0
+                context['min_atencion_horas'] = 0
+                context['max_atencion_horas'] = 0
+                context['gauge_atencion_horas'] = 0
+
+        with_sol = Incidente.objects.filter(fecha_solucion__isnull=False)
+        if with_sol.exists():
+            tiempos_solucion = []
+            for r in with_sol:
+                diff = (r.fecha_solucion - r.fecha_hora).total_seconds() / 3600
+                if diff > 0:
+                    tiempos_solucion.append(diff)
+
+            if tiempos_solucion:
+                context['promedio_solucion_horas'] = round(sum(tiempos_solucion) / len(tiempos_solucion), 1)
+                context['min_solucion_horas'] = round(min(tiempos_solucion), 1)
+                context['max_solucion_horas'] = round(max(tiempos_solucion), 1)
+                total_incidentes = Incidente.objects.count()
+                resueltos = with_sol.count()
+                context['tasa_resolucion'] = round((resueltos / total_incidentes) * 100, 1) if total_incidentes else 0
+            else:
+                context['promedio_solucion_horas'] = 0
+                context['min_solucion_horas'] = 0
+                context['max_solucion_horas'] = 0
+                context['tasa_resolucion'] = 0
+
+        from django.db.models.functions import TruncMonth
+        monthly_atencion = (
+            Incidente.objects.filter(fecha_atencion__isnull=False)
+            .annotate(month=TruncMonth('fecha_hora'))
+            .values('month')
+            .order_by('month')
+        )
+        mensual_dict = {}
+        for r in monthly_atencion:
+            mes = r['month']
+            incidents = Incidente.objects.filter(
+                fecha_atencion__isnull=False,
+                fecha_hora__month=mes.month,
+                fecha_hora__year=mes.year
+            )
+            tiempos = [(i.fecha_atencion - i.fecha_hora).total_seconds() / 3600 for i in incidents]
+            tiempos_pos = [t for t in tiempos if t > 0]
+            mensual_dict[mes] = sum(tiempos_pos) / len(tiempos_pos) if tiempos_pos else 0
+        context['mensual_atencion'] = [
+            {
+                'mes': k.strftime('%b %Y') if k else 'N/A',
+                'horas': round(v, 1)
+            }
+            for k, v in sorted(mensual_dict.items())
+        ]
+
+        monthly_solucion = (
+            Incidente.objects.filter(fecha_solucion__isnull=False)
+            .annotate(month=TruncMonth('fecha_hora'))
+            .values('month')
+            .order_by('month')
+        )
+        mensual_sol_dict = {}
+        for r in monthly_solucion:
+            mes = r['month']
+            incidents = Incidente.objects.filter(
+                fecha_solucion__isnull=False,
+                fecha_hora__month=mes.month,
+                fecha_hora__year=mes.year
+            )
+            tiempos = [(i.fecha_solucion - i.fecha_hora).total_seconds() / 3600 for i in incidents]
+            tiempos_pos = [t for t in tiempos if t > 0]
+            mensual_sol_dict[mes] = sum(tiempos_pos) / len(tiempos_pos) if tiempos_pos else 0
+        context['mensual_solucion'] = [
+            {
+                'mes': k.strftime('%b %Y') if k else 'N/A',
+                'horas': round(v, 1)
+            }
+            for k, v in sorted(mensual_sol_dict.items())
+        ]
         return context
 
     def render_to_response(self, context, **response_kwargs):
-        # Check if this is an AJAX request
         is_ajax = self.request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-        print(f"DEBUG: is_ajax={is_ajax}, headers={dict(self.request.headers)}, GET={dict(self.request.GET)}")
         if is_ajax:
-            print(f"DEBUG: Returning JSON for query: {self.request.GET.get('q', 'empty')}")
             # Return JSON data for AJAX requests
             incidents_data = []
             for incident in context['object_list']:
@@ -770,7 +1405,7 @@ class IncidenteListView(ListView):
                     'id': incident.id,
                     'nombre_incidente': incident.nombre_incidente,
                     'descripcion': incident.descripcion,
-                    'reporte': f"{incident.reporte.nombre_informante} - {incident.reporte.descripcion[:30]}...",
+                    'reporte': ', '.join([f"{r.nombre_informante}" for r in incident.reportes.all()]),
                     'servicios': ', '.join([s.nombre for s in incident.servicios.all()]),
                     'areas': ', '.join([a.nombre for a in incident.areas.all()]),
                     'subcategorias': ', '.join([s.nombre for s in incident.subcategorias.all()]),
@@ -824,38 +1459,76 @@ class IncidenteCreateView(CreateView):
         context['servicios'] = Servicio.objects.all()
         context['areas'] = Area.objects.all()
         context['subcategorias'] = Subcategoria.objects.all()
+        context['involucrados_list'] = Involucrado.objects.all()
+        context['preselected_involucrados'] = []
         context['incidente_estado_choices'] = Incidente.ESTADO_SOLUCION_CHOICES
         context['notificado_osri_choices'] = Incidente.NOTIFICADO_OSRI_CHOICES
         
-        # Para creación, no hay valores seleccionados
+        # Para creacion, no hay valores seleccionados
         context['selected_servicios'] = []
         context['selected_areas'] = []
         context['selected_subcategorias'] = []
+        context['selected_reportes'] = [context['reporte_prefijado']] if 'reporte_prefijado' in context else []
         
         return context
     
     def form_valid(self, form):
         response = super().form_valid(form)
-        reporte = self.object.reporte
-        reporte.estado_solucion = 'Atendido'
-        reporte.save()
+
+        # Asociar reportes seleccionados
+        reporte_ids = self.request.POST.getlist('reportes')
+        if reporte_ids:
+            self.object.reportes.set(reporte_ids)
+            for rp in Reporte.objects.filter(id__in=reporte_ids):
+                rp.estado_solucion = 'Atendido'
+                if not rp.fecha_atencion:
+                    rp.fecha_atencion = timezone.now()
+                rp.save(update_fields=['estado_solucion', 'fecha_atencion'])
+        elif self.request.POST.get('reporte'):
+            rp = Reporte.objects.get(pk=self.request.POST.get('reporte'))
+            self.object.reportes.set([rp.pk])
+            rp.estado_solucion = 'Atendido'
+            if not rp.fecha_atencion:
+                rp.fecha_atencion = timezone.now()
+            rp.save(update_fields=['estado_solucion', 'fecha_atencion'])
+
+        if not self.object.fecha_atencion:
+            self.object.fecha_atencion = timezone.now()
+            self.object.save(update_fields=['fecha_atencion'])
 
         self.object.servicios.set(self.request.POST.getlist('servicios'))
         self.object.areas.set(self.request.POST.getlist('areas'))
         self.object.subcategorias.set(self.request.POST.getlist('subcategorias'))
 
+        # Link involucrados
+        inv_ids = self.request.POST.getlist('involucrados')
+        for inv_id in inv_ids:
+            if inv_id:
+                InvolucradoIncidente.objects.get_or_create(
+                    incidente=self.object,
+                    involucrado_id=int(inv_id),
+                    defaults={
+                        'descripcion': f'Involucrado en {self.object.nombre_incidente}',
+                        'medida_impuesta_id': Medida.objects.first().id if Medida.objects.exists() else None,
+                        'fecha_cumplimiento': timezone.now().date() + timedelta(days=30),
+                        'estado_cumplimiento': False,
+                        'observaciones': 'Asignado automaticamente'
+                    }
+                )
+
         messages.success(self.request, f'Incidente "{self.object.nombre_incidente}" creado exitosamente.')
 
-        # Enviar alerta por correo electrónico
+        # Enviar alerta por correo electronico
         try:
+            reportes_info = ', '.join([f"{r.nombre_informante}" for r in self.object.reportes.all()])
             subject = "VANT-SIEM - Nuevo Incidente Creado"
             body = f"""
             <html>
             <body>
                 <h3>Nuevo Incidente Creado</h3>
                 <p><strong>Nombre del Incidente:</strong> {self.object.nombre_incidente}</p>
-                <p><strong>Código del Incidente:</strong> {self.object.codigo_incidente}</p>
-                <p><strong>Reporte Asociado:</strong> {reporte.nombre_informante} ({reporte.email_informante})</p>
+                <p><strong>Codigo del Incidente:</strong> {self.object.codigo_incidente}</p>
+                <p><strong>Reportes Asociados:</strong> {reportes_info}</p>
                 <p><strong>Área:</strong> {', '.join([area.nombre for area in self.object.areas.all()])}</p>
                 <p><strong>Servicios Afectados:</strong> {', '.join([servicio.nombre for servicio in self.object.servicios.all()])}</p>
                 <p><strong>Subcategorías:</strong> {', '.join([sub.nombre for sub in self.object.subcategorias.all()])}</p>
@@ -892,11 +1565,32 @@ class IncidenteUpdateView(UpdateView):
             context['selected_servicios'] = list(self.object.servicios.values_list('id', flat=True))
             context['selected_areas'] = list(self.object.areas.values_list('id', flat=True))
             context['selected_subcategorias'] = list(self.object.subcategorias.values_list('id', flat=True))
+            context['selected_reportes'] = list(self.object.reportes.values_list('id', flat=True))
         
         return context
     
     def form_valid(self, form):
+        old_estado = self.object.estado_solucion if self.object.pk else None
         response = super().form_valid(form)
+
+        # Actualizar reportes seleccionados
+        reporte_ids = self.request.POST.getlist('reportes')
+        if reporte_ids:
+            self.object.reportes.set(reporte_ids)
+        for rp in self.object.reportes.all():
+            if old_estado == 'nuevo' and self.object.estado_solucion != 'nuevo':
+                if not self.object.fecha_atencion:
+                    self.object.fecha_atencion = timezone.now()
+                    self.object.save(update_fields=['fecha_atencion'])
+
+            if old_estado != 'cerrado' and self.object.estado_solucion == 'cerrado':
+                if not self.object.fecha_solucion:
+                    self.object.fecha_solucion = timezone.now()
+                    self.object.save(update_fields=['fecha_solucion'])
+
+                if not rp.fecha_solucion:
+                    rp.fecha_solucion = timezone.now()
+                    rp.save(update_fields=['fecha_solucion'])
 
         # Manejar campos ManyToMany
         self.object.servicios.set(self.request.POST.getlist('servicios'))
@@ -1223,13 +1917,6 @@ def dashboard_metrics(request):
         total=Count('id')
     ).filter(total__gt=0).values('areas__nombre', 'total'))
     
-    # Nivel de peligrosidad de subcategorías
-    peligrosidad_stats = list(Subcategoria.objects.aggregate(
-        promedio_peligrosidad=Count('nivel_peligrosidad'),
-        max_peligrosidad=Count('nivel_peligrosidad'),
-        min_peligrosidad=Count('nivel_peligrosidad')
-    ))
-    
     # Medidas de incidente por estado
     medidas_cumplidas = MedidaIncidente.objects.filter(estado_cumplimiento=True).count()
     medidas_pendientes = MedidaIncidente.objects.filter(estado_cumplimiento=False).count()
@@ -1292,3 +1979,27 @@ def incidentes_timeline(request):
         'success': True,
         'timeline': timeline_data
     })
+
+@require_http_methods(["POST"])
+def create_involucrado_api(request):
+    """API endpoint to create a new Involucrado via AJAX"""
+    try:
+        import json
+        data = json.loads(request.body)
+        required = ['nombres', 'apellidos', 'ip', 'mac']
+        for field in required:
+            if not data.get(field):
+                return JsonResponse({'success': False, 'error': f'Campo requerido: {field}'})
+        
+        inv = Involucrado.objects.create(
+            nombres=data['nombres'],
+            apellidos=data['apellidos'],
+            ip=data['ip'],
+            mac=data['mac'],
+            usuario=data.get('usuario', ''),
+            tipo=data.get('tipo', 'Interno')
+        )
+        return JsonResponse({'success': True, 'id': inv.id})
+    except Exception as e:
+        logger.error(f"Error creating involucrado via API: {e}")
+        return JsonResponse({'success': False, 'error': str(e)})

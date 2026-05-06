@@ -1,97 +1,199 @@
 {% extends "dashboard.html" %}
 {% block title %}Listado de Incidentes | VANT-SIEM{% endblock %}
 {% block content %}
-    <h2 class="mb-4 text-info text-center">Listado de Incidentes</h2>
+    <h2 class="mb-6 text-2xl font-bold text-center dark:text-white text-surface-900">Listado de Incidentes</h2>
 
-    <!-- Search Input -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="input-group">
-                <span class="input-group-text"><i class="fas fa-search"></i></span>
-                <input type="text" id="search-input" class="form-control" placeholder="Buscar por nombre, descripción, código, reporte, servicios, áreas, subcategorías, estado..."
-                       value="{{ search_query }}">
-                <button type="button" id="clear-search" class="btn btn-outline-secondary {% if not search_query %}d-none{% endif %}">
-                    <i class="fas fa-times"></i> Limpiar
-                </button>
+    <!-- Widget de totales por estado -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+        {% for estado, total in totales.items %}
+        <div class="glass-card p-4 text-center">
+            <div class="font-bold text-lg dark:text-white text-surface-900">{{ estado }}</div>
+            <div class="text-3xl font-bold text-blue-400">{{ total }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Widgets de tiempos de atencion y solucion -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <!-- Tiempo promedio de atencion -->
+        <div class="glass-card p-5 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-20 h-20 -mr-4 -mt-4 rounded-full bg-gradient-to-br from-brand-500/20 to-transparent"></div>
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center">
+                    <i class="fas fa-clock text-white text-sm"></i>
+                </div>
+                <h3 class="text-sm font-semibold dark:text-surface-300 text-surface-600">Promedio Atencion</h3>
+            </div>
+            <div class="flex items-end gap-2">
+                <span class="text-3xl font-bold dark:text-white text-surface-900">{{ promedio_atencion_horas }}</span>
+                <span class="text-sm dark:text-surface-400 text-surface-500 mb-1">horas</span>
+            </div>
+            <div class="mt-3 flex items-center gap-4 text-xs">
+                <span class="dark:text-surface-400 text-surface-500">Min: <span class="font-semibold text-emerald-400">{{ min_atencion_horas }}h</span></span>
+                <span class="dark:text-surface-400 text-surface-500">Max: <span class="font-semibold text-amber-400">{{ max_atencion_horas }}h</span></span>
+            </div>
+        </div>
+
+        <!-- Tiempo promedio de solucion -->
+        <div class="glass-card p-5 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-20 h-20 -mr-4 -mt-4 rounded-full bg-gradient-to-br from-emerald-500/20 to-transparent"></div>
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+                    <i class="fas fa-check-double text-white text-sm"></i>
+                </div>
+                <h3 class="text-sm font-semibold dark:text-surface-300 text-surface-600">Promedio Solucion</h3>
+            </div>
+            <div class="flex items-end gap-2">
+                <span class="text-3xl font-bold dark:text-white text-surface-900">{{ promedio_solucion_horas }}</span>
+                <span class="text-sm dark:text-surface-400 text-surface-500 mb-1">horas</span>
+            </div>
+            <div class="mt-3 flex items-center gap-4 text-xs">
+                <span class="dark:text-surface-400 text-surface-500">Min: <span class="font-semibold text-emerald-400">{{ min_solucion_horas }}h</span></span>
+                <span class="dark:text-surface-400 text-surface-500">Max: <span class="font-semibold text-amber-400">{{ max_solucion_horas }}h</span></span>
+            </div>
+        </div>
+
+        <!-- Tasa de resolucion -->
+        <div class="glass-card p-5 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-20 h-20 -mr-4 -mt-4 rounded-full bg-gradient-to-br from-cyan-500/20 to-transparent"></div>
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center">
+                    <i class="fas fa-chart-line text-white text-sm"></i>
+                </div>
+                <h3 class="text-sm font-semibold dark:text-surface-300 text-surface-600">Tasa Resolucion</h3>
+            </div>
+            <div class="flex items-end gap-2">
+                <span class="text-3xl font-bold dark:text-white text-surface-900">{{ tasa_resolucion }}</span>
+                <span class="text-sm dark:text-surface-400 text-surface-500 mb-1">%</span>
+            </div>
+            <div class="mt-3 w-full bg-surface-700 dark:bg-surface-700 bg-surface-200 rounded-full h-2">
+                <div class="h-2 rounded-full bg-gradient-to-r from-cyan-500 to-cyan-400 transition-all duration-500" style="width: {{ tasa_resolucion }}%"></div>
+            </div>
+        </div>
+
+        <!-- Velocimetro grafico -->
+        <div class="glass-card p-5 relative overflow-hidden">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
+                    <i class="fas fa-tachometer-alt text-white text-sm"></i>
+                </div>
+                <h3 class="text-sm font-semibold dark:text-surface-300 text-surface-600">Velocidad</h3>
+            </div>
+            <div class="relative flex items-center justify-center">
+                <canvas id="gaugeChart" width="160" height="90"></canvas>
+                <div class="absolute bottom-0 text-center">
+                    <span class="text-xl font-bold dark:text-white text-surface-900">{{ gauge_atencion_horas }}h</span>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="table-responsive">
-        <table class="table table-dark table-striped">
-            <thead>
+    <!-- Grafico de tendencia mensual -->
+    {% if mensual_atencion or mensual_solucion %}
+    <div class="glass-card p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold dark:text-white text-surface-900">
+                <i class="fas fa-chart-area mr-2 text-brand-400"></i>Tendencia Mensual de Tiempos
+            </h3>
+            <div class="flex items-center gap-4 text-xs">
+                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-brand-500"></span>Atencion</span>
+                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-emerald-500"></span>Solucion</span>
+            </div>
+        </div>
+        <div class="h-56">
+            <canvas id="trendChart"></canvas>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Search Input -->
+    <div class="mb-4">
+        <div class="flex">
+            <span class="inline-flex items-center px-3 bg-surface-100 dark:bg-surface-800 border border-r-0 dark:border-surface-700 border-surface-300 rounded-l-lg text-surface-400">
+                <i class="fas fa-search"></i>
+            </span>
+            <input type="text" id="search-input" class="flex-1 px-3 py-2 bg-white dark:bg-surface-800 border-y dark:border-surface-700 border-surface-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Buscar por nombre, descripción, código, reporte, servicios, áreas, subcategorías, estado..." value="{{ search_query }}">
+            <button type="button" id="clear-search" class="inline-flex items-center px-3 py-2 bg-white dark:bg-surface-800 border border-l-0 dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-r-lg transition-colors dark:text-surface-300 text-surface-600 {% if not search_query %}hidden{% endif %}">
+                <i class="fas fa-times mr-1"></i> Limpiar
+            </button>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto glass-card">
+        <table class="w-full divide-y dark:divide-surface-800 divide-surface-200" id="incidentes-table">
+            <thead class="dark:bg-surface-800 bg-surface-100">
                 <tr>
-                    <th>ID</th>
-                    <th>Nombre Incidente</th>
-                    <th>Descripción</th>
-                    <th>Reporte</th>
-                    <th>Servicio</th>
-                    <th>Área</th>
-                    <th>Subcategoría</th>
-                    <th>Estado</th>
-                    <th>Notificado OSRI</th>
-                    <th>Fecha</th>
-                    <th>Evidencia</th>
-                    <th>Acciones</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true" data-type="number">ID</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true">Nombre Incidente</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true">Descripción</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true">Reporte</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true">Servicio</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true">Área</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true">Subcategoría</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true">Estado</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true">Notificado OSRI</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true" data-type="date" data-sort-order="desc">Fecha</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider">Evidencia</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider">Acciones</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody class="dark:divide-surface-800 divide-surface-200">
                 {% for incidente in object_list %}
-                <tr>
-                    <td>{{ incidente.id }}</td>
-                    <td>{{ incidente.nombre_incidente }}</td>
-                    <td>{{ incidente.descripcion|truncatechars:50 }}</td>
-                    <td>{{ incidente.reporte.nombre_informante }} - {{ incidente.reporte.descripcion|truncatechars:30 }}</td>
-                    <td>
+                <tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors">
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ incidente.id }}</td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ incidente.nombre_incidente }}</td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ incidente.descripcion|truncatechars:50 }}</td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">
+                        {% for rep in incidente.reportes.all %}
+                            <span class="inline-block px-2 py-0.5 text-xs rounded-full bg-brand-500/10 text-brand-400 mr-1 mb-1">{{ rep.nombre_informante }}</span>
+                        {% empty %}
+                            <span class="text-surface-400">-</span>
+                        {% endfor %}
+                    </td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">
                         {% for servicio in incidente.servicios.all %}
                             {{ servicio.nombre }}{% if not forloop.last %}, {% endif %}
                         {% endfor %}
                     </td>
-                    <td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">
                         {% for area in incidente.areas.all %}
                             {{ area.nombre }}{% if not forloop.last %}, {% endif %}
                         {% endfor %}
                     </td>
-                    <td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">
                         {% for sub in incidente.subcategorias.all %}
                             {{ sub.nombre }}{% if not forloop.last %}, {% endif %}
                         {% endfor %}
                     </td>
-                    <td>
-                        <span class="badge
-                            {% if incidente.estado_solucion == 'nuevo' %}bg-secondary
-                            {% elif incidente.estado_solucion == 'abierto' %}bg-warning
-                            {% elif incidente.estado_solucion == 'investigacion' %}bg-info
-                            {% elif incidente.estado_solucion == 'mitigacion' %}bg-danger
-                            {% elif incidente.estado_solucion == 'cerrado' %}bg-success
-                            {% endif %}">
+                    <td class="px-4 py-3 text-sm">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if incidente.estado_solucion == 'nuevo' %}bg-surface-600 text-white{% elif incidente.estado_solucion == 'abierto' %}bg-yellow-600 text-white{% elif incidente.estado_solucion == 'investigacion' %}bg-blue-600 text-white{% elif incidente.estado_solucion == 'mitigacion' %}bg-red-600 text-white{% elif incidente.estado_solucion == 'cerrado' %}bg-green-600 text-white{% endif %}">
                             {{ incidente.get_estado_solucion_display }}
                         </span>
                     </td>
-                    <td>
-                        <span class="badge {% if incidente.notificado_osri == 'si' %}bg-success{% else %}bg-secondary{% endif %}">
+                    <td class="px-4 py-3 text-sm">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if incidente.notificado_osri == 'si' %}bg-green-600 text-white{% else %}bg-surface-600 text-white{% endif %}">
                             {{ incidente.get_notificado_osri_display }}
                         </span>
                     </td>
-                    <td>{{ incidente.fecha_hora|date:"d/m/Y H:i" }}</td>
-                    <td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ incidente.fecha_hora|date:"d/m/Y H:i" }}</td>
+                    <td class="px-4 py-3 text-sm">
                         {% if incidente.evidencia %}
-                            <a href="{{ incidente.evidencia.url }}" download class="text-info">
-                                <i class="fas fa-download"></i> Descargar
+                            <a href="{{ incidente.evidencia.url }}" download class="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+                                <i class="fas fa-download mr-1"></i> Descargar
                             </a>
                         {% else %}
-                            <span class="text-muted">-</span>
+                            <span class="dark:text-surface-400 text-surface-500">-</span>
                         {% endif %}
                     </td>
-                    <td>
-                        <a href="{% url 'incidente-detail' incidente.id %}" class="btn btn-info btn-sm">Ver</a>
-                        <a href="{% url 'incidente-update' incidente.id %}" class="btn btn-warning btn-sm">Editar</a>
-                        <a href="{% url 'incidente-delete' incidente.id %}" class="btn btn-danger btn-sm">Eliminar</a>
+                    <td class="px-4 py-3 text-sm space-x-1">
+                        <a href="{% url 'incidente-detail' incidente.id %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors">Ver</a>
+                        <a href="{% url 'incidente-update' incidente.id %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-500 dark:hover:bg-yellow-600 rounded-lg transition-colors">Editar</a>
+                        <a href="{% url 'incidente-delete' incidente.id %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 rounded-lg transition-colors">Eliminar</a>
                     </td>
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="12" class="text-center">
+                    <td colspan="12" class="px-4 py-3 text-sm text-center dark:text-surface-400 text-surface-500">
                         {% if search_query %}
                             No se encontraron incidentes que coincidan con la búsqueda "{{ search_query }}".
                         {% else %}
@@ -107,62 +209,64 @@
     <!-- Pagination -->
     {% if is_paginated %}
         <nav aria-label="Navegación de páginas" class="mt-4">
-            <ul class="pagination justify-content-center">
+            <ul class="flex justify-center space-x-1">
                 {% if page_obj.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}page=1">
-                            <i class="fas fa-angle-double-left"></i> Primera
+                    <li>
+                        <a class="inline-flex items-center px-3 py-2 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600" href="?{% if search_query %}q={{ search_query }}&{% endif %}page=1">
+                            <i class="fas fa-angle-double-left mr-1"></i> Primera
                         </a>
                     </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.previous_page_number }}">
-                            <i class="fas fa-angle-left"></i> Anterior
+                    <li>
+                        <a class="inline-flex items-center px-3 py-2 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                            <i class="fas fa-angle-left mr-1"></i> Anterior
                         </a>
                     </li>
                 {% endif %}
 
                 {% for num in page_obj.paginator.page_range %}
                     {% if page_obj.number == num %}
-                        <li class="page-item active">
-                            <span class="page-link">{{ num }}</span>
+                        <li>
+                            <span class="inline-flex items-center px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg">{{ num }}</span>
                         </li>
                     {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                        <li class="page-item">
-                            <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ num }}">{{ num }}</a>
+                        <li>
+                            <a class="inline-flex items-center px-3 py-2 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ num }}">{{ num }}</a>
                         </li>
                     {% endif %}
                 {% endfor %}
 
                 {% if page_obj.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.next_page_number }}">
-                            Siguiente <i class="fas fa-angle-right"></i>
+                    <li>
+                        <a class="inline-flex items-center px-3 py-2 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.next_page_number }}">
+                            Siguiente <i class="fas fa-angle-right ml-1"></i>
                         </a>
                     </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.paginator.num_pages }}">
-                            Última <i class="fas fa-angle-double-right"></i>
+                    <li>
+                        <a class="inline-flex items-center px-3 py-2 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.paginator.num_pages }}">
+                            Última <i class="fas fa-angle-double-right ml-1"></i>
                         </a>
                     </li>
                 {% endif %}
             </ul>
         </nav>
 
-        <div class="text-center text-muted mt-2">
+        <div class="text-center mt-2 dark:text-surface-400 text-surface-500">
             Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}.
             Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ paginator.count }} resultado{{ paginator.count|pluralize:"s" }}.
         </div>
     {% endif %}
 
     <div class="text-center mt-4">
-        <a href="{% url 'incidente-create' %}" class="btn btn-success">
-            <i class="fas fa-plus"></i> Nuevo Incidente
+        <a href="{% url 'incidente-create' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 rounded-lg transition-colors">
+            <i class="fas fa-plus mr-2"></i> Nuevo Incidente
         </a>
     </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <script>
-console.log('Real-time search script loaded - direct in template');
 document.addEventListener('DOMContentLoaded', function() {
+    VANT_UI.initSortableTables({ tableId: 'incidentes-table', defaultColumn: 'Fecha' });
+    console.log('Real-time search script loaded - direct in template');
     console.log('DOMContentLoaded event fired');
     const searchInput = document.getElementById('search-input');
     const clearButton = document.getElementById('clear-search');
@@ -182,7 +286,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('performSearch called with query:', query);
 
         // Show loading state
-        tableBody.innerHTML = '<tr><td colspan="12" class="text-center"><i class="fas fa-spinner fa-spin"></i> Buscando...</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="12" class="px-4 py-3 text-sm text-center dark:text-surface-400 text-surface-500"><i class="fas fa-spinner fa-spin mr-1"></i> Buscando...</td></tr>';
 
         const url = `${window.location.pathname}?q=${encodeURIComponent(query)}`;
         console.log('Fetching URL:', url);
@@ -207,43 +311,43 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Search error:', error);
-            tableBody.innerHTML = '<tr><td colspan="12" class="text-center text-danger">Error al buscar: ' + error.message + '</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="12" class="px-4 py-3 text-sm text-center text-red-600 dark:text-red-400">Error al buscar: ' + error.message + '</td></tr>';
         });
     }
 
     // Function to update table with search results
     function updateTable(data) {
         if (!data.incidents || data.incidents.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="12" class="text-center">No se encontraron incidentes que coincidan con la búsqueda.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="12" class="px-4 py-3 text-sm text-center dark:text-surface-400 text-surface-500">No se encontraron incidentes que coincidan con la búsqueda.</td></tr>';
             return;
         }
 
         let html = '';
         data.incidents.forEach(incident => {
             html += `
-                <tr>
-                    <td>${incident.id}</td>
-                    <td>${incident.nombre_incidente}</td>
-                    <td>${incident.descripcion.length > 50 ? incident.descripcion.substring(0, 50) + '...' : incident.descripcion}</td>
-                    <td>${incident.reporte}</td>
-                    <td>${incident.servicios}</td>
-                    <td>${incident.areas}</td>
-                    <td>${incident.subcategorias}</td>
-                    <td><span class="badge ${incident.estado_class}">${incident.estado_solucion}</span></td>
-                    <td><span class="badge ${incident.notificado_class}">${incident.notificado_osri}</span></td>
-                    <td>${incident.fecha_hora}</td>
-                    <td>
+                <tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors">
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">${incident.id}</td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">${incident.nombre_incidente}</td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">${incident.descripcion.length > 50 ? incident.descripcion.substring(0, 50) + '...' : incident.descripcion}</td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">${incident.reporte}</td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">${incident.servicios}</td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">${incident.areas}</td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">${incident.subcategorias}</td>
+                    <td class="px-4 py-3 text-sm"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${incident.estado_class}">${incident.estado_solucion}</span></td>
+                    <td class="px-4 py-3 text-sm"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${incident.notificado_class}">${incident.notificado_osri}</span></td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">${incident.fecha_hora}</td>
+                    <td class="px-4 py-3 text-sm">
                         ${incident.evidencia_url ?
-                            `<a href="${incident.evidencia_url}" download class="text-info">
-                                <i class="fas fa-download"></i> Descargar
+                            `<a href="${incident.evidencia_url}" download class="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+                                <i class="fas fa-download mr-1"></i> Descargar
                             </a>` :
-                            '<span class="text-muted">-</span>'
+                            '<span class="dark:text-surface-400 text-surface-500">-</span>'
                         }
                     </td>
-                    <td>
-                        <a href="${incident.detail_url}" class="btn btn-info btn-sm">Ver</a>
-                        <a href="${incident.update_url}" class="btn btn-warning btn-sm">Editar</a>
-                        <a href="${incident.delete_url}" class="btn btn-danger btn-sm">Eliminar</a>
+                    <td class="px-4 py-3 text-sm space-x-1">
+                        <a href="${incident.detail_url}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors">Ver</a>
+                        <a href="${incident.update_url}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-500 dark:hover:bg-yellow-600 rounded-lg transition-colors">Editar</a>
+                        <a href="${incident.delete_url}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 rounded-lg transition-colors">Eliminar</a>
                     </td>
                 </tr>
             `;
@@ -259,9 +363,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Show/hide clear button
         if (query) {
-            clearButton.classList.remove('d-none');
+            clearButton.classList.remove('hidden');
         } else {
-            clearButton.classList.add('d-none');
+            clearButton.classList.add('hidden');
         }
 
         // Clear previous timeout
@@ -278,11 +382,118 @@ document.addEventListener('DOMContentLoaded', function() {
     clearButton.addEventListener('click', function() {
         console.log('Clear button clicked');
         searchInput.value = '';
-        clearButton.classList.add('d-none');
+        clearButton.classList.add('hidden');
         performSearch('');
     });
 
     console.log('Event listeners attached successfully');
+
+    // Gauge Chart - Velocimetro de tiempo de atencion
+    var gaugeCtx = document.getElementById('gaugeChart');
+    if (gaugeCtx) {
+        var avgAtencion = {{ gauge_atencion_horas }};
+        var maxGauge = 48; // 48 horas maximo en el velocimetro
+        var gaugeValue = Math.min(avgAtencion / maxGauge, 1);
+
+        var color = gaugeValue < 0.33 ? '#10b981' : gaugeValue < 0.66 ? '#f59e0b' : '#ef4444';
+
+        new Chart(gaugeCtx, {
+            type: 'doughnut',
+            data: {
+                datasets: [{
+                    data: [gaugeValue, 1 - gaugeValue],
+                    backgroundColor: [color, '#374151'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                rotation: -90,
+                circumference: 180,
+                cutout: '75%',
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                animation: { animateRotate: true, duration: 1500 }
+            }
+        });
+    }
+
+    // Trend Chart - Tendencia mensual
+    var trendCtx = document.getElementById('trendChart');
+    if (trendCtx) {
+        var mensualAtencion = {{ mensual_atencion|safe }};
+        var mensualSolucion = {{ mensual_solucion|safe }};
+
+        var labels = [];
+        var atencionData = [];
+        var solucionData = [];
+
+        mensualAtencion.forEach(function(item) { labels.push(item.mes); atencionData.push(item.horas); });
+        mensualSolucion.forEach(function(item) { if (!labels.includes(item.mes)) labels.push(item.mes); });
+
+        labels.forEach(function(label, i) {
+            if (!solucionData[i]) {
+                var sol = mensualSolucion.find(function(s) { return s.mes === label; });
+                solucionData.push(sol ? sol.horas : 0);
+            }
+        });
+
+        new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Tiempo Atencion (h)',
+                        data: atencionData,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    },
+                    {
+                        label: 'Tiempo Solucion (h)',
+                        data: solucionData,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                        titleColor: '#fff',
+                        bodyColor: '#d1d5db',
+                        borderColor: '#374151',
+                        borderWidth: 1,
+                        cornerRadius: 8
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(55, 65, 81, 0.3)' },
+                        ticks: { color: '#9ca3af' }
+                    },
+                    y: {
+                        grid: { color: 'rgba(55, 65, 81, 0.3)' },
+                        ticks: { color: '#9ca3af' },
+                        beginAtZero: true,
+                        title: { display: true, text: 'Horas', color: '#6b7280' }
+                    }
+                }
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

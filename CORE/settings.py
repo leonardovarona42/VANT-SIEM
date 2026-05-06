@@ -39,12 +39,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'sslserver',
+    'rest_framework',
     'VANT_SIEM.apps.VantSiemConfig',
-    'inventory.apps.InventoryConfig',
-    'opensearch_service.apps.OpenSearchServiceConfig',
     'EVENT_M',
-    'opensearch_ui.apps.OpenSearchUiConfig',
-    'IRIS',
 ]
 
 MIDDLEWARE = [
@@ -65,10 +62,7 @@ TEMPLATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
             BASE_DIR / "VANT_SIEM/templates",
-            BASE_DIR / "collector/templates",
             BASE_DIR / "EVENT_M/templates",
-            BASE_DIR / "opensearch_ui/templates",
-            BASE_DIR / "IRIS/templates",
         ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -96,18 +90,10 @@ DATABASES = {
         'HOST': 'localhost',
         'PORT': '5432',
     },
-    'opensearch': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('OS_DB_NAME', 'vant_opensearch'),
-        'USER': os.getenv('OS_DB_USER', 'postgres'),
-        'PASSWORD': os.getenv('OS_DB_PASSWORD', 'postgres'),
-        'HOST': os.getenv('OS_DB_HOST', '127.0.0.1'),
-        'PORT': os.getenv('OS_DB_PORT', '5432'),
-    },
 }
 
 DATABASE_ROUTERS = [
-    "opensearch_service.db_router.OpenSearchRouter",
+
 ]
 
 
@@ -171,3 +157,20 @@ LOGOUT_REDIRECT_URL = '/siem/login/'
 from logging_config import LOGGING
 LOGGING_CONFIG = None
 LOGGING = LOGGING
+
+# Celery Configuration
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/1')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60
+CELERY_TASK_ALWAYS_EAGER = os.getenv('CELERY_TASK_ALWAYS_EAGER', 'False').lower() == 'true'
+
+# Microservice mode: 'standalone' (default) or 'docker'
+MICROSERVICE_MODE = os.getenv('MICROSERVICE_MODE', 'standalone')
+
+# Service identity
+SERVICE_NAME = os.getenv('VANT_SERVICE_NAME', 'vant-siem')

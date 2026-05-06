@@ -1,57 +1,58 @@
 {% extends "dashboard.html" %}
 {% block title %}Listado de Involucrados en Incidentes | VANT-SIEM{% endblock %}
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="card bg-secondary shadow">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 text-info fw-bold">Listado de Involucrados en Incidentes</h5>
-                <a href="{% url 'involucradoincidente-create' %}" class="btn btn-primary btn-sm">
-                    <i class="fas fa-plus"></i> Nuevo Involucrado en Incidente
-                </a>
+<div class="glass-card">
+    <div class="px-6 py-4 flex justify-between items-center border-b dark:border-surface-800 border-surface-200">
+        <h5 class="mb-0 text-lg font-bold dark:text-white text-surface-900">Listado de Involucrados en Incidentes</h5>
+        <a href="{% url 'involucradoincidente-create' %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors">
+            <i class="fas fa-plus mr-1"></i> Nuevo Involucrado en Incidente
+        </a>
+    </div>
+    <div class="p-6">
+        {% if object_list %}
+            <div class="overflow-x-auto">
+                <table class="w-full divide-y dark:divide-surface-800 divide-surface-200" id="involucrados-incidentes-table">
+                    <thead class="dark:bg-surface-800 bg-surface-100">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true" data-type="number">ID</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true">Incidente</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true">Involucrado</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true">Medida Impuesta</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true" data-type="date">Fecha Inicio</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true" data-type="date">Fecha Fin</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="dark:divide-surface-800 divide-surface-200">
+                        {% for involucradoincidente in object_list %}
+                        <tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors">
+                            <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ involucradoincidente.id }}</td>
+                            <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ involucradoincidente.incidente.nombre_incidente }}</td>
+                            <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ involucradoincidente.involucrado.nombres }} {{ involucradoincidente.involucrado.apellidos }}</td>
+                            <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ involucradoincidente.medida_impuesta.nombre }}</td>
+                            <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ involucradoincidente.fecha_inicio }}</td>
+                            <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ involucradoincidente.fecha_fin }}</td>
+                            <td class="px-4 py-3 text-sm space-x-1">
+                                <a href="{% url 'involucradoincidente-detail' involucradoincidente.pk %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors">Ver</a>
+                                <a href="{% url 'involucradoincidente-update' involucradoincidente.pk %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-500 dark:hover:bg-yellow-600 rounded-lg transition-colors">Editar</a>
+                                <a href="{% url 'involucradoincidente-delete' involucradoincidente.pk %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 rounded-lg transition-colors">Eliminar</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            <div class="card-body">
-                {% if object_list %}
-                    <div class="table-responsive">
-                        <table class="table table-dark table-striped">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Incidente</th>
-                                    <th>Involucrado</th>
-                                    <th>Medida Impuesta</th>
-                                    <th>Fecha Inicio</th>
-                                    <th>Fecha Fin</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for involucradoincidente in object_list %}
-                                <tr>
-                                    <td>{{ involucradoincidente.id }}</td>
-                                    <td>{{ involucradoincidente.incidente.nombre_incidente }}</td>
-                                    <td>{{ involucradoincidente.involucrado.nombres }} {{ involucradoincidente.involucrado.apellidos }}</td>
-                                    <td>{{ involucradoincidente.medida_impuesta.nombre }}</td>
-                                    <td>{{ involucradoincidente.fecha_inicio }}</td>
-                                    <td>{{ involucradoincidente.fecha_fin }}</td>
-                                    <td>
-                                        <a href="{% url 'involucradoincidente-detail' involucradoincidente.pk %}" class="btn btn-info btn-sm">Ver</a>
-                                        <a href="{% url 'involucradoincidente-update' involucradoincidente.pk %}" class="btn btn-warning btn-sm">Editar</a>
-                                        <a href="{% url 'involucradoincidente-delete' involucradoincidente.pk %}" class="btn btn-danger btn-sm">Eliminar</a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <div class="text-center py-4">
-                        <p class="text-muted">No hay involucrados en incidentes registrados.</p>
-                        <a href="{% url 'involucradoincidente-create' %}" class="btn btn-primary">Crear Primer Involucrado en Incidente</a>
-                    </div>
-                {% endif %}
+        {% else %}
+            <div class="text-center py-4">
+                <p class="dark:text-surface-400 text-surface-500">No hay involucrados en incidentes registrados.</p>
+                <a href="{% url 'involucradoincidente-create' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors mt-2">Crear Primer Involucrado en Incidente</a>
             </div>
-        </div>
+        {% endif %}
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    VANT_UI.initSortableTables({ tableId: 'involucrados-incidentes-table' });
+});
+</script>
 {% endblock %}

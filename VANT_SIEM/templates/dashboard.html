@@ -1,1459 +1,730 @@
 ﻿{% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
  <head>
  <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
  <title>{% block title %}Dashboard | VANT-SIEM{% endblock %}</title>
+ <script>
+ (function () {
+ const saved = localStorage.getItem("vant-theme");
+ if (saved === "light") {
+ document.documentElement.classList.remove("dark");
+ } else if (saved === "dark") {
+ document.documentElement.classList.add("dark");
+ } else if (window.matchMedia("(prefers-color-scheme: light)").matches) {
+ document.documentElement.classList.remove("dark");
+ } else {
+ document.documentElement.classList.add("dark");
+ }
+ })();
+ </script>
+ <script src="https://cdn.tailwindcss.com"></script>
+ <script>
+ tailwind.config = {
+ darkMode: "class",
+ theme: {
+ extend: {
+ colors: {
+ brand: {
+ 50: "#f0f9ff",
+ 100: "#e0f2fe",
+ 200: "#bae6fd",
+ 300: "#7dd3fc",
+ 400: "#38bdf8",
+ 500: "#0ea5e9",
+ 600: "#0284c7",
+ 700: "#0369a1",
+ 800: "#075985",
+ 900: "#0c4a6e",
+ 950: "#082f49",
+ },
+ surface: {
+ 50: "#f8fafc",
+ 100: "#f1f5f9",
+ 200: "#e2e8f0",
+ 300: "#cbd5e1",
+ 400: "#94a3b8",
+ 500: "#64748b",
+ 600: "#475569",
+ 700: "#334155",
+ 800: "#1e293b",
+ 900: "#0f172a",
+ 950: "#020617",
+ },
+ accent: {
+ 400: "#22d3ee",
+ 500: "#06b6d4",
+ 600: "#0891b2",
+ },
+ },
+ fontFamily: {
+ sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
+ },
+ },
+ },
+ };
+ </script>
+ <link rel="preconnect" href="https://fonts.googleapis.com" />
+ <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+ <link
+ href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+ rel="stylesheet"
+ />
  <link
  rel="stylesheet"
- href="{% static 'bootstrap/css/bootstrap.min.css' %}"
+ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
  />
- <link rel="stylesheet" href="{% static 'css/dashboard.css' %}" />
+ <style type="text/tailwindcss">
+ @layer base {
+ html {
+ font-family: "Inter", system-ui, sans-serif;
+ scroll-behavior: smooth;
+ }
+ html * {
+ transition-property: background-color, border-color, color;
+ transition-duration: 200ms;
+ transition-timing-function: ease;
+ }
+ body {
+ @apply bg-surface-950 text-surface-200 dark:bg-surface-950 dark:text-surface-200 bg-white text-surface-800 dark:text-surface-200 antialiased;
+ }
+ ::selection {
+ @apply bg-accent-500/30 text-white;
+ }
+ }
+ @layer components {
+ .glass-card {
+ @apply dark:bg-surface-900/60 dark:border-surface-800/50 dark:shadow-black/20 bg-white/80 border-surface-200/50 backdrop-blur-xl rounded-2xl shadow-lg shadow-surface-200/50;
+ }
+ .glass-card-hover {
+ @apply dark:hover:bg-surface-800/70 dark:hover:border-surface-700/50 dark:hover:shadow-black/30 hover:bg-surface-50 hover:border-surface-300 hover:shadow-xl transition-all duration-300;
+ }
+ .nav-link {
+ @apply px-4 py-2.5 text-sm font-medium text-surface-600 dark:text-surface-300 hover:text-surface-900 dark:hover:text-white hover:bg-surface-100 dark:hover:bg-white/5 rounded-lg transition-all duration-200 flex items-center gap-2;
+ }
+ .nav-link-active {
+ @apply dark:text-white dark:bg-white/10 text-surface-900 bg-surface-100;
+ }
+ .btn-primary {
+ @apply px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-medium rounded-xl shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all duration-300;
+ }
+ .btn-secondary {
+ @apply px-4 py-2.5 dark:bg-surface-800 dark:hover:bg-surface-700 dark:text-surface-200 dark:border-surface-700 dark:hover:border-surface-600 bg-surface-100 hover:bg-surface-200 text-surface-800 border-surface-200 font-medium rounded-xl transition-all duration-200;
+ }
+ .stat-card {
+ @apply glass-card glass-card-hover p-6;
+ }
+ .chart-container {
+ @apply glass-card p-6;
+ }
+ .badge {
+ @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+ }
+ }
+ @layer utilities {
+ .scrollbar-thin::-webkit-scrollbar {
+ @apply w-1.5;
+ }
+ .scrollbar-thin::-webkit-scrollbar-track {
+ @apply bg-surface-900/50 rounded-full;
+ }
+ .scrollbar-thin::-webkit-scrollbar-thumb {
+ @apply bg-surface-700 rounded-full;
+ }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  @apply bg-surface-600;
+  }
+  th.sortable-header:hover {
+  @apply dark:bg-white/5 bg-black/5;
+  }
+  th.sortable-header:hover .sort-indicator {
+  @apply opacity-50;
+  }
+  }
+ </style>
  {% block extra_css %}{% endblock %}
  </head>
- <body class="bg-dark text-light dashboard-shell">
+ <body class="min-h-screen flex flex-col dark:bg-surface-950 dark:text-surface-200 bg-surface-50 text-surface-800">
  {% csrf_token %}
- <nav class="navbar navbar-expand-xxl navbar-dark bg-primary">
- <div class="container-fluid px-3 px-xl-4">
- <a
- class="navbar-brand d-flex align-items-center"
- href="{% url 'dashboard' %}"
- >
+ <!-- Navigation -->
+ <nav class="sticky top-0 z-50 dark:bg-surface-950/80 dark:border-surface-800/50 bg-white/80 border-surface-200/50 backdrop-blur-xl border-b">
+ <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div class="flex items-center justify-between h-16">
+ <!-- Logo -->
+ <a href="{% url 'dashboard' %}" class="flex items-center gap-3 group">
+ <div class="relative">
+ <div class="absolute inset-0 bg-accent-500/20 rounded-full blur-xl group-hover:bg-accent-500/30 transition-all duration-300"></div>
  <img
  src="{% static 'img/logo.png' %}"
  alt="Logo"
- class="logo-svg me-2"
+ class="relative w-9 h-9 rounded-full object-cover"
  />
- <span class="fw-bold">VANT-SIEM</span>
+ </div>
+ <span class="text-lg font-bold bg-gradient-to-r from-brand-400 to-accent-400 bg-clip-text text-transparent tracking-tight">VANT-SIEM</span>
  </a>
- <button
- class="navbar-toggler"
- type="button"
- data-bs-toggle="collapse"
- data-bs-target="#navbarNav"
- >
- <span class="navbar-toggler-icon"></span>
+
+ <!-- Desktop Navigation -->
+ <div class="hidden xl:flex items-center gap-1">
+ <!-- Gestion de Incidentes Dropdown -->
+ <div class="relative group">
+ <button class="nav-link">
+ <i class="fas fa-folder-open text-surface-400"></i>
+ <span>Gestion de Incidentes</span>
+ <i class="fas fa-chevron-down text-xs ml-1 opacity-50"></i>
  </button>
- <div class="collapse navbar-collapse" id="navbarNav">
- <ul class="navbar-nav ms-auto">
- 
- <li class="nav-item dropdown">
- <a
- class="nav-link dropdown-toggle"
- href="{% url 'ldap-config-list' %}"
- id="gestionDropdown"
- role="button"
- data-bs-toggle="dropdown"
- aria-expanded="false"
- >
- <i class="fas fa-folder-open me-2"></i> Gestion de Incidentes
+ <div class="absolute left-0 mt-2 w-80 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+ <div class="glass-card p-2 space-y-1 max-h-[calc(100vh-6rem)] overflow-y-auto scrollbar-thin">
+ <div class="px-3 py-2 text-xs font-semibold dark:text-accent-400 text-brand-600 uppercase tracking-wider">Gestion de Reportes</div>
+ <a href="{% url 'reporte-create' %}" class="nav-link">
+ <i class="fas fa-plus-circle w-4"></i>Crear Nuevo Reporte
  </a>
- <ul
- class="dropdown-menu dropdown-menu-dark"
- aria-labelledby="gestionDropdown"
- >
- <li><h6 class="dropdown-header text-info"> Gestion de Reportes</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'reporte-create' %}">
- <i class="fas fa-plus-circle me-2"></i>Crear Nuevo Reporte de Incidente
+ <a href="{% url 'reporte-list' %}" class="nav-link">
+ <i class="fas fa-list w-4"></i>Ver Todos los Reportes
  </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'reporte-list' %}">
- <i class="fas fa-list me-2"></i>Ver Todos los Reportes
+ <div class="border-t dark:border-surface-800 border-surface-200 my-1"></div>
+ <div class="px-3 py-2 text-xs font-semibold dark:text-accent-400 text-brand-600 uppercase tracking-wider">Gestion de Incidentes</div>
+ <a href="{% url 'incidente-create' %}" class="nav-link">
+ <i class="fas fa-exclamation-triangle w-4"></i>Registrar Incidente
  </a>
- </li>
-
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-info"> Gestion de Incidentes</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'incidente-create' %}">
- <i class="fas fa-exclamation-triangle me-2"></i>Registrar Nuevo Incidente
+ <a href="{% url 'incidente-list' %}" class="nav-link">
+ <i class="fas fa-clipboard-list w-4"></i>Ver Incidentes
  </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'incidente-list' %}">
- <i class="fas fa-clipboard-list me-2"></i>Ver Lista de Incidentes
+ <div class="border-t dark:border-surface-800 border-surface-200 my-1"></div>
+ <div class="px-3 py-2 text-xs font-semibold dark:text-accent-400 text-brand-600 uppercase tracking-wider">Catalogo de Clasificacion</div>
+ <a href="{% url 'categoria-create' %}" class="nav-link">
+ <i class="fas fa-tag w-4"></i>Nueva Categoria
  </a>
- </li>
-
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-info"> Catalogo de Clasificacion</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'categoria-create' %}">
- <i class="fas fa-tag me-2"></i>Crear Nueva Categoria
+ <a href="{% url 'categoria-list' %}" class="nav-link">
+ <i class="fas fa-tags w-4"></i>Gestionar Categorias
  </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'categoria-list' %}">
- <i class="fas fa-tags me-2"></i>Gestionar Categorias
+ <a href="{% url 'subcategoria-create' %}" class="nav-link">
+ <i class="fas fa-layer-group w-4"></i>Nueva Subcategoria
  </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'subcategoria-create' %}">
- <i class="fas fa-tags me-2"></i>Crear Nueva Subcategoria
+ <a href="{% url 'subcategoria-list' %}" class="nav-link">
+ <i class="fas fa-list-alt w-4"></i>Gestionar Subcategorias
  </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'subcategoria-list' %}">
- <i class="fas fa-list-alt me-2"></i>Gestionar Subcategorias
+ <div class="border-t dark:border-surface-800 border-surface-200 my-1"></div>
+ <div class="px-3 py-2 text-xs font-semibold dark:text-accent-400 text-brand-600 uppercase tracking-wider">Servicios del Sistema</div>
+ <a href="{% url 'servicio-create' %}" class="nav-link">
+ <i class="fas fa-server w-4"></i>Nuevo Servicio
  </a>
- </li>
-
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-info"> Servicios del Sistema</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'servicio-create' %}">
- <i class="fas fa-server me-2"></i>Registrar Nuevo Servicio
- </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'servicio-list' %}">
- <i class="fas fa-network-wired me-2"></i>Gestionar Servicios
- </a>
- </li>
-
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-info">Equipo de Respuesta</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'responsable-create' %}">
- <i class="fas fa-user-shield me-2"></i>Agregar Nuevo Responsable
- </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'responsable-list' %}">
- <i class="fas fa-users me-2"></i>Gestionar Equipo de Respuesta
- </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'area-create' %}">
- <i class="fas fa-building me-2"></i>Crear Nueva Área
- </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'area-list' %}">
- <i class="fas fa-sitemap me-2"></i>Gestionar Áreas Organizacionales
- </a>
- </li>
-
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-info"> Medidas y Respuestas</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'medida-create' %}">
- <i class="fas fa-shield-alt me-2"></i>Crear Nueva Medida
- </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'medida-list' %}">
- <i class="fas fa-tasks me-2"></i>Gestionar Medidas de Seguridad
- </a>
- </li>
-
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-info"> Vinculaciones y Relaciones</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'involucrado-create' %}">
- <i class="fas fa-user-plus me-2"></i>Registrar Persona Involucrada
- </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'involucrado-list' %}">
- <i class="fas fa-address-book me-2"></i>Gestionar Personas Involucradas
- </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'involucradoincidente-create' %}">
- <i class="fas fa-link me-2"></i>Vincular Persona a Incidente
- </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'involucradoincidente-list' %}">
- <i class="fas fa-project-diagram me-2"></i>Gestionar Vinculaciones
- </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'medidaincidente-create' %}">
- <i class="fas fa-clipboard-check me-2"></i>Asignar Medida a Incidente
- </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'medidaincidente-list' %}">
- <i class="fas fa-check-double me-2"></i>Gestionar Medidas Aplicadas
- </a>
- </li>
- </ul>
- </li><!-- Neural Network Visualization for IRIS
- <li class="nav-item">
- <div id="neural-network-canvas" style="width: 60px; height: 40px; position: relative; display: inline-block; margin-right: 10px;">
- <canvas id="neuralCanvas" width="60" height="40" style="display: block;"></canvas>
- </div>
- </li> -->
-
-
- <!-- Neural Network Visualization for IRIS
- <li class="nav-item">
- <div id="neural-network-canvas" style="width: 60px; height: 40px; position: relative; display: inline-block; margin-right: 10px;">
- <canvas id="neuralCanvas" width="60" height="40" style="display: block;"></canvas>
- </div>
- </li> -->
-
- <li class="nav-item dropdown">
- <a
- class="nav-link dropdown-toggle"
- href="{% url 'ldap-config-list' %}"
- id="irisDropdown"
- role="button"
- data-bs-toggle="dropdown"
- aria-expanded="false"
- >
- <i class="fas fa-brain me-2"></i>IRIS-S.O.A.R
- </a>
- <ul
- class="dropdown-menu dropdown-menu-dark"
- aria-labelledby="irisDropdown"
- >
- <li><h6 class="dropdown-header text-warning">Dashboard IA</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'iris:iris_dashboard' %}">
- <i class="fas fa-tachometer-alt me-2"></i>Dashboard Principal
- </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'iris:live_ai_monitor' %}">
- <i class="fas fa-brain me-2"></i>Monitor Neuronal en Vivo
- </a>
- </li>
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-warning">Investigacion</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'iris:iris_predictions' %}">
- <i class="fas fa-search me-2"></i>Predicciones Pendientes
- </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'iris:performance_report' %}">
- <i class="fas fa-chart-line me-2"></i>Reporte de Rendimiento
- </a>
- </li>
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-warning">Configuracion</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'iris:iris_configuration' %}">
- <i class="fas fa-sliders-h me-2"></i>Configuracion del Sistema
- </a>
- </li>
- {% if request.user.is_superuser %}
- <li>
- <a class="dropdown-item" href="{% url 'ldap-config-list' %}" onclick="runAIAnalysis()">
- <i class="fas fa-play me-2"></i>Ejecutar Analisis IA
- </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'ldap-config-list' %}" onclick="trainAIModels()">
- <i class="fas fa-graduation-cap me-2"></i>Entrenar Modelos
- </a>
- </li>
- {% endif %}
- </ul>
- </li>
- <li class="nav-item dropdown">
- <a
- class="nav-link dropdown-toggle"
- href="{% url 'ldap-config-list' %}"
- id="analysisDropdown"
- role="button"
- data-bs-toggle="dropdown"
- aria-expanded="false"
- >
-  Analisis Externo
- </a>
- <ul
- class="dropdown-menu dropdown-menu-dark"
- aria-labelledby="analysisDropdown"
- >
- <li><h6 class="dropdown-header text-info"> Analisis Online en Tiempo Real</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'analysis-ip' %}"
- ><i class="fas fa-globe me-2"></i> Analizar Direccion IP (AbuseIPDB)</a
- >
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'analysis-indicator' %}"
- ><i class="fas fa-shield-virus me-2"></i> Analizar Archivo/URL (VirusTotal)</a
- >
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'analysis-mac' %}"
- ><i class="fas fa-network-wired me-2"></i> Identificar Fabricante MAC</a
- >
- </li>
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-info">Consultas en Base de Datos Local</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'local-search-ip' %}"
- ><i class="fas fa-search me-2"></i> Buscar Historial de IP en Registros</a
- >
- </li>
- <li>
- <a
- class="dropdown-item"
- href="{% url 'local-search-indicator' %}"
- ><i class="fas fa-search me-2"></i> Buscar Historial de Indicadores</a
- >
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'local-search-mac' %}"
- ><i class="fas fa-search me-2"></i> Buscar Historial de Direcciones MAC</a
- >
- </li>
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-info"> Historicos de Analisis</h6></li>
- <li>
- <a
- class="dropdown-item"
- href="{% url 'analysis-internal-vt' %}"
- ><i class="fas fa-history me-2"></i> Historico de Analisis VirusTotal</a
- >
- </li>
- <li>
- <a
- class="dropdown-item"
- href="{% url 'analysis-internal-abuseipdb' %}"
- ><i class="fas fa-history me-2"></i> Historico de Analisis AbuseIPDB</a
- >
- </li>
- <li>
- <a
- class="dropdown-item"
- href="{% url 'analysis-internal-macvendors' %}"
- ><i class="fas fa-history me-2"></i> Historico de Analisis MacVendors</a
- >
- </li>
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-info">Reportes y Estadisticas</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'report-vt' %}"
- ><i class="fas fa-chart-line me-2"></i>Reporte Ejecutivo VirusTotal</a
- >
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'report-abuseipdb' %}"
- ><i class="fas fa-chart-line me-2"></i>Reporte Ejecutivo AbuseIPDB</a
- >
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'report-macvendors' %}"
- ><i class="fas fa-chart-line me-2"></i>Reporte Ejecutivo MacVendors</a
- >
- </li>
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-info"> Analisis con Inteligencia Artificial</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'analysis-ollama' %}"
- ><i class="fas fa-brain me-2"></i>Centro de Analisis IA (Ollama)</a
- >
- </li>
- </ul>
- </li>
- <li class="nav-item dropdown">
- <a
- class="nav-link dropdown-toggle"
- href="{% url 'ldap-config-list' %}"
- id="idsDropdown"
- role="button"
- data-bs-toggle="dropdown"
- aria-expanded="false"
- >
- <i class="fas fa-shield-alt me-2"></i>OpenSearch Service
- </a>
- <ul
- class="dropdown-menu dropdown-menu-dark"
- aria-labelledby="idsDropdown"
- >
- <li><h6 class="dropdown-header text-info">OpenSearch - Observabilidad</h6></li>
- <li>
- <a class="dropdown-item" href="/opensearch/discover/"
- ><i class="fas fa-search me-2"></i>Discovery</a
- >
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'snort-security-dashboard' %}"
- ><i class="fas fa-shield-alt me-2"></i>Snort Security Dashboard</a
- >
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'suricata-security-dashboard' %}"
- ><i class="fas fa-shield-virus me-2"></i>Suricata Security Dashboard</a
- >
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'domain-audit-dashboard' %}"
-  ><i class="fas fa-network-wired me-2"></i>Active Directory Dashboard</a
-  >
-  </li>
- <li>
- <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1" title="En construcción"
- ><i class="fas fa-plus-circle me-2"></i>Create Visualizations</a
- >
- </li>
- <li>
- <a class="dropdown-item disabled" href="#" aria-disabled="true" tabindex="-1" title="En construcción"
- ><i class="fas fa-chart-line me-2"></i>Dashboard Visual OpenSearch</a
- >
- </li>
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-warning">Active Directory</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'ad-executive-dashboard' %}"
- ><i class="fas fa-chart-pie me-2"></i>Risk Overview</a
- >
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'ad-identity-dashboard' %}"
- ><i class="fas fa-user-shield me-2"></i>Identity & Access Hygiene</a
- >
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'ad-change-dashboard' %}"
- ><i class="fas fa-user-edit me-2"></i>Change & Configuration Audit</a
- >
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'ad-triage-dashboard' %}"
- ><i class="fas fa-radar me-2"></i>Incident Triage (SOC)</a
- >
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'service-management' %}"
- ><i class="fas fa-server me-2"></i>Gestion del Servicio y Rotaciones</a
- >
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'ids-config' %}"
- ><i class="fas fa-sliders-h me-2"></i>Configuracion de Fuentes y Agentes</a
- >
- </li>
- </ul>
- </li>
- <li class="nav-item dropdown">
- <a
- class="nav-link dropdown-toggle"
- href="{% url 'devices-management' %}"
- id="devicesDropdown"
- role="button"
- data-bs-toggle="dropdown"
- aria-expanded="false"
- >
- <i class="fas fa-network-wired me-2"></i>Inventory Management
- </a>
- <ul
- class="dropdown-menu dropdown-menu-dark"
- aria-labelledby="devicesDropdown"
- >
- <li><h6 class="dropdown-header text-info">Agentes e Inventario</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'devices-management' %}">
- <i class="fas fa-desktop me-2"></i>Dashboard de Agentes
- </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'inventory-service-dashboard' %}">
- <i class="fas fa-microchip me-2"></i>Inventario y Auditoria
- </a>
- </li>
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-info">Administracion</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'inventory-assets-dashboard' %}">
- <i class="fas fa-server me-2"></i>Activos gestionados
- </a>
- </li>
- </ul>
- </li>
- <li class="nav-item dropdown">
- <a
- class="nav-link dropdown-toggle"
- href="{% url 'dlp-service-dashboard' %}"
- id="dlpDropdown"
- role="button"
- data-bs-toggle="dropdown"
- aria-expanded="false"
- >
- <i class="fas fa-user-secret me-2"></i>Aegis DLP
- </a>
- <ul class="dropdown-menu dropdown-menu-dark" aria-labelledby="dlpDropdown">
- <li><h6 class="dropdown-header text-warning">Operaciones DLP</h6></li>
- <li><a class="dropdown-item" href="{% url 'dlp-service-dashboard' %}"><i class="fas fa-shield-alt me-2"></i>Dashboard DLP</a></li>
- <li><a class="dropdown-item" href="{% url 'dlp-policy-list' %}"><i class="fas fa-list-check me-2"></i>Politicas y Reglas</a></li>
- <li><a class="dropdown-item" href="{% url 'dlp-policy-create' %}"><i class="fas fa-plus-circle me-2"></i>Nueva Politica</a></li>
- <li><a class="dropdown-item" href="{% url 'dlp-incident-list' %}"><i class="fas fa-triangle-exclamation me-2"></i>OSIC-Threads</a></li>
- </ul>
- </li>
- <li class="nav-item dropdown">
- <a
- class="nav-link dropdown-toggle"
- href="{% url 'ldap-config-list' %}"
- id="toolsDropdown"
- role="button"
- data-bs-toggle="dropdown"
- aria-expanded="false"
- >
- <i class="fas fa-tools me-2"></i> Herramientas de Red
- </a>
- <ul
- class="dropdown-menu dropdown-menu-dark"
- aria-labelledby="toolsDropdown"
- >
- <li><h6 class="dropdown-header text-info"> Diagnostico de Conectividad</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'tools-ping' %}"
- ><i class="fas fa-signal me-2"></i>Verificar Conectividad (Ping)</a
- >
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'tools-dns' %}"
- ><i class="fas fa-globe me-2"></i>Resolucion de Nombres DNS</a
- >
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'tools-traceroute' %}"
- ><i class="fas fa-route me-2"></i>Rastreo de Ruta (Traceroute)</a
- >
- </li>
-
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-info"> Escaneo y Descubrimiento</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'tools-scan' %}"
- ><i class="fas fa-search me-2"></i>Escaneo Basico de Puertos</a
- >
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'tools-service-scan' %}"
- ><i class="fas fa-plug me-2"></i>Escaneo Avanzado de Servicios</a
- >
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'tools-discovery' %}"
- ><i class="fas fa-project-diagram me-2"></i>Descubrimiento de Dispositivos</a
- >
- </li>
-
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-info"> Herramientas de Seguridad</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'tools-bruteforce' %}"
- ><i class="fas fa-lock me-2"></i>Simulacion de Ataques de Fuerza Bruta</a
- >
- </li>
-
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-info"> Utilidades de Red</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'tools-ipcalc' %}"
- ><i class="fas fa-calculator me-2"></i>Calculadora de Subredes IP</a
- >
- </li>
-
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-info"> Monitoreo y Observabilidad</h6></li>
- <li>
- <a
- class="dropdown-item"
- href="{% url 'monitoring-services' %}"
- ><i class="fas fa-heartbeat me-2"></i>Monitoreo de Servicios de Red</a
- >
- </li>
- </ul>
- </li>
-
- <li class="nav-item dropdown">
- <a
- class="nav-link dropdown-toggle"
- href="{% url 'ldap-config-list' %}"
- id="settingsDropdown"
- role="button"
- data-bs-toggle="dropdown"
- aria-expanded="false"
- >
- <i class="fas fa-cog me-2"></i>Configuracion del Sistema
- </a>
- <ul
- class="dropdown-menu dropdown-menu-dark"
- aria-labelledby="settingsDropdown"
- >
- <li><h6 class="dropdown-header text-info">Gestion de Usuarios</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'user-management' %}">
- <i class="fas fa-users-cog me-2"></i>Administrar Usuarios del Sistema
- </a>
- </li>
- <li>
- <a
- class="dropdown-item"
- href="{% url 'create-user-request' %}"
- >
- <i class="fas fa-user-plus me-2"></i>Solicitar Nuevo Usuario
- </a>
- </li>
-
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-info">Sistema de Notificaciones</h6></li>
- {% if request.user.is_superuser %}
- <li>
- <a
- class="dropdown-item"
- href="{% url 'email-configuration' %}"
- >
- <i class="fas fa-envelope-cog me-2"></i>Configurar Servidores de Correo
- </a>
- </li>
- <li>
- <a
- class="dropdown-item"
- href="{% url 'email-alerts-management' %}"
- >
- <i class="fas fa-bell-on me-2"></i>Gestionar Alertas por Usuario
- </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'email-logs' %}">
- <i class="fas fa-mail-bulk me-2"></i>Historial de Correos Enviados
- </a>
- </li>
- <li>
- <a
- class="dropdown-item"
- href="{% url 'notification-settings' %}"
- >
- <i class="fas fa-sliders-h me-2"></i>Configurar Sistema de Notificaciones
- </a>
- </li>
-
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-info"> Servicios de Analisis Externo</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'analysis-config' %}">
- <i class="fas fa-plug me-2"></i>Configurar APIs Externas
- </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'ollama-config' %}">
- <i class="fas fa-brain me-2"></i>Configurar IA (Ollama)
- </a>
- </li>
- <li>
- <a
- class="dropdown-item"
- href="{% url 'analysis-services-hub' %}"
- >
- <i class="fas fa-tools me-2"></i>Centro de Servicios de Analisis
- </a>
- </li>
-
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-info"> Seguridad y Monitoreo</h6></li>
- <li>
- <a class="dropdown-item" href="{% url 'monitoring-config' %}">
- <i class="fas fa-heartbeat me-2"></i>Configurar Monitoreo de Servicios
- </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'ids-config' %}">
- <i class="fas fa-shield-alt me-2"></i>Configurar IDS/IPS
- </a>
- </li>
-
- {% endif %}
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-info"> Sistema y Logs</h6></li>
- {% if request.user.is_superuser %}
- <li>
- <a class="dropdown-item" href="{% url 'system-logs' %}">
- <i class="fas fa-file-alt me-2"></i>Logs del Sistema
- </a>
- </li>
- <li>
- <a class="dropdown-item" href="{% url 'logging-control' %}">
- <i class="fas fa-play-circle me-2"></i>Control del Sistema de Logging   
- <li><hr class="dropdown-divider" /></li>
- <li><h6 class="dropdown-header text-info"> Inicio de Sesion</h6></li>
- <li>
-  <a class="dropdown-item" href="{% url 'ldap-config-list' %}">
-  <i class="fas fa-users-cog me-2"></i>Configuracion LDAP
+  <a href="{% url 'servicio-list' %}" class="nav-link">
+  <i class="fas fa-network-wired w-4"></i>Gestionar Servicios
   </a>
- </li>
- 
+  <a href="{% url 'red-list' %}" class="nav-link">
+  <i class="fas fa-project-diagram w-4"></i>Gestionar Redes
+  </a>
+  <div class="border-t dark:border-surface-800 border-surface-200 my-1"></div>
+  <div class="px-3 py-2 text-xs font-semibold dark:text-accent-400 text-brand-600 uppercase tracking-wider">Visualizacion de Red</div>
+  <a href="{% url 'esquema-logico' %}" class="nav-link">
+  <i class="fas fa-project-diagram w-4"></i>Esquema Logico
+  </a>
+  <a href="{% url 'esquema-fisico' %}" class="nav-link">
+  <i class="fas fa-server w-4"></i>Esquema Fisico
+  </a>
+ <div class="border-t dark:border-surface-800 border-surface-200 my-1"></div>
+ <div class="px-3 py-2 text-xs font-semibold dark:text-accent-400 text-brand-600 uppercase tracking-wider">Equipo de Respuesta</div>
+ <a href="{% url 'responsable-create' %}" class="nav-link">
+ <i class="fas fa-user-shield w-4"></i>Nuevo Responsable
  </a>
- </li>
- {% endif %}
- </ul>
- </li>
+ <a href="{% url 'responsable-list' %}" class="nav-link">
+ <i class="fas fa-users w-4"></i>Equipo de Respuesta
+ </a>
+ <a href="{% url 'area-create' %}" class="nav-link">
+ <i class="fas fa-building w-4"></i>Nueva Área
+ </a>
+ <a href="{% url 'area-list' %}" class="nav-link">
+ <i class="fas fa-sitemap w-4"></i>Gestionar Áreas
+ </a>
+ <div class="border-t dark:border-surface-800 border-surface-200 my-1"></div>
+ <div class="px-3 py-2 text-xs font-semibold dark:text-accent-400 text-brand-600 uppercase tracking-wider">Medidas y Respuestas</div>
+ <a href="{% url 'medida-create' %}" class="nav-link">
+ <i class="fas fa-shield-alt w-4"></i>Nueva Medida
+ </a>
+ <a href="{% url 'medida-list' %}" class="nav-link">
+ <i class="fas fa-tasks w-4"></i>Gestionar Medidas
+ </a>
+ <div class="border-t dark:border-surface-800 border-surface-200 my-1"></div>
+ <div class="px-3 py-2 text-xs font-semibold dark:text-accent-400 text-brand-600 uppercase tracking-wider">Vinculaciones</div>
+ <a href="{% url 'involucrado-create' %}" class="nav-link">
+ <i class="fas fa-user-plus w-4"></i>Persona Involucrada
+ </a>
+ <a href="{% url 'involucrado-list' %}" class="nav-link">
+ <i class="fas fa-address-book w-4"></i>Gestionar Involucrados
+ </a>
+ <a href="{% url 'involucradoincidente-create' %}" class="nav-link">
+ <i class="fas fa-link w-4"></i>Vincular a Incidente
+ </a>
+ <a href="{% url 'involucradoincidente-list' %}" class="nav-link">
+ <i class="fas fa-project-diagram w-4"></i>Gestionar Vinculaciones
+ </a>
+ <a href="{% url 'medidaincidente-create' %}" class="nav-link">
+ <i class="fas fa-clipboard-check w-4"></i>Asignar Medida
+ </a>
+ <a href="{% url 'medidaincidente-list' %}" class="nav-link">
+ <i class="fas fa-check-double w-4"></i>Medidas Aplicadas
+ </a>
+ </div>
+ </div>
+ </div>
 
- <li class="nav-item position-relative">
- <a
- class="nav-link"
- href="{% url 'notifications' %}"
- id="notifications-link"
- >
- <i class="fas fa-bell me-2"></i>Notificaciones
+ <!-- Configuracion Dropdown -->
+ <div class="relative group">
+ <button class="nav-link">
+ <i class="fas fa-cog text-surface-400"></i>
+ <span>Configuracion</span>
+ <i class="fas fa-chevron-down text-xs ml-1 opacity-50"></i>
+ </button>
+ <div class="absolute left-0 mt-2 w-72 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+ <div class="glass-card p-2 space-y-1 max-h-[calc(100vh-6rem)] overflow-y-auto scrollbar-thin">
+ <div class="px-3 py-2 text-xs font-semibold dark:text-accent-400 text-brand-600 uppercase tracking-wider">Gestion de Usuarios</div>
+ <a href="{% url 'user-management' %}" class="nav-link">
+ <i class="fas fa-users-cog w-4"></i>Administrar Usuarios
+ </a>
+ <a href="{% url 'create-user-request' %}" class="nav-link">
+ <i class="fas fa-user-plus w-4"></i>Solicitar Usuario
+ </a>
+ {% if request.user.is_superuser %}
+ <div class="border-t dark:border-surface-800 border-surface-200 my-1"></div>
+ <div class="px-3 py-2 text-xs font-semibold dark:text-accent-400 text-brand-600 uppercase tracking-wider">Correo y Notificaciones</div>
+ <a href="{% url 'email-configuration' %}" class="nav-link">
+ <i class="fas fa-envelope-cog w-4"></i>Servidores de Correo
+ </a>
+ <a href="{% url 'notification-settings' %}" class="nav-link">
+ <i class="fas fa-sliders-h w-4"></i>Configurar Notificaciones
+ </a>
+ <div class="border-t dark:border-surface-800 border-surface-200 my-1"></div>
+ <div class="px-3 py-2 text-xs font-semibold dark:text-accent-400 text-brand-600 uppercase tracking-wider">Sistema</div>
+ <a href="{% url 'system-logs' %}" class="nav-link">
+ <i class="fas fa-file-alt w-4"></i>Logs del Sistema
+ </a>
+ <a href="{% url 'logging-control' %}" class="nav-link">
+ <i class="fas fa-play-circle w-4"></i>Control de Logging
+ </a>
+ <div class="border-t dark:border-surface-800 border-surface-200 my-1"></div>
+ <div class="px-3 py-2 text-xs font-semibold dark:text-accent-400 text-brand-600 uppercase tracking-wider">Seguridad</div>
+ <a href="{% url 'ldap-config-list' %}" class="nav-link">
+ <i class="fas fa-users-cog w-4"></i>Configuracion LDAP
+ </a>
+ {% endif %}
+ </div>
+ </div>
+ </div>
+
+ <!-- Notifications -->
+ <a href="{% url 'notifications' %}" class="nav-link relative">
+ <i class="fas fa-bell text-surface-400"></i>
+ <span class="hidden lg:inline">Notificaciones</span>
  <span
- class="badge bg-danger position-absolute top-0 start-100 translate-middle"
+ class="badge bg-red-500/90 text-white absolute -top-1 -right-1 px-1.5 min-w-[1.25rem] h-5 flex items-center justify-center text-[10px] font-bold rounded-full"
  id="notification-badge"
  style="display: none"
- >0</span
+ >0</span>
+ </a>
+
+ <!-- Theme Toggle -->
+ <button
+ id="theme-toggle"
+ class="nav-link"
+ title="Cambiar tema"
+ onclick="toggleTheme()"
  >
+ <i class="fas fa-sun text-amber-400 dark:hidden"></i>
+ <i class="fas fa-moon text-brand-400 hidden dark:inline"></i>
+ </button>
+ </div>
+
+ <!-- Right side: User menu -->
+ <div class="flex items-center gap-3">
+ <div class="relative group">
+ <button class="flex items-center gap-2 px-3 py-2 rounded-xl dark:hover:bg-white/5 hover:bg-surface-100 transition-all duration-200">
+ <div class="w-8 h-8 rounded-full bg-gradient-to-br from-brand-500 to-accent-500 flex items-center justify-center text-white text-sm font-semibold">
+ {{ request.user.username|make_list|first|upper }}
+ </div>
+ <span class="hidden sm:inline text-sm font-medium dark:text-surface-200 text-surface-700">{{ request.user.username }}</span>
+ <i class="fas fa-chevron-down text-xs dark:text-surface-500 text-surface-400 hidden sm:inline"></i>
+ </button>
+ <div class="absolute right-0 mt-2 w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+ <div class="glass-card p-2 space-y-1">
+ <div class="px-3 py-2">
+ <div class="text-sm font-medium dark:text-white text-surface-900">{{ request.user.username }}</div>
+ <div class="text-xs dark:text-surface-400 text-surface-500">{{ request.user.email|default:"Sin email" }}</div>
+ </div>
+ <div class="border-t dark:border-surface-800 border-surface-200 my-1"></div>
+ <div class="px-3 py-2 text-xs font-semibold dark:text-accent-400 text-brand-600 uppercase tracking-wider">Mi Cuenta</div>
+ <a href="{% url 'password-change' %}" class="nav-link">
+ <i class="fas fa-key w-4"></i>Cambiar Contrasena
  </a>
- </li>
- <li class="nav-item dropdown">
-  <a
-  class="nav-link dropdown-toggle"
-  href="{% url 'ldap-config-list' %}"
-  id="userDropdown"
-  role="button"
-  data-bs-toggle="dropdown"
-  aria-expanded="false"
-  >
-  <i class="fas fa-user-circle me-2"></i>{{ request.user.username }}
-  </a>
-  <ul
-  class="dropdown-menu dropdown-menu-dark dropdown-menu-end"
-  aria-labelledby="userDropdown"
-  >
-  <li><h6 class="dropdown-header text-info">Mi Cuenta</h6></li>
-  <li>
-  <a class="dropdown-item" href="{% url 'password-change' %}">
-  <i class="fas fa-key me-2"></i>Cambiar Contrasena
-  </a>
-  </li>
- <li>
- <a class="dropdown-item" href="{% url 'user-management' %}">
- <i class="fas fa-users-cog me-2"></i>Gestion de Usuarios
+ {% if request.user.is_superuser %}
+ <a href="{% url 'user-management' %}" class="nav-link">
+ <i class="fas fa-users-cog w-4"></i>Gestion de Usuarios
  </a>
- </li>
-  <li><hr class="dropdown-divider" /></li>
-  <li>
-  <a class="dropdown-item" href="{% url 'logout' %}">
-  <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesion
-  </a>
-  </li>
- </ul>
- </li>
- </ul>
+ {% endif %}
+ <div class="border-t dark:border-surface-800 border-surface-200 my-1"></div>
+ <a href="{% url 'logout' %}" class="nav-link dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-500/10 text-red-600 hover:text-red-500 hover:bg-red-50">
+ <i class="fas fa-sign-out-alt w-4"></i>Cerrar Sesion
+ </a>
+ </div>
+ </div>
+ </div>
+ </div>
  </div>
  </div>
  </nav>
- <main class="dashboard-main">
- {% if messages %}
- <div class="container mt-3">
+
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col pb-16">
+  {% if messages %}
+  <div class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
  {% for message in messages %}
  <div
- class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show"
+ class="flex items-center gap-3 p-4 rounded-xl mb-3 {% if message.tags == 'success' %}bg-emerald-500/10 border border-emerald-500/20 text-emerald-300{% elif message.tags == 'error' %}bg-red-500/10 border border-red-500/20 text-red-300{% elif message.tags == 'warning' %}bg-amber-500/10 border border-amber-500/20 text-amber-300{% else %}bg-brand-500/10 border border-brand-500/20 text-brand-300{% endif %}"
  role="alert"
  >
- {{ message }}
+ <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'warning' %}fa-exclamation-triangle{% else %}fa-info-circle{% endif %}"></i>
+ <span class="text-sm font-medium flex-1">{{ message }}</span>
  <button
  type="button"
- class="btn-close"
- data-bs-dismiss="alert"
- aria-label="Close"
- ></button>
+ class="opacity-60 hover:opacity-100 transition-opacity"
+ onclick="this.parentElement.remove()"
+ >
+ <i class="fas fa-times"></i>
+ </button>
  </div>
  {% endfor %}
  </div>
  {% endif %}
- <div class="container py-5">
- <div class="d-flex align-items-center justify-content-center mb-4">
- <a
- href="{% url 'dashboard' %}"
- class="text-decoration-none d-flex align-items-center dashboard-logo"
- >
+
+ <div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+ {% block content %}
+ <!-- Dashboard Header -->
+ <div class="text-center mb-10">
+ <div class="inline-flex items-center gap-4 mb-4">
+ <div class="relative">
+ <div class="absolute inset-0 bg-accent-500/20 rounded-full blur-2xl"></div>
  <img
  src="{% static 'img/logo.png' %}"
  alt="VANT-SIEM Logo"
- class="logo-svg me-4"
+ class="relative w-16 h-16 rounded-full object-cover"
  />
- <h1 class="display-2 fw-bold text-info m-0">VANT-SIEM</h1>
- </a>
  </div>
- {% block content %}
- <!-- Contenido del Dashboard Principal -->
- <div class="text-center mb-5">
- <h4 class="fw-normal text-secondary">
- Vigilance And Neutralization of Threats - Security Information & Event
- Management
- </h4>
+ <h1 class="text-5xl font-bold bg-gradient-to-r from-brand-400 via-accent-400 to-brand-400 bg-clip-text text-transparent">
+ VANT-SIEM
+ </h1>
+ </div>
+ <p class="text-surface-400 text-lg max-w-2xl mx-auto">
+ Vigilance And Neutralization of Threats - Security Information & Event Management
+ </p>
  </div>
 
- <!-- Metricas principales -->
- <div class="row mb-4">
- <div class="col-md-3">
- <div class="card bg-primary text-white">
- <div class="card-body">
- <div class="d-flex justify-content-between">
- <div>
- <h4 class="card-title" id="total-reportes">-</h4>
- <p class="card-text">Total Reportes</p>
+ <!-- Stats Grid -->
+ <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+ <div class="stat-card">
+ <div class="flex items-center justify-between mb-4">
+ <div class="w-12 h-12 rounded-xl dark:bg-brand-500/20 bg-brand-100 flex items-center justify-center">
+ <i class="fas fa-file-alt text-brand-500 text-xl"></i>
  </div>
- <div class="align-self-center">
- <i class="fas fa-file-alt fa-2x"></i>
+ <span class="badge dark:bg-brand-500/20 dark:text-brand-300 bg-brand-100 text-brand-700" id="reportes-24h">24h: -</span>
  </div>
+ <h3 class="text-3xl font-bold dark:text-white text-surface-900" id="total-reportes">-</h3>
+ <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Total Reportes</p>
  </div>
- <small id="reportes-24h">Ultimas 24h: -</small>
+ <div class="stat-card">
+ <div class="flex items-center justify-between mb-4">
+ <div class="w-12 h-12 rounded-xl dark:bg-amber-500/20 bg-amber-100 flex items-center justify-center">
+ <i class="fas fa-exclamation-triangle text-amber-500 text-xl"></i>
  </div>
+ <span class="badge dark:bg-amber-500/20 dark:text-amber-300 bg-amber-100 text-amber-700" id="incidentes-24h">24h: -</span>
  </div>
+ <h3 class="text-3xl font-bold dark:text-white text-surface-900" id="total-incidentes">-</h3>
+ <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Total Incidentes</p>
  </div>
- <div class="col-md-3">
- <div class="card bg-warning text-white">
- <div class="card-body">
- <div class="d-flex justify-content-between">
- <div>
- <h4 class="card-title" id="total-incidentes">-</h4>
- <p class="card-text">Total Incidentes</p>
+ <div class="stat-card">
+ <div class="flex items-center justify-between mb-4">
+ <div class="w-12 h-12 rounded-xl dark:bg-accent-500/20 bg-accent-100 flex items-center justify-center">
+ <i class="fas fa-users text-accent-500 text-xl"></i>
  </div>
- <div class="align-self-center">
- <i class="fas fa-exclamation-triangle fa-2x"></i>
+ <span class="badge dark:bg-accent-500/20 dark:text-accent-300 bg-accent-100 text-accent-700">Activos</span>
  </div>
+ <h3 class="text-3xl font-bold dark:text-white text-surface-900" id="total-involucrados">-</h3>
+ <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Involucrados</p>
  </div>
- <small id="incidentes-24h">Ãltimas 24h: -</small>
+ <div class="stat-card">
+ <div class="flex items-center justify-between mb-4">
+ <div class="w-12 h-12 rounded-xl dark:bg-emerald-500/20 bg-emerald-100 flex items-center justify-center">
+ <i class="fas fa-building text-emerald-500 text-xl"></i>
  </div>
+ <span class="badge dark:bg-emerald-500/20 dark:text-emerald-300 bg-emerald-100 text-emerald-700">Departamentos</span>
  </div>
- </div>
- <div class="col-md-3">
- <div class="card bg-info text-white">
- <div class="card-body">
- <div class="d-flex justify-content-between">
- <div>
- <h4 class="card-title" id="total-involucrados">-</h4>
- <p class="card-text">Involucrados</p>
- </div>
- <div class="align-self-center">
- <i class="fas fa-users fa-2x"></i>
- </div>
- </div>
- <small>Personas registradas</small>
- </div>
- </div>
- </div>
- <div class="col-md-3">
- <div class="card bg-success text-white">
- <div class="card-body">
- <div class="d-flex justify-content-between">
- <div>
- <h4 class="card-title" id="total-areas">-</h4>
- <p class="card-text">Áreas</p>
- </div>
- <div class="align-self-center">
- <i class="fas fa-building fa-2x"></i>
- </div>
- </div>
- <small>Departamentos</small>
- </div>
- </div>
+ <h3 class="text-3xl font-bold dark:text-white text-surface-900" id="total-areas">-</h3>
+ <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Áreas</p>
  </div>
  </div>
 
- <!-- Graficos principales -->
- <div class="row mb-4">
- <div class="col-md-6">
- <div class="card bg-secondary">
- <div class="card-header">
- <h5 class="text-info mb-0">Reportes por Estado</h5>
- </div>
- <div class="card-body">
- <canvas
- id="reportesEstadoChart"
- width="400"
- height="200"
- ></canvas>
+ <!-- Charts Row 1 -->
+ <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+ <div class="chart-container">
+ <div class="flex items-center justify-between mb-6">
+ <h3 class="text-lg font-semibold dark:text-white text-surface-900">Reportes por Estado</h3>
+ <div class="w-8 h-8 rounded-lg dark:bg-brand-500/20 bg-brand-100 flex items-center justify-center">
+ <i class="fas fa-chart-pie text-brand-500 text-sm"></i>
  </div>
  </div>
+ <div class="h-64">
+ <canvas id="reportesEstadoChart"></canvas>
  </div>
- <div class="col-md-6">
- <div class="card bg-secondary">
- <div class="card-header">
- <h5 class="text-info mb-0">Incidentes por Estado</h5>
  </div>
- <div class="card-body">
- <canvas
- id="incidentesEstadoChart"
- width="400"
- height="200"
- ></canvas>
+ <div class="chart-container">
+ <div class="flex items-center justify-between mb-6">
+ <h3 class="text-lg font-semibold dark:text-white text-surface-900">Incidentes por Estado</h3>
+ <div class="w-8 h-8 rounded-lg dark:bg-amber-500/20 bg-amber-100 flex items-center justify-center">
+ <i class="fas fa-chart-pie text-amber-500 text-sm"></i>
  </div>
+ </div>
+ <div class="h-64">
+ <canvas id="incidentesEstadoChart"></canvas>
  </div>
  </div>
  </div>
 
- <!-- Graficos de tendencias -->
- <div class="row mb-4">
- <div class="col-md-8">
- <div class="card bg-secondary">
- <div class="card-header">
- <h5 class="text-info mb-0">
- Tendencia de Reportes (Ultimos 7 dias)
- </h5>
- </div>
- <div class="card-body">
- <canvas
- id="tendenciaReportesChart"
- width="400"
- height="200"
- ></canvas>
+ <!-- Charts Row 2 -->
+ <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+ <div class="chart-container lg:col-span-2">
+ <div class="flex items-center justify-between mb-6">
+ <h3 class="text-lg font-semibold dark:text-white text-surface-900">Tendencia de Reportes (7 dias)</h3>
+ <div class="w-8 h-8 rounded-lg dark:bg-accent-500/20 bg-accent-100 flex items-center justify-center">
+ <i class="fas fa-chart-line text-accent-500 text-sm"></i>
  </div>
  </div>
+ <div class="h-64">
+ <canvas id="tendenciaReportesChart"></canvas>
  </div>
- <div class="col-md-4">
- <div class="card bg-secondary">
- <div class="card-header">
- <h5 class="text-info mb-0">Medidas de Seguridad</h5>
  </div>
- <div class="card-body">
- <canvas id="medidasChart" width="400" height="200"></canvas>
+ <div class="chart-container">
+ <div class="flex items-center justify-between mb-6">
+ <h3 class="text-lg font-semibold dark:text-white text-surface-900">Medidas de Seguridad</h3>
+ <div class="w-8 h-8 rounded-lg dark:bg-emerald-500/20 bg-emerald-100 flex items-center justify-center">
+ <i class="fas fa-shield-alt text-emerald-500 text-sm"></i>
  </div>
+ </div>
+ <div class="h-64">
+ <canvas id="medidasChart"></canvas>
  </div>
  </div>
  </div>
 
- <!-- Timeline de incidentes -->
- <div class="row mb-4">
- <div class="col-12">
- <div class="card bg-secondary">
- <div class="card-header">
- <h5 class="text-info mb-0">
- Timeline de Incidentes (Ultimos 30 dias)
- </h5>
- </div>
- <div class="card-body">
- <canvas id="timelineChart" width="400" height="100"></canvas>
+ <!-- Timeline Chart -->
+ <div class="chart-container mb-8">
+ <div class="flex items-center justify-between mb-6">
+ <h3 class="text-lg font-semibold dark:text-white text-surface-900">Timeline de Incidentes (30 dias)</h3>
+ <div class="w-8 h-8 rounded-lg dark:bg-red-500/20 bg-red-100 flex items-center justify-center">
+ <i class="fas fa-chart-bar text-red-500 text-sm"></i>
  </div>
  </div>
+ <div class="h-64">
+ <canvas id="timelineChart"></canvas>
  </div>
  </div>
 
- <!-- Estado de actualizacion -->
- <div class="row">
- <div class="col-12">
- <div class="alert alert-info text-center">
- <i class="fas fa-sync-alt fa-spin"></i>
+ <!-- Last Update -->
+ <div class="flex items-center justify-center gap-2 text-sm dark:text-surface-400 text-surface-500">
+ <i class="fas fa-sync-alt animate-spin text-brand-500"></i>
  <span id="last-update">Actualizando datos...</span>
  </div>
- </div>
- </div>
  {% endblock %}
-
- <!-- Chat Widget - Only on Dashboard -->
- {% include 'chat_widget.html' %}
  </div>
  </main>
- <footer class="site-footer text-center text-secondary small">
- &copy; 2025 Developed by LLVT | Email: leonardovarona42@gmail.com | Tel:
- +53 58003511<br />
- Todos los derechos reservados. VANT-SIEM &mdash; Version 1.0
+
+ <!-- Footer - Fixed Bottom -->
+ <footer class="fixed bottom-0 left-0 right-0 z-40 dark:bg-surface-950/90 dark:border-surface-800/50 bg-white/90 border-surface-200/50 backdrop-blur-xl border-t">
+ <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+ <div class="flex flex-col sm:flex-row items-center justify-center gap-1 text-xs dark:text-surface-500 text-surface-400 text-center">
+ <span class="flex items-center gap-1"><i class="fas fa-shield-alt text-brand-500"></i>&copy; 2026 VANT-SIEM v2.1</span>
+ <span class="hidden sm:inline">&middot;</span>
+ <span class="hidden sm:inline">Todos los derechos reservados</span>
+ <span class="hidden sm:inline">&middot;</span>
+ <span class="hidden sm:inline">Licencia MIT</span>
+ <span class="hidden sm:inline">&middot;</span>
+ <span class="hidden sm:inline">Developed by LLVT</span>
+ </div>
+ </div>
  </footer>
- <script src="{% static 'bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+
+ <!-- Scripts -->
  <script src="{% static 'js/chart.umd.min.js' %}"></script>
-
- <!-- Funciones IRIS -->
  <script>
- function runAIAnalysis() {
- if (confirm('¿Ejecutar analisis automatico de IA? Esto puede tomar varios minutos.')) {
- // Redirigir al dashboard de IRIS con parametro de analisis
- window.location.href = "{% url 'iris:iris_dashboard' %}?action=run_analysis";
- }
- }
-
- function trainAIModels() {
- if (confirm('¿Entrenar modelos de IA? Esto puede tomar tiempo y recursos del sistema.')) {
- // Redirigir al dashboard de IRIS con parametro de entrenamiento
- window.location.href = "{% url 'iris:iris_dashboard' %}?action=train_models";
- }
- }
- </script>
-
- <script>
- // Neural Network Animation Class
- class NeuralNetwork {
- constructor(canvas) {
- this.canvas = canvas;
- this.ctx = canvas.getContext('2d');
- this.width = canvas.width;
- this.height = canvas.height;
- this.nodes = [];
- this.connections = [];
- this.animationId = null;
-
- // Initialize nodes
- this.initNodes();
- this.initConnections();
- }
-
- initNodes() {
- // Create nodes in a neural network pattern
- const layers = [3, 5, 4, 3]; // Input, hidden, hidden, output layers
- const layerSpacing = this.width / (layers.length + 1);
-
- layers.forEach((nodeCount, layerIndex) => {
- const x = layerSpacing * (layerIndex + 1);
- const nodeSpacing = this.height / (nodeCount + 1);
-
- for (let i = 0; i < nodeCount; i++) {
- const y = nodeSpacing * (i + 1);
- this.nodes.push({
- x: x,
- y: y,
- radius: 2,
- pulse: Math.random() * Math.PI * 2,
- pulseSpeed: 0.02 + Math.random() * 0.03,
- active: Math.random() > 0.7
- });
- }
- });
- }
-
- initConnections() {
- // Create connections between adjacent layers
- const layers = [3, 5, 4, 3];
- let nodeIndex = 0;
-
- layers.forEach((nodeCount, layerIndex) => {
- if (layerIndex < layers.length - 1) {
- const nextLayerCount = layers[layerIndex + 1];
- const startIndex = nodeIndex;
- const endIndex = nodeIndex + nodeCount;
-
- for (let i = startIndex; i < endIndex; i++) {
- for (let j = 0; j < nextLayerCount; j++) {
- const targetIndex = endIndex + j;
- this.connections.push({
- from: i,
- to: targetIndex,
- active: false,
- pulse: 0,
- strength: Math.random()
- });
- }
- }
- }
- nodeIndex += nodeCount;
- });
- }
-
- update() {
- // Update node pulses
- this.nodes.forEach(node => {
- node.pulse += node.pulseSpeed;
- node.active = Math.random() > 0.85; // Random activation
- });
-
- // Update connections
- this.connections.forEach(conn => {
- if (this.nodes[conn.from].active && Math.random() > 0.7) {
- conn.active = true;
- conn.pulse = 1;
- }
-
- if (conn.active) {
- conn.pulse *= 0.95;
- if (conn.pulse < 0.01) {
- conn.active = false;
- }
- }
- });
- }
-
- draw() {
- // Clear canvas
- this.ctx.clearRect(0, 0, this.width, this.height);
-
- // Draw connections
- this.connections.forEach(conn => {
- const fromNode = this.nodes[conn.from];
- const toNode = this.nodes[conn.to];
-
- this.ctx.beginPath();
- this.ctx.moveTo(fromNode.x, fromNode.y);
- this.ctx.lineTo(toNode.x, toNode.y);
-
- const alpha = conn.active ? conn.pulse * 0.8 : 0.1;
- this.ctx.strokeStyle = `rgba(0, 123, 255, ${alpha})`;
- this.ctx.lineWidth = conn.active ? 2 : 1;
- this.ctx.stroke();
- });
-
- // Draw nodes
- this.nodes.forEach(node => {
- this.ctx.beginPath();
- this.ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
-
- if (node.active) {
- // Pulsing effect for active nodes
- const pulseRadius = node.radius + Math.sin(node.pulse) * 1.5;
- this.ctx.arc(node.x, node.y, pulseRadius, 0, Math.PI * 2);
- this.ctx.fillStyle = 'rgba(0, 123, 255, 0.8)';
- } else {
- this.ctx.fillStyle = 'rgba(108, 117, 125, 0.6)';
- }
-
- this.ctx.fill();
- });
- }
-
- animate() {
- this.update();
- this.draw();
- this.animationId = requestAnimationFrame(() => this.animate());
- }
-
- start() {
- this.animate();
- }
-
- stop() {
- if (this.animationId) {
- cancelAnimationFrame(this.animationId);
- }
- }
- }
-
- // Variables globales para los graficos
- let reportesEstadoChart,
- incidentesEstadoChart,
- tendenciaReportesChart,
- medidasChart,
- timelineChart,
- neuralNetwork;
-
- // Colores del tema VANT-SIEM
  const colors = {
- primary: "#0d6efd",
- warning: "#ffc107",
- danger: "#dc3545",
- success: "#198754",
- info: "#0dcaf0",
- secondary: "#6c757d",
- dark: "#212529",
+ primary: "#0ea5e9",
+ warning: "#f59e0b",
+ danger: "#ef4444",
+ success: "#10b981",
+ info: "#06b6d4",
+ secondary: "#64748b",
  };
 
- // Funcion para actualizar metricas
+ let reportesEstadoChart, incidentesEstadoChart, tendenciaReportesChart, medidasChart, timelineChart;
+
+ function getChartDefaults() {
+ const isDark = document.documentElement.classList.contains("dark");
+ return {
+ color: isDark ? "#94a3b8" : "#64748b",
+ borderColor: isDark ? "#334155" : "#e2e8f0",
+ gridColor: isDark ? "#33415520" : "#e2e8f0",
+ pointBorder: isDark ? "#1e293b" : "#ffffff",
+ };
+ }
+
  async function updateMetrics() {
  try {
- const response = await fetch('{% url "dashboard-metrics" %}');
+ const response = await fetch("{% url 'dashboard-metrics' %}");
  const data = await response.json();
-
  if (data.success) {
- const metricas = data.metricas;
-
- // Actualizar tarjetas principales
- document.getElementById("total-reportes").textContent =
- metricas.totales.reportes;
- document.getElementById("total-incidentes").textContent =
- metricas.totales.incidentes;
- document.getElementById("total-involucrados").textContent =
- metricas.totales.involucrados;
- document.getElementById("total-areas").textContent =
- metricas.totales.areas;
-
- document.getElementById(
- "reportes-24h"
- ).textContent = `Ultimas 24h: ${metricas.ultimas_24h.reportes}`;
- document.getElementById(
- "incidentes-24h"
- ).textContent = `Ultimas 24h: ${metricas.ultimas_24h.incidentes}`;
-
- // Actualizar grafico de reportes por estado
- updateReportesEstadoChart(metricas.reportes_por_estado);
-
- // Actualizar grafico de incidentes por estado
- updateIncidentesEstadoChart(metricas.incidentes_por_estado);
-
- // Actualizar grafico de tendencia de reportes
- updateTendenciaReportesChart(metricas.reportes_por_dia);
-
- // Actualizar grafico de medidas
- updateMedidasChart(metricas.medidas);
-
- // Actualizar timestamp
- document.getElementById(
- "last-update"
- ).textContent = `Ãltima actualizacion: ${new Date().toLocaleTimeString()}`;
+ const m = data.metricas;
+ document.getElementById("total-reportes").textContent = m.totales.reportes;
+ document.getElementById("total-incidentes").textContent = m.totales.incidentes;
+ document.getElementById("total-involucrados").textContent = m.totales.involucrados;
+ document.getElementById("total-areas").textContent = m.totales.areas;
+ document.getElementById("reportes-24h").textContent = `24h: ${m.ultimas_24h.reportes}`;
+ document.getElementById("incidentes-24h").textContent = `24h: ${m.ultimas_24h.incidentes}`;
+ updateReportesEstadoChart(m.reportes_por_estado);
+ updateIncidentesEstadoChart(m.incidentes_por_estado);
+ updateTendenciaReportesChart(m.reportes_por_dia);
+ updateMedidasChart(m.medidas);
+ document.getElementById("last-update").textContent = `Ultima actualizacion: ${new Date().toLocaleTimeString()}`;
  }
  } catch (error) {
  console.error("Error al actualizar metricas:", error);
  }
  }
 
- // Funcion para actualizar timeline
  async function updateTimeline() {
  try {
- const response = await fetch('{% url "incidentes-timeline" %}');
+ const response = await fetch("{% url 'incidentes-timeline' %}");
  const data = await response.json();
-
- if (data.success) {
- updateTimelineChart(data.timeline);
- }
+ if (data.success) updateTimelineChart(data.timeline);
  } catch (error) {
  console.error("Error al actualizar timeline:", error);
  }
  }
 
- // Inicializar graficos
  function initCharts() {
- // Grafico de reportes por estado
- const reportesCtx = document
- .getElementById("reportesEstadoChart")
- .getContext("2d");
+ const defaults = getChartDefaults();
+ const isDark = document.documentElement.classList.contains("dark");
+ const pointBorder = isDark ? "#1e293b" : "#ffffff";
+
+ const reportesCtx = document.getElementById("reportesEstadoChart").getContext("2d");
  reportesEstadoChart = new Chart(reportesCtx, {
  type: "doughnut",
  data: {
  labels: [],
- datasets: [
- {
- data: [],
- backgroundColor: [
- colors.primary,
- colors.warning,
- colors.danger,
- colors.success,
- ],
- borderWidth: 2,
- borderColor: "#fff",
- },
- ],
+ datasets: [{ data: [], backgroundColor: [colors.primary, colors.warning, colors.danger, colors.success], borderWidth: 0, hoverOffset: 8 }],
  },
  options: {
  responsive: true,
  maintainAspectRatio: false,
+ cutout: "65%",
  plugins: {
- legend: {
- labels: {
- color: "#fff",
- },
- },
+ legend: { position: "bottom", labels: { color: defaults.color, padding: 16, usePointStyle: true, pointStyleWidth: 10 } },
  },
  },
  });
 
- // Grafico de incidentes por estado
- const incidentesCtx = document
- .getElementById("incidentesEstadoChart")
- .getContext("2d");
+ const incidentesCtx = document.getElementById("incidentesEstadoChart").getContext("2d");
  incidentesEstadoChart = new Chart(incidentesCtx, {
  type: "pie",
  data: {
  labels: [],
- datasets: [
- {
- data: [],
- backgroundColor: [
- colors.danger,
- colors.warning,
- colors.info,
- colors.success,
- colors.secondary,
- ],
- borderWidth: 2,
- borderColor: "#fff",
- },
- ],
+ datasets: [{ data: [], backgroundColor: [colors.danger, colors.warning, colors.info, colors.success, colors.secondary], borderWidth: 0, hoverOffset: 8 }],
  },
  options: {
  responsive: true,
  maintainAspectRatio: false,
  plugins: {
- legend: {
- labels: {
- color: "#fff",
- },
- },
+ legend: { position: "bottom", labels: { color: defaults.color, padding: 16, usePointStyle: true, pointStyleWidth: 10 } },
  },
  },
  });
 
- // Grafico de tendencia de reportes
- const tendenciaCtx = document
- .getElementById("tendenciaReportesChart")
- .getContext("2d");
+ const tendenciaCtx = document.getElementById("tendenciaReportesChart").getContext("2d");
  tendenciaReportesChart = new Chart(tendenciaCtx, {
  type: "line",
  data: {
  labels: [],
- datasets: [
- {
- label: "Reportes",
- data: [],
- borderColor: colors.info,
- backgroundColor: colors.info + "20",
- borderWidth: 3,
- fill: true,
- tension: 0.4,
- },
- ],
+ datasets: [{ label: "Reportes", data: [], borderColor: colors.info, backgroundColor: colors.info + "20", borderWidth: 2, fill: true, tension: 0.4, pointBackgroundColor: colors.info, pointBorderColor: pointBorder, pointBorderWidth: 2, pointRadius: 4, pointHoverRadius: 6 }],
  },
  options: {
  responsive: true,
  maintainAspectRatio: false,
  scales: {
- y: {
- beginAtZero: true,
- ticks: {
- color: "#fff",
- },
- grid: {
- color: "#444",
- },
- },
- x: {
- ticks: {
- color: "#fff",
- },
- grid: {
- color: "#444",
- },
- },
+ y: { beginAtZero: true, ticks: { color: defaults.color }, grid: { color: defaults.gridColor }, border: { display: false } },
+ x: { ticks: { color: defaults.color }, grid: { display: false }, border: { display: false } },
  },
  plugins: {
- legend: {
- labels: {
- color: "#fff",
- },
- },
+ legend: { display: false },
  },
  },
  });
 
- // Grafico de medidas
- const medidasCtx = document
- .getElementById("medidasChart")
- .getContext("2d");
+ const medidasCtx = document.getElementById("medidasChart").getContext("2d");
  medidasChart = new Chart(medidasCtx, {
  type: "doughnut",
  data: {
  labels: ["Cumplidas", "Pendientes"],
- datasets: [
- {
- data: [0, 0],
- backgroundColor: [colors.success, colors.warning],
- borderWidth: 2,
- borderColor: "#fff",
- },
- ],
+ datasets: [{ data: [0, 0], backgroundColor: [colors.success, colors.warning], borderWidth: 0, hoverOffset: 8 }],
  },
  options: {
  responsive: true,
  maintainAspectRatio: false,
+ cutout: "65%",
  plugins: {
- legend: {
- labels: {
- color: "#fff",
- },
- },
+ legend: { position: "bottom", labels: { color: defaults.color, padding: 16, usePointStyle: true, pointStyleWidth: 10 } },
  },
  },
  });
 
- // Grafico de timeline
- const timelineCtx = document
- .getElementById("timelineChart")
- .getContext("2d");
+ const timelineCtx = document.getElementById("timelineChart").getContext("2d");
  timelineChart = new Chart(timelineCtx, {
  type: "bar",
  data: {
  labels: [],
  datasets: [
- {
- label: "Nuevos",
- data: [],
- backgroundColor: colors.danger,
- stack: "stack1",
- },
- {
- label: "Abiertos",
- data: [],
- backgroundColor: colors.warning,
- stack: "stack1",
- },
- {
- label: "Investigacion",
- data: [],
- backgroundColor: colors.info,
- stack: "stack1",
- },
- {
- label: "Mitigacion",
- data: [],
- backgroundColor: colors.primary,
- stack: "stack1",
- },
- {
- label: "Cerrados",
- data: [],
- backgroundColor: colors.success,
- stack: "stack1",
- },
+ { label: "Nuevos", data: [], backgroundColor: colors.danger, borderRadius: 4 },
+ { label: "Abiertos", data: [], backgroundColor: colors.warning, borderRadius: 4 },
+ { label: "Investigacion", data: [], backgroundColor: colors.info, borderRadius: 4 },
+ { label: "Mitigacion", data: [], backgroundColor: colors.primary, borderRadius: 4 },
+ { label: "Cerrados", data: [], backgroundColor: colors.success, borderRadius: 4 },
  ],
  },
  options: {
  responsive: true,
  maintainAspectRatio: false,
  scales: {
- x: {
- stacked: true,
- ticks: {
- color: "#fff",
- maxRotation: 45,
- },
- grid: {
- color: "#444",
- },
- },
- y: {
- stacked: true,
- beginAtZero: true,
- ticks: {
- color: "#fff",
- },
- grid: {
- color: "#444",
- },
- },
+ x: { stacked: true, ticks: { color: defaults.color }, grid: { display: false }, border: { display: false } },
+ y: { stacked: true, beginAtZero: true, ticks: { color: defaults.color }, grid: { color: defaults.gridColor }, border: { display: false } },
  },
  plugins: {
- legend: {
- labels: {
- color: "#fff",
- },
- },
+ legend: { position: "bottom", labels: { color: defaults.color, padding: 16, usePointStyle: true, pointStyleWidth: 10 } },
  },
  },
  });
  }
 
- // Funciones de actualizacion de graficos
  function updateReportesEstadoChart(data) {
- const labels = data.map((item) => item.estado_solucion);
- const values = data.map((item) => item.total);
-
- reportesEstadoChart.data.labels = labels;
- reportesEstadoChart.data.datasets[0].data = values;
+ reportesEstadoChart.data.labels = data.map(i => i.estado_solucion);
+ reportesEstadoChart.data.datasets[0].data = data.map(i => i.total);
  reportesEstadoChart.update();
  }
 
  function updateIncidentesEstadoChart(data) {
- const labels = data.map((item) => item.estado_solucion);
- const values = data.map((item) => item.total);
-
- incidentesEstadoChart.data.labels = labels;
- incidentesEstadoChart.data.datasets[0].data = values;
+ incidentesEstadoChart.data.labels = data.map(i => i.estado_solucion);
+ incidentesEstadoChart.data.datasets[0].data = data.map(i => i.total);
  incidentesEstadoChart.update();
  }
 
  function updateTendenciaReportesChart(data) {
- const labels = data.map((item) => item.dia);
- const values = data.map((item) => item.total);
-
- tendenciaReportesChart.data.labels = labels;
- tendenciaReportesChart.data.datasets[0].data = values;
+ tendenciaReportesChart.data.labels = data.map(i => i.dia);
+ tendenciaReportesChart.data.datasets[0].data = data.map(i => i.total);
  tendenciaReportesChart.update();
  }
 
@@ -1463,56 +734,34 @@
  }
 
  function updateTimelineChart(data) {
- const labels = data.map((item) => item.dia);
- const nuevos = data.map((item) => item.nuevos);
- const abiertos = data.map((item) => item.abiertos);
- const investigacion = data.map((item) => item.investigacion);
- const mitigacion = data.map((item) => item.mitigacion);
- const cerrados = data.map((item) => item.cerrados);
-
- timelineChart.data.labels = labels;
- timelineChart.data.datasets[0].data = nuevos;
- timelineChart.data.datasets[1].data = abiertos;
- timelineChart.data.datasets[2].data = investigacion;
- timelineChart.data.datasets[3].data = mitigacion;
- timelineChart.data.datasets[4].data = cerrados;
+ timelineChart.data.labels = data.map(i => i.dia);
+ timelineChart.data.datasets[0].data = data.map(i => i.nuevos);
+ timelineChart.data.datasets[1].data = data.map(i => i.abiertos);
+ timelineChart.data.datasets[2].data = data.map(i => i.investigacion);
+ timelineChart.data.datasets[3].data = data.map(i => i.mitigacion);
+ timelineChart.data.datasets[4].data = data.map(i => i.cerrados);
  timelineChart.update();
  }
 
- // Inicializar cuando se carga la pagina
  document.addEventListener("DOMContentLoaded", function () {
- const hasDashboardCanvases =
- document.getElementById("reportesEstadoChart") !== null;
- if (hasDashboardCanvases) {
+ if (document.getElementById("reportesEstadoChart") !== null) {
  initCharts();
  updateMetrics();
  updateTimeline();
- // Actualizar cada 10 segundos
  setInterval(updateMetrics, 10000);
- setInterval(updateTimeline, 30000); // Timeline cada 30 segundos
+ setInterval(updateTimeline, 30000);
  }
-
- // Initialize neural network animation for IRIS
- const neuralCanvas = document.getElementById('neuralCanvas');
- if (neuralCanvas) {
- neuralNetwork = new NeuralNetwork(neuralCanvas);
- neuralNetwork.start();
- }
-
- // Notificaciones siempre
- setInterval(updateNotifications, 5000); // Notificaciones cada 5 segundos
+ setInterval(updateNotifications, 5000);
  });
 
- // Funcion para actualizar notificaciones
-async function updateNotifications() {
+ async function updateNotifications() {
  try {
- const response = await fetch('{% url "get-notifications" %}');
+ const response = await fetch("{% url 'get-notifications' %}");
  const data = await response.json();
-
  const badge = document.getElementById("notification-badge");
  if (data.unread_count > 0) {
  badge.textContent = data.unread_count;
- badge.style.display = "inline";
+ badge.style.display = "flex";
  } else {
  badge.style.display = "none";
  }
@@ -1521,11 +770,46 @@ async function updateNotifications() {
  }
  }
 
+ function toggleTheme() {
+ const html = document.documentElement;
+ const isDark = html.classList.toggle("dark");
+ localStorage.setItem("vant-theme", isDark ? "dark" : "light");
+ updateChartTheme();
+ }
+
+ function updateChartTheme() {
+ const isDark = document.documentElement.classList.contains("dark");
+ const textColor = isDark ? "#94a3b8" : "#64748b";
+ const gridColor = isDark ? "#33415520" : "#e2e8f0";
+ const pointBorder = isDark ? "#1e293b" : "#ffffff";
+
+ if (reportesEstadoChart) reportesEstadoChart.options.plugins.legend.labels.color = textColor;
+ if (incidentesEstadoChart) incidentesEstadoChart.options.plugins.legend.labels.color = textColor;
+ if (tendenciaReportesChart) {
+ tendenciaReportesChart.options.scales.y.ticks.color = textColor;
+ tendenciaReportesChart.options.scales.x.ticks.color = textColor;
+ tendenciaReportesChart.options.scales.y.grid.color = gridColor;
+ tendenciaReportesChart.data.datasets[0].pointBorderColor = pointBorder;
+ }
+ if (medidasChart) medidasChart.options.plugins.legend.labels.color = textColor;
+ if (timelineChart) {
+ timelineChart.options.scales.y.ticks.color = textColor;
+ timelineChart.options.scales.x.ticks.color = textColor;
+ timelineChart.options.scales.y.grid.color = gridColor;
+ timelineChart.options.plugins.legend.labels.color = textColor;
+ }
+
+ if (reportesEstadoChart) reportesEstadoChart.update("none");
+ if (incidentesEstadoChart) incidentesEstadoChart.update("none");
+ if (tendenciaReportesChart) tendenciaReportesChart.update("none");
+ if (medidasChart) medidasChart.update("none");
+ if (timelineChart) timelineChart.update("none");
+ }
+
  window.VANT_UI = window.VANT_UI || {};
  window.VANT_UI.setupTablePager = function setupTablePager(options) {
  const table = document.getElementById(options.tableId);
  if (!table || !table.tBodies.length) return null;
-
  const tbody = table.tBodies[0];
  const headers = table.querySelectorAll("thead th").length || 1;
  const searchInput = options.searchInputId ? document.getElementById(options.searchInputId) : null;
@@ -1536,92 +820,79 @@ async function updateNotifications() {
  const rowFilter = options.rowFilter || null;
  const emptyMessage = options.emptyMessage || "Sin registros.";
  const defaultPageSize = Number(pageSizeSelect?.value || options.defaultPageSize || 8);
- let state = {
- page: 1,
- pageSize: defaultPageSize,
- rows: Array.from(tbody.querySelectorAll("tr")).map((row) => row.cloneNode(true)),
+ let state = { page: 1, pageSize: defaultPageSize, rows: Array.from(tbody.querySelectorAll("tr")).map(row => row.cloneNode(true)) };
+ function getFilteredRows() { const term = (searchInput?.value || "").trim().toLowerCase(); return state.rows.filter(row => { const allowed = rowFilter ? rowFilter(row) : true; if (!allowed) return false; const searchable = (row.dataset.searchText || row.textContent || "").toLowerCase(); return !term || searchable.includes(term); }); }
+ function render() { const filtered = getFilteredRows(); const totalPages = Math.max(1, Math.ceil(filtered.length / state.pageSize)); state.page = Math.min(Math.max(1, state.page), totalPages); const start = (state.page - 1) * state.pageSize; const pageRows = filtered.slice(start, start + state.pageSize); tbody.innerHTML = ""; if (!pageRows.length) { const row = document.createElement("tr"); const cell = document.createElement("td"); cell.colSpan = headers; cell.className = "text-center py-8 text-surface-500"; cell.textContent = emptyMessage; row.appendChild(cell); tbody.appendChild(row); } else { pageRows.forEach(row => tbody.appendChild(row.cloneNode(true))); } if (pageInfo) { const from = filtered.length ? start + 1 : 0; const to = start + pageRows.length; pageInfo.textContent = `${from}-${to} de ${filtered.length}`; } if (prevButton) prevButton.disabled = state.page <= 1; if (nextButton) nextButton.disabled = state.page >= totalPages; if (options.onRender) options.onRender({ filteredCount: filtered.length, page: state.page, totalPages }); }
+ if (searchInput) { searchInput.addEventListener("input", () => { state.page = 1; render(); }); }
+ if (pageSizeSelect) { pageSizeSelect.addEventListener("change", () => { state.pageSize = Math.max(1, Number(pageSizeSelect.value || defaultPageSize)); state.page = 1; render(); }); }
+ if (prevButton) { prevButton.addEventListener("click", () => { state.page -= 1; render(); }); }
+ if (nextButton) { nextButton.addEventListener("click", () => { state.page += 1; render(); }); }
+ render();
+ return { refresh() { state.rows = Array.from(tbody.querySelectorAll("tr")).map(row => row.cloneNode(true)); render(); }, render };
  };
 
- function getFilteredRows() {
- const term = (searchInput?.value || "").trim().toLowerCase();
- return state.rows.filter((row) => {
- const allowed = rowFilter ? rowFilter(row) : true;
- if (!allowed) return false;
- const searchable = (row.dataset.searchText || row.textContent || "").toLowerCase();
- return !term || searchable.includes(term);
- });
- }
-
- function render() {
- const filtered = getFilteredRows();
- const totalPages = Math.max(1, Math.ceil(filtered.length / state.pageSize));
- state.page = Math.min(Math.max(1, state.page), totalPages);
- const start = (state.page - 1) * state.pageSize;
- const pageRows = filtered.slice(start, start + state.pageSize);
-
- tbody.innerHTML = "";
- if (!pageRows.length) {
- const row = document.createElement("tr");
- const cell = document.createElement("td");
- cell.colSpan = headers;
- cell.className = "text-muted";
- cell.textContent = emptyMessage;
- row.appendChild(cell);
- tbody.appendChild(row);
- } else {
- pageRows.forEach((row) => tbody.appendChild(row.cloneNode(true)));
- }
-
- if (pageInfo) {
- const from = filtered.length ? start + 1 : 0;
- const to = start + pageRows.length;
- pageInfo.textContent = `${from}-${to} de ${filtered.length}`;
- }
- if (prevButton) prevButton.disabled = state.page <= 1;
- if (nextButton) nextButton.disabled = state.page >= totalPages;
- if (options.onRender) options.onRender({ filteredCount: filtered.length, page: state.page, totalPages });
- }
-
- if (searchInput) {
- searchInput.addEventListener("input", () => {
- state.page = 1;
- render();
- });
- }
- if (pageSizeSelect) {
- pageSizeSelect.addEventListener("change", () => {
- state.pageSize = Math.max(1, Number(pageSizeSelect.value || defaultPageSize));
- state.page = 1;
- render();
- });
- }
- if (prevButton) {
- prevButton.addEventListener("click", () => {
- state.page -= 1;
- render();
- });
- }
- if (nextButton) {
- nextButton.addEventListener("click", () => {
- state.page += 1;
- render();
- });
- }
-
- render();
- return {
- refresh() {
- state.rows = Array.from(tbody.querySelectorAll("tr")).map((row) => row.cloneNode(true));
- render();
- },
- render,
- };
+   window.VANT_UI.initSortableTables = function(options) {
+   const table = document.getElementById(options.tableId);
+   if (!table) return;
+   const headers = table.querySelectorAll("thead th[data-sortable]");
+   headers.forEach(th => {
+     th.style.cursor = "pointer";
+     th.style.userSelect = "none";
+     th.style.position = "relative";
+     th.style.whiteSpace = "nowrap";
+     const icon = document.createElement("span");
+     icon.className = "sort-indicator ml-1 text-surface-400 dark:text-surface-500 transition-opacity opacity-0";
+     icon.innerHTML = "&#x2195;";
+     icon.style.position = "relative";
+     icon.style.top = "-0.5px";
+     th.appendChild(icon);
+     th.addEventListener("click", () => {
+       const colIndex = Array.from(th.parentNode.children).indexOf(th);
+       const tbody = table.tBodies[0];
+       if (!tbody) return;
+       const rows = Array.from(tbody.querySelectorAll("tr"));
+       const isAsc = th.dataset.sortOrder !== "asc";
+       headers.forEach(h => { h.dataset.sortOrder = ""; h.querySelector(".sort-indicator").style.opacity = "0"; });
+       th.dataset.sortOrder = isAsc ? "asc" : "desc";
+       th.querySelector(".sort-indicator").style.opacity = "1";
+       th.querySelector(".sort-indicator").innerHTML = isAsc ? "&#x2191;" : "&#x2193;";
+       const type = th.dataset.type || "string";
+       rows.sort((a, b) => {
+         let aVal = a.children[colIndex]?.textContent.trim() || "";
+         let bVal = b.children[colIndex]?.textContent.trim() || "";
+         if (type === "number") {
+           aVal = parseFloat(aVal.replace(/[^0-9.-]/g, "")) || 0;
+           bVal = parseFloat(bVal.replace(/[^0-9.-]/g, "")) || 0;
+           return isAsc ? aVal - bVal : bVal - aVal;
+         }
+         if (type === "date") {
+           aVal = Date.parse(aVal) || 0;
+           bVal = Date.parse(bVal) || 0;
+           return isAsc ? aVal - bVal : bVal - aVal;
+         }
+         const cmp = aVal.localeCompare(bVal, "es", { numeric: true, sensitivity: "base" });
+         return isAsc ? cmp : -cmp;
+       });
+       tbody.innerHTML = "";
+       rows.forEach(row => tbody.appendChild(row));
+       if (options.onSort) options.onSort({ table: options.tableId, column: colIndex, direction: isAsc ? "asc" : "desc" });
+     });
+   });
+   const defaultCol = options.defaultColumn;
+   if (defaultCol) {
+     headers.forEach(th => {
+       if (th.textContent.trim().toLowerCase().includes(defaultCol.toLowerCase())) {
+         th.dataset.sortOrder = "desc";
+         const ind = th.querySelector(".sort-indicator");
+         if (ind) { ind.style.opacity = "1"; ind.innerHTML = "&#x2193;"; }
+       }
+     });
+   }
  };
 
- window.VANT_UI.setupElementPager = function setupElementPager(options) {
+  window.VANT_UI.setupElementPager = function setupElementPager(options) {
  const container = document.getElementById(options.containerId);
  if (!container) return null;
-
  const searchInput = options.searchInputId ? document.getElementById(options.searchInputId) : null;
  const pageSizeSelect = options.pageSizeSelectId ? document.getElementById(options.pageSizeSelectId) : null;
  const pageInfo = options.pageInfoId ? document.getElementById(options.pageInfoId) : null;
@@ -1629,84 +900,17 @@ async function updateNotifications() {
  const nextButton = options.nextButtonId ? document.getElementById(options.nextButtonId) : null;
  const emptyMessage = options.emptyMessage || "Sin registros.";
  const defaultPageSize = Number(pageSizeSelect?.value || options.defaultPageSize || 8);
- let state = {
- page: 1,
- pageSize: defaultPageSize,
- items: Array.from(container.children).map((item) => item.cloneNode(true)),
- };
-
- function getFilteredItems() {
- const term = (searchInput?.value || "").trim().toLowerCase();
- return state.items.filter((item) => {
- const allowed = options.itemFilter ? options.itemFilter(item) : true;
- if (!allowed) return false;
- const searchable = (item.dataset.searchText || item.textContent || "").toLowerCase();
- return !term || searchable.includes(term);
- });
- }
-
- function render() {
- const filtered = getFilteredItems();
- const totalPages = Math.max(1, Math.ceil(filtered.length / state.pageSize));
- state.page = Math.min(Math.max(1, state.page), totalPages);
- const start = (state.page - 1) * state.pageSize;
- const pageItems = filtered.slice(start, start + state.pageSize);
-
- container.innerHTML = "";
- if (!pageItems.length) {
- const empty = document.createElement(options.emptyTag || "li");
- empty.className = options.emptyClassName || "text-muted";
- empty.textContent = emptyMessage;
- container.appendChild(empty);
- } else {
- pageItems.forEach((item) => container.appendChild(item.cloneNode(true)));
- }
-
- if (pageInfo) {
- const from = filtered.length ? start + 1 : 0;
- const to = start + pageItems.length;
- pageInfo.textContent = `${from}-${to} de ${filtered.length}`;
- }
- if (prevButton) prevButton.disabled = state.page <= 1;
- if (nextButton) nextButton.disabled = state.page >= totalPages;
- if (options.onRender) options.onRender({ filteredCount: filtered.length, page: state.page, totalPages });
- }
-
- if (searchInput) {
- searchInput.addEventListener("input", () => {
- state.page = 1;
+ let state = { page: 1, pageSize: defaultPageSize, items: Array.from(container.children).map(item => item.cloneNode(true)) };
+ function getFilteredItems() { const term = (searchInput?.value || "").trim().toLowerCase(); return state.items.filter(item => { const allowed = options.itemFilter ? options.itemFilter(item) : true; if (!allowed) return false; const searchable = (item.dataset.searchText || item.textContent || "").toLowerCase(); return !term || searchable.includes(term); }); }
+ function render() { const filtered = getFilteredItems(); const totalPages = Math.max(1, Math.ceil(filtered.length / state.pageSize)); state.page = Math.min(Math.max(1, state.page), totalPages); const start = (state.page - 1) * state.pageSize; const pageItems = filtered.slice(start, start + state.pageSize); container.innerHTML = ""; if (!pageItems.length) { const empty = document.createElement(options.emptyTag || "li"); empty.className = options.emptyClassName || "text-center py-8 text-surface-500"; empty.textContent = emptyMessage; container.appendChild(empty); } else { pageItems.forEach(item => container.appendChild(item.cloneNode(true))); } if (pageInfo) { const from = filtered.length ? start + 1 : 0; const to = start + pageItems.length; pageInfo.textContent = `${from}-${to} de ${filtered.length}`; } if (prevButton) prevButton.disabled = state.page <= 1; if (nextButton) nextButton.disabled = state.page >= totalPages; if (options.onRender) options.onRender({ filteredCount: filtered.length, page: state.page, totalPages }); }
+ if (searchInput) { searchInput.addEventListener("input", () => { state.page = 1; render(); }); }
+ if (pageSizeSelect) { pageSizeSelect.addEventListener("change", () => { state.pageSize = Math.max(1, Number(pageSizeSelect.value || defaultPageSize)); state.page = 1; render(); }); }
+ if (prevButton) { prevButton.addEventListener("click", () => { state.page -= 1; render(); }); }
+ if (nextButton) { nextButton.addEventListener("click", () => { state.page += 1; render(); }); }
  render();
- });
- }
- if (pageSizeSelect) {
- pageSizeSelect.addEventListener("change", () => {
- state.pageSize = Math.max(1, Number(pageSizeSelect.value || defaultPageSize));
- state.page = 1;
- render();
- });
- }
- if (prevButton) {
- prevButton.addEventListener("click", () => {
- state.page -= 1;
- render();
- });
- }
- if (nextButton) {
- nextButton.addEventListener("click", () => {
- state.page += 1;
- render();
- });
- }
-
- render();
- return {
- refresh() {
- state.items = Array.from(container.children).map((item) => item.cloneNode(true));
- render();
- },
- render,
- };
+ return { refresh() { state.items = Array.from(container.children).map(item => item.cloneNode(true)); render(); }, render };
  };
  </script>
+ {% block extra_js %}{% endblock %}
  </body>
 </html>

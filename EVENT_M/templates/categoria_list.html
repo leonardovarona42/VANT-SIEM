@@ -1,126 +1,122 @@
 {% extends "dashboard.html" %}
 {% block title %}Listado de Categorías | VANT-SIEM{% endblock %}
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="card bg-secondary shadow">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 text-info fw-bold">Listado de Categorías</h5>
-                <a href="{% url 'categoria-create' %}" class="btn btn-primary btn-sm">
-                    <i class="fas fa-plus"></i> Nueva Categoría
-                </a>
-            </div>
-            <div class="card-body">
-                <!-- Search Input -->
-                <div class="row mb-4">
-                    <div class="col-12">
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="fas fa-search"></i></span>
-                            <input type="text" id="search-input" class="form-control" placeholder="Buscar por ID, nombre o descripción..."
-                                   value="{{ search_query }}">
-                            <button type="button" id="clear-search" class="btn btn-outline-secondary {% if not search_query %}d-none{% endif %}">
-                                <i class="fas fa-times"></i> Limpiar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {% if object_list %}
-                    <div class="table-responsive">
-                        <table class="table table-dark table-striped">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Nombre</th>
-                                    <th>Descripción</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for categoria in object_list %}
-                                <tr>
-                                    <td>{{ categoria.id }}</td>
-                                    <td>{{ categoria.nombre }}</td>
-                                    <td>{{ categoria.descripcion|truncatechars:80 }}</td>
-                                    <td>
-                                        <a href="{% url 'categoria-detail' categoria.pk %}" class="btn btn-info btn-sm">Ver</a>
-                                        <a href="{% url 'categoria-update' categoria.pk %}" class="btn btn-warning btn-sm">Editar</a>
-                                        <a href="{% url 'categoria-delete' categoria.pk %}" class="btn btn-danger btn-sm">Eliminar</a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- Pagination -->
-                    {% if is_paginated %}
-                        <nav aria-label="Navegación de páginas" class="mt-4">
-                            <ul class="pagination justify-content-center">
-                                {% if page_obj.has_previous %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}page=1">
-                                            <i class="fas fa-angle-double-left"></i> Primera
-                                        </a>
-                                    </li>
-                                    <li class="page-item">
-                                        <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.previous_page_number }}">
-                                            <i class="fas fa-angle-left"></i> Anterior
-                                        </a>
-                                    </li>
-                                {% endif %}
-
-                                {% for num in page_obj.paginator.page_range %}
-                                    {% if page_obj.number == num %}
-                                        <li class="page-item active">
-                                            <span class="page-link">{{ num }}</span>
-                                        </li>
-                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                                        <li class="page-item">
-                                            <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ num }}">{{ num }}</a>
-                                        </li>
-                                    {% endif %}
-                                {% endfor %}
-
-                                {% if page_obj.has_next %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.next_page_number }}">
-                                            Siguiente <i class="fas fa-angle-right"></i>
-                                        </a>
-                                    </li>
-                                    <li class="page-item">
-                                        <a class="page-link" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.paginator.num_pages }}">
-                                            Última <i class="fas fa-angle-double-right"></i>
-                                        </a>
-                                    </li>
-                                {% endif %}
-                            </ul>
-                        </nav>
-
-                        <div class="text-center text-muted mt-2">
-                            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}.
-                            Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ paginator.count }} resultado{{ paginator.count|pluralize:"s" }}.
-                        </div>
-                    {% endif %}
-
-                {% else %}
-                    <div class="text-center py-4">
-                        {% if search_query %}
-                            <p class="text-muted">No se encontraron categorías que coincidan con la búsqueda "{{ search_query }}".</p>
-                        {% else %}
-                            <p class="text-muted">No hay categorías registradas.</p>
-                        {% endif %}
-                        <a href="{% url 'categoria-create' %}" class="btn btn-primary">{% if search_query %}Crear Nueva Categoría{% else %}Crear Primera Categoría{% endif %}</a>
-                    </div>
-                {% endif %}
+<div class="glass-card">
+    <div class="px-6 py-4 flex justify-between items-center border-b dark:border-surface-800 border-surface-200">
+        <h5 class="mb-0 text-lg font-bold dark:text-white text-surface-900">Listado de Categorías</h5>
+        <a href="{% url 'categoria-create' %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors">
+            <i class="fas fa-plus mr-1"></i> Nueva Categoría
+        </a>
+    </div>
+    <div class="p-6">
+        <!-- Search Input -->
+        <div class="mb-4">
+            <div class="flex">
+                <span class="inline-flex items-center px-3 bg-surface-100 dark:bg-surface-800 border border-r-0 dark:border-surface-700 border-surface-300 rounded-l-lg text-surface-400">
+                    <i class="fas fa-search"></i>
+                </span>
+                <input type="text" id="search-input" class="flex-1 px-3 py-2 bg-white dark:bg-surface-800 border-y dark:border-surface-700 border-surface-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Buscar por ID, nombre o descripción..." value="{{ search_query }}">
+                <button type="button" id="clear-search" class="inline-flex items-center px-3 py-2 bg-white dark:bg-surface-800 border border-l-0 dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-r-lg transition-colors dark:text-surface-300 text-surface-600 {% if not search_query %}hidden{% endif %}">
+                    <i class="fas fa-times mr-1"></i> Limpiar
+                </button>
             </div>
         </div>
+
+        {% if object_list %}
+            <div class="overflow-x-auto">
+                <table class="w-full divide-y dark:divide-surface-800 divide-surface-200" id="categorias-table">
+                    <thead class="dark:bg-surface-800 bg-surface-100">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true" data-type="number">ID</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true">Nombre</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true">Descripción</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="dark:divide-surface-800 divide-surface-200">
+                        {% for categoria in object_list %}
+                        <tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors">
+                            <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ categoria.id }}</td>
+                            <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ categoria.nombre }}</td>
+                            <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ categoria.descripcion|truncatechars:80 }}</td>
+                            <td class="px-4 py-3 text-sm space-x-1">
+                                <a href="{% url 'categoria-detail' categoria.pk %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors">Ver</a>
+                                <a href="{% url 'categoria-update' categoria.pk %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-500 dark:hover:bg-yellow-600 rounded-lg transition-colors">Editar</a>
+                                <a href="{% url 'categoria-delete' categoria.pk %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 rounded-lg transition-colors">Eliminar</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+                <nav aria-label="Navegación de páginas" class="mt-4">
+                    <ul class="flex justify-center space-x-1">
+                        {% if page_obj.has_previous %}
+                            <li>
+                                <a class="inline-flex items-center px-3 py-2 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600" href="?{% if search_query %}q={{ search_query }}&{% endif %}page=1">
+                                    <i class="fas fa-angle-double-left mr-1"></i> Primera
+                                </a>
+                            </li>
+                            <li>
+                                <a class="inline-flex items-center px-3 py-2 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.previous_page_number }}">
+                                    <i class="fas fa-angle-left mr-1"></i> Anterior
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li>
+                                    <span class="inline-flex items-center px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li>
+                                    <a class="inline-flex items-center px-3 py-2 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li>
+                                <a class="inline-flex items-center px-3 py-2 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.next_page_number }}">
+                                    Siguiente <i class="fas fa-angle-right ml-1"></i>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="inline-flex items-center px-3 py-2 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600" href="?{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.paginator.num_pages }}">
+                                    Última <i class="fas fa-angle-double-right ml-1"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+
+                <div class="text-center mt-2 dark:text-surface-400 text-surface-500">
+                    Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}.
+                    Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ paginator.count }} resultado{{ paginator.count|pluralize:"s" }}.
+                </div>
+            {% endif %}
+
+        {% else %}
+            <div class="text-center py-4">
+                {% if search_query %}
+                    <p class="dark:text-surface-400 text-surface-500">No se encontraron categorías que coincidan con la búsqueda "{{ search_query }}".</p>
+                {% else %}
+                    <p class="dark:text-surface-400 text-surface-500">No hay categorías registradas.</p>
+                {% endif %}
+                <a href="{% url 'categoria-create' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors mt-2">{% if search_query %}Crear Nueva Categoría{% else %}Crear Primera Categoría{% endif %}</a>
+            </div>
+        {% endif %}
     </div>
 </div>
 
 <script>
-console.log('Real-time search script loaded for categories');
 document.addEventListener('DOMContentLoaded', function() {
+    VANT_UI.initSortableTables({ tableId: 'categorias-table' });
+    console.log('Real-time search script loaded for categories');
     console.log('DOMContentLoaded event fired for categories');
     const searchInput = document.getElementById('search-input');
     const clearButton = document.getElementById('clear-search');
@@ -140,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('performSearch called with query:', query);
 
         // Show loading state
-        tableBody.innerHTML = '<tr><td colspan="4" class="text-center"><i class="fas fa-spinner fa-spin"></i> Buscando...</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-sm text-center dark:text-surface-400 text-surface-500"><i class="fas fa-spinner fa-spin mr-1"></i> Buscando...</td></tr>';
 
         const url = `${window.location.pathname}?q=${encodeURIComponent(query)}`;
         console.log('Fetching URL:', url);
@@ -165,28 +161,28 @@ document.addEventListener('DOMContentLoaded', function() {
         })
         .catch(error => {
             console.error('Search error:', error);
-            tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error al buscar: ' + error.message + '</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-sm text-center text-red-600 dark:text-red-400">Error al buscar: ' + error.message + '</td></tr>';
         });
     }
 
     // Function to update table with search results
     function updateTable(data) {
         if (!data.categorias || data.categorias.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="4" class="text-center">No se encontraron categorías que coincidan con la búsqueda.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-sm text-center dark:text-surface-400 text-surface-500">No se encontraron categorías que coincidan con la búsqueda.</td></tr>';
             return;
         }
 
         let html = '';
         data.categorias.forEach(categoria => {
             html += `
-                <tr>
-                    <td>${categoria.id}</td>
-                    <td>${categoria.nombre}</td>
-                    <td>${categoria.descripcion.length > 80 ? categoria.descripcion.substring(0, 80) + '...' : categoria.descripcion}</td>
-                    <td>
-                        <a href="${categoria.detail_url}" class="btn btn-info btn-sm">Ver</a>
-                        <a href="${categoria.update_url}" class="btn btn-warning btn-sm">Editar</a>
-                        <a href="${categoria.delete_url}" class="btn btn-danger btn-sm">Eliminar</a>
+                <tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors">
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">${categoria.id}</td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">${categoria.nombre}</td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">${categoria.descripcion.length > 80 ? categoria.descripcion.substring(0, 80) + '...' : categoria.descripcion}</td>
+                    <td class="px-4 py-3 text-sm space-x-1">
+                        <a href="${categoria.detail_url}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors">Ver</a>
+                        <a href="${categoria.update_url}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-500 dark:hover:bg-yellow-600 rounded-lg transition-colors">Editar</a>
+                        <a href="${categoria.delete_url}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 rounded-lg transition-colors">Eliminar</a>
                     </td>
                 </tr>
             `;
@@ -202,9 +198,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Show/hide clear button
         if (query) {
-            clearButton.classList.remove('d-none');
+            clearButton.classList.remove('hidden');
         } else {
-            clearButton.classList.add('d-none');
+            clearButton.classList.add('hidden');
         }
 
         // Clear previous timeout
@@ -221,7 +217,7 @@ document.addEventListener('DOMContentLoaded', function() {
     clearButton.addEventListener('click', function() {
         console.log('Clear button clicked');
         searchInput.value = '';
-        clearButton.classList.add('d-none');
+        clearButton.classList.add('hidden');
         performSearch('');
     });
 

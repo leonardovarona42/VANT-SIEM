@@ -2,290 +2,240 @@
 {% load static %}
 
 {% block content %}
-<div class="container-fluid">
- <div class="row justify-content-center">
- <div class="col-md-8">
- <div class="card bg-secondary">
- <div class="card-header">
- <h3 class="text-info mb-0">
- <i class="fas fa-user-plus me-2"></i>Crear Solicitud de Usuario
- </h3>
- </div>
- <div class="card-body">
- <form method="post">
- {% csrf_token %}
- 
- <div class="row">
- <div class="col-md-6">
- <div class="mb-3">
- <label for="username" class="form-label fw-bold text-info">Nombre de Usuario</label>
- <input type="text" class="form-control" id="username" name="username" required>
- <div class="form-text text-light">Nombre único para el usuario</div>
- </div>
- </div>
- <div class="col-md-6">
- <div class="mb-3">
- <label for="email" class="form-label fw-bold text-info">Email</label>
- <input type="email" class="form-control" id="email" name="email" required>
- </div>
- </div>
- </div>
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+  <div class="glass-card overflow-hidden">
+    <div class="px-6 py-4 border-b dark:border-surface-700 border-surface-200">
+      <h3 class="text-lg font-semibold dark:text-surface-200 text-surface-800 mb-0">
+        <i class="fas fa-user-plus mr-2 text-brand-500"></i>Crear Solicitud de Usuario
+      </h3>
+    </div>
+    <div class="p-6">
+      <form method="post">
+        {% csrf_token %}
 
- <div class="row">
- <div class="col-md-6">
- <div class="mb-3">
- <label for="first_name" class="form-label fw-bold text-info">Nombre</label>
- <input type="text" class="form-control" id="first_name" name="first_name" required>
- </div>
- </div>
- <div class="col-md-6">
- <div class="mb-3">
- <label for="last_name" class="form-label fw-bold text-info">Apellidos</label>
- <input type="text" class="form-control" id="last_name" name="last_name" required>
- </div>
- </div>
- </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label for="username" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Nombre de Usuario</label>
+            <input type="text" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="username" name="username" required>
+            <p class="mt-1 text-sm dark:text-surface-400 text-surface-500">Nombre único para el usuario</p>
+          </div>
+          <div>
+            <label for="email" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Email</label>
+            <input type="email" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="email" name="email" required>
+          </div>
+        </div>
 
- <div class="mb-3">
- <label for="password" class="form-label fw-bold text-info">Contraseña</label>
- <input type="password" class="form-control" id="password" name="password" required>
- <div class="form-text text-light">Mínimo 8 caracteres</div>
- </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div>
+            <label for="first_name" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Nombre</label>
+            <input type="text" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="first_name" name="first_name" required>
+          </div>
+          <div>
+            <label for="last_name" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Apellidos</label>
+            <input type="text" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="last_name" name="last_name" required>
+          </div>
+        </div>
 
- <!-- Permisos sobre Modelos -->
- <div class="mb-4">
- <h5 class="text-info mb-3">
- <i class="fas fa-shield-alt me-2"></i>Permisos de Acceso
- </h5>
- 
- <!-- Reportes -->
- <div class="card bg-dark mb-3">
- <div class="card-header">
- <h6 class="text-warning mb-0">
- <i class="fas fa-file-alt me-2"></i>Reportes
- </h6>
- </div>
- <div class="card-body">
- <div class="row">
- <div class="col-md-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="reporte_view" name="permissions" value="reporte_view">
- <label class="form-check-label text-light" for="reporte_view">Ver</label>
- </div>
- </div>
- <div class="col-md-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="reporte_add" name="permissions" value="reporte_add">
- <label class="form-check-label text-light" for="reporte_add">Crear</label>
- </div>
- </div>
- <div class="col-md-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="reporte_change" name="permissions" value="reporte_change">
- <label class="form-check-label text-light" for="reporte_change">Editar</label>
- </div>
- </div>
- <div class="col-md-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="reporte_delete" name="permissions" value="reporte_delete">
- <label class="form-check-label text-light" for="reporte_delete">Eliminar</label>
- </div>
- </div>
- </div>
- </div>
- </div>
+        <div class="mb-6">
+          <label for="password" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Contraseña</label>
+          <input type="password" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="password" name="password" required>
+          <p class="mt-1 text-sm dark:text-surface-400 text-surface-500">Mínimo 8 caracteres</p>
+        </div>
 
- <!-- Incidentes -->
- <div class="card bg-dark mb-3">
- <div class="card-header">
- <h6 class="text-warning mb-0">
- <i class="fas fa-exclamation-triangle me-2"></i>Incidentes
- </h6>
- </div>
- <div class="card-body">
- <div class="row">
- <div class="col-md-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="incidente_view" name="permissions" value="incidente_view">
- <label class="form-check-label text-light" for="incidente_view">Ver</label>
- </div>
- </div>
- <div class="col-md-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="incidente_add" name="permissions" value="incidente_add">
- <label class="form-check-label text-light" for="incidente_add">Crear</label>
- </div>
- </div>
- <div class="col-md-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="incidente_change" name="permissions" value="incidente_change">
- <label class="form-check-label text-light" for="incidente_change">Editar</label>
- </div>
- </div>
- <div class="col-md-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="incidente_delete" name="permissions" value="incidente_delete">
- <label class="form-check-label text-light" for="incidente_delete">Eliminar</label>
- </div>
- </div>
- </div>
- </div>
- </div>
+        <!-- Permisos sobre Modelos -->
+        <div class="mb-6">
+          <h5 class="text-base font-semibold dark:text-surface-200 text-surface-800 mb-4">
+            <i class="fas fa-shield-alt mr-2 text-brand-500"></i>Permisos de Acceso
+          </h5>
 
- <!-- Involucrados -->
- <div class="card bg-dark mb-3">
- <div class="card-header">
- <h6 class="text-warning mb-0">
- <i class="fas fa-users me-2"></i>Involucrados
- </h6>
- </div>
- <div class="card-body">
- <div class="row">
- <div class="col-md-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="involucrado_view" name="permissions" value="involucrado_view">
- <label class="form-check-label text-light" for="involucrado_view">Ver</label>
- </div>
- </div>
- <div class="col-md-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="involucrado_add" name="permissions" value="involucrado_add">
- <label class="form-check-label text-light" for="involucrado_add">Crear</label>
- </div>
- </div>
- <div class="col-md-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="involucrado_change" name="permissions" value="involucrado_change">
- <label class="form-check-label text-light" for="involucrado_change">Editar</label>
- </div>
- </div>
- <div class="col-md-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="involucrado_delete" name="permissions" value="involucrado_delete">
- <label class="form-check-label text-light" for="involucrado_delete">Eliminar</label>
- </div>
- </div>
- </div>
- </div>
- </div>
+          <!-- Reportes -->
+          <div class="glass-card mb-4">
+            <div class="px-4 py-3 border-b dark:border-surface-700 border-surface-200">
+              <h6 class="text-sm font-semibold dark:text-yellow-400 text-yellow-600 mb-0">
+                <i class="fas fa-file-alt mr-2"></i>Reportes
+              </h6>
+            </div>
+            <div class="p-4">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="reporte_view" name="permissions" value="reporte_view">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="reporte_view">Ver</label>
+                </div>
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="reporte_add" name="permissions" value="reporte_add">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="reporte_add">Crear</label>
+                </div>
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="reporte_change" name="permissions" value="reporte_change">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="reporte_change">Editar</label>
+                </div>
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="reporte_delete" name="permissions" value="reporte_delete">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="reporte_delete">Eliminar</label>
+                </div>
+              </div>
+            </div>
+          </div>
 
- <!-- Áreas -->
- <div class="card bg-dark mb-3">
- <div class="card-header">
- <h6 class="text-warning mb-0">
- <i class="fas fa-building me-2"></i>Áreas
- </h6>
- </div>
- <div class="card-body">
- <div class="row">
- <div class="col-md-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="area_view" name="permissions" value="area_view">
- <label class="form-check-label text-light" for="area_view">Ver</label>
- </div>
- </div>
- <div class="col-md-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="area_add" name="permissions" value="area_add">
- <label class="form-check-label text-light" for="area_add">Crear</label>
- </div>
- </div>
- <div class="col-md-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="area_change" name="permissions" value="area_change">
- <label class="form-check-label text-light" for="area_change">Editar</label>
- </div>
- </div>
- <div class="col-md-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="area_delete" name="permissions" value="area_delete">
- <label class="form-check-label text-light" for="area_delete">Eliminar</label>
- </div>
- </div>
- </div>
- </div>
- </div>
+          <!-- Incidentes -->
+          <div class="glass-card mb-4">
+            <div class="px-4 py-3 border-b dark:border-surface-700 border-surface-200">
+              <h6 class="text-sm font-semibold dark:text-yellow-400 text-yellow-600 mb-0">
+                <i class="fas fa-exclamation-triangle mr-2"></i>Incidentes
+              </h6>
+            </div>
+            <div class="p-4">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="incidente_view" name="permissions" value="incidente_view">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="incidente_view">Ver</label>
+                </div>
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="incidente_add" name="permissions" value="incidente_add">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="incidente_add">Crear</label>
+                </div>
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="incidente_change" name="permissions" value="incidente_change">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="incidente_change">Editar</label>
+                </div>
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="incidente_delete" name="permissions" value="incidente_delete">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="incidente_delete">Eliminar</label>
+                </div>
+              </div>
+            </div>
+          </div>
 
- <!-- Medidas de Seguridad -->
- <div class="card bg-dark mb-3">
- <div class="card-header">
- <h6 class="text-warning mb-0">
- <i class="fas fa-shield-alt me-2"></i>Medidas de Seguridad
- </h6>
- </div>
- <div class="card-body">
- <div class="row">
- <div class="col-md-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="medida_view" name="permissions" value="medida_view">
- <label class="form-check-label text-light" for="medida_view">Ver</label>
- </div>
- </div>
- <div class="col-md-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="medida_add" name="permissions" value="medida_add">
- <label class="form-check-label text-light" for="medida_add">Crear</label>
- </div>
- </div>
- <div class="col-md-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="medida_change" name="permissions" value="medida_change">
- <label class="form-check-label text-light" for="medida_change">Editar</label>
- </div>
- </div>
- <div class="col-md-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="medida_delete" name="permissions" value="medida_delete">
- <label class="form-check-label text-light" for="medida_delete">Eliminar</label>
- </div>
- </div>
- </div>
- </div>
- </div>
+          <!-- Involucrados -->
+          <div class="glass-card mb-4">
+            <div class="px-4 py-3 border-b dark:border-surface-700 border-surface-200">
+              <h6 class="text-sm font-semibold dark:text-yellow-400 text-yellow-600 mb-0">
+                <i class="fas fa-users mr-2"></i>Involucrados
+              </h6>
+            </div>
+            <div class="p-4">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="involucrado_view" name="permissions" value="involucrado_view">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="involucrado_view">Ver</label>
+                </div>
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="involucrado_add" name="permissions" value="involucrado_add">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="involucrado_add">Crear</label>
+                </div>
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="involucrado_change" name="permissions" value="involucrado_change">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="involucrado_change">Editar</label>
+                </div>
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="involucrado_delete" name="permissions" value="involucrado_delete">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="involucrado_delete">Eliminar</label>
+                </div>
+              </div>
+            </div>
+          </div>
 
- <!-- Dashboard -->
- <div class="card bg-dark mb-3">
- <div class="card-header">
- <h6 class="text-warning mb-0">
- <i class="fas fa-tachometer-alt me-2"></i>Dashboard
- </h6>
- </div>
- <div class="card-body">
- <div class="row">
- <div class="col-md-6">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="dashboard_view" name="permissions" value="dashboard_view">
- <label class="form-check-label text-light" for="dashboard_view">Ver Dashboard</label>
- </div>
- </div>
- <div class="col-md-6">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="dashboard_metrics" name="permissions" value="dashboard_metrics">
- <label class="form-check-label text-light" for="dashboard_metrics">Ver Métricas</label>
- </div>
- </div>
- </div>
- </div>
- </div>
- </div>
+          <!-- Áreas -->
+          <div class="glass-card mb-4">
+            <div class="px-4 py-3 border-b dark:border-surface-700 border-surface-200">
+              <h6 class="text-sm font-semibold dark:text-yellow-400 text-yellow-600 mb-0">
+                <i class="fas fa-building mr-2"></i>Áreas
+              </h6>
+            </div>
+            <div class="p-4">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="area_view" name="permissions" value="area_view">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="area_view">Ver</label>
+                </div>
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="area_add" name="permissions" value="area_add">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="area_add">Crear</label>
+                </div>
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="area_change" name="permissions" value="area_change">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="area_change">Editar</label>
+                </div>
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="area_delete" name="permissions" value="area_delete">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="area_delete">Eliminar</label>
+                </div>
+              </div>
+            </div>
+          </div>
 
- <div class="alert alert-info">
- <i class="fas fa-info-circle me-2"></i>
- <strong>Nota:</strong> Esta solicitud será enviada para aprobación. Un superusuario debe aprobar la creación del usuario antes de que pueda acceder al sistema.
- </div>
+          <!-- Medidas de Seguridad -->
+          <div class="glass-card mb-4">
+            <div class="px-4 py-3 border-b dark:border-surface-700 border-surface-200">
+              <h6 class="text-sm font-semibold dark:text-yellow-400 text-yellow-600 mb-0">
+                <i class="fas fa-shield-alt mr-2"></i>Medidas de Seguridad
+              </h6>
+            </div>
+            <div class="p-4">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="medida_view" name="permissions" value="medida_view">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="medida_view">Ver</label>
+                </div>
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="medida_add" name="permissions" value="medida_add">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="medida_add">Crear</label>
+                </div>
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="medida_change" name="permissions" value="medida_change">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="medida_change">Editar</label>
+                </div>
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="medida_delete" name="permissions" value="medida_delete">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="medida_delete">Eliminar</label>
+                </div>
+              </div>
+            </div>
+          </div>
 
- <div class="d-flex justify-content-between">
- <a href="{% url 'user-management' %}" class="btn btn-secondary">
- <i class="fas fa-arrow-left me-2"></i>Volver
- </a>
- <button type="submit" class="btn btn-success">
- <i class="fas fa-paper-plane me-2"></i>Enviar Solicitud
- </button>
- </div>
- </form>
- </div>
- </div>
- </div>
- </div>
+          <!-- Dashboard -->
+          <div class="glass-card mb-4">
+            <div class="px-4 py-3 border-b dark:border-surface-700 border-surface-200">
+              <h6 class="text-sm font-semibold dark:text-yellow-400 text-yellow-600 mb-0">
+                <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+              </h6>
+            </div>
+            <div class="p-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="dashboard_view" name="permissions" value="dashboard_view">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="dashboard_view">Ver Dashboard</label>
+                </div>
+                <div class="flex items-center">
+                  <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="dashboard_metrics" name="permissions" value="dashboard_metrics">
+                  <label class="ml-2 block text-sm dark:text-surface-300 text-surface-700" for="dashboard_metrics">Ver Métricas</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card border-l-4 border-brand-500 mb-6">
+          <div class="p-4">
+            <div class="flex items-start">
+              <i class="fas fa-info-circle mr-2 text-brand-500 mt-0.5"></i>
+              <p class="text-sm dark:text-surface-300 text-surface-700">
+                <strong>Nota:</strong> Esta solicitud será enviada para aprobación. Un superusuario debe aprobar la creación del usuario antes de que pueda acceder al sistema.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <a href="{% url 'user-management' %}" class="btn-secondary">
+            <i class="fas fa-arrow-left mr-2"></i>Volver
+          </a>
+          <button type="submit" class="btn-primary">
+            <i class="fas fa-paper-plane mr-2"></i>Enviar Solicitud
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 {% endblock %}

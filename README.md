@@ -1,332 +1,239 @@
-# 🛡️ VANT-SIEM
+# VANT-SIEM v2.1
 ## Vigilance And Neutralization of Threats - Security Information & Event Management
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Django-5.x-green?style=for-the-badge&logo=django" alt="Django">
-  <img src="https://img.shields.io/badge/Python-3.12-blue?style=for-the-badge&logo=python" alt="Python">
-  <img src="https://img.shields.io/badge/OpenSearch-2.x-orange?style=for-the-badge" alt="OpenSearch">
+  <img src="https://img.shields.io/badge/Version-2.1-blue?style=for-the-badge" alt="Version">
+  <img src="https://img.shields.io/badge/Django-6.0-green?style=for-the-badge&logo=django" alt="Django">
+  <img src="https://img.shields.io/badge/Python-3.13-blue?style=for-the-badge&logo=python" alt="Python">
   <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License">
 </p>
 
 ---
 
-## 📋 Descripción
+## Descripcion
 
-**VANT-SIEM** es una plataforma de gestión de seguridad empresarial 🏢 de última generación, diseñada para la **detección**, **análisis** y **respuesta operativa** a incidentes de ciberseguridad. Combina las capacidades de un SIEM tradicional (eventos, alertas, investigación) con un pipeline moderno de logs basado en **OpenSearch** para lograr:
+**VANT-SIEM** es una plataforma de gestion de seguridad empresarial diseñada para la **deteccion**, **analisis** y **respuesta operativa** a incidentes de ciberseguridad. La version **2.1** introduce una arquitectura de microservicios con bases de datos aisladas, bus de eventos, y un modulo de gestion de redes unificado.
 
-- ✅ **Visibilidad en tiempo real**
-- ✅ **Trazabilidad completa**
-- ✅ **Escalabilidad horizontal**
-- ✅ **Cumplimiento normativo**
+### Novedades v2.1
 
----
-
-## 🧠 Ciberinteligencia y SOC de Nueva Generación
-
-### 🤖 IA, Machine Learning y Analítica Predictiva
-
-VANT-SIEM representa la evolución del concepto tradicional de SIEM hacia un **Sistema de Ciberinteligencia** de próxima generación. Esta no es simplemente una herramienta de registro de eventos, sino una **plataforma de análisis avanzado** que integra:
-
-#### 🧠 Inteligencia Artificial
-- **Análisis Comportamental**: Detección de anomalías mediante algoritmos de machine learning que identifican patrones de comportamiento sospechoso
-- **Clasificación Automática**: Los incidentes son categorizados automáticamente según su naturaleza y severidad
-- **Reducción de Falsos Positivos**: Los modelos predictivos aprenden de los patrones históricos para filtrar alertas ruido
-
-#### 📊 Analítica Avanzada
-- **Correlación Inteligente**: Relación de eventos aparentemente desconectados para descubrir ataques sofisticados
-- **Análisis de Tendencias**: Visualización de patrones temporales para anticipar amenazas emergentes
-- **Métricas de Seguridad**: KPIs y dashboards que proporcionan visibilidad del postura de seguridad organizacional
-
-#### 🔮 Predicción y Prevención
-- **Modelos Predictivos**: Algoritmos que anticipan posibles vectores de ataque basándose en inteligencia de amenazas
-- **Evaluación de Riesgos**: Scoring dinámico de activos y vulnerabilidades
-- ** Recomendaciones Automáticas**: Sugerencias de acciones de mitigación basadas en el análisis de incidentes similares
-
-#### ⚡ Características Avanzadas de Ciberinteligencia
-
-| Capacidad | Descripción | Beneficio |
-|-----------|-------------|-----------|
-| 🕵️ **Inteligencia de Amenazas** | Integración con fuentes de threat intelligence | Conocimiento proactivo de amenazas |
-| 🔬 **Análisis Forense** | Investigación profunda de incidentes | Determinación de causa raíz |
-| 📡 **Monitoreo en Tiempo Real** | Streaming de eventos y alertas | Respuesta inmediata |
-| 🧪 **Simulación de Amenazas** | Pruebas de seguridad automatizadas | Validación de controles |
-| 📈 **Trend Analysis** | Análisis de patrones históricos | Predicción de tendencias |
-
-### 🏗️ Sistema Escalable de Punta
-
-VANT-SIEM está diseñado como una **plataforma de punta** que escala vertical y horizontalmente:
-
-- **Arquitectura de Microservicios**: Cada componente opera de manera independiente, permitiendo escalar únicamente los módulos que lo requieran
-- **Procesamiento de Alto Volumen**: Capacidad de ingestar y procesar millones de eventos por segundo
-- **Alta Disponibilidad**: Diseño tolerante a fallos con redundancia integrada
-- **Balanceo de Carga**: Distribución inteligente del procesamiento entre nodos
+- **Arquitectura de microservicios** con 5 bases de datos PostgreSQL aisladas
+- **Service Bus** (Redis pub/sub) para comunicacion entre servicios
+- **Gestion de Redes unificada** - Subredes, VLANs, segmentos y hosts en un solo modelo `Servicio`
+- **Topologia visual** - Esquemas fisicos y logicos con grafo interactivo (vis-network)
+- **Arbol de redes** - Vista jerarquica con stats de uso de IPs
+- **Detalle de subred** - Tabla de IPs asignadas, hosts activos, porcentaje de uso
+- **Fullscreen** en esquemas de topologia
+- **Celery** para tareas async y scheduled jobs
+- **Eliminacion de modulos legacy** (IRIS, Ollama, OpenSearch UI inline)
+- **VANT-Agent** separado en [repo propio](https://github.com/leonardovarona42/VANT-Agent)
 
 ---
 
-## ⚖️ Cumplimiento Legal
+## Arquitectura de Microservicios
 
-### 📜 Resolución 105 - MINCOM (Ministerio de Comunicaciones)
+### Servicios
 
-VANT-SIEM ha sido diseñado para cumplir con los requisitos establecidos en la **Resolución 105** del **Ministerio de Comunicaciones (MINCOM)** de Cuba, que establece el marco legal normativo para la gestión de incidentes de seguridad Informatica en el país:
+| Servicio | Puerto | Base de datos | Funcion |
+|----------|--------|---------------|---------|
+| **Web Portal** | 8000 | `vant_siem` | UI, auth, dashboard, agregacion |
+| **Logs** | 9201 | `vant_logs` | Ingesta de logs (Snort, Suricata, firewall) |
+| **Incidents** | 8001 | `vant_incidents` | Gestion de incidentes, reportes, EVENT_M |
+| **Network** | 8004 | `vant_network` | IPAM, VLANs, subnets, topologia |
+| **Assets** | 8002 | `vant_assets` | Inventario, DLP, agentes |
+| **Celery Worker** | - | - | Tareas async |
+| **Celery Beat** | - | - | Scheduler |
 
-| Requisito | Cumplimiento VANT-SIEM |
-|-----------|----------------------|
-| 📝 **Registro de incidentes** | Bitácora de incidentes en tiempo real con trazabilidad completa |
-| 👤 **Identificación de responsables** | Gestión de involucrados, responsables y áreas asignadas |
-| ⏰ **Trazabilidad temporal** | Timestamps precisos, historial de estados y acciones |
-| 📊 **Análisis y estadísticas** | Dashboard de incidentes, reportes y tendencias |
-| 🔒 **Confidencialidad** | Control de acceso granular, autenticación LDAP |
-| 📋 **Documentación** | Reportes formales, evidencia auditable |
-| 🔄 **Ciclo de vida del incidente** | Workflow completo: detección → análisis → contención → resolución |
-| 📑 **Notificación de incidentes** | Sistema de alertas y notificaciones a partes interesadas |
-| 🏢 **Coordinación institucional** | workflow multi-nivel con escalamiento |
-
-> 📢 **Nota**: La Resolución 105 del MINCOM establece las normas para la gestión de incidentes de seguridad Informatica en las organizaciones cubanas, incluyendo requisitos de reporte, tiempos de respuesta y procedimientos de coordinación.
-
----
-
-## 🏗️ Arquitectura Modular Basada en Microservicios
-
-VANT-SIEM adopta una **arquitectura desacoplada** basada en microservicios, separando la operación SIEM de la ingesta de alto volumen:
+### Diagrama
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         VANT-SIEM                                │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐ │
-│  │   CORE       │  │  VANT_SIEM   │  │      EVENT_M         │ │
-│  │  (Orquestación)│ │  (Núcleo)    │  │  (Gestión Incidentes) │ │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘ │
-│                                                                  │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐ │
-│  │     IRIS     │  │  opensearch  │  │    opensearch_ui     │ │
-│  │ (IA/Automát.) │ │  (Ingesta)   │  │   (Visualización)    │ │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────┐
+│                        VANT-SIEM v2.1                              │
+├───────────────────────────────────────────────────────────────────┤
+│  ┌──────┐ ┌──────┐ ┌──────┐ ┌────────┐ ┌──────┐ ┌───┐            │
+│  │ WEB  │ │ LOGS │ │INCID │ │ ASSETS │ │ NET  │ │Cel│            │
+│  │:8000 │ │:9201 │ │:8001 │ │ :8002  │ │:8004 │ │   │            │
+│  │UI    │ │Log   │ │Inc   │ │Invent. │ │IPAM  │ │Cel│            │
+│  │Auth  │ │Ingest│ │Report│ │DLP     │ │VLANs │ │Beat│           │
+│  │Dash  │ │Snort │ │EventM│ │Agents  │ │Topol │ │   │            │
+│  └──┬───┘ └──┬───┘ └──┬───┘ └───┬────┘ └──┬───┘ └─┬─┘            │
+│     │          │          │         │         │      │              │
+│     └──────────┼──────────┼─────────┼─────────┘      │              │
+│                │          │         │                │              │
+│         ┌──────▼──────────▼─────────▼────────────────▼──┐         │
+│         │         Service Bus (Redis pub/sub)            │         │
+│         │   vant:log.alert | vant:asset.dlp | ...       │         │
+│         └────────────────────────────────────────────────┘         │
+│                                                                     │
+│         ┌─────────────────────────────────────────────────────┐    │
+│         │            PostgreSQL (5 bases aisladas)             │    │
+│         │  vant_siem │ vant_logs │ vant_incidents │ ...       │    │
+│         └─────────────────────────────────────────────────────┘    │
+└───────────────────────────────────────────────────────────────────┘
 ```
 
-### 📦 Módulos del Sistema
-
-| Módulo | Descripción | Tecnologías |
-|--------|-------------|-------------|
-| 🏗️ **CORE** | Configuración y orquestación Django | Django, Python |
-| ⚙️ **VANT_SIEM** | Núcleo SIEM: autenticación, notificaciones, dashboard principal | Django, Bootstrap 5 |
-| 📋 **EVENT_M** | Gestión de incidentes, reportes,bitácora y seguimiento | Django, PostgreSQL |
-| 🤖 **IRIS** | Analítica asistida por IA y automatización SOAR | scikit-learn, NumPy |
-| 🌐 **opensearch** | Microservicio de ingesta de logs y agentes multi-fuente | Python, OpenSearch |
-| 📊 **opensearch_ui** | Dashboard de logs y Discovery avanzado | Bootstrap, Chart.js |
+Ver [MICROSERVICES.md](MICROSERVICES.md) para detalles completos.
 
 ---
 
-## 🔐 SIEM - Security Information & Event Management
+## Modulos Django (Monolito)
 
-### 📊 Capacidades Principales
+En modo standalone, los modulos operan como apps Django dentro de un solo proceso:
 
-- **📥 Centralización de Eventos**: Recolección de eventos de múltiples fuentes (Snort, Suricata, Windows Event Logs, Samba AD, PostgreSQL)
-- **🔍 Correlación de Eventos**: Análisis avanzado para identificar patrones de ataque
-- **🚨 Alertas en Tiempo Real**: Notificaciones inmediatas ante eventos sospechosos
-- **📈 Priorización por Severidad**: Clasificación automática de eventos por nivel de riesgo
-- **🔎 Investigación Forense**: Búsqueda avanzada y análisis de comportamiento
-- **📝 Auditoría Granular**: Registro detallado de todas las acciones y accesos
+| App | Descripcion |
+|-----|-------------|
+| **CORE** | Settings, routing, service bus, events, celery config |
+| **VANT_SIEM** | Auth, LDAP, notificaciones, dashboard, config email, logs |
+| **EVENT_M** | Incidentes, reportes, medidas, involucrados, servicios, redes, topologia |
 
----
+### EVENT_M - Gestion de Eventos y Redes
 
-## 📝 Bitácora de Incidentes en Tiempo Real
+**Modelos principales:**
 
-VANT-SIEM proporciona una **bitácora completa** de incidentes con:
+| Modelo | Funcion |
+|--------|---------|
+| `Categoria` / `Subcategoria` | Clasificacion de incidentes |
+| `Servicio` | Host, switch, router, firewall, VLAN, subred, segmento, cluster, servicio externo |
+| `ServicioIP` | IPs asignadas a un servicio |
+| `PuertoDispositivo` | Puertos fisicos de dispositivos de red |
+| `ConexionTopologica` | Conexiones entre servicios para topologia |
+| `Responsable` / `Area` | Personas y areas organizativas |
+| `Reporte` | Reportes formales de seguridad |
+| `Incidente` | Incidentes con ciclo de vida completo |
+| `Medida` | Medidas de seguridad |
 
-- 🕐 **Tiempo Real**: Registro inmediato de eventos y incidentes
-- 📋 **Gestión Integral**: Creación, seguimiento y resolución de incidentes
-- 👥 **Asignación de Responsables**: Control de quienes atienden cada incidente
-- 📊 **Métricas y KPIs**: Indicadores de rendimiento del proceso de gestión
-- 🔄 **Historial de Estados**: Trazabilidad completa del ciclo de vida
-- 📑 **Reportes Formalizados**: Generación de informes cumpliendo normativas
+**Servicio como modelo unificado de red:**
 
----
+El modelo `Servicio` ahora maneja todos los tipos de entidad de red:
 
-## 🛡️ OSIC-Threads y Aegis DLP
+| Tipo | Campos relevantes |
+|------|------------------|
+| `host` | host (IP), plataforma, firmware |
+| `switch` | num_puertos, modelo, fabricante |
+| `router` | num_puertos, modelo, fabricante |
+| `firewall` | num_puertos, modelo, fabricante |
+| `vlan` | vlan_id, network, subnet_mask, gateway |
+| `subred` | network, subnet_mask, gateway, DHCP |
+| `segmento` | network, subnet_mask, servicio_padre |
+| `red` | network, subnet_mask, gateway |
+| `cluster` | servicios_hijos (M2M) |
+| `servicio_externo` | url_servicio, api_key |
 
-La plataforma incorpora un flujo operativo para detecciones de fuga de información:
+**Vistas:**
 
-- `Aegis DLP` inspecciona archivos locales y detecta contenido `clasificado`, `secreto`, `restringido` o soberano sensible.
-- Las detecciones llegan al dashboard como `OSIC-Threads` con auto-refresh, filtros, vista previa documental y detalle técnico.
-- Desde la misma vista, `Reportar` crea automáticamente un `Reporte` y un `Incidente` en `EVENT_M` con evidencia serializada, host, IP, usuario, hash, clasificación y contexto del hallazgo.
-- El hilo OSIC queda marcado como `contained` y mantiene trazabilidad hacia el incidente formal.
-
----
-
-## 🔍 Análisis de Logs y Observabilidad
-
-### 🌐 Pipeline de OpenSearch
-
-```
-Fuentes de Datos → Agente → Servicio de Ingesta → OpenSearch → Dashboard
-     (Snort,                                               │
-      Suricata,                                            │
-      Windows,                                             │
-      AD, ...)                                             │
-                                                            ↓
-                                              ┌────────────────────┐
-                                              │   opensearch_ui    │
-                                              │  - Dashboards      │
-                                              │  - Discovery       │
-                                              │  - Visualizaciones │
-                                              └────────────────────┘
-```
-
-### 📊 Dashboards Disponibles
-
-| Dashboard | Ruta | Descripción |
-|-----------|------|-------------|
-| 🏠 **Principal** | `/opensearch/` | Vista general de eventos |
-| 🛡️ **Snort IDS V2** | `/opensearch/snort/v2/` | Alertas IDS con timeline |
-| 🔎 **Discovery** | `/opensearch/discover/` | Exploración avanzada de logs |
-
-### 🎨 Constructor de Visualizaciones
-
-- **📈 Gráficos**: Line, Bar, Area, Pie/Donut, Table, Metric
-- **⚙️ Métricas**: Count, Average, Sum, Min, Max, Cardinality, Percentiles
-- **🪣 Buckets**: Date Histogram, Terms, Filters
-- **✨ Personalización**: Colores, leyendas, animaciones, etiquetas
+| URL | Vista | Descripcion |
+|-----|-------|-------------|
+| `/eventos/servicios/` | `ServicioListView` | CRUD de todos los servicios |
+| `/eventos/redes/` | `RedServicioListView` | Arbol de redes con expand/collapse |
+| `/eventos/red/<pk>/` | `RedDetailView` | Detalle de subred: IPs, stats, hosts |
+| `/eventos/esquema/fisico/` | `TopologiaFisicaView` | Grafo topologico fisico |
+| `/eventos/esquema/logico/` | `TopologiaLogicaView` | Grafo topologico logico |
 
 ---
 
-## 🔐 Autenticación y Seguridad
+## Cumplimiento Legal
 
-### 🏢 Integración LDAP/Active Directory
+### Resolucion 105 - MINCOM
 
-VANT-SIEM soporta **autenticación centralizada** mediante LDAP:
+VANT-SIEM cumple con la **Resolucion 105** del **Ministerio de Comunicaciones** de Cuba:
 
-- 🔒 **SSL/TLS** o StartTLS
-- 👤 **Bind DN** opcional
-- 🔍 **Búsqueda de usuarios** con placeholder `{username}`
-- 📝 **Mapeo de atributos**: usuario, nombre, apellido, email
-- ➕ **Auto-creación** de usuarios en el sistema
-
----
-
-## 🤖 Inteligencia Artificial y Machine Learning
-
-El módulo **IRIS** integra capacidades de IA para:
-
-- 📊 **Análisis de comportamiento** y detección de anomalías
-- 🔮 **Predicción de riesgos** y tendencias
-- 🎯 **Clasificación automática** de incidentes
-- 📈 **Optimización operativa** mediante modelos predictivos
+| Requisito | Cumplimiento |
+|-----------|-------------|
+| Registro de incidentes | Bitacora en tiempo real con trazabilidad |
+| Identificacion de responsables | Gestion de involucrados y areas |
+| Trazabilidad temporal | Timestamps, historial de estados |
+| Analisis y estadisticas | Dashboard, reportes, tendencias |
+| Confidencialidad | Control de acceso, LDAP |
+| Documentacion | Reportes formales auditables |
+| Ciclo de vida del incidente | Workflow completo |
 
 ---
 
-## 🚀 Inicio Rápido
+## Inicio Rapido
 
-### Prerequisites
-
-- Python 3.12+
-- PostgreSQL 14+
-- OpenSearch 2.x
-
-### Instalación
+### Standalone
 
 ```bash
-# 1. Crear entorno virtual
+# 1. Entorno virtual
 python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# Windows: venv\Scripts\activate
+venv\Scripts\activate          # Windows
+source venv/bin/activate       # Linux
 
-# 2. Instalar dependencias
+# 2. Dependencias
 pip install -r requirements.txt
 
-# 3. Configurar base de datos en CORE/settings.py
+# 3. Configurar .env (copiar de .env.example)
+cp .env.example .env
 
-# 4. Ejecutar migraciones
+# 4. Migraciones
 python manage.py migrate
 
-# 5. Iniciar servidor
+# 5. Iniciar
 python manage.py runserver 0.0.0.0:8000
+
+# 6. Celery (en otra terminal)
+celery -A CORE worker --loglevel=info
+celery -A CORE beat --loglevel=info
 ```
 
-### Servicio OpenSearch (Windows)
+### Docker
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\opensearch\service\install_windows_service.ps1
+```bash
+cd docker_deployment
+docker compose up -d
+# Escalar logs: docker compose up -d --scale logs-service=3
 ```
 
-### Agente OpenSearch (Windows)
+### Scripts de operacion (Linux)
 
-```powershell
-.\opensearch_agents\windows\opensearch_agent_setup.exe
+```bash
+./startup.sh    # Iniciar todos los servicios
+./status.sh     # Ver estado
+./stop.sh       # Detener
 ```
 
 ---
 
-## 📚 Documentación
+## VANT-Agent
 
-| Documento | Descripción |
+El agente de endpoint se distribuye como repositorio separado:
+👉 [leonardovarona42/VANT-Agent](https://github.com/leonardovarona42/VANT-Agent)
+
+Incluye: `asset_audit` (inventario), `aegis_dlp` (prevencion fuga de datos), colectores de logs.
+
+---
+
+## Documentacion
+
+| Documento | Descripcion |
 |-----------|-------------|
-| 📖 `docs/README.md` | Documentación general |
-| 🏗️ `docs/ARCHITECTURE.md` | Arquitectura del sistema |
-| 📦 `docs/INSTALLATION.md` | Guía de instalación |
-| 📋 `docs/CHANGELOG.md` | Historial de cambios |
-| 🔍 `docs/OPENSEARCH_FEATURE.md` | Características de OpenSearch |
-| 🧩 `docs/AGENT_MICROSERVICES.md` | Microservicios `asset_audit` y `aegis_dlp` |
-| 🛡️ `docs/DLP_CLASSIFICATION_GUIDE.md` | Tratamiento de información clasificada y sensible |
-| 🌐 `opensearch/README.md` | Documentación del agente |
-| 📊 `opensearch_ui/README.md` | Documentación del UI |
+| [MICROSERVICES.md](MICROSERVICES.md) | Arquitectura de microservicios |
+| [ROADMAP.md](ROADMAP.md) | Plan de desarrollo y estado |
+| [docker_deployment/README.md](docker_deployment/README.md) | Deploy con Docker |
 
 ---
 
-## 🛡️ Inventario, Auditoría y DLP
+## Tecnologias
 
-VANT-SIEM integra ahora dos microservicios embebidos dentro del agente:
-
-- `asset_audit`: inventario profesional de hardware, software, identidades de red, USB, usuarios y línea de tiempo del endpoint.
-- `aegis_dlp`: prevención de fuga de información para contenido clasificado, secreto, restringido y de seguridad del Estado.
-
-Capacidades principales:
-
-- trazabilidad histórica de lo que existió en una máquina
-- observación de seriales, MACs, IPs, software y dispositivos USB
-- línea de tiempo por host con eventos de inventario y DLP
-- incidentes DLP con actor, archivo, hash, canal y clasificación
-- políticas soberanas personalizables desde el servidor
-
-Rutas operativas del dashboard:
-
-- `/siem/dashboard/devices/management/`
-- `/siem/dashboard/devices/inventory/`
-- `/siem/dashboard/devices/dlp/`
-
-Para Windows Server, el instalador gráfico incluye perfil de auditoría para Active Directory con canales de `Security`, `Directory Service`, `DNS Server`, `DFS Replication` y `Active Directory Web Services`.
-
----
-
-## 🛠️ Tecnologías Utilizadas
-
-<p align="left">
-
-![Django](https://img.shields.io/badge/Django-5.x-green)
-![Python](https://img.shields.io/badge/Python-3.12-blue)
+![Django](https://img.shields.io/badge/Django-6.0-green)
+![Python](https://img.shields.io/badge/Python-3.13-blue)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14+-blue)
-![OpenSearch](https://img.shields.io/badge/OpenSearch-2.x-orange)
-![Bootstrap](https://img.shields.io/badge/Bootstrap-5-purple)
-![Chart.js](https://img.shields.io/badge/Chart.js-yellow)
-![scikit-learn](https://img.shields.io/badge/scikit--learn-blue)
-
-</p>
+![Celery](https://img.shields.io/badge/Celery-5.x-red)
+![Redis](https://img.shields.io/badge/Redis-broker-orange)
+![vis-network](https://img.shields.io/badge/vis--network-topology-yellow)
+![Bootstrap](https://img.shields.io/badge/Tailwind-CSS-purple)
 
 ---
 
-## 📄 Licencia
+## Licencia
 
-MIT License - © 2025 VANT-SIEM - Developed by **LLVT**
+MIT License - © 2025-2026 VANT-SIEM - Developed by **LLVT**
 
 ---
 
 <div align="center">
 
-**🛡️ VANT-SIEM** - *Vigilance And Neutralization of Threats*
+**VANT-SIEM v2.1** - *Vigilance And Neutralization of Threats*
 
-*Plataforma integral de ciberseguridad para la gestión de incidentes en tiempo real*
-
-*Integrando Inteligencia Artificial, Machine Learning y Ciberinteligencia de última generación*
+*Plataforma integral de ciberseguridad con arquitectura de microservicios*
 
 </div>

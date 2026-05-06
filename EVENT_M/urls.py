@@ -3,6 +3,7 @@ from .views import (
     CategoriaListView, CategoriaDetailView, CategoriaCreateView, CategoriaUpdateView, CategoriaDeleteView,
     SubcategoriaListView, SubcategoriaDetailView, SubcategoriaCreateView, SubcategoriaUpdateView, SubcategoriaDeleteView,
     ServicioListView, ServicioDetailView, ServicioCreateView, ServicioUpdateView, ServicioDeleteView,
+    RedServicioListView, RedDetailView,
     ResponsableListView, ResponsableDetailView, ResponsableCreateView, ResponsableUpdateView, ResponsableDeleteView,
     AreaListView, AreaDetailView, AreaCreateView, AreaUpdateView, AreaDeleteView,
     MedidaListView, MedidaDetailView, MedidaCreateView, MedidaUpdateView, MedidaDeleteView,
@@ -11,7 +12,8 @@ from .views import (
     MedidaIncidenteListView, MedidaIncidenteDetailView, MedidaIncidenteCreateView, MedidaIncidenteUpdateView, MedidaIncidenteDeleteView,
     InvolucradoListView, InvolucradoDetailView, InvolucradoCreateView, InvolucradoUpdateView, InvolucradoDeleteView,
     InvolucradoIncidenteListView, InvolucradoIncidenteDetailView, InvolucradoIncidenteCreateView, InvolucradoIncidenteUpdateView, InvolucradoIncidenteDeleteView,
-    dashboard_metrics, incidentes_timeline, reporte_externo,
+    TopologiaFisicaView, TopologiaLogicaView,
+    dashboard_metrics, incidentes_timeline, reporte_externo, create_involucrado_api,
 )
 
 urlpatterns = [
@@ -35,6 +37,14 @@ urlpatterns = [
     path('servicio/nuevo/', ServicioCreateView.as_view(), name='servicio-create'),
     path('servicio/<int:pk>/editar/', ServicioUpdateView.as_view(), name='servicio-update'),
     path('servicio/<int:pk>/eliminar/', ServicioDeleteView.as_view(), name='servicio-delete'),
+
+    # Topologia / Esquemas
+    path('esquema/fisico/', TopologiaFisicaView.as_view(), name='esquema-fisico'),
+    path('esquema/logico/', TopologiaLogicaView.as_view(), name='esquema-logico'),
+
+    # Redes (subred, red, segmento, vlan)
+    path('redes/', RedServicioListView.as_view(), name='red-list'),
+    path('red/<int:pk>/', RedDetailView.as_view(), name='red-detail'),
 
     # Responsable
     path('responsables/', ResponsableListView.as_view(), name='responsable-list'),
@@ -95,6 +105,7 @@ urlpatterns = [
     # Métricas del Dashboard
     path('api/metrics/', dashboard_metrics, name='dashboard-metrics'),
     path('api/timeline/', incidentes_timeline, name='incidentes-timeline'),
+    path('api/involucrados/create/', create_involucrado_api, name='create-involucrado-api'),
 
     # Reporte Externo (público, sin autenticación)
     path('reporte_externo/', reporte_externo, name='reporte-externo'),

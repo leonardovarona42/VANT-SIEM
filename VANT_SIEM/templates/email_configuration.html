@@ -3,180 +3,172 @@
 
 {% block content %}
 <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-<div class="container-fluid">
- <div class="row">
- <div class="col-12">
- <div class="card bg-secondary">
- <div class="card-header d-flex justify-content-between align-items-center">
- <h3 class="text-info mb-0">
- <i class="fas fa-envelope me-2"></i>Configuración de Correo
- </h3>
- <a href="{% url 'create-email-config' %}" class="btn btn-success">
- <i class="fas fa-plus me-2"></i>Nueva Configuración
- </a>
- </div>
- <div class="card-body">
- {% if configs %}
- <div class="table-responsive">
- <table class="table table-dark table-hover">
- <thead>
- <tr>
- <th>Nombre</th>
- <th>Servidor SMTP</th>
- <th>Puerto</th>
- <th>Email Remitente</th>
- <th>Estado</th>
- <th>Creado por</th>
- <th>Fecha Creación</th>
- <th>Acciones</th>
- </tr>
- </thead>
- <tbody>
- {% for config in configs %}
- <tr class="{% if config.is_active %}table-success{% endif %}">
- <td>
- <strong>{{ config.name }}</strong>
- {% if config.is_active %}
- <span class="badge bg-success ms-2">Activa</span>
- {% endif %}
- </td>
- <td>{{ config.smtp_server }}</td>
- <td>{{ config.smtp_port }}</td>
- <td>{{ config.from_email }}</td>
- <td>
- {% if config.use_tls %}
- <span class="badge bg-info">TLS</span>
- {% elif config.use_ssl %}
- <span class="badge bg-warning">SSL</span>
- {% else %}
- <span class="badge bg-secondary">Sin cifrado</span>
- {% endif %}
- </td>
- <td>{{ config.created_by.username }}</td>
- <td>{{ config.created_at|date:"d/m/Y H:i" }}</td>
- <td>
- <div class="btn-group" role="group">
- <button class="btn btn-sm btn-secondary"
- onclick="testConfig(event, {{ config.id }}, '{{ config.name|escapejs }}')"
- title="Probar Configuración">
- <i class="fas fa-paper-plane me-1"></i>Test
- </button>
-
- <a class="btn btn-sm btn-outline-light me-2" href="{% url 'edit-email-config' config.id %}" title="Editar Configuración">
- <i class="fas fa-edit me-1"></i>Editar
- </a>
-
- {% if not config.is_active %}
- <button class="btn btn-sm btn-primary"
- onclick="activateConfig(event, {{ config.id }}, '{{ config.name|escapejs }}')"
- title="Activar Configuración">
- <i class="fas fa-play"></i>
- </button>
- {% else %}
- <span class="badge bg-success">Activa</span>
- {% endif %}
- </div>
- </td>
- </tr>
- {% endfor %}
- </tbody>
- </table>
- </div>
- {% else %}
- <div class="text-center py-5">
- <i class="fas fa-envelope fa-3x text-muted mb-3"></i>
- <h5 class="text-muted">No hay configuraciones de correo</h5>
- <p class="text-muted">Crea tu primera configuración para comenzar a enviar alertas por correo</p>
- <a href="{% url 'create-email-config' %}" class="btn btn-success">
- <i class="fas fa-plus me-2"></i>Crear Configuración
- </a>
- </div>
- {% endif %}
- </div>
- </div>
- </div>
- </div>
+<div class="space-y-6">
+  <div class="glass-card rounded-2xl overflow-hidden">
+    <div class="px-6 py-4 border-b dark:border-surface-700 border-surface-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <h3 class="text-xl font-bold dark:text-surface-100 text-surface-900">
+        <i class="fas fa-envelope me-2 text-brand-500"></i>Configuración de Correo
+      </h3>
+      <a href="{% url 'create-email-config' %}" class="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-medium rounded-xl shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-300 inline-flex items-center gap-2">
+        <i class="fas fa-plus"></i>Nueva Configuración
+      </a>
+    </div>
+    <div class="p-6">
+      {% if configs %}
+      <div class="overflow-x-auto">
+        <table class="w-full divide-y dark:divide-surface-700 divide-surface-200" id="email-configs-table">
+          <thead class="dark:bg-surface-800 bg-surface-100">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Nombre</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Servidor SMTP</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true" data-type="number">Puerto</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Email Remitente</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Estado</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Creado por</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true" data-type="date">Fecha Creación</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="dark:divide-surface-700 divide-surface-200">
+            {% for config in configs %}
+            <tr class="dark:hover:bg-surface-700/50 hover:bg-surface-50 transition-colors {% if config.is_active %}dark:bg-emerald-500/5 bg-emerald-50{% endif %}">
+              <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800 font-medium">
+                {{ config.name }}
+                {% if config.is_active %}
+                <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400">Activa</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ config.smtp_server }}</td>
+              <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ config.smtp_port }}</td>
+              <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ config.from_email }}</td>
+              <td class="px-4 py-3 text-sm">
+                {% if config.use_tls %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium dark:bg-brand-500/20 bg-brand-100 text-brand-400">TLS</span>
+                {% elif config.use_ssl %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium dark:bg-amber-500/20 bg-amber-100 text-amber-400">SSL</span>
+                {% else %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium dark:bg-surface-700 bg-surface-200 dark:text-surface-400 text-surface-500">Sin cifrado</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ config.created_by.username }}</td>
+              <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ config.created_at|date:"d/m/Y H:i" }}</td>
+              <td class="px-4 py-3 text-sm">
+                <div class="flex items-center gap-2">
+                  <button class="inline-flex items-center px-3 py-1.5 text-xs font-medium dark:bg-surface-700 bg-surface-200 dark:text-surface-400 text-surface-600 rounded-lg hover:bg-surface-300 dark:hover:bg-surface-600 transition-colors" onclick="testConfig(event, {{ config.id }}, '{{ config.name|escapejs }}')" title="Probar Configuración">
+                    <i class="fas fa-paper-plane me-1"></i>Test
+                  </button>
+                  <a class="inline-flex items-center px-3 py-1.5 text-xs font-medium dark:bg-surface-700 bg-surface-200 dark:text-surface-400 text-surface-600 rounded-lg hover:bg-surface-300 dark:hover:bg-surface-600 transition-colors" href="{% url 'edit-email-config' config.id %}" title="Editar Configuración">
+                    <i class="fas fa-edit me-1"></i>Editar
+                  </a>
+                  {% if not config.is_active %}
+                  <button class="inline-flex items-center px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white rounded-lg shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all duration-300" onclick="activateConfig(event, {{ config.id }}, '{{ config.name|escapejs }}')" title="Activar Configuración">
+                    <i class="fas fa-play"></i>
+                  </button>
+                  {% else %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400">Activa</span>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-12">
+        <i class="fas fa-envelope fa-3x mb-3 dark:text-surface-600 text-surface-400"></i>
+        <h5 class="text-lg font-semibold dark:text-surface-400 text-surface-500 mb-2">No hay configuraciones de correo</h5>
+        <p class="dark:text-surface-500 text-surface-400 mb-4">Crea tu primera configuración para comenzar a enviar alertas por correo</p>
+        <a href="{% url 'create-email-config' %}" class="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-medium rounded-xl shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-300 inline-flex items-center gap-2">
+          <i class="fas fa-plus"></i>Crear Configuración
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+  VANT_UI.initSortableTables({ tableId: 'email-configs-table' });
+});
 function activateConfig(event, configId, configName) {
- if (confirm(`¿Estás seguro de que quieres activar la configuración "${configName}"?`)) {
- fetch(`/siem/dashboard/api/email-config/${configId}/activate/`, {
- method: 'POST',
- headers: {
- 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
- 'Content-Type': 'application/json',
- },
- })
- .then(response => response.json())
- .then(data => {
- if (data.success) {
- location.reload();
- } else {
- alert('Error: ' + data.error);
- }
- })
- .catch(error => {
- console.error('Error:', error);
- alert('Error al activar la configuración');
- });
- }
+  if (confirm(`¿Estás seguro de que quieres activar la configuración "${configName}"?`)) {
+    fetch(`/siem/dashboard/api/email-config/${configId}/activate/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        'Content-Type': 'application/json',
+      },
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        location.reload();
+      } else {
+        alert('Error: ' + data.error);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Error al activar la configuración');
+    });
+  }
 }
 
 function testConfig(event, configId, configName) {
- if (confirm(`¿Enviar correo de prueba para la configuración "${configName}"?\n\nEsta operación puede tardar hasta 15 segundos.`)) {
- // Mostrar loading con mejor feedback
- const button = event.target.closest('button');
- const originalHTML = button.innerHTML;
- button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Probando...';
- button.disabled = true;
+  if (confirm(`¿Enviar correo de prueba para la configuración "${configName}"?\n\nEsta operación puede tardar hasta 15 segundos.`)) {
+    // Mostrar loading con mejor feedback
+    const button = event.target.closest('button');
+    const originalHTML = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Probando...';
+    button.disabled = true;
 
- // Crear timeout para evitar esperas infinitas
- const controller = new AbortController();
- const timeoutId = setTimeout(() => {
- controller.abort();
- button.innerHTML = originalHTML;
- button.disabled = false;
- alert('⏰ Tiempo de espera agotado. Verifique la configuración de red y servidor SMTP.');
- }, 15000); // 15 segundos timeout
+    // Crear timeout para evitar esperas infinitas
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+      button.innerHTML = originalHTML;
+      button.disabled = false;
+      alert('⏰ Tiempo de espera agotado. Verifique la configuración de red y servidor SMTP.');
+    }, 15000); // 15 segundos timeout
 
- fetch(`/siem/dashboard/api/email-config/${configId}/test/`, {
- method: 'POST',
- headers: {
- 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
- 'Content-Type': 'application/json',
- },
- signal: controller.signal
- })
- .then(response => {
- clearTimeout(timeoutId);
- if (!response.ok) {
- throw new Error(`HTTP ${response.status}: ${response.statusText}`);
- }
- return response.json();
- })
- .then((data) => {
- if (data.success) {
- alert('✅ ' + data.message);
- } else {
- alert('❌ Error: ' + (data.error || data.message));
- }
- })
- .catch(error => {
- clearTimeout(timeoutId);
- console.error('Error:', error);
- if (error.name === 'AbortError') {
- alert('⏰ La solicitud fue cancelada por timeout.');
- } else {
- alert('❌ Error al probar la configuración: ' + error.message);
- }
- })
- .finally(() => {
- button.innerHTML = originalHTML;
- button.disabled = false;
- });
- }
+    fetch(`/siem/dashboard/api/email-config/${configId}/test/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal
+    })
+    .then(response => {
+      clearTimeout(timeoutId);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      return response.json();
+    })
+    .then((data) => {
+      if (data.success) {
+        alert('✅ ' + data.message);
+      } else {
+        alert('❌ Error: ' + (data.error || data.message));
+      }
+    })
+    .catch(error => {
+      clearTimeout(timeoutId);
+      console.error('Error:', error);
+      if (error.name === 'AbortError') {
+        alert('⏰ La solicitud fue cancelada por timeout.');
+      } else {
+        alert('❌ Error al probar la configuración: ' + error.message);
+      }
+    })
+    .finally(() => {
+      button.innerHTML = originalHTML;
+      button.disabled = false;
+    });
+  }
 }
-
 </script>
 {% endblock %}

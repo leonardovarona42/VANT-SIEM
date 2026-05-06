@@ -1,87 +1,99 @@
 {% extends "dashboard.html" %}
 {% block title %}{{ form.instance.pk|yesno:"Editar Área,Nueva Área" }} | VANT-SIEM{% endblock %}
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
-        <div class="card bg-secondary shadow">
-            <div class="card-header text-center text-info fw-bold">
-                {{ form.instance.pk|yesno:"Editar Área,Nueva Área" }}
+<div class="flex justify-center">
+    <div class="w-full max-w-2xl">
+        <div class="glass-card">
+            <div class="px-6 py-4 border-b dark:border-surface-700 border-surface-200 text-center text-brand-400 font-bold">
+                <i class="fas fa-building mr-2"></i>{{ form.instance.pk|yesno:"Editar Área,Nueva Área" }}
             </div>
-            <div class="card-body">
+            <div class="p-6">
                 {% if messages %}
                     {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <div class="p-4 rounded-lg mb-4 {% if message.tags == 'success' %}bg-green-100 border border-green-400 text-green-700 dark:bg-green-900 dark:border-green-700 dark:text-green-300{% elif message.tags == 'error' %}bg-red-100 border border-red-400 text-red-700 dark:bg-red-900 dark:border-red-700 dark:text-red-300{% elif message.tags == 'warning' %}bg-yellow-100 border border-yellow-400 text-yellow-700 dark:bg-yellow-900 dark:border-yellow-700 dark:text-yellow-300{% else %}bg-blue-100 border border-blue-400 text-blue-700 dark:bg-blue-900 dark:border-blue-700 dark:text-blue-300{% endif %} flex items-center justify-between" role="alert">
+                            <span>{{ message }}</span>
+                            <button type="button" class="ml-4 text-current opacity-70 hover:opacity-100" onclick="this.parentElement.remove()">
+                                <i class="fas fa-times"></i>
+                            </button>
                         </div>
                     {% endfor %}
                 {% endif %}
                 {% if form.errors %}
-                    <div class="alert alert-danger">
+                    <div class="p-4 rounded-lg mb-4 bg-red-100 border border-red-400 text-red-700 dark:bg-red-900 dark:border-red-700 dark:text-red-300">
                         {{ form.errors }}
                     </div>
                 {% endif %}
                 <form method="post">
                     {% csrf_token %}
-                    <div class="row">
-                        <div class="col-md-8">
-                            <div class="mb-3">
-                                <label for="nombre" class="form-label fw-bold text-info">Nombre del Área</label>
-                                <input type="text" name="nombre" id="nombre" class="form-control" required value="{{ form.nombre.value|default_if_none:'' }}">
-                            </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        <div>
+                            <label for="nombre" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                                <i class="fas fa-heading mr-1"></i>Nombre del Área
+                            </label>
+                            <input type="text" name="nombre" id="nombre" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" required value="{{ form.nombre.value|default_if_none:'' }}">
                         </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="acronimo" class="form-label fw-bold text-info">Acrónimo</label>
-                                <input type="text" name="acronimo" id="acronimo" class="form-control" required value="{{ form.acronimo.value|default_if_none:'' }}" maxlength="10">
-                            </div>
+                        <div>
+                            <label for="acronimo" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                                <i class="fas fa-font mr-1"></i>Acrónimo
+                            </label>
+                            <input type="text" name="acronimo" id="acronimo" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" required value="{{ form.acronimo.value|default_if_none:'' }}" maxlength="10">
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="cuadro_centro" class="form-label fw-bold text-info">Cuadro Centro</label>
-                        <div class="input-group">
-                            <select name="cuadro_centro" id="cuadro_centro" class="form-select" required>
+                        <label for="cuadro_centro" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                            <i class="fas fa-user-tie mr-1"></i>Cuadro Centro
+                        </label>
+                        <div class="flex gap-2">
+                            <select name="cuadro_centro" id="cuadro_centro" class="flex-1 px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" required>
                                 <option disabled selected>Seleccione un responsable...</option>
                                 {% for responsable in form.cuadro_centro.field.queryset %}
                                     <option value="{{ responsable.id }}" {% if form.cuadro_centro.value|stringformat:"s" == responsable.id|stringformat:"s" %}selected{% endif %}>{{ responsable.nombres }} {{ responsable.apellidos }}</option>
                                 {% endfor %}
                             </select>
-                            <button type="button" class="btn btn-outline-success fw-bold" data-bs-toggle="modal" data-bs-target="#crearResponsableModal" data-target="cuadro_centro" title="Crear nuevo responsable">
-                                +
+                            <button type="button" class="px-4 py-2.5 border border-green-500 text-green-500 rounded-lg hover:bg-green-500 hover:text-white transition-colors font-bold" data-target="cuadro_centro" title="Crear nuevo responsable">
+                                <i class="fas fa-plus"></i>
                             </button>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="rsi" class="form-label fw-bold text-info">RSI</label>
-                        <div class="input-group">
-                            <select name="rsi" id="rsi" class="form-select" required>
+                        <label for="rsi" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                            <i class="fas fa-user-shield mr-1"></i>RSI
+                        </label>
+                        <div class="flex gap-2">
+                            <select name="rsi" id="rsi" class="flex-1 px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" required>
                                 <option disabled selected>Seleccione un responsable...</option>
                                 {% for responsable in form.rsi.field.queryset %}
                                     <option value="{{ responsable.id }}" {% if form.rsi.value|stringformat:"s" == responsable.id|stringformat:"s" %}selected{% endif %}>{{ responsable.nombres }} {{ responsable.apellidos }}</option>
                                 {% endfor %}
                             </select>
-                            <button type="button" class="btn btn-outline-success fw-bold" data-bs-toggle="modal" data-bs-target="#crearResponsableModal" data-target="rsi" title="Crear nuevo responsable">
-                                +
+                            <button type="button" class="px-4 py-2.5 border border-green-500 text-green-500 rounded-lg hover:bg-green-500 hover:text-white transition-colors font-bold" data-target="rsi" title="Crear nuevo responsable">
+                                <i class="fas fa-plus"></i>
                             </button>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="admin" class="form-label fw-bold text-info">Admin</label>
-                        <div class="input-group">
-                            <select name="admin" id="admin" class="form-select" required>
+                        <label for="admin" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                            <i class="fas fa-user-cog mr-1"></i>Admin
+                        </label>
+                        <div class="flex gap-2">
+                            <select name="admin" id="admin" class="flex-1 px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" required>
                                 <option disabled selected>Seleccione un responsable...</option>
                                 {% for responsable in form.admin.field.queryset %}
                                     <option value="{{ responsable.id }}" {% if form.admin.value|stringformat:"s" == responsable.id|stringformat:"s" %}selected{% endif %}>{{ responsable.nombres }} {{ responsable.apellidos }}</option>
                                 {% endfor %}
                             </select>
-                            <button type="button" class="btn btn-outline-success fw-bold" data-bs-toggle="modal" data-bs-target="#crearResponsableModal" data-target="admin" title="Crear nuevo responsable">
-                                +
+                            <button type="button" class="px-4 py-2.5 border border-green-500 text-green-500 rounded-lg hover:bg-green-500 hover:text-white transition-colors font-bold" data-target="admin" title="Crear nuevo responsable">
+                                <i class="fas fa-plus"></i>
                             </button>
                         </div>
                     </div>
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a href="{% url 'area-list' %}" class="btn btn-secondary me-md-2">Cancelar</a>
-                        <button type="submit" class="btn btn-primary">Guardar</button>
+                    <div class="flex flex-col sm:flex-row gap-2 justify-end mt-6">
+                        <a href="{% url 'area-list' %}" class="px-4 py-2.5 dark:bg-surface-800 dark:text-surface-200 bg-surface-100 text-surface-800 rounded-lg border text-center">
+                            <i class="fas fa-times mr-2"></i>Cancelar
+                        </a>
+                        <button type="submit" class="px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 text-white rounded-xl font-medium">
+                            <i class="fas fa-save mr-2"></i>Guardar
+                        </button>
                     </div>
                 </form>
             </div>
@@ -90,61 +102,78 @@
 </div>
 
 <!-- Modal para crear responsable -->
-<div class="modal fade" id="crearResponsableModal" tabindex="-1" aria-labelledby="crearResponsableModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content bg-dark text-light">
-            <div class="modal-header">
-                <h5 class="modal-title text-info" id="crearResponsableModalLabel">Crear Nuevo Responsable</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+<div class="hidden fixed inset-0 z-50 overflow-y-auto" id="crearResponsableModal" aria-labelledby="crearResponsableModalLabel" aria-hidden="true">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black/60 transition-opacity" id="modalBackdrop"></div>
+        <div class="relative glass-card rounded-2xl shadow-xl max-w-lg w-full transform transition-all">
+            <div class="px-6 py-4 border-b dark:border-surface-700 border-surface-200">
+                <div class="flex items-center justify-between">
+                    <h5 class="text-lg font-bold text-brand-400" id="crearResponsableModalLabel">
+                        <i class="fas fa-user-plus mr-2"></i>Crear Nuevo Responsable
+                    </h5>
+                    <button type="button" class="text-current opacity-70 hover:opacity-100 transition-opacity" id="cerrarModalBtn" aria-label="Cerrar">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
             </div>
-            <div class="modal-body">
+            <div class="p-6">
                 <form id="crearResponsableForm">
                     {% csrf_token %}
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="modal_nombres" class="form-label fw-bold text-info">Nombres</label>
-                                <input type="text" name="nombres" id="modal_nombres" class="form-control" required>
-                            </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        <div>
+                            <label for="modal_nombres" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                                <i class="fas fa-user mr-1"></i>Nombres
+                            </label>
+                            <input type="text" name="nombres" id="modal_nombres" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" required>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="modal_apellidos" class="form-label fw-bold text-info">Apellidos</label>
-                                <input type="text" name="apellidos" id="modal_apellidos" class="form-control" required>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="modal_email" class="form-label fw-bold text-info">Email</label>
-                        <input type="email" name="email" id="modal_email" class="form-control" required>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="modal_telefono_particular" class="form-label fw-bold text-info">Teléfono Particular</label>
-                                <input type="text" name="telefono_particular" id="modal_telefono_particular" class="form-control" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="modal_telefono_corp" class="form-label fw-bold text-info">Teléfono Corporativo</label>
-                                <input type="text" name="telefono_corp" id="modal_telefono_corp" class="form-control" required>
-                            </div>
+                        <div>
+                            <label for="modal_apellidos" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                                <i class="fas fa-user mr-1"></i>Apellidos
+                            </label>
+                            <input type="text" name="apellidos" id="modal_apellidos" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" required>
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="modal_tipo" class="form-label fw-bold text-info">Tipo</label>
-                        <input type="text" name="tipo" id="modal_tipo" class="form-control" required placeholder="Ej: Cuadro Centro, RSI, Admin">
+                        <label for="modal_email" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                            <i class="fas fa-envelope mr-1"></i>Email
+                        </label>
+                        <input type="email" name="email" id="modal_email" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" required>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        <div>
+                            <label for="modal_telefono_particular" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                                <i class="fas fa-phone mr-1"></i>Teléfono Particular
+                            </label>
+                            <input type="text" name="telefono_particular" id="modal_telefono_particular" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" required>
+                        </div>
+                        <div>
+                            <label for="modal_telefono_corp" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                                <i class="fas fa-phone-office mr-1"></i>Teléfono Corporativo
+                            </label>
+                            <input type="text" name="telefono_corp" id="modal_telefono_corp" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" required>
+                        </div>
                     </div>
                     <div class="mb-3">
-                        <label for="modal_descripcion" class="form-label fw-bold text-info">Descripción</label>
-                        <textarea name="descripcion" id="modal_descripcion" class="form-control" rows="3" required></textarea>
+                        <label for="modal_tipo" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                            <i class="fas fa-tag mr-1"></i>Tipo
+                        </label>
+                        <input type="text" name="tipo" id="modal_tipo" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" required placeholder="Ej: Cuadro Centro, RSI, Admin">
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_descripcion" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                            <i class="fas fa-align-left mr-1"></i>Descripción
+                        </label>
+                        <textarea name="descripcion" id="modal_descripcion" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" rows="3" required></textarea>
                     </div>
                 </form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" id="guardarResponsableBtn">Guardar Responsable</button>
+            <div class="px-6 py-4 border-t dark:border-surface-700 border-surface-200 flex justify-end gap-3">
+                <button type="button" class="px-4 py-2.5 dark:bg-surface-800 dark:hover:bg-surface-700 dark:text-surface-200 bg-surface-100 hover:bg-surface-200 text-surface-800 border dark:border-surface-700 border-surface-200 font-medium rounded-xl transition-all" id="cancelarModalBtn">
+                    <i class="fas fa-times mr-2"></i>Cancelar
+                </button>
+                <button type="button" class="px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white rounded-xl font-medium shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all" id="guardarResponsableBtn">
+                    <i class="fas fa-save mr-2"></i>Guardar Responsable
+                </button>
             </div>
         </div>
     </div>
@@ -153,19 +182,38 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     let targetSelect = null;
-    
-    // Capturar qué selector se está editando
-    document.querySelectorAll('[data-bs-target="#crearResponsableModal"]').forEach(button => {
+    const modal = document.getElementById('crearResponsableModal');
+    const modalForm = document.getElementById('crearResponsableForm');
+
+    function openModal() {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+        modalForm.reset();
+    }
+
+    document.querySelectorAll('[data-target]').forEach(button => {
         button.addEventListener('click', function() {
             targetSelect = this.getAttribute('data-target');
+            openModal();
         });
     });
-    
-    // Manejar el guardado del responsable
+
+    document.getElementById('cerrarModalBtn').addEventListener('click', closeModal);
+    document.getElementById('cancelarModalBtn').addEventListener('click', closeModal);
+    document.getElementById('modalBackdrop').addEventListener('click', closeModal);
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+    });
+
     document.getElementById('guardarResponsableBtn').addEventListener('click', function() {
-        const form = document.getElementById('crearResponsableForm');
-        const formData = new FormData(form);
-        
+        const formData = new FormData(modalForm);
+
         fetch('{% url "responsable-create" %}', {
             method: 'POST',
             body: formData,
@@ -175,30 +223,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .then(response => {
-            if (response.ok) {
-                return response.json();
-            } else {
-                throw new Error('Error en la respuesta del servidor');
-            }
+            if (response.ok) return response.json();
+            throw new Error('Error en la respuesta del servidor');
         })
         .then(data => {
             if (data.success) {
-                // Agregar la nueva opción al selector correspondiente
                 const select = document.getElementById(targetSelect);
                 const newOption = document.createElement('option');
                 newOption.value = data.responsable_id;
                 newOption.textContent = data.nombres + ' ' + data.apellidos;
                 newOption.selected = true;
                 select.appendChild(newOption);
-                
-                // Limpiar el formulario del modal
-                form.reset();
-                
-                // Cerrar el modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('crearResponsableModal'));
-                modal.hide();
-                
-                // Mostrar mensaje de éxito
+                closeModal();
                 alert('Responsable creado exitosamente y seleccionado.');
             } else {
                 alert('Error al crear el responsable: ' + (data.error || 'Error desconocido'));

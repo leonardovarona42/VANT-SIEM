@@ -1,2 +1,0 @@
-# OpenSearch agent package
-

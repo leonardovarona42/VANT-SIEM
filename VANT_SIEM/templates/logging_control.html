@@ -2,253 +2,248 @@
 {% load static %}
 
 {% block content %}
-<div class="container-fluid">
- <div class="row">
- <div class="col-12">
- <div class="d-flex justify-content-between align-items-center mb-4">
- <h2 class="text-info">
- <i class="fas fa-cogs me-2"></i>Control del Sistema de Logging
- </h2>
- <a href="{% url 'system-logs' %}" class="btn btn-secondary">
- <i class="fas fa-file-alt me-2"></i>Ver Logs
- </a>
- </div>
+<div class="w-full px-4">
+  <div class="flex flex-wrap -mx-3">
+    <div class="w-full px-3">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-blue-400">
+          <i class="fas fa-cogs mr-2"></i>Control del Sistema de Logging
+        </h2>
+        <a href="{% url 'system-logs' %}" class="bg-gradient-to-r from-surface-600 to-surface-700 text-white rounded-xl px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity">
+          <i class="fas fa-file-alt mr-2"></i>Ver Logs
+        </a>
+      </div>
 
- <!-- Estado del Sistema -->
- <div class="card bg-secondary mb-4">
- <div class="card-header">
- <h5 class="text-info mb-0">
- <i class="fas fa-info-circle me-2"></i>Estado del Sistema
- </h5>
- </div>
- <div class="card-body">
- <div class="row">
- <div class="col-md-4">
- <div class="text-center">
- <h6 class="text-light">Estado del Logging</h6>
- <div id="logging-status" class="mb-2">
- {% if logging_status.is_enabled %}
- <span class="badge bg-success fs-6">
- <i class="fas fa-play me-1"></i>ACTIVO
- </span>
- {% else %}
- <span class="badge bg-danger fs-6">
- <i class="fas fa-stop me-1"></i>DETENIDO
- </span>
- {% endif %}
- </div>
- </div>
- </div>
- <div class="col-md-4">
- <div class="text-center">
- <h6 class="text-light">Total de Eventos</h6>
- <div class="h4 text-info" id="total-events">
- {{ logging_status.total_events|default:0 }}
- </div>
- </div>
- </div>
- <div class="col-md-4">
- <div class="text-center">
- <h6 class="text-light">Archivo de Logs</h6>
- <small class="text-muted" id="log-file">
- {{ logging_status.log_file|default:"logs/eventos.json" }}
- </small>
- </div>
- </div>
- </div>
- </div>
- </div>
+      <!-- Estado del Sistema -->
+      <div class="glass-card mb-4">
+        <div class="p-4 border-b border-surface-700/50">
+          <h5 class="text-blue-400 mb-0">
+            <i class="fas fa-info-circle mr-2"></i>Estado del Sistema
+          </h5>
+        </div>
+        <div class="p-4">
+          <div class="flex flex-wrap -mx-3">
+            <div class="w-full md:w-1/3 px-3 mb-3 text-center">
+              <h6 class="text-surface-200 text-sm font-medium mb-2">Estado del Logging</h6>
+              <div id="logging-status" class="mb-2">
+                {% if logging_status.is_enabled %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-green-500/20 text-green-400">
+                  <i class="fas fa-play mr-1"></i>ACTIVO
+                </span>
+                {% else %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-red-500/20 text-red-400">
+                  <i class="fas fa-stop mr-1"></i>DETENIDO
+                </span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="w-full md:w-1/3 px-3 mb-3 text-center">
+              <h6 class="text-surface-200 text-sm font-medium mb-2">Total de Eventos</h6>
+              <div class="text-xl font-semibold text-blue-400" id="total-events">
+                {{ logging_status.total_events|default:0 }}
+              </div>
+            </div>
+            <div class="w-full md:w-1/3 px-3 mb-3 text-center">
+              <h6 class="text-surface-200 text-sm font-medium mb-2">Archivo de Logs</h6>
+              <small class="text-surface-400" id="log-file">
+                {{ logging_status.log_file|default:"logs/eventos.json" }}
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
 
- <!-- Controles del Sistema -->
- <div class="card bg-secondary mb-4">
- <div class="card-header">
- <h5 class="text-info mb-0">
- <i class="fas fa-sliders-h me-2"></i>Controles del Sistema
- </h5>
- </div>
- <div class="card-body">
- <div class="row">
- <div class="col-md-6">
- <div class="d-grid gap-2">
- <button class="btn btn-success btn-lg" id="start-logging-btn" 
- {% if logging_status.is_enabled %}disabled{% endif %}>
- <i class="fas fa-play me-2"></i>Iniciar Sistema de Logging
- </button>
- <small class="text-muted text-center">
- Inicia el registro de eventos en el sistema
- </small>
- </div>
- </div>
- <div class="col-md-6">
- <div class="d-grid gap-2">
- <button class="btn btn-danger btn-lg" id="stop-logging-btn"
- {% if not logging_status.is_enabled %}disabled{% endif %}>
- <i class="fas fa-stop me-2"></i>Detener Sistema de Logging
- </button>
- <small class="text-muted text-center">
- Detiene el registro de eventos en el sistema
- </small>
- </div>
- </div>
- </div>
- </div>
- </div>
+      <!-- Controles del Sistema -->
+      <div class="glass-card mb-4">
+        <div class="p-4 border-b border-surface-700/50">
+          <h5 class="text-blue-400 mb-0">
+            <i class="fas fa-sliders-h mr-2"></i>Controles del Sistema
+          </h5>
+        </div>
+        <div class="p-4">
+          <div class="flex flex-wrap -mx-3">
+            <div class="w-full md:w-1/2 px-3 mb-3">
+              <div class="space-y-2">
+                <button class="w-full bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl px-6 py-3 text-base font-medium hover:opacity-90 transition-opacity" id="start-logging-btn" 
+                  {% if logging_status.is_enabled %}disabled{% endif %}>
+                  <i class="fas fa-play mr-2"></i>Iniciar Sistema de Logging
+                </button>
+                <small class="text-surface-400 text-center block">
+                  Inicia el registro de eventos en el sistema
+                </small>
+              </div>
+            </div>
+            <div class="w-full md:w-1/2 px-3 mb-3">
+              <div class="space-y-2">
+                <button class="w-full bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl px-6 py-3 text-base font-medium hover:opacity-90 transition-opacity" id="stop-logging-btn"
+                  {% if not logging_status.is_enabled %}disabled{% endif %}>
+                  <i class="fas fa-stop mr-2"></i>Detener Sistema de Logging
+                </button>
+                <small class="text-surface-400 text-center block">
+                  Detiene el registro de eventos en el sistema
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
- <!-- Información del Sistema -->
- <div class="card bg-secondary">
- <div class="card-header">
- <h5 class="text-info mb-0">
- <i class="fas fa-info-circle me-2"></i>Información del Sistema
- </h5>
- </div>
- <div class="card-body">
- <div class="row">
- <div class="col-md-6">
- <h6 class="text-warning">Características del Sistema:</h6>
- <ul class="text-light">
- <li>Registro automático de eventos del sistema</li>
- <li>Almacenamiento en formato JSON</li>
- <li>Rotación automática (máximo 10,000 eventos)</li>
- <li>Thread-safe para múltiples usuarios</li>
- <li>Codificación UTF-8 para caracteres especiales</li>
- </ul>
- </div>
- <div class="col-md-6">
- <h6 class="text-warning">Eventos Registrados:</h6>
- <ul class="text-light">
- <li>Login/Logout de usuarios</li>
- <li>Operaciones CRUD en todos los modelos</li>
- <li>Gestión de usuarios y permisos</li>
- <li>Acceso a notificaciones y logs</li>
- <li>Control del sistema de logging</li>
- </ul>
- </div>
- </div>
- </div>
- </div>
+      <!-- Información del Sistema -->
+      <div class="glass-card">
+        <div class="p-4 border-b border-surface-700/50">
+          <h5 class="text-blue-400 mb-0">
+            <i class="fas fa-info-circle mr-2"></i>Información del Sistema
+          </h5>
+        </div>
+        <div class="p-4">
+          <div class="flex flex-wrap -mx-3">
+            <div class="w-full md:w-1/2 px-3 mb-3">
+              <h6 class="text-yellow-400 text-sm font-medium mb-2">Características del Sistema:</h6>
+              <ul class="text-surface-200 space-y-1 list-disc pl-5">
+                <li>Registro automático de eventos del sistema</li>
+                <li>Almacenamiento en formato JSON</li>
+                <li>Rotación automática (máximo 10,000 eventos)</li>
+                <li>Thread-safe para múltiples usuarios</li>
+                <li>Codificación UTF-8 para caracteres especiales</li>
+              </ul>
+            </div>
+            <div class="w-full md:w-1/2 px-3 mb-3">
+              <h6 class="text-yellow-400 text-sm font-medium mb-2">Eventos Registrados:</h6>
+              <ul class="text-surface-200 space-y-1 list-disc pl-5">
+                <li>Login/Logout de usuarios</li>
+                <li>Operaciones CRUD en todos los modelos</li>
+                <li>Gestión de usuarios y permisos</li>
+                <li>Acceso a notificaciones y logs</li>
+                <li>Control del sistema de logging</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
 
- <!-- Alertas de Seguridad -->
- <div class="alert alert-warning mt-4">
- <i class="fas fa-exclamation-triangle me-2"></i>
- <strong>Importante:</strong> Solo los superusuarios pueden controlar el sistema de logging. 
- Todos los cambios son registrados y auditados.
- </div>
- </div>
- </div>
+      <!-- Alertas de Seguridad -->
+      <div class="glass-card mt-4 p-4 bg-yellow-500/10 border border-yellow-500/20 text-yellow-400">
+        <i class="fas fa-exclamation-triangle mr-2"></i>
+        <strong>Importante:</strong> Solo los superusuarios pueden controlar el sistema de logging. 
+        Todos los cambios son registrados y auditados.
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
- const startBtn = document.getElementById('start-logging-btn');
- const stopBtn = document.getElementById('stop-logging-btn');
- const statusBadge = document.getElementById('logging-status');
- const totalEvents = document.getElementById('total-events');
+  const startBtn = document.getElementById('start-logging-btn');
+  const stopBtn = document.getElementById('stop-logging-btn');
+  const statusBadge = document.getElementById('logging-status');
+  const totalEvents = document.getElementById('total-events');
 
- // Función para actualizar el estado
- function updateStatus() {
- fetch('{% url "get-logging-status" %}')
- .then(response => response.json())
- .then(data => {
- if (data.success) {
- const status = data.status;
- 
- // Actualizar badge de estado
- if (status.is_enabled) {
- statusBadge.innerHTML = '<span class="badge bg-success fs-6"><i class="fas fa-play me-1"></i>ACTIVO</span>';
- startBtn.disabled = true;
- stopBtn.disabled = false;
- } else {
- statusBadge.innerHTML = '<span class="badge bg-danger fs-6"><i class="fas fa-stop me-1"></i>DETENIDO</span>';
- startBtn.disabled = false;
- stopBtn.disabled = true;
- }
- 
- // Actualizar total de eventos
- totalEvents.textContent = status.total_events;
- }
- })
- .catch(error => {
- console.error('Error al actualizar estado:', error);
- });
- }
+  // Función para actualizar el estado
+  function updateStatus() {
+    fetch('{% url "get-logging-status" %}')
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        const status = data.status;
+        
+        // Actualizar badge de estado
+        if (status.is_enabled) {
+          statusBadge.innerHTML = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-green-500/20 text-green-400"><i class="fas fa-play mr-1"></i>ACTIVO</span>';
+          startBtn.disabled = true;
+          stopBtn.disabled = false;
+        } else {
+          statusBadge.innerHTML = '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-red-500/20 text-red-400"><i class="fas fa-stop mr-1"></i>DETENIDO</span>';
+          startBtn.disabled = false;
+          stopBtn.disabled = true;
+        }
+        
+        // Actualizar total de eventos
+        totalEvents.textContent = status.total_events;
+      }
+    })
+    .catch(error => {
+      console.error('Error al actualizar estado:', error);
+    });
+  }
 
- // Event listener para iniciar logging
- startBtn.addEventListener('click', function() {
- if (confirm('¿Estás seguro de que deseas iniciar el sistema de logging?')) {
- fetch('{% url "start-logging-system" %}', {
- method: 'POST',
- headers: {
- 'X-CSRFToken': '{{ csrf_token }}',
- 'X-Requested-With': 'XMLHttpRequest',
- }
- })
- .then(response => response.json())
- .then(data => {
- if (data.success) {
- showToast('success', data.message);
- updateStatus();
- } else {
- showToast('error', data.message || 'Error al iniciar el sistema');
- }
- })
- .catch(error => {
- console.error('Error:', error);
- showToast('error', 'Error de conexión');
- });
- }
- });
+  // Event listener para iniciar logging
+  startBtn.addEventListener('click', function() {
+    if (confirm('¿Estás seguro de que deseas iniciar el sistema de logging?')) {
+      fetch('{% url "start-logging-system" %}', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{ csrf_token }}',
+          'X-Requested-With': 'XMLHttpRequest',
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showToast('success', data.message);
+          updateStatus();
+        } else {
+          showToast('error', data.message || 'Error al iniciar el sistema');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showToast('error', 'Error de conexión');
+      });
+    }
+  });
 
- // Event listener para detener logging
- stopBtn.addEventListener('click', function() {
- if (confirm('¿Estás seguro de que deseas detener el sistema de logging?')) {
- fetch('{% url "stop-logging-system" %}', {
- method: 'POST',
- headers: {
- 'X-CSRFToken': '{{ csrf_token }}',
- 'X-Requested-With': 'XMLHttpRequest',
- }
- })
- .then(response => response.json())
- .then(data => {
- if (data.success) {
- showToast('success', data.message);
- updateStatus();
- } else {
- showToast('error', data.message || 'Error al detener el sistema');
- }
- })
- .catch(error => {
- console.error('Error:', error);
- showToast('error', 'Error de conexión');
- });
- }
- });
+  // Event listener para detener logging
+  stopBtn.addEventListener('click', function() {
+    if (confirm('¿Estás seguro de que deseas detener el sistema de logging?')) {
+      fetch('{% url "stop-logging-system" %}', {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': '{{ csrf_token }}',
+          'X-Requested-With': 'XMLHttpRequest',
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          showToast('success', data.message);
+          updateStatus();
+        } else {
+          showToast('error', data.message || 'Error al detener el sistema');
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        showToast('error', 'Error de conexión');
+      });
+    }
+  });
 
- // Función para mostrar toasts
- function showToast(type, message) {
- const toast = document.createElement('div');
- toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0 position-fixed top-0 end-0 m-3`;
- toast.style.zIndex = '9999';
- toast.innerHTML = `
- <div class="d-flex">
- <div class="toast-body">
- <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>${message}
- </div>
- <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
- </div>
- `;
- document.body.appendChild(toast);
- const bsToast = new bootstrap.Toast(toast);
- bsToast.show();
- 
- // Remover el toast después de que se oculte
- toast.addEventListener('hidden.bs.toast', () => {
- document.body.removeChild(toast);
- });
- }
+  // Función para mostrar toasts
+  function showToast(type, message) {
+    const toast = document.createElement('div');
+    const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+    const icon = type === 'success' ? 'check-circle' : 'exclamation-circle';
+    toast.className = `fixed top-4 right-4 z-50 ${bgColor} text-white px-4 py-3 rounded-xl shadow-lg flex items-center justify-between min-w-[300px]`;
+    toast.innerHTML = `
+      <div class="flex items-center">
+        <i class="fas fa-${icon} mr-2"></i>
+        <span>${message}</span>
+      </div>
+      <button class="ml-4 text-white hover:text-surface-200" onclick="this.parentElement.remove()">
+        <i class="fas fa-times"></i>
+      </button>
+    `;
+    document.body.appendChild(toast);
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+      if (toast.parentElement) {
+        toast.remove();
+      }
+    }, 3000);
+  }
 
- // Actualizar estado cada 30 segundos
- setInterval(updateStatus, 30000);
+  // Actualizar estado cada 30 segundos
+  setInterval(updateStatus, 30000);
 });
 </script>
 {% endblock %}

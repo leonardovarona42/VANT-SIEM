@@ -1,0 +1,317 @@
+# VANT-SIEM Platform - Microservices Architecture
+# Each service is isolated with its own DB, can scale independently
+
+services:
+  # ===== Infrastructure =====
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===== Databases =====
+
+  postgres_web:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: vant_web
+      POSTGRES_USER: vantsiem
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-vantsiem123}
+    volumes:
+      - postgres_web_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vantsiem"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres_logs:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: vant_logs
+      POSTGRES_USER: vantsiem
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-vantsiem123}
+    volumes:
+      - postgres_logs_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vantsiem"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres_incidents:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: vant_incidents
+      POSTGRES_USER: vantsiem
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-vantsiem123}
+    volumes:
+      - postgres_incidents_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vantsiem"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres_assets:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: vant_assets
+      POSTGRES_USER: vantsiem
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-vantsiem123}
+    volumes:
+      - postgres_assets_data:/var/lib/postgresql/data
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vantsiem"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres_network:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: vant_network
+      POSTGRES_USER: vantsiem
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-vantsiem123}
+    volumes:
+      - postgres_network_data:/var/lib/postgresql/data
+    ports:
+      - "5436:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vantsiem"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ===== Services =====
+
+  logs-service:
+    build:
+      context: ..
+      dockerfile: docker_deployment/Dockerfile
+      target: service
+    command: python manage.py run_opensearch_service --host 0.0.0.0 --port 9201
+    volumes:
+      - ..:/app
+    ports:
+      - "9201:9201"
+    environment:
+      - VANT_SERVICE_NAME=logs-service
+      - DB_HOST=postgres_logs
+      - DB_PORT=5432
+      - DB_NAME=vant_logs
+      - DB_USER=vantsiem
+      - DB_PASSWORD=${DB_PASSWORD:-vantsiem123}
+      - SERVICE_BUS_URL=redis://redis:6379/10
+      - MICROSERVICE_MODE=docker
+    depends_on:
+      postgres_logs:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      replicas: 2  # Scale horizontally for high log volume
+
+  incidents-service:
+    build:
+      context: ..
+      dockerfile: docker_deployment/Dockerfile
+      target: django
+    command: python manage.py run_incidents_service --host 0.0.0.0 --port 8001
+    volumes:
+      - ..:/app
+    ports:
+      - "8001:8001"
+    environment:
+      - VANT_SERVICE_NAME=incidents-service
+      - DB_HOST=postgres_incidents
+      - DB_PORT=5432
+      - DB_NAME=vant_incidents
+      - DB_USER=vantsiem
+      - DB_PASSWORD=${DB_PASSWORD:-vantsiem123}
+      - SERVICE_BUS_URL=redis://redis:6379/10
+      - MICROSERVICE_MODE=docker
+    depends_on:
+      postgres_incidents:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  assets-service:
+    build:
+      context: ..
+      dockerfile: docker_deployment/Dockerfile
+      target: django
+    command: python manage.py run_assets_service --host 0.0.0.0 --port 8002
+    volumes:
+      - ..:/app
+    ports:
+      - "8002:8002"
+    environment:
+      - VANT_SERVICE_NAME=assets-service
+      - DB_HOST=postgres_assets
+      - DB_PORT=5432
+      - DB_NAME=vant_assets
+      - DB_USER=vantsiem
+      - DB_PASSWORD=${DB_PASSWORD:-vantsiem123}
+      - SERVICE_BUS_URL=redis://redis:6379/10
+      - MICROSERVICE_MODE=docker
+    depends_on:
+      postgres_assets:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  network-service:
+    build:
+      context: ..
+      dockerfile: docker_deployment/Dockerfile
+      target: django
+    command: python manage.py run_network_service --host 0.0.0.0 --port 8004
+    volumes:
+      - ..:/app
+    ports:
+      - "8004:8004"
+    environment:
+      - VANT_SERVICE_NAME=network-service
+      - DB_HOST=postgres_network
+      - DB_PORT=5432
+      - DB_NAME=vant_network
+      - DB_USER=vantsiem
+      - DB_PASSWORD=${DB_PASSWORD:-vantsiem123}
+      - SERVICE_BUS_URL=redis://redis:6379/10
+      - MICROSERVICE_MODE=docker
+    depends_on:
+      postgres_network:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  ai-service:
+    build:
+      context: ..
+      dockerfile: docker_deployment/Dockerfile
+      target: django
+    command: python manage.py runserver 0.0.0.0:8003 --noreload
+    volumes:
+      - ..:/app
+    ports:
+      - "8003:8003"
+    environment:
+      - VANT_SERVICE_NAME=ai-service
+      - DB_HOST=postgres_web
+      - DB_PORT=5432
+      - DB_NAME=vant_web
+      - DB_USER=vantsiem
+      - DB_PASSWORD=${DB_PASSWORD:-vantsiem123}
+      - SERVICE_BUS_URL=redis://redis:6379/10
+      - MICROSERVICE_MODE=docker
+    depends_on:
+      postgres_web:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  web-portal:
+    build:
+      context: ..
+      dockerfile: docker_deployment/Dockerfile
+      target: django
+    command: python manage.py runserver 0.0.0.0:8000 --noreload
+    volumes:
+      - ..:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - VANT_SERVICE_NAME=web-portal
+      - DB_HOST=postgres_web
+      - DB_PORT=5432
+      - DB_NAME=vant_web
+      - DB_USER=vantsiem
+      - DB_PASSWORD=${DB_PASSWORD:-vantsiem123}
+      - SERVICE_BUS_URL=redis://redis:6379/10
+      - LOGS_SERVICE_URL=http://logs-service:9201
+      - INCIDENTS_SERVICE_URL=http://incidents-service:8001
+      - ASSETS_SERVICE_URL=http://assets-service:8002
+      - NETWORK_SERVICE_URL=http://network-service:8004
+      - AI_SERVICE_URL=http://ai-service:8003
+      - MICROSERVICE_MODE=docker
+    depends_on:
+      postgres_web:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery-worker:
+    build:
+      context: ..
+      dockerfile: docker_deployment/Dockerfile
+      target: django
+    command: celery -A CORE worker --loglevel=info --concurrency=4
+    volumes:
+      - ..:/app
+    environment:
+      - VANT_SERVICE_NAME=celery-worker
+      - DB_HOST=postgres_web
+      - DB_PORT=5432
+      - DB_NAME=vant_web
+      - DB_USER=vantsiem
+      - DB_PASSWORD=${DB_PASSWORD:-vantsiem123}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - SERVICE_BUS_URL=redis://redis:6379/10
+      - MICROSERVICE_MODE=docker
+    depends_on:
+      - redis
+
+  celery-beat:
+    build:
+      context: ..
+      dockerfile: docker_deployment/Dockerfile
+      target: django
+    command: celery -A CORE beat --loglevel=info
+    volumes:
+      - ..:/app
+    environment:
+      - VANT_SERVICE_NAME=celery-beat
+      - DB_HOST=postgres_web
+      - DB_PORT=5432
+      - DB_NAME=vant_web
+      - DB_USER=vantsiem
+      - DB_PASSWORD=${DB_PASSWORD:-vantsiem123}
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/1
+      - SERVICE_BUS_URL=redis://redis:6379/10
+      - MICROSERVICE_MODE=docker
+    depends_on:
+      - redis
+
+volumes:
+  redis_data:
+  postgres_web_data:
+  postgres_logs_data:
+  postgres_incidents_data:
+  postgres_assets_data:
+  postgres_network_data:

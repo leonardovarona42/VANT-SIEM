@@ -1,144 +1,178 @@
 {% extends "dashboard.html" %}
 {% block title %}{% if action == 'create' %}Nueva Configuracion LDAP{% else %}Editar Configuracion LDAP{% endif %} | VANT-SIEM{% endblock %}
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h2 class="mb-4 text-info">{% if action == 'create' %}Nueva Configuracion LDAP{% else %}Editar Configuracion LDAP: {{ config.nombre }}{% endif %}</h2>
-        
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-        
-        <div class="card bg-secondary">
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <h5 class="text-info mb-3">Informacion del Servidor</h5>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="nombre" class="form-label fw-bold text-info">Nombre de Configuracion</label>
-                            <input type="text" name="nombre" id="nombre" class="form-control" required value="{{ config.nombre|default:'' }}">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="servidor" class="form-label fw-bold text-info">Servidor LDAP</label>
-                            <input type="text" name="servidor" id="servidor" class="form-control" placeholder="ldap://servidor.dominio.com" required value="{{ config.servidor|default:'' }}">
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <label for="puerto" class="form-label fw-bold text-info">Puerto</label>
-                            <input type="number" name="puerto" id="puerto" class="form-control" value="{{ config.puerto|default:389 }}">
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-check mt-4">
-                                <input type="checkbox" name="use_ssl" id="use_ssl" class="form-check-input" {% if config.use_ssl %}checked{% endif %}>
-                                <label for="use_ssl" class="form-check-label">Usar SSL/TLS</label>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-check mt-4">
-                                <input type="checkbox" name="use_starttls" id="use_starttls" class="form-check-input" {% if config.use_starttls %}checked{% endif %}>
-                                <label for="use_starttls" class="form-check-label">Usar StartTLS</label>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="cert_path" class="form-label fw-bold text-info">Ruta del Certificado CA (opcional)</label>
-                        <input type="text" name="cert_path" id="cert_path" class="form-control" placeholder="/etc/ssl/certs/ca-certificates.crt" value="{{ config.cert_path|default:'' }}">
-                    </div>
-                    
-                    <h5 class="text-info mb-3 mt-4">Credenciales de Bind</h5>
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="bind_dn" class="form-label fw-bold text-info">DN del Usuario Bind (opcional)</label>
-                            <input type="text" name="bind_dn" id="bind_dn" class="form-control" placeholder="cn=admin,dc=ejemplo,dc=com" value="{{ config.bind_dn|default:'' }}">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="bind_password" class="form-label fw-bold text-info">Contrasena Bind (opcional)</label>
-                            <input type="password" name="bind_password" id="bind_password" class="form-control" value="{{ config.bind_password|default:'' }}">
-                        </div>
-                    </div>
-                    
-                    <h5 class="text-info mb-3 mt-4">Configuracion de Busqueda</h5>
-                    <div class="mb-3">
-                        <label for="user_search_base" class="form-label fw-bold text-info">Base de Busqueda de Usuarios</label>
-                        <input type="text" name="user_search_base" id="user_search_base" class="form-control" placeholder="ou=users,dc=ejemplo,dc=com" required value="{{ config.user_search_base|default:'' }}">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="user_search_filter" class="form-label fw-bold text-info">Filtro de Busqueda de Usuarios</label>
-                        <input type="text" name="user_search_filter" id="user_search_filter" class="form-control" value="{{ config.user_search_filter|default:'(uid={username})' }}">
-                        <div class="form-text">Use {username} como placeholder para el nombre de usuario</div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label for="group_search_base" class="form-label fw-bold text-info">Base de Busqueda de Grupos (opcional)</label>
-                            <input type="text" name="group_search_base" id="group_search_base" class="form-control" placeholder="ou=groups,dc=ejemplo,dc=com" value="{{ config.group_search_base|default:'' }}">
-                        </div>
-                        <div class="col-md-6">
-                            <label for="group_search_filter" class="form-label fw-bold text-info">Filtro de Busqueda de Grupos</label>
-                            <input type="text" name="group_search_filter" id="group_search_filter" class="form-control" value="{{ config.group_search_filter|default:'(member={user_dn})' }}">
-                        </div>
-                    </div>
-                    
-                    <h5 class="text-info mb-3 mt-4">Mapeo de Atributos</h5>
-                    <div class="row mb-3">
-                        <div class="col-md-3">
-                            <label for="username_attr" class="form-label fw-bold text-info">Atributo Usuario</label>
-                            <input type="text" name="username_attr" id="username_attr" class="form-control" value="{{ config.username_attr|default:'uid' }}">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="first_name_attr" class="form-label fw-bold text-info">Atributo Nombre</label>
-                            <input type="text" name="first_name_attr" id="first_name_attr" class="form-control" value="{{ config.first_name_attr|default:'givenName' }}">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="last_name_attr" class="form-label fw-bold text-info">Atributo Apellido</label>
-                            <input type="text" name="last_name_attr" id="last_name_attr" class="form-control" value="{{ config.last_name_attr|default:'sn' }}">
-                        </div>
-                        <div class="col-md-3">
-                            <label for="email_attr" class="form-label fw-bold text-info">Atributo Email</label>
-                            <input type="text" name="email_attr" id="email_attr" class="form-control" value="{{ config.email_attr|default:'mail' }}">
-                        </div>
-                    </div>
-                    
-                    <h5 class="text-info mb-3 mt-4">Comportamiento</h5>
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <div class="form-check">
-                                <input type="checkbox" name="is_active" id="is_active" class="form-check-input" {% if config.is_active or not config %}checked{% endif %}>
-                                <label for="is_active" class="form-check-label fw-bold text-info">Habilitar Autenticacion LDAP</label>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-check">
-                                <input type="checkbox" name="is_default" id="is_default" class="form-check-input" {% if config.is_default %}checked{% endif %}>
-                                <label for="is_default" class="form-check-label fw-bold text-info">Usar por Defecto</label>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-check">
-                                <input type="checkbox" name="auto_create_user" id="auto_create_user" class="form-check-input" {% if config.auto_create_user or not config %}checked{% endif %}>
-                                <label for="auto_create_user" class="form-check-label fw-bold text-info">Crear Usuario Automaticamente</label>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                        <a href="{% url 'ldap-config-list' %}" class="btn btn-secondary">Cancelar</a>
-                        <button type="submit" class="btn btn-primary">{% if action == 'create' %}Crear Configuracion{% else %}Guardar Cambios{% endif %}</button>
-                    </div>
-                </form>
+<div class="w-full">
+  <div class="mb-6">
+    <h2 class="text-2xl font-bold text-brand-400">{% if action == 'create' %}Nueva Configuracion LDAP{% else %}Editar Configuracion LDAP: {{ config.nombre }}{% endif %}</h2>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="p-4 mb-4 rounded-lg {% if message.tags == 'success' %}bg-green-500/10 border border-green-500/20 text-green-400{% elif message.tags == 'error' %}bg-red-500/10 border border-red-500/20 text-red-400{% elif message.tags == 'warning' %}bg-yellow-500/10 border border-yellow-500/20 text-yellow-400{% else %}bg-blue-500/10 border border-blue-500/20 text-blue-400{% endif %} flex items-center justify-between" role="alert">
+        <span>{{ message }}</span>
+        <button type="button" class="ml-4 text-current opacity-70 hover:opacity-100" onclick="this.parentElement.remove()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="glass-card">
+    <div class="p-6">
+      <form method="post">
+        {% csrf_token %}
+
+        <h5 class="text-brand-400 mb-3 text-lg font-semibold">Informacion del Servidor</h5>
+        <div class="flex flex-wrap -mx-2 mb-3">
+          <div class="w-full md:w-1/2 px-2">
+            <div class="mb-4">
+              <label for="nombre" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Nombre de Configuracion</label>
+              <input type="text" name="nombre" id="nombre" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" required value="{{ config.nombre|default:'' }}">
             </div>
+          </div>
+          <div class="w-full md:w-1/2 px-2">
+            <div class="mb-4">
+              <label for="servidor" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Servidor LDAP</label>
+              <input type="text" name="servidor" id="servidor" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" placeholder="ldap://servidor.dominio.com" required value="{{ config.servidor|default:'' }}">
+            </div>
+          </div>
         </div>
+
+        <div class="flex flex-wrap -mx-2 mb-3">
+          <div class="w-full md:w-1/3 px-2">
+            <div class="mb-4">
+              <label for="puerto" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Puerto</label>
+              <input type="number" name="puerto" id="puerto" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" value="{{ config.puerto|default:389 }}">
+            </div>
+          </div>
+          <div class="w-full md:w-1/3 px-2">
+            <div class="mb-4 pt-6">
+              <div class="flex items-center">
+                <input type="checkbox" name="use_ssl" id="use_ssl" class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" {% if config.use_ssl %}checked{% endif %}>
+                <label for="use_ssl" class="ml-2 text-sm dark:text-surface-300 text-surface-600">Usar SSL/TLS</label>
+              </div>
+            </div>
+          </div>
+          <div class="w-full md:w-1/3 px-2">
+            <div class="mb-4 pt-6">
+              <div class="flex items-center">
+                <input type="checkbox" name="use_starttls" id="use_starttls" class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" {% if config.use_starttls %}checked{% endif %}>
+                <label for="use_starttls" class="ml-2 text-sm dark:text-surface-300 text-surface-600">Usar StartTLS</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label for="cert_path" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Ruta del Certificado CA (opcional)</label>
+          <input type="text" name="cert_path" id="cert_path" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" placeholder="/etc/ssl/certs/ca-certificates.crt" value="{{ config.cert_path|default:'' }}">
+        </div>
+
+        <h5 class="text-brand-400 mb-3 mt-6 text-lg font-semibold">Credenciales de Bind</h5>
+        <div class="flex flex-wrap -mx-2 mb-3">
+          <div class="w-full md:w-1/2 px-2">
+            <div class="mb-4">
+              <label for="bind_dn" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">DN del Usuario Bind (opcional)</label>
+              <input type="text" name="bind_dn" id="bind_dn" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" placeholder="cn=admin,dc=ejemplo,dc=com" value="{{ config.bind_dn|default:'' }}">
+            </div>
+          </div>
+          <div class="w-full md:w-1/2 px-2">
+            <div class="mb-4">
+              <label for="bind_password" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Contrasena Bind (opcional)</label>
+              <input type="password" name="bind_password" id="bind_password" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" value="{{ config.bind_password|default:'' }}">
+            </div>
+          </div>
+        </div>
+
+        <h5 class="text-brand-400 mb-3 mt-6 text-lg font-semibold">Configuracion de Busqueda</h5>
+        <div class="mb-4">
+          <label for="user_search_base" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Base de Busqueda de Usuarios</label>
+          <input type="text" name="user_search_base" id="user_search_base" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" placeholder="ou=users,dc=ejemplo,dc=com" required value="{{ config.user_search_base|default:'' }}">
+        </div>
+
+        <div class="mb-4">
+          <label for="user_search_filter" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Filtro de Busqueda de Usuarios</label>
+          <input type="text" name="user_search_filter" id="user_search_filter" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" value="{{ config.user_search_filter|default:'(uid={username})' }}">
+          <div class="text-sm dark:text-surface-400 text-surface-500 mt-1">Use {username} como placeholder para el nombre de usuario</div>
+        </div>
+
+        <div class="flex flex-wrap -mx-2 mb-3">
+          <div class="w-full md:w-1/2 px-2">
+            <div class="mb-4">
+              <label for="group_search_base" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Base de Busqueda de Grupos (opcional)</label>
+              <input type="text" name="group_search_base" id="group_search_base" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" placeholder="ou=groups,dc=ejemplo,dc=com" value="{{ config.group_search_base|default:'' }}">
+            </div>
+          </div>
+          <div class="w-full md:w-1/2 px-2">
+            <div class="mb-4">
+              <label for="group_search_filter" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Filtro de Busqueda de Grupos</label>
+              <input type="text" name="group_search_filter" id="group_search_filter" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" value="{{ config.group_search_filter|default:'(member={user_dn})' }}">
+            </div>
+          </div>
+        </div>
+
+        <h5 class="text-brand-400 mb-3 mt-6 text-lg font-semibold">Mapeo de Atributos</h5>
+        <div class="flex flex-wrap -mx-2 mb-3">
+          <div class="w-full md:w-1/4 px-2">
+            <div class="mb-4">
+              <label for="username_attr" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Atributo Usuario</label>
+              <input type="text" name="username_attr" id="username_attr" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" value="{{ config.username_attr|default:'uid' }}">
+            </div>
+          </div>
+          <div class="w-full md:w-1/4 px-2">
+            <div class="mb-4">
+              <label for="first_name_attr" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Atributo Nombre</label>
+              <input type="text" name="first_name_attr" id="first_name_attr" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" value="{{ config.first_name_attr|default:'givenName' }}">
+            </div>
+          </div>
+          <div class="w-full md:w-1/4 px-2">
+            <div class="mb-4">
+              <label for="last_name_attr" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Atributo Apellido</label>
+              <input type="text" name="last_name_attr" id="last_name_attr" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" value="{{ config.last_name_attr|default:'sn' }}">
+            </div>
+          </div>
+          <div class="w-full md:w-1/4 px-2">
+            <div class="mb-4">
+              <label for="email_attr" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Atributo Email</label>
+              <input type="text" name="email_attr" id="email_attr" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" value="{{ config.email_attr|default:'mail' }}">
+            </div>
+          </div>
+        </div>
+
+        <h5 class="text-brand-400 mb-3 mt-6 text-lg font-semibold">Comportamiento</h5>
+        <div class="flex flex-wrap -mx-2 mb-3">
+          <div class="w-full md:w-1/3 px-2">
+            <div class="mb-4">
+              <div class="flex items-center">
+                <input type="checkbox" name="is_active" id="is_active" class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" {% if config.is_active or not config %}checked{% endif %}>
+                <label for="is_active" class="ml-2 text-sm dark:text-surface-300 text-surface-600 font-medium">Habilitar Autenticacion LDAP</label>
+              </div>
+            </div>
+          </div>
+          <div class="w-full md:w-1/3 px-2">
+            <div class="mb-4">
+              <div class="flex items-center">
+                <input type="checkbox" name="is_default" id="is_default" class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" {% if config.is_default %}checked{% endif %}>
+                <label for="is_default" class="ml-2 text-sm dark:text-surface-300 text-surface-600 font-medium">Usar por Defecto</label>
+              </div>
+            </div>
+          </div>
+          <div class="w-full md:w-1/3 px-2">
+            <div class="mb-4">
+              <div class="flex items-center">
+                <input type="checkbox" name="auto_create_user" id="auto_create_user" class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" {% if config.auto_create_user or not config %}checked{% endif %}>
+                <label for="auto_create_user" class="ml-2 text-sm dark:text-surface-300 text-surface-600 font-medium">Crear Usuario Automaticamente</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 mt-6">
+          <a href="{% url 'ldap-config-list' %}" class="px-6 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 dark:bg-surface-700 dark:hover:bg-surface-600 dark:text-surface-200 bg-surface-200 hover:bg-surface-300 text-surface-700">Cancelar</a>
+          <button type="submit" class="px-6 py-2.5 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-600 hover:to-brand-700 shadow-lg shadow-brand-500/25 transition-all duration-200">{% if action == 'create' %}Crear Configuracion{% else %}Guardar Cambios{% endif %}</button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
 {% endblock %}

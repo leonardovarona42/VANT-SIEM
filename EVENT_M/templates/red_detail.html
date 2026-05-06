@@ -1,0 +1,214 @@
+{% extends "dashboard.html" %}
+{% block title %}Detalle de Red | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="mb-6 flex items-center justify-between">
+    <h2 class="text-2xl font-bold dark:text-white text-surface-900">
+        <i class="fas fa-network-wired mr-2 text-purple-400"></i>{{ red.nombre }}
+    </h2>
+    <div class="flex gap-2">
+        <a href="{% url 'servicio-update' red.pk %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-500 dark:hover:bg-yellow-600 rounded-lg transition-colors">
+            <i class="fas fa-edit mr-1"></i>Editar
+        </a>
+        <a href="{% url 'red-list' %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-surface-600 hover:bg-surface-700 dark:bg-surface-700 dark:hover:bg-surface-600 rounded-lg transition-colors">
+            <i class="fas fa-arrow-left mr-1"></i>Volver
+        </a>
+    </div>
+</div>
+
+<!-- Badges -->
+<div class="flex gap-2 mb-6">
+    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
+        {% if red.tipo == 'subred' %}bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300
+        {% elif red.tipo == 'red' %}bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300
+        {% elif red.tipo == 'segmento' %}bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300
+        {% elif red.tipo == 'vlan' %}bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300
+        {% endif %}">
+        {{ red.get_tipo_display }}
+    </span>
+    {% if red.activo %}
+    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+        <i class="fas fa-check-circle mr-1"></i>Activo
+    </span>
+    {% else %}
+    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+        <i class="fas fa-times-circle mr-1"></i>Inactivo
+    </span>
+    {% endif %}
+</div>
+
+<!-- Info Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="glass-card p-4">
+        <div class="text-xs dark:text-surface-400 text-surface-500 mb-1">Red CIDR</div>
+        <div class="text-lg font-mono font-bold dark:text-white text-surface-900">{{ red.network|default:'-' }}{{ red.subnet_mask|default:'' }}</div>
+    </div>
+    <div class="glass-card p-4">
+        <div class="text-xs dark:text-surface-400 text-surface-500 mb-1">Gateway</div>
+        <div class="text-lg font-mono dark:text-white text-surface-900">{{ red.gateway|default:'-' }}</div>
+    </div>
+    <div class="glass-card p-4">
+        <div class="text-xs dark:text-surface-400 text-surface-500 mb-1">VLAN</div>
+        <div class="text-lg dark:text-white text-surface-900">{{ red.vlan_id|default:'-' }}</div>
+    </div>
+    <div class="glass-card p-4">
+        <div class="text-xs dark:text-surface-400 text-surface-500 mb-1">Tipo de Red</div>
+        <div class="text-lg capitalize dark:text-white text-surface-900">{{ red.get_red_tipo_display|default:'-' }}</div>
+    </div>
+</div>
+
+<!-- IP Usage Stats -->
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+    <div class="glass-card p-4 text-center">
+        <div class="text-sm dark:text-surface-400 text-surface-500">Total IPs</div>
+        <div class="text-3xl font-bold text-blue-400">{{ total_ips }}</div>
+    </div>
+    <div class="glass-card p-4 text-center">
+        <div class="text-sm dark:text-surface-400 text-surface-500">Asignadas</div>
+        <div class="text-3xl font-bold text-amber-400">{{ ips_asignadas }}</div>
+    </div>
+    <div class="glass-card p-4 text-center">
+        <div class="text-sm dark:text-surface-400 text-surface-500">Libres</div>
+        <div class="text-3xl font-bold text-emerald-400">{{ ips_libres }}</div>
+    </div>
+    <div class="glass-card p-4 text-center">
+        <div class="text-sm dark:text-surface-400 text-surface-500">Hosts Activos</div>
+        <div class="text-3xl font-bold text-green-400">{{ hosts_activos }}</div>
+    </div>
+    <div class="glass-card p-4 text-center">
+        <div class="text-sm dark:text-surface-400 text-surface-500">Uso</div>
+        <div class="text-3xl font-bold {% if porcentaje_uso > 80 %}text-red-400{% elif porcentaje_uso > 50 %}text-amber-400{% else %}text-emerald-400{% endif %}">{{ porcentaje_uso }}%</div>
+    </div>
+</div>
+
+<!-- Usage Bar -->
+<div class="glass-card p-4 mb-6">
+    <div class="flex items-center justify-between mb-2">
+        <span class="text-sm font-medium dark:text-surface-300 text-surface-600">Distribucion de IPs</span>
+        <span class="text-xs dark:text-surface-400 text-surface-500">{{ ips_asignadas }} de {{ total_ips }} usadas</span>
+    </div>
+    <div class="w-full h-4 bg-surface-200 dark:bg-surface-800 rounded-full overflow-hidden">
+        <div class="h-full rounded-full transition-all duration-500" style="width: {{ porcentaje_uso }}%; background: {% if porcentaje_uso > 80 %}#ef4444{% elif porcentaje_uso > 50 %}#f59e0b{% else %}#10b981{% endif %};"></div>
+    </div>
+    <div class="flex gap-4 mt-2 text-xs dark:text-surface-400 text-surface-500">
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-emerald-500"></span>Activos ({{ hosts_activos }})</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-red-500"></span>Inactivos ({{ hosts_inactivos }})</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-amber-500"></span>Reservados ({{ hosts_reservados }})</span>
+        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-surface-300 dark:bg-surface-700"></span>Libres ({{ ips_libres }})</span>
+    </div>
+</div>
+
+<!-- Child Services (Hosts/Devices in this network) -->
+{% if hijos %}
+<div class="glass-card p-6 mb-6">
+    <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">
+        <i class="fas fa-server mr-2 text-blue-400"></i>Dispositivos en esta Red ({{ hijos|length }})
+    </h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {% for h in hijos %}
+        <a href="{% url 'servicio-detail' h.id %}" class="glass-card p-3 hover:bg-surface-800/50 dark:hover:bg-surface-700/50 transition-colors border dark:border-surface-700 border-surface-200 rounded-lg block">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-sm font-medium dark:text-white text-surface-900">{{ h.nombre }}</span>
+                {% if h.activo %}
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                {% else %}
+                <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                {% endif %}
+            </div>
+            <div class="text-xs dark:text-surface-400 text-surface-500 mb-1">{{ h.tipo_display }}</div>
+            {% if h.host != '-' %}
+            <div class="text-xs font-mono dark:text-surface-300 text-surface-700">{{ h.host }}</div>
+            {% endif %}
+            <div class="flex gap-2 mt-2 text-xs">
+                {% if h.monitorear %}
+                <span class="text-blue-400"><i class="fas fa-eye mr-1"></i>Monitoreado</span>
+                {% endif %}
+                {% if h.estado_monitoreo %}
+                <span class="text-emerald-400"><i class="fas fa-circle mr-1"></i>Online</span>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- IP Table -->
+<div class="glass-card p-6">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold dark:text-white text-surface-900">
+            <i class="fas fa-list mr-2 text-purple-400"></i>IPs Asignadas ({{ ips_asignadas }})
+        </h3>
+        <a href="{% url 'servicio-create' %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors">
+            <i class="fas fa-plus mr-1"></i> Nueva IP
+        </a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full divide-y dark:divide-surface-800 divide-surface-200">
+            <thead class="dark:bg-surface-800 bg-surface-100">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">IP</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Hostname</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">MAC</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Estado</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Monitoreo</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Descripcion</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Ultima Actividad</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="ips-tbody" class="dark:divide-surface-800 divide-surface-200">
+                {% for ip in ips_list %}
+                <tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors">
+                    <td class="px-4 py-3 text-sm font-mono dark:text-white text-surface-900">{{ ip.ip }}</td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ ip.hostname }}</td>
+                    <td class="px-4 py-3 text-sm font-mono dark:text-surface-300 text-surface-700">{{ ip.mac }}</td>
+                    <td class="px-4 py-3 text-sm">
+                        {% if ip.estado == 'activo' %}<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">Activo</span>
+                        {% elif ip.estado == 'inactivo' %}<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Inactivo</span>
+                        {% elif ip.estado == 'reservado' %}<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">Reservado</span>
+                        {% else %}<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-surface-100 text-surface-800 dark:bg-surface-700 dark:text-surface-300">{{ ip.estado_display }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-sm">
+                        {% if ip.monitorear %}<span class="text-blue-400"><i class="fas fa-eye mr-1"></i>Si</span>
+                        {% else %}<span class="text-surface-400">No</span>{% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-700 max-w-xs truncate">{{ ip.descripcion }}</td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-700">{{ ip.ultima_actividad }}</td>
+                    <td class="px-4 py-3 text-sm space-x-1">
+                        <a href="{% url 'servicio-update' red.pk %}" class="text-blue-400 hover:text-blue-300"><i class="fas fa-edit"></i></a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if ips_paginator.num_pages > 1 %}
+    <div id="ips-pagination" class="mt-4 flex items-center justify-between">
+        <div class="text-sm dark:text-surface-400 text-surface-500">
+            Mostrando {{ ips_page.start_index }}-{{ ips_page.end_index }} de {{ ips_paginator.count }} IPs
+        </div>
+        <nav class="flex items-center gap-1">
+            {% if ips_page.has_previous %}
+            <a href="?page={{ ips_page.previous_page_number }}" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600">
+                <i class="fas fa-chevron-left mr-1"></i>Anterior
+            </a>
+            {% endif %}
+            {% for num in ips_paginator.page_range %}
+                {% if num == ips_page.number %}
+                <span class="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg">{{ num }}</span>
+                {% elif num > ips_page.number|add:'-3' and num < ips_page.number|add:'3' %}
+                <a href="?page={{ num }}" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if ips_page.has_next %}
+            <a href="?page={{ ips_page.next_page_number }}" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600">
+                Siguiente<i class="fas fa-chevron-right ml-1"></i>
+            </a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

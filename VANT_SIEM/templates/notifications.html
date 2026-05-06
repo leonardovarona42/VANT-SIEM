@@ -2,109 +2,109 @@
 {% load static %}
 
 {% block content %}
-<div class="container-fluid">
- <div class="row">
- <div class="col-12">
- <div class="d-flex justify-content-between align-items-center mb-4">
- <h2 class="text-info">
- <i class="fas fa-bell me-2"></i>Notificaciones
- </h2>
- <div>
- <button class="btn btn-outline-light me-2" onclick="markAllAsRead()">
- <i class="fas fa-check-double me-2"></i>Marcar Todas como Leídas
- </button>
- <a href="{% url 'dashboard' %}" class="btn btn-secondary">
- <i class="fas fa-arrow-left me-2"></i>Volver al Dashboard
- </a>
- </div>
- </div>
+<div class="w-full px-4">
+  <div class="flex flex-wrap -mx-3">
+    <div class="w-full px-3">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-blue-400">
+          <i class="fas fa-bell mr-2"></i>Notificaciones
+        </h2>
+        <div>
+          <button class="border border-surface-600 text-surface-300 rounded-xl px-4 py-2 text-sm font-medium hover:bg-surface-700 transition-colors mr-2" onclick="markAllAsRead()">
+            <i class="fas fa-check-double mr-2"></i>Marcar Todas como Leídas
+          </button>
+          <a href="{% url 'dashboard' %}" class="bg-gradient-to-r from-surface-600 to-surface-700 text-white rounded-xl px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity">
+            <i class="fas fa-arrow-left mr-2"></i>Volver al Dashboard
+          </a>
+        </div>
+      </div>
 
- <div class="card bg-secondary">
- <div class="card-body">
- {% if notifications %}
- <div class="list-group">
- {% for notification in notifications %}
- <div class="list-group-item list-group-item-action bg-dark border-secondary {% if not notification.is_read %}border-start border-4 border-warning{% endif %}" 
- onclick="markAsRead({{ notification.id }})">
- <div class="d-flex w-100 justify-content-between">
- <div class="flex-grow-1">
- <h5 class="mb-1 {% if not notification.is_read %}text-warning{% else %}text-light{% endif %}">
- <i class="fas fa-{% if notification.event_type == 'USER_CREATE_REQUEST' %}user-plus{% elif notification.event_type == 'USER_APPROVAL_REQUEST' %}user-check{% elif notification.event_type == 'CRITICAL_OPERATION' %}exclamation-triangle{% elif notification.event_type == 'SYSTEM_ALERT' %}bell{% elif notification.event_type == 'SECURITY_EVENT' %}shield-alt{% else %}info-circle{% endif %} me-2"></i>
- {{ notification.title }}
- </h5>
- <p class="mb-1 text-light">{{ notification.message }}</p>
- <small class="text-muted">
- <i class="fas fa-clock me-1"></i>
- {{ notification.created_at|date:"d/m/Y H:i:s" }}
- {% if notification.is_read and notification.read_at %}
- | <i class="fas fa-check me-1"></i>Leída: {{ notification.read_at|date:"d/m/Y H:i:s" }}
- {% endif %}
- </small>
- </div>
- <div class="ms-3">
- {% if not notification.is_read %}
- <span class="badge bg-warning">Nueva</span>
- {% endif %}
- <span class="badge bg-info">{{ notification.get_event_type_display }}</span>
- </div>
- </div>
- </div>
- {% endfor %}
- </div>
- {% else %}
- <div class="text-center text-muted py-5">
- <i class="fas fa-bell-slash fa-4x mb-3"></i>
- <h4>No hay notificaciones</h4>
- <p>No tienes notificaciones pendientes en este momento.</p>
- </div>
- {% endif %}
- </div>
- </div>
- </div>
- </div>
+      <div class="glass-card">
+        <div class="p-4">
+          {% if notifications %}
+          <div class="space-y-2">
+            {% for notification in notifications %}
+            <div class="glass-card p-4 hover:bg-surface-700/50 cursor-pointer transition-colors {% if not notification.is_read %}border-l-4 border-yellow-400{% endif %}" 
+              onclick="markAsRead({{ notification.id }})">
+              <div class="flex justify-between w-full">
+                <div class="flex-grow">
+                  <h5 class="mb-1 {% if not notification.is_read %}text-yellow-400{% else %}text-surface-200{% endif %}">
+                    <i class="fas fa-{% if notification.event_type == 'USER_CREATE_REQUEST' %}user-plus{% elif notification.event_type == 'USER_APPROVAL_REQUEST' %}user-check{% elif notification.event_type == 'CRITICAL_OPERATION' %}exclamation-triangle{% elif notification.event_type == 'SYSTEM_ALERT' %}bell{% elif notification.event_type == 'SECURITY_EVENT' %}shield-alt{% else %}info-circle{% endif %} mr-2"></i>
+                    {{ notification.title }}
+                  </h5>
+                  <p class="mb-1 text-surface-200">{{ notification.message }}</p>
+                  <small class="text-surface-400">
+                    <i class="fas fa-clock mr-1"></i>
+                    {{ notification.created_at|date:"d/m/Y H:i:s" }}
+                    {% if notification.is_read and notification.read_at %}
+                    | <i class="fas fa-check mr-1"></i>Leída: {{ notification.read_at|date:"d/m/Y H:i:s" }}
+                    {% endif %}
+                  </small>
+                </div>
+                <div class="ml-3 flex flex-col items-end space-y-1">
+                  {% if not notification.is_read %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-500/20 text-yellow-400">Nueva</span>
+                  {% endif %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400">{{ notification.get_event_type_display }}</span>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="text-center py-5 text-surface-400">
+            <i class="fas fa-bell-slash fa-4x mb-3"></i>
+            <h4>No hay notificaciones</h4>
+            <p>No tienes notificaciones pendientes en este momento.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
 function markAsRead(notificationId) {
- fetch(`/siem/dashboard/notifications/${notificationId}/read/`, {
- method: 'POST',
- headers: {
- 'X-CSRFToken': '{{ csrf_token }}',
- 'X-Requested-With': 'XMLHttpRequest',
- }
- })
- .then(response => response.json())
- .then(data => {
- if (data.success) {
- // Recargar la página para actualizar el estado
- location.reload();
- }
- })
- .catch(error => {
- console.error('Error:', error);
- });
+  fetch(`/siem/dashboard/notifications/${notificationId}/read/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': '{{ csrf_token }}',
+      'X-Requested-With': 'XMLHttpRequest',
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Recargar la página para actualizar el estado
+      location.reload();
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+  });
 }
 
 function markAllAsRead() {
- if (confirm('¿Estás seguro de que deseas marcar todas las notificaciones como leídas?')) {
- fetch('/siem/dashboard/notifications/mark-all-read/', {
- method: 'POST',
- headers: {
- 'X-CSRFToken': '{{ csrf_token }}',
- 'X-Requested-With': 'XMLHttpRequest',
- }
- })
- .then(response => response.json())
- .then(data => {
- if (data.success) {
- // Recargar la página para actualizar el estado
- location.reload();
- }
- })
- .catch(error => {
- console.error('Error:', error);
- });
- }
+  if (confirm('¿Estás seguro de que deseas marcar todas las notificaciones como leídas?')) {
+    fetch('/siem/dashboard/notifications/mark-all-read/', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}',
+        'X-Requested-With': 'XMLHttpRequest',
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Recargar la página para actualizar el estado
+        location.reload();
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
+  }
 }
 </script>
 {% endblock %}

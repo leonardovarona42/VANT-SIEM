@@ -1,51 +1,52 @@
 {% extends "dashboard.html" %}
 {% block title %}Listado de Medidas | VANT-SIEM{% endblock %}
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="card bg-secondary shadow">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 text-info fw-bold">Listado de Medidas</h5>
-                <a href="{% url 'medida-create' %}" class="btn btn-primary btn-sm">
-                    <i class="fas fa-plus"></i> Nueva Medida
-                </a>
+<div class="glass-card">
+    <div class="px-6 py-4 flex justify-between items-center border-b dark:border-surface-800 border-surface-200">
+        <h5 class="mb-0 text-lg font-bold dark:text-white text-surface-900">Listado de Medidas</h5>
+        <a href="{% url 'medida-create' %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors">
+            <i class="fas fa-plus mr-1"></i> Nueva Medida
+        </a>
+    </div>
+    <div class="p-6">
+        {% if object_list %}
+            <div class="overflow-x-auto">
+                <table class="w-full divide-y dark:divide-surface-800 divide-surface-200" id="medidas-table">
+                    <thead class="dark:bg-surface-800 bg-surface-100">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true" data-type="number">ID</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true">Nombre</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider sortable-header" data-sortable="true">Descripción</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="dark:divide-surface-800 divide-surface-200">
+                        {% for medida in object_list %}
+                        <tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors">
+                            <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ medida.id }}</td>
+                            <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ medida.nombre }}</td>
+                            <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ medida.descripcion|truncatechars:50 }}</td>
+                            <td class="px-4 py-3 text-sm space-x-1">
+                                <a href="{% url 'medida-detail' medida.pk %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors">Ver</a>
+                                <a href="{% url 'medida-update' medida.pk %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 dark:bg-yellow-500 dark:hover:bg-yellow-600 rounded-lg transition-colors">Editar</a>
+                                <a href="{% url 'medida-delete' medida.pk %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 rounded-lg transition-colors">Eliminar</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            <div class="card-body">
-                {% if object_list %}
-                    <div class="table-responsive">
-                        <table class="table table-dark table-striped">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Nombre</th>
-                                    <th>Descripción</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for medida in object_list %}
-                                <tr>
-                                    <td>{{ medida.id }}</td>
-                                    <td>{{ medida.nombre }}</td>
-                                    <td>{{ medida.descripcion|truncatechars:50 }}</td>
-                                    <td>
-                                        <a href="{% url 'medida-detail' medida.pk %}" class="btn btn-info btn-sm">Ver</a>
-                                        <a href="{% url 'medida-update' medida.pk %}" class="btn btn-warning btn-sm">Editar</a>
-                                        <a href="{% url 'medida-delete' medida.pk %}" class="btn btn-danger btn-sm">Eliminar</a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <div class="text-center py-4">
-                        <p class="text-muted">No hay medidas registradas.</p>
-                        <a href="{% url 'medida-create' %}" class="btn btn-primary">Crear Primera Medida</a>
-                    </div>
-                {% endif %}
+        {% else %}
+            <div class="text-center py-4">
+                <p class="dark:text-surface-400 text-surface-500">No hay medidas registradas.</p>
+                <a href="{% url 'medida-create' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors mt-2">Crear Primera Medida</a>
             </div>
-        </div>
+        {% endif %}
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    VANT_UI.initSortableTables({ tableId: 'medidas-table' });
+});
+</script>
 {% endblock %}

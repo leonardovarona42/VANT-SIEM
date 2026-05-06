@@ -1,697 +1,646 @@
-{% extends "base.html" %}
+{% extends "dashboard.html" %}
 {% load static %}
 
 {% block title %}Configuración de Notificaciones - VANT-SIEM{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
- <div class="row">
- <div class="col-12">
- <div class="card bg-dark text-light border-secondary">
- <div class="card-header bg-dark text-light border-secondary">
- <h4 class="mb-0">
- <i class="fas fa-bell me-2"></i>
- Configuración de Notificaciones
- </h4>
- </div>
- <div class="card-body bg-dark">
- <!-- Pestañas de configuración -->
- <ul class="nav nav-tabs" id="settingsTabs" role="tablist">
- <li class="nav-item" role="presentation">
- <button class="nav-link active" id="global-tab" data-bs-toggle="tab" data-bs-target="#global" type="button" role="tab">
- <i class="fas fa-cogs me-1"></i>General
- </button>
- </li>
- <li class="nav-item" role="presentation">
- <button class="nav-link" id="email-tab" data-bs-toggle="tab" data-bs-target="#email" type="button" role="tab">
- <i class="fas fa-envelope me-1"></i>Email
- </button>
- </li>
- <li class="nav-item" role="presentation">
- <button class="nav-link" id="sms-tab" data-bs-toggle="tab" data-bs-target="#sms" type="button" role="tab">
- <i class="fas fa-sms me-1"></i>SMS
- </button>
- </li>
- <li class="nav-item" role="presentation">
- <button class="nav-link" id="slack-tab" data-bs-toggle="tab" data-bs-target="#slack" type="button" role="tab">
- <i class="fab fa-slack me-1"></i>Slack
- </button>
- </li>
- <li class="nav-item" role="presentation">
- <button class="nav-link" id="teams-tab" data-bs-toggle="tab" data-bs-target="#teams" type="button" role="tab">
- <i class="fab fa-microsoft me-1"></i>Teams
- </button>
- </li>
- <li class="nav-item" role="presentation">
- <button class="nav-link" id="push-tab" data-bs-toggle="tab" data-bs-target="#push" type="button" role="tab">
- <i class="fas fa-bell me-1"></i>Push
- </button>
- </li>
- <li class="nav-item" role="presentation">
- <button class="nav-link" id="channels-tab" data-bs-toggle="tab" data-bs-target="#channels" type="button" role="tab">
- <i class="fas fa-broadcast-tower me-1"></i>Canales
- </button>
- </li>
- <li class="nav-item" role="presentation">
- <button class="nav-link" id="templates-tab" data-bs-toggle="tab" data-bs-target="#templates" type="button" role="tab">
- <i class="fas fa-file-alt me-1"></i>Plantillas
- </button>
- </li>
- </ul>
+<div class="space-y-6">
+  <div class="glass-card rounded-2xl overflow-hidden">
+    <div class="px-6 py-4 border-b dark:border-surface-700 border-surface-200">
+      <h4 class="text-xl font-bold dark:text-surface-100 text-surface-900">
+        <i class="fas fa-bell me-2 text-brand-500"></i>Configuración de Notificaciones
+      </h4>
+    </div>
+    <div class="p-6">
+      <!-- Pestañas de configuración -->
+      <div class="border-b dark:border-surface-700 border-surface-200 mb-6">
+        <div class="flex flex-wrap -mb-px" id="settingsTabs">
+          <button class="settings-tab-btn active px-4 py-3 text-sm font-medium border-b-2 border-brand-500 text-brand-500 dark:text-brand-400" data-tab="global">
+            <i class="fas fa-cogs me-1"></i>General
+          </button>
+          <button class="settings-tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent dark:text-surface-400 text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 transition-colors" data-tab="email">
+            <i class="fas fa-envelope me-1"></i>Email
+          </button>
+          <button class="settings-tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent dark:text-surface-400 text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 transition-colors" data-tab="sms">
+            <i class="fas fa-sms me-1"></i>SMS
+          </button>
+          <button class="settings-tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent dark:text-surface-400 text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 transition-colors" data-tab="slack">
+            <i class="fab fa-slack me-1"></i>Slack
+          </button>
+          <button class="settings-tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent dark:text-surface-400 text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 transition-colors" data-tab="teams">
+            <i class="fab fa-microsoft me-1"></i>Teams
+          </button>
+          <button class="settings-tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent dark:text-surface-400 text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 transition-colors" data-tab="push">
+            <i class="fas fa-bell me-1"></i>Push
+          </button>
+          <button class="settings-tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent dark:text-surface-400 text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 transition-colors" data-tab="channels">
+            <i class="fas fa-broadcast-tower me-1"></i>Canales
+          </button>
+          <button class="settings-tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent dark:text-surface-400 text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 transition-colors" data-tab="templates">
+            <i class="fas fa-file-alt me-1"></i>Plantillas
+          </button>
+        </div>
+      </div>
 
- <div class="tab-content mt-4" id="settingsTabsContent">
- <!-- Configuración General -->
- <div class="tab-pane fade show active" id="global" role="tabpanel">
- <form method="post" action="{% url 'save-notification-settings' %}">
- {% csrf_token %}
- <input type="hidden" name="section" value="global">
+      <div class="settings-tab-content">
+        <!-- Configuración General -->
+        <div class="settings-pane active" id="global">
+          <form method="post" action="{% url 'save-notification-settings' %}">
+            {% csrf_token %}
+            <input type="hidden" name="section" value="global">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div class="glass-card rounded-xl p-6">
+                <h6 class="text-sm font-semibold dark:text-surface-200 text-surface-800 mb-4">
+                  <i class="fas fa-cogs me-2 text-brand-500"></i>Procesamiento
+                </h6>
+                <div class="mb-4">
+                  <label class="inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="enable_async_processing" class="sr-only peer" {% if settings.enable_async_processing %}checked{% endif %}>
+                    <div class="relative w-11 h-6 bg-surface-300 dark:bg-surface-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-500"></div>
+                    <span class="ml-3 text-sm font-medium dark:text-surface-200 text-surface-800">Procesamiento asíncrono</span>
+                  </label>
+                  <p class="mt-2 text-xs dark:text-surface-400 text-surface-500">Mejora el rendimiento procesando notificaciones en segundo plano</p>
+                </div>
+                <div class="mb-3">
+                  <label for="max_retries" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Máximo reintentos</label>
+                  <input type="number" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="max_retries" name="max_retries" value="{{ settings.max_retries }}" min="1" max="10">
+                </div>
+              </div>
+              <div class="glass-card rounded-xl p-6">
+                <h6 class="text-sm font-semibold dark:text-surface-200 text-surface-800 mb-4">
+                  <i class="fas fa-trash-alt me-2 text-brand-500"></i>Limpieza
+                </h6>
+                <div class="mb-4">
+                  <label class="inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="auto_cleanup" class="sr-only peer" {% if settings.auto_cleanup %}checked{% endif %}>
+                    <div class="relative w-11 h-6 bg-surface-300 dark:bg-surface-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-500"></div>
+                    <span class="ml-3 text-sm font-medium dark:text-surface-200 text-surface-800">Limpieza automática</span>
+                  </label>
+                </div>
+                <div class="mb-3">
+                  <label for="cleanup_days" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Días para mantener notificaciones</label>
+                  <input type="number" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="cleanup_days" name="cleanup_days" value="{{ settings.cleanup_days }}" min="1" max="365">
+                </div>
+                <div class="mb-3">
+                  <label for="cleanup_frequency" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Frecuencia de limpieza</label>
+                  <select class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="cleanup_frequency" name="cleanup_frequency">
+                    <option value="hourly" {% if settings.cleanup_frequency == 'hourly' %}selected{% endif %}>Cada hora</option>
+                    <option value="daily" {% if settings.cleanup_frequency == 'daily' %}selected{% endif %}>Diario</option>
+                    <option value="weekly" {% if settings.cleanup_frequency == 'weekly' %}selected{% endif %}>Semanal</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="text-center">
+              <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-medium rounded-xl shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all duration-300 inline-flex items-center gap-2">
+                <i class="fas fa-save"></i>Guardar Configuración General
+              </button>
+            </div>
+          </form>
+        </div>
 
- <div class="row">
- <div class="col-md-6">
- <div class="card bg-secondary border-0 mb-4">
- <div class="card-header bg-dark text-light border-secondary">
- <h6 class="mb-0">
- <i class="fas fa-cogs me-2"></i>Procesamiento
- </h6>
- </div>
- <div class="card-body bg-dark">
- <div class="mb-4">
- <div class="form-check mb-2">
- <input class="form-check-input" type="checkbox" id="enable_async_processing" name="enable_async_processing" {% if settings.enable_async_processing %}checked{% endif %}>
- <label class="form-check-label text-light fw-bold" for="enable_async_processing">
- Procesamiento asíncrono
- </label>
- </div>
- <small class="form-text text-muted">Mejora el rendimiento procesando notificaciones en segundo plano</small>
- </div>
+        <!-- Configuración de Email -->
+        <div class="settings-pane hidden" id="email">
+          <form method="post" action="{% url 'save-notification-settings' %}">
+            {% csrf_token %}
+            <input type="hidden" name="section" value="email">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div class="glass-card rounded-xl p-6">
+                <h6 class="text-sm font-semibold dark:text-surface-200 text-surface-800 mb-4">
+                  <i class="fas fa-envelope me-2 text-brand-500"></i>Procesamiento por Lotes
+                </h6>
+                <div class="mb-4">
+                  <label for="email_batch_size" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Tamaño del lote</label>
+                  <input type="number" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="email_batch_size" name="email_batch_size" value="{{ settings.email_batch_size }}" min="1" max="1000">
+                  <p class="mt-1 text-xs dark:text-surface-400 text-surface-500">Número de emails a procesar en cada lote</p>
+                </div>
+                <div class="mb-4">
+                  <label for="email_rate_limit" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Límite por hora</label>
+                  <input type="number" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="email_rate_limit" name="email_rate_limit" value="{{ settings.email_rate_limit }}" min="1" max="10000">
+                  <p class="mt-1 text-xs dark:text-surface-400 text-surface-500">Máximo de emails que se pueden enviar por hora</p>
+                </div>
+              </div>
+            </div>
+            <div class="text-center">
+              <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-medium rounded-xl shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all duration-300 inline-flex items-center gap-2">
+                <i class="fas fa-save"></i>Guardar Configuración de Email
+              </button>
+            </div>
+          </form>
+        </div>
 
- <div class="mb-3">
- <label for="max_retries" class="form-label text-light fw-semibold">Máximo reintentos</label>
- <input type="number" class="form-control bg-secondary border-secondary text-light" id="max_retries" name="max_retries" value="{{ settings.max_retries }}" min="1" max="10">
- </div>
- </div>
- </div>
- </div>
+        <!-- Configuración de SMS -->
+        <div class="settings-pane hidden" id="sms">
+          <form method="post" action="{% url 'save-notification-settings' %}">
+            {% csrf_token %}
+            <input type="hidden" name="section" value="sms">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div class="glass-card rounded-xl p-6">
+                <h6 class="text-sm font-semibold dark:text-surface-200 text-surface-800 mb-4">
+                  <i class="fas fa-sms me-2 text-brand-500"></i>Proveedor SMS
+                </h6>
+                <div class="mb-4">
+                  <label for="sms_provider" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Proveedor</label>
+                  <select class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="sms_provider" name="sms_provider">
+                    <option value="" {% if not settings.sms_provider %}selected{% endif %}>Seleccionar...</option>
+                    <option value="twilio" {% if settings.sms_provider == 'twilio' %}selected{% endif %}>Twilio</option>
+                    <option value="aws" {% if settings.sms_provider == 'aws' %}selected{% endif %}>AWS SNS</option>
+                    <option value="custom" {% if settings.sms_provider == 'custom' %}selected{% endif %}>Personalizado</option>
+                  </select>
+                </div>
+                <div class="mb-4">
+                  <label for="sms_api_key" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">API Key</label>
+                  <input type="password" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="sms_api_key" name="sms_api_key" value="{{ settings.sms_api_key }}">
+                </div>
+              </div>
+              <div class="glass-card rounded-xl p-6">
+                <div class="mb-4">
+                  <label for="sms_rate_limit" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Límite por hora</label>
+                  <input type="number" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="sms_rate_limit" name="sms_rate_limit" value="{{ settings.sms_rate_limit }}" min="1" max="1000">
+                </div>
+              </div>
+            </div>
+            <div class="text-center">
+              <button type="submit" class="px-6 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-medium rounded-xl shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all duration-300 inline-flex items-center gap-2">
+                <i class="fas fa-save"></i>Guardar Configuración de SMS
+              </button>
+            </div>
+          </form>
+        </div>
 
- <div class="col-md-6">
- <div class="card bg-secondary border-0 mb-4">
- <div class="card-header bg-dark text-light border-secondary">
- <h6 class="mb-0">
- <i class="fas fa-trash-alt me-2"></i>Limpieza
- </h6>
- </div>
- <div class="card-body bg-dark">
- <div class="mb-4">
- <div class="form-check mb-2">
- <input class="form-check-input" type="checkbox" id="auto_cleanup" name="auto_cleanup" {% if settings.auto_cleanup %}checked{% endif %}>
- <label class="form-check-label text-light fw-bold" for="auto_cleanup">
- Limpieza automática
- </label>
- </div>
- </div>
+        <!-- Configuración de Slack -->
+        <div class="settings-pane hidden" id="slack">
+          <form method="post" action="{% url 'save-notification-settings' %}">
+            {% csrf_token %}
+            <input type="hidden" name="section" value="slack">
+            <div class="max-w-md mb-6">
+              <h5 class="text-lg font-semibold dark:text-surface-200 text-surface-800 mb-4">Webhook de Slack</h5>
+              <div class="mb-4">
+                <label for="slack_webhook_url" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">URL del Webhook</label>
+                <input type="url" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="slack_webhook_url" name="slack_webhook_url" value="{{ settings.slack_webhook_url }}" placeholder="https://hooks.slack.com/...">
+                <p class="mt-1 text-xs dark:text-surface-400 text-surface-500">URL del webhook de Slack para enviar notificaciones</p>
+              </div>
+              <div class="mb-4">
+                <label for="slack_default_channel" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Canal por defecto</label>
+                <input type="text" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="slack_default_channel" name="slack_default_channel" value="{{ settings.slack_default_channel }}" placeholder="#alerts">
+              </div>
+            </div>
+            <button type="submit" class="px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-medium rounded-xl shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all duration-300 inline-flex items-center gap-2">
+              <i class="fas fa-save"></i>Guardar Configuración de Slack
+            </button>
+          </form>
+        </div>
 
- <div class="mb-3">
- <label for="cleanup_days" class="form-label text-light fw-semibold">Días para mantener notificaciones</label>
- <input type="number" class="form-control bg-secondary border-secondary text-light" id="cleanup_days" name="cleanup_days" value="{{ settings.cleanup_days }}" min="1" max="365">
- </div>
+        <!-- Configuración de Teams -->
+        <div class="settings-pane hidden" id="teams">
+          <form method="post" action="{% url 'save-notification-settings' %}">
+            {% csrf_token %}
+            <input type="hidden" name="section" value="teams">
+            <div class="max-w-md mb-6">
+              <h5 class="text-lg font-semibold dark:text-surface-200 text-surface-800 mb-4">Webhook de Microsoft Teams</h5>
+              <div class="mb-4">
+                <label for="teams_webhook_url" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">URL del Webhook</label>
+                <input type="url" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="teams_webhook_url" name="teams_webhook_url" value="{{ settings.teams_webhook_url }}" placeholder="https://outlook.office.com/webhook/...">
+                <p class="mt-1 text-xs dark:text-surface-400 text-surface-500">URL del webhook de Microsoft Teams</p>
+              </div>
+            </div>
+            <button type="submit" class="px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-medium rounded-xl shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all duration-300 inline-flex items-center gap-2">
+              <i class="fas fa-save"></i>Guardar Configuración de Teams
+            </button>
+          </form>
+        </div>
 
- <div class="mb-3">
- <label for="cleanup_frequency" class="form-label text-light fw-semibold">Frecuencia de limpieza</label>
- <select class="form-select bg-secondary border-secondary text-light" id="cleanup_frequency" name="cleanup_frequency">
- <option value="hourly" {% if settings.cleanup_frequency == 'hourly' %}selected{% endif %}>Cada hora</option>
- <option value="daily" {% if settings.cleanup_frequency == 'daily' %}selected{% endif %}>Diario</option>
- <option value="weekly" {% if settings.cleanup_frequency == 'weekly' %}selected{% endif %}>Semanal</option>
- </select>
- </div>
- </div>
- </div>
- </div>
- </div>
+        <!-- Configuración de Push Notifications -->
+        <div class="settings-pane hidden" id="push">
+          <form method="post" action="{% url 'save-notification-settings' %}">
+            {% csrf_token %}
+            <input type="hidden" name="section" value="push">
+            <div class="max-w-md mb-6">
+              <h5 class="text-lg font-semibold dark:text-surface-200 text-surface-800 mb-4">Notificaciones Push del Navegador</h5>
+              <div class="mb-4">
+                <label class="inline-flex items-center cursor-pointer">
+                  <input type="checkbox" name="push_enabled" class="sr-only peer" {% if settings.push_enabled %}checked{% endif %}>
+                  <div class="relative w-11 h-6 bg-surface-300 dark:bg-surface-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-500"></div>
+                  <span class="ml-3 text-sm font-medium dark:text-surface-200 text-surface-800">Habilitar notificaciones push</span>
+                </label>
+                <p class="mt-2 text-xs dark:text-surface-400 text-surface-500">Requiere configuración de VAPID keys</p>
+              </div>
+              <div class="mb-4">
+                <label for="push_vapid_key" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Clave VAPID</label>
+                <textarea class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="push_vapid_key" name="push_vapid_key" rows="3" placeholder="Clave VAPID para notificaciones push">{{ settings.push_vapid_key }}</textarea>
+              </div>
+            </div>
+            <button type="submit" class="px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-medium rounded-xl shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all duration-300 inline-flex items-center gap-2">
+              <i class="fas fa-save"></i>Guardar Configuración de Push
+            </button>
+          </form>
+        </div>
 
- <div class="text-center">
- <button type="submit" class="btn btn-primary btn-lg px-4">
- <i class="fas fa-save me-2"></i>Guardar Configuración General
- </button>
- </div>
- </form>
- </div>
+        <!-- Gestión de Canales -->
+        <div class="settings-pane hidden" id="channels">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+            <h5 class="text-lg font-semibold dark:text-surface-200 text-surface-800">Canales de Notificación</h5>
+            <button class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-medium rounded-xl shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-300 inline-flex items-center gap-2 text-sm" onclick="openAddChannelModal()">
+              <i class="fas fa-plus"></i>Agregar Canal
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full divide-y dark:divide-surface-700 divide-surface-200" id="channels-table">
+              <thead class="dark:bg-surface-800 bg-surface-100">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Nombre</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Tipo</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Estado</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="dark:divide-surface-700 divide-surface-200">
+                {% for channel in channels %}
+                <tr class="dark:hover:bg-surface-700/50 hover:bg-surface-50 transition-colors">
+                  <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ channel.name }}</td>
+                  <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ channel.get_channel_type_display }}</td>
+                  <td class="px-4 py-3 text-sm">
+                    {% if channel.is_active %}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400">Activo</span>
+                    {% else %}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium dark:bg-surface-700 bg-surface-200 dark:text-surface-400 text-surface-500">Inactivo</span>
+                    {% endif %}
+                  </td>
+                  <td class="px-4 py-3 text-sm">
+                    <div class="flex items-center gap-2">
+                      <button class="inline-flex items-center px-3 py-1.5 text-xs font-medium dark:bg-amber-500/20 bg-amber-100 text-amber-400 dark:text-amber-400 rounded-lg hover:bg-amber-500/30 transition-colors test-channel-btn" data-channel-id="{{ channel.id }}">
+                        <i class="fas fa-flask"></i>
+                      </button>
+                      <button class="inline-flex items-center px-3 py-1.5 text-xs font-medium dark:bg-red-500/20 bg-red-100 text-red-400 dark:text-red-400 rounded-lg hover:bg-red-500/30 transition-colors delete-channel-btn" data-channel-id="{{ channel.id }}" data-channel-name="{{ channel.name|escapejs }}">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
- <!-- Configuración de Email -->
- <div class="tab-pane fade" id="email" role="tabpanel">
- <form method="post" action="{% url 'save-notification-settings' %}">
- {% csrf_token %}
- <input type="hidden" name="section" value="email">
+        <!-- Gestión de Plantillas -->
+        <div class="settings-pane hidden" id="templates">
+          <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+            <h5 class="text-lg font-semibold dark:text-surface-200 text-surface-800">Plantillas de Notificación</h5>
+            <button class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-medium rounded-xl shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-300 inline-flex items-center gap-2 text-sm" onclick="openAddTemplateModal()">
+              <i class="fas fa-plus"></i>Agregar Plantilla
+            </button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full divide-y dark:divide-surface-700 divide-surface-200" id="templates-table">
+              <thead class="dark:bg-surface-800 bg-surface-100">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Nombre</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Tipo</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Evento</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Estado</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider">Acciones</th>
+                </tr>
+              </thead>
+              <tbody class="dark:divide-surface-700 divide-surface-200">
+                {% for template in templates %}
+                <tr class="dark:hover:bg-surface-700/50 hover:bg-surface-50 transition-colors">
+                  <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ template.name }}</td>
+                  <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ template.get_template_type_display }}</td>
+                  <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ template.get_event_type_display }}</td>
+                  <td class="px-4 py-3 text-sm">
+                    {% if template.is_active %}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400">Activa</span>
+                    {% else %}
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium dark:bg-surface-700 bg-surface-200 dark:text-surface-400 text-surface-500">Inactiva</span>
+                    {% endif %}
+                  </td>
+                  <td class="px-4 py-3 text-sm">
+                    <button class="inline-flex items-center px-3 py-1.5 text-xs font-medium dark:bg-red-500/20 bg-red-100 text-red-400 dark:text-red-400 rounded-lg hover:bg-red-500/30 transition-colors delete-template-btn" data-template-id="{{ template.id }}" data-template-name="{{ template.name|escapejs }}">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
- <div class="row">
- <div class="col-md-8">
- <div class="card bg-secondary border-0 mb-4">
- <div class="card-header bg-dark text-light border-secondary">
- <h6 class="mb-0">
- <i class="fas fa-envelope me-2"></i>Procesamiento por Lotes
- </h6>
- </div>
- <div class="card-body bg-dark">
- <div class="row">
- <div class="col-md-6">
- <div class="mb-4">
- <label for="email_batch_size" class="form-label text-light fw-semibold">Tamaño del lote</label>
- <input type="number" class="form-control bg-secondary border-secondary text-light" id="email_batch_size" name="email_batch_size" value="{{ settings.email_batch_size }}" min="1" max="1000">
- <small class="form-text text-muted">Número de emails a procesar en cada lote</small>
- </div>
- </div>
- <div class="col-md-6">
- <div class="mb-4">
- <label for="email_rate_limit" class="form-label text-light fw-semibold">Límite por hora</label>
- <input type="number" class="form-control bg-secondary border-secondary text-light" id="email_rate_limit" name="email_rate_limit" value="{{ settings.email_rate_limit }}" min="1" max="10000">
- <small class="form-text text-muted">Máximo de emails que se pueden enviar por hora</small>
- </div>
- </div>
- </div>
- </div>
- </div>
- </div>
- </div>
-
- <div class="text-center">
- <button type="submit" class="btn btn-primary btn-lg px-4">
- <i class="fas fa-save me-2"></i>Guardar Configuración de Email
- </button>
- </div>
- </form>
- </div>
-
- <!-- Configuración de SMS -->
- <div class="tab-pane fade" id="sms" role="tabpanel">
- <form method="post" action="{% url 'save-notification-settings' %}">
- {% csrf_token %}
- <input type="hidden" name="section" value="sms">
-
- <div class="row">
- <div class="col-md-8">
- <div class="card bg-secondary border-0 mb-4">
- <div class="card-header bg-dark text-light border-secondary">
- <h6 class="mb-0">
- <i class="fas fa-sms me-2"></i>Proveedor SMS
- </h6>
- </div>
- <div class="card-body bg-dark">
- <div class="row">
- <div class="col-md-6">
- <div class="mb-4">
- <label for="sms_provider" class="form-label text-light fw-semibold">Proveedor</label>
- <select class="form-select bg-secondary border-secondary text-light" id="sms_provider" name="sms_provider">
- <option value="" {% if not settings.sms_provider %}selected{% endif %}>Seleccionar...</option>
- <option value="twilio" {% if settings.sms_provider == 'twilio' %}selected{% endif %}>Twilio</option>
- <option value="aws" {% if settings.sms_provider == 'aws' %}selected{% endif %}>AWS SNS</option>
- <option value="custom" {% if settings.sms_provider == 'custom' %}selected{% endif %}>Personalizado</option>
- </select>
- </div>
-
- <div class="mb-4">
- <label for="sms_api_key" class="form-label text-light fw-semibold">API Key</label>
- <input type="password" class="form-control bg-secondary border-secondary text-light" id="sms_api_key" name="sms_api_key" value="{{ settings.sms_api_key }}">
- </div>
- </div>
- <div class="col-md-6">
- <div class="mb-4">
- <label for="sms_rate_limit" class="form-label text-light fw-semibold">Límite por hora</label>
- <input type="number" class="form-control bg-secondary border-secondary text-light" id="sms_rate_limit" name="sms_rate_limit" value="{{ settings.sms_rate_limit }}" min="1" max="1000">
- </div>
- </div>
- </div>
- </div>
- </div>
- </div>
- </div>
-
- <div class="text-center">
- <button type="submit" class="btn btn-primary btn-lg px-4">
- <i class="fas fa-save me-2"></i>Guardar Configuración de SMS
- </button>
- </div>
- </form>
- </div>
-
- <!-- Configuración de Slack -->
- <div class="tab-pane fade" id="slack" role="tabpanel">
- <form method="post" action="{% url 'save-notification-settings' %}">
- {% csrf_token %}
- <input type="hidden" name="section" value="slack">
-
- <div class="row">
- <div class="col-md-6">
- <h5>Webhook de Slack</h5>
- <div class="mb-3">
- <label for="slack_webhook_url" class="form-label">URL del Webhook</label>
- <input type="url" class="form-control" id="slack_webhook_url" name="slack_webhook_url" value="{{ settings.slack_webhook_url }}" placeholder="https://hooks.slack.com/...">
- <small class="form-text text-muted">URL del webhook de Slack para enviar notificaciones</small>
- </div>
-
- <div class="mb-3">
- <label for="slack_default_channel" class="form-label">Canal por defecto</label>
- <input type="text" class="form-control" id="slack_default_channel" name="slack_default_channel" value="{{ settings.slack_default_channel }}" placeholder="#alerts">
- </div>
- </div>
- </div>
-
- <button type="submit" class="btn btn-primary">
- <i class="fas fa-save me-1"></i>Guardar Configuración de Slack
- </button>
- </form>
- </div>
-
- <!-- Configuración de Teams -->
- <div class="tab-pane fade" id="teams" role="tabpanel">
- <form method="post" action="{% url 'save-notification-settings' %}">
- {% csrf_token %}
- <input type="hidden" name="section" value="teams">
-
- <div class="row">
- <div class="col-md-6">
- <h5>Webhook de Microsoft Teams</h5>
- <div class="mb-3">
- <label for="teams_webhook_url" class="form-label">URL del Webhook</label>
- <input type="url" class="form-control" id="teams_webhook_url" name="teams_webhook_url" value="{{ settings.teams_webhook_url }}" placeholder="https://outlook.office.com/webhook/...">
- <small class="form-text text-muted">URL del webhook de Microsoft Teams</small>
- </div>
- </div>
- </div>
-
- <button type="submit" class="btn btn-primary">
- <i class="fas fa-save me-1"></i>Guardar Configuración de Teams
- </button>
- </form>
- </div>
-
- <!-- Configuración de Push Notifications -->
- <div class="tab-pane fade" id="push" role="tabpanel">
- <form method="post" action="{% url 'save-notification-settings' %}">
- {% csrf_token %}
- <input type="hidden" name="section" value="push">
-
- <div class="row">
- <div class="col-md-6">
- <h5>Notificaciones Push del Navegador</h5>
- <div class="mb-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="push_enabled" name="push_enabled" {% if settings.push_enabled %}checked{% endif %}>
- <label class="form-check-label" for="push_enabled">
- Habilitar notificaciones push
- </label>
- </div>
- <small class="form-text text-muted">Requiere configuración de VAPID keys</small>
- </div>
-
- <div class="mb-3">
- <label for="push_vapid_key" class="form-label">Clave VAPID</label>
- <textarea class="form-control" id="push_vapid_key" name="push_vapid_key" rows="3" placeholder="Clave VAPID para notificaciones push">{{ settings.push_vapid_key }}</textarea>
- </div>
- </div>
- </div>
-
- <button type="submit" class="btn btn-primary">
- <i class="fas fa-save me-1"></i>Guardar Configuración de Push
- </button>
- </form>
- </div>
-
- <!-- Gestión de Canales -->
- <div class="tab-pane fade" id="channels" role="tabpanel">
- <div class="d-flex justify-content-between align-items-center mb-3">
- <h5>Canales de Notificación</h5>
- <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addChannelModal">
- <i class="fas fa-plus me-1"></i>Agregar Canal
- </button>
- </div>
-
- <div class="table-responsive">
- <table class="table table-dark table-striped">
- <thead>
- <tr>
- <th>Nombre</th>
- <th>Tipo</th>
- <th>Estado</th>
- <th>Acciones</th>
- </tr>
- </thead>
- <tbody>
- {% for channel in channels %}
- <tr>
- <td>{{ channel.name }}</td>
- <td>{{ channel.get_channel_type_display }}</td>
- <td>
- <span class="badge bg-{% if channel.is_active %}success{% else %}secondary{% endif %}">
- {% if channel.is_active %}Activo{% else %}Inactivo{% endif %}
- </span>
- </td>
- <td>
- <button class="btn btn-sm btn-outline-warning me-1 test-channel-btn" data-channel-id="{{ channel.id }}">
- <i class="fas fa-flask"></i>
- </button>
- <button class="btn btn-sm btn-outline-danger delete-channel-btn" data-channel-id="{{ channel.id }}" data-channel-name="{{ channel.name|escapejs }}">
- <i class="fas fa-trash"></i>
- </button>
- </td>
- </tr>
- {% endfor %}
- </tbody>
- </table>
- </div>
- </div>
-
- <!-- Gestión de Plantillas -->
- <div class="tab-pane fade" id="templates" role="tabpanel">
- <div class="d-flex justify-content-between align-items-center mb-3">
- <h5>Plantillas de Notificación</h5>
- <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addTemplateModal">
- <i class="fas fa-plus me-1"></i>Agregar Plantilla
- </button>
- </div>
-
- <div class="table-responsive">
- <table class="table table-dark table-striped">
- <thead>
- <tr>
- <th>Nombre</th>
- <th>Tipo</th>
- <th>Evento</th>
- <th>Estado</th>
- <th>Acciones</th>
- </tr>
- </thead>
- <tbody>
- {% for template in templates %}
- <tr>
- <td>{{ template.name }}</td>
- <td>{{ template.get_template_type_display }}</td>
- <td>{{ template.get_event_type_display }}</td>
- <td>
- <span class="badge bg-{% if template.is_active %}success{% else %}secondary{% endif %}">
- {% if template.is_active %}Activa{% else %}Inactiva{% endif %}
- </span>
- </td>
- <td>
- <button class="btn btn-sm btn-outline-danger delete-template-btn" data-template-id="{{ template.id }}" data-template-name="{{ template.name|escapejs }}">
- <i class="fas fa-trash"></i>
- </button>
- </td>
- </tr>
- {% endfor %}
- </tbody>
- </table>
- </div>
- </div>
- </div>
- </div>
- </div>
- </div>
- </div>
-
- <!-- Estadísticas -->
- <div class="row mt-4">
- <div class="col-12">
- <div class="card bg-dark text-light border-secondary">
- <div class="card-header bg-dark text-light border-secondary">
- <h5 class="mb-0">
- <i class="fas fa-chart-bar me-2"></i>
- Estadísticas del Sistema
- </h5>
- </div>
- <div class="card-body bg-secondary">
- <div class="row text-center">
- <div class="col-md-2 mb-3">
- <div class="bg-dark rounded p-3 border">
- <div class="h4 text-primary mb-1">{{ stats.total_notifications }}</div>
- <small class="text-light fw-semibold">Total Notificaciones</small>
- </div>
- </div>
- <div class="col-md-2 mb-3">
- <div class="bg-dark rounded p-3 border">
- <div class="h4 text-success mb-1">{{ stats.sent_today }}</div>
- <small class="text-light fw-semibold">Enviadas Hoy</small>
- </div>
- </div>
- <div class="col-md-2 mb-3">
- <div class="bg-dark rounded p-3 border">
- <div class="h4 text-warning mb-1">{{ stats.pending }}</div>
- <small class="text-light fw-semibold">Pendientes</small>
- </div>
- </div>
- <div class="col-md-2 mb-3">
- <div class="bg-dark rounded p-3 border">
- <div class="h4 text-info mb-1">{{ stats.processing }}</div>
- <small class="text-light fw-semibold">Procesando</small>
- </div>
- </div>
- <div class="col-md-2 mb-3">
- <div class="bg-dark rounded p-3 border">
- <div class="h4 text-danger mb-1">{{ stats.failed }}</div>
- <small class="text-light fw-semibold">Fallidas</small>
- </div>
- </div>
- <div class="col-md-2 mb-3">
- <div class="bg-dark rounded p-3 border d-flex align-items-center justify-content-center">
- <button class="btn btn-primary btn-sm w-100" onclick="refreshStats()">
- <i class="fas fa-sync-alt me-1"></i>Actualizar
- </button>
- </div>
- </div>
- </div>
- </div>
- </div>
- </div>
- </div>
+  <!-- Estadísticas -->
+  <div class="glass-card rounded-2xl overflow-hidden">
+    <div class="px-6 py-4 border-b dark:border-surface-700 border-surface-200">
+      <h5 class="text-lg font-semibold dark:text-surface-100 text-surface-900">
+        <i class="fas fa-chart-bar me-2 text-brand-500"></i>Estadísticas del Sistema
+      </h5>
+    </div>
+    <div class="p-6">
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div class="glass-card rounded-xl p-4 text-center">
+          <div class="text-2xl font-bold text-brand-500 mb-1">{{ stats.total_notifications }}</div>
+          <div class="text-xs font-semibold dark:text-surface-400 text-surface-500">Total Notificaciones</div>
+        </div>
+        <div class="glass-card rounded-xl p-4 text-center">
+          <div class="text-2xl font-bold text-emerald-500 mb-1">{{ stats.sent_today }}</div>
+          <div class="text-xs font-semibold dark:text-surface-400 text-surface-500">Enviadas Hoy</div>
+        </div>
+        <div class="glass-card rounded-xl p-4 text-center">
+          <div class="text-2xl font-bold text-amber-500 mb-1">{{ stats.pending }}</div>
+          <div class="text-xs font-semibold dark:text-surface-400 text-surface-500">Pendientes</div>
+        </div>
+        <div class="glass-card rounded-xl p-4 text-center">
+          <div class="text-2xl font-bold text-brand-500 mb-1">{{ stats.processing }}</div>
+          <div class="text-xs font-semibold dark:text-surface-400 text-surface-500">Procesando</div>
+        </div>
+        <div class="glass-card rounded-xl p-4 text-center">
+          <div class="text-2xl font-bold text-red-500 mb-1">{{ stats.failed }}</div>
+          <div class="text-xs font-semibold dark:text-surface-400 text-surface-500">Fallidas</div>
+        </div>
+        <div class="glass-card rounded-xl p-4 flex items-center justify-center">
+          <button class="px-4 py-2 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-medium rounded-xl shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all duration-300 inline-flex items-center gap-2 text-sm w-full justify-center" onclick="refreshStats()">
+            <i class="fas fa-sync-alt"></i>Actualizar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Modal para agregar canal -->
-<div class="modal fade" id="addChannelModal" tabindex="-1">
- <div class="modal-dialog">
- <div class="modal-content bg-dark text-light">
- <div class="modal-header">
- <h5 class="modal-title">Agregar Canal de Notificación</h5>
- <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
- </div>
- <form method="post" action="{% url 'add-notification-channel' %}">
- {% csrf_token %}
- <div class="modal-body">
- <div class="mb-3">
- <label for="channel_name" class="form-label">Nombre</label>
- <input type="text" class="form-control" id="channel_name" name="name" required>
- </div>
- <div class="mb-3">
- <label for="channel_type" class="form-label">Tipo</label>
- <select class="form-select" id="channel_type" name="channel_type" required>
- <option value="SMS">SMS</option>
- <option value="SLACK">Slack</option>
- <option value="TEAMS">Microsoft Teams</option>
- <option value="WEBHOOK">Webhook</option>
- <option value="BROWSER_PUSH">Notificación Push</option>
- </select>
- </div>
- <div class="mb-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="channel_active" name="is_active" checked>
- <label class="form-check-label" for="channel_active">
- Activo
- </label>
- </div>
- </div>
- </div>
- <div class="modal-footer">
- <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
- <button type="submit" class="btn btn-primary">Agregar Canal</button>
- </div>
- </form>
- </div>
- </div>
+<div id="addChannelModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+  <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+    <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" onclick="closeAddChannelModal()"></div>
+    <div class="inline-block align-bottom glass-card rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+      <div class="px-6 py-4 border-b dark:border-surface-700 border-surface-200">
+        <h5 class="text-lg font-medium dark:text-surface-100 text-surface-900">Agregar Canal de Notificación</h5>
+      </div>
+      <form method="post" action="{% url 'add-notification-channel' %}">
+        {% csrf_token %}
+        <div class="px-6 py-4 space-y-4">
+          <div>
+            <label for="channel_name" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Nombre</label>
+            <input type="text" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="channel_name" name="name" required>
+          </div>
+          <div>
+            <label for="channel_type" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Tipo</label>
+            <select class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="channel_type" name="channel_type" required>
+              <option value="SMS">SMS</option>
+              <option value="SLACK">Slack</option>
+              <option value="TEAMS">Microsoft Teams</option>
+              <option value="WEBHOOK">Webhook</option>
+              <option value="BROWSER_PUSH">Notificación Push</option>
+            </select>
+          </div>
+          <div>
+            <label class="inline-flex items-center cursor-pointer">
+              <input type="checkbox" name="is_active" class="sr-only peer" checked>
+              <div class="relative w-11 h-6 bg-surface-300 dark:bg-surface-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-500"></div>
+              <span class="ml-3 text-sm font-medium dark:text-surface-200 text-surface-800">Activo</span>
+            </label>
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t dark:border-surface-700 border-surface-200 flex justify-end gap-3">
+          <button type="button" class="px-4 py-2.5 dark:bg-surface-800 dark:hover:bg-surface-700 dark:text-surface-200 dark:border-surface-700 bg-surface-100 hover:bg-surface-200 text-surface-800 border-surface-200 font-medium rounded-xl transition-all duration-200" onclick="closeAddChannelModal()">Cancelar</button>
+          <button type="submit" class="px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-medium rounded-xl shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all duration-300">Agregar Canal</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <!-- Modal para agregar plantilla -->
-<div class="modal fade" id="addTemplateModal" tabindex="-1">
- <div class="modal-dialog modal-lg">
- <div class="modal-content bg-dark text-light">
- <div class="modal-header">
- <h5 class="modal-title">Agregar Plantilla de Notificación</h5>
- <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
- </div>
- <form method="post" action="{% url 'add-notification-template' %}">
- {% csrf_token %}
- <div class="modal-body">
- <div class="row">
- <div class="col-md-6">
- <div class="mb-3">
- <label for="template_name" class="form-label">Nombre</label>
- <input type="text" class="form-control" id="template_name" name="name" required>
- </div>
- <div class="mb-3">
- <label for="template_type" class="form-label">Tipo</label>
- <select class="form-select" id="template_type" name="template_type" required>
- <option value="EMAIL">Email</option>
- <option value="SMS">SMS</option>
- <option value="SLACK">Slack</option>
- <option value="TEAMS">Microsoft Teams</option>
- <option value="WEBHOOK">Webhook</option>
- <option value="BROWSER_PUSH">Notificación Push</option>
- </select>
- </div>
- <div class="mb-3">
- <label for="event_type" class="form-label">Tipo de Evento</label>
- <select class="form-select" id="event_type" name="event_type" required>
- <option value="USER_CREATE_REQUEST">Solicitud de Creación de Usuario</option>
- <option value="USER_APPROVAL_REQUEST">Solicitud de Aprobación de Usuario</option>
- <option value="CRITICAL_OPERATION">Operación Crítica</option>
- <option value="SYSTEM_ALERT">Alerta del Sistema</option>
- <option value="DATA_CHANGE">Cambio de Datos</option>
- <option value="SECURITY_EVENT">Evento de Seguridad</option>
- <option value="BACKUP_COMPLETE">Respaldo Completado</option>
- <option value="MAINTENANCE">Mantenimiento</option>
- </select>
- </div>
- </div>
- <div class="col-md-6">
- <div class="mb-3">
- <label for="subject_template" class="form-label">Plantilla de Asunto (Email)</label>
- <input type="text" class="form-control" id="subject_template" name="subject_template" placeholder="{{ title }}">
- </div>
- <div class="mb-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="template_active" name="is_active" checked>
- <label class="form-check-label" for="template_active">
- Activa
- </label>
- </div>
- </div>
- </div>
- </div>
- <div class="mb-3">
- <label for="body_template" class="form-label">Plantilla del Cuerpo</label>
- <textarea class="form-control" id="body_template" name="body_template" rows="6" required placeholder="{{ message }}">{{ message }}</textarea>
- <small class="form-text text-muted">
- Variables disponibles: {{ title }}, {{ message }}, {{ user }}, {{ event_type }}, {{ created_at }}
- </small>
- </div>
- </div>
- <div class="modal-footer">
- <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
- <button type="submit" class="btn btn-primary">Agregar Plantilla</button>
- </div>
- </form>
- </div>
- </div>
+<div id="addTemplateModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+  <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+    <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" onclick="closeAddTemplateModal()"></div>
+    <div class="inline-block align-bottom glass-card rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+      <div class="px-6 py-4 border-b dark:border-surface-700 border-surface-200">
+        <h5 class="text-lg font-medium dark:text-surface-100 text-surface-900">Agregar Plantilla de Notificación</h5>
+      </div>
+      <form method="post" action="{% url 'add-notification-template' %}">
+        {% csrf_token %}
+        <div class="px-6 py-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label for="template_name" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Nombre</label>
+              <input type="text" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="template_name" name="name" required>
+            </div>
+            <div>
+              <label for="template_type" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Tipo</label>
+              <select class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="template_type" name="template_type" required>
+                <option value="EMAIL">Email</option>
+                <option value="SMS">SMS</option>
+                <option value="SLACK">Slack</option>
+                <option value="TEAMS">Microsoft Teams</option>
+                <option value="WEBHOOK">Webhook</option>
+                <option value="BROWSER_PUSH">Notificación Push</option>
+              </select>
+            </div>
+            <div>
+              <label for="event_type" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Tipo de Evento</label>
+              <select class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="event_type" name="event_type" required>
+                <option value="USER_CREATE_REQUEST">Solicitud de Creación de Usuario</option>
+                <option value="USER_APPROVAL_REQUEST">Solicitud de Aprobación de Usuario</option>
+                <option value="CRITICAL_OPERATION">Operación Crítica</option>
+                <option value="SYSTEM_ALERT">Alerta del Sistema</option>
+                <option value="DATA_CHANGE">Cambio de Datos</option>
+                <option value="SECURITY_EVENT">Evento de Seguridad</option>
+                <option value="BACKUP_COMPLETE">Respaldo Completado</option>
+                <option value="MAINTENANCE">Mantenimiento</option>
+              </select>
+            </div>
+            <div>
+              <label for="subject_template" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Plantilla de Asunto (Email)</label>
+              <input type="text" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="subject_template" name="subject_template" placeholder="{{ title }}">
+            </div>
+          </div>
+          <div class="mb-4">
+            <label for="body_template" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Plantilla del Cuerpo</label>
+            <textarea class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="body_template" name="body_template" rows="6" required placeholder="{{ message }}">{{ message }}</textarea>
+            <p class="mt-1 text-xs dark:text-surface-400 text-surface-500">
+              Variables disponibles: {{ title }}, {{ message }}, {{ user }}, {{ event_type }}, {{ created_at }}
+            </p>
+          </div>
+          <div>
+            <label class="inline-flex items-center cursor-pointer">
+              <input type="checkbox" name="is_active" class="sr-only peer" checked>
+              <div class="relative w-11 h-6 bg-surface-300 dark:bg-surface-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-500"></div>
+              <span class="ml-3 text-sm font-medium dark:text-surface-200 text-surface-800">Activa</span>
+            </label>
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t dark:border-surface-700 border-surface-200 flex justify-end gap-3">
+          <button type="button" class="px-4 py-2.5 dark:bg-surface-800 dark:hover:bg-surface-700 dark:text-surface-200 dark:border-surface-700 bg-surface-100 hover:bg-surface-200 text-surface-800 border-surface-200 font-medium rounded-xl transition-all duration-200" onclick="closeAddTemplateModal()">Cancelar</button>
+          <button type="submit" class="px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-medium rounded-xl shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all duration-300">Agregar Plantilla</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <script>
-// Esperar a que el DOM esté cargado
 document.addEventListener('DOMContentLoaded', function() {
- // Event listeners para botones de probar canal
- document.querySelectorAll('.test-channel-btn').forEach(button => {
- button.addEventListener('click', function() {
- const channelId = this.getAttribute('data-channel-id');
- testChannel(channelId);
- });
- });
+  VANT_UI.initSortableTables({ tableId: 'channels-table' });
+  VANT_UI.initSortableTables({ tableId: 'templates-table' });
+});
+// Settings Tab functionality
+document.querySelectorAll('.settings-tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tabId = btn.dataset.tab;
+    // Update button styles
+    document.querySelectorAll('.settings-tab-btn').forEach(b => {
+      b.classList.remove('active', 'border-brand-500', 'text-brand-500', 'dark:text-brand-400');
+      b.classList.add('border-transparent', 'dark:text-surface-400', 'text-surface-500');
+    });
+    btn.classList.add('active', 'border-brand-500', 'text-brand-500', 'dark:text-brand-400');
+    btn.classList.remove('border-transparent', 'dark:text-surface-400', 'text-surface-500');
+    // Show/hide tab panes
+    document.querySelectorAll('.settings-pane').forEach(pane => {
+      pane.classList.add('hidden');
+    });
+    document.getElementById(tabId).classList.remove('hidden');
+  });
+});
 
- // Event listeners para botones de eliminar canal
- document.querySelectorAll('.delete-channel-btn').forEach(button => {
- button.addEventListener('click', function() {
- const channelId = this.getAttribute('data-channel-id');
- const channelName = this.getAttribute('data-channel-name');
- deleteChannel(channelId, channelName);
- });
- });
+// Channel Modal functionality
+function openAddChannelModal() {
+  document.getElementById('addChannelModal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
 
- // Event listeners para botones de eliminar plantilla
- document.querySelectorAll('.delete-template-btn').forEach(button => {
- button.addEventListener('click', function() {
- const templateId = this.getAttribute('data-template-id');
- const templateName = this.getAttribute('data-template-name');
- deleteTemplate(templateId, templateName);
- });
- });
+function closeAddChannelModal() {
+  document.getElementById('addChannelModal').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+// Template Modal functionality
+function openAddTemplateModal() {
+  document.getElementById('addTemplateModal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeAddTemplateModal() {
+  document.getElementById('addTemplateModal').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+// Close modals on Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeAddChannelModal();
+    closeAddTemplateModal();
+  }
+});
+
+// Event listeners para botones de probar canal
+document.querySelectorAll('.test-channel-btn').forEach(button => {
+  button.addEventListener('click', function() {
+    const channelId = this.getAttribute('data-channel-id');
+    testChannel(channelId);
+  });
+});
+
+// Event listeners para botones de eliminar canal
+document.querySelectorAll('.delete-channel-btn').forEach(button => {
+  button.addEventListener('click', function() {
+    const channelId = this.getAttribute('data-channel-id');
+    const channelName = this.getAttribute('data-channel-name');
+    deleteChannel(channelId, channelName);
+  });
+});
+
+// Event listeners para botones de eliminar plantilla
+document.querySelectorAll('.delete-template-btn').forEach(button => {
+  button.addEventListener('click', function() {
+    const templateId = this.getAttribute('data-template-id');
+    const templateName = this.getAttribute('data-template-name');
+    deleteTemplate(templateId, templateName);
+  });
 });
 
 // Función para probar canal
 function testChannel(channelId) {
- fetch(`/test-notification-channel/${channelId}/`, {
- method: 'POST',
- headers: {
- 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
- 'Content-Type': 'application/json'
- }
- })
- .then(response => response.json())
- .then(data => {
- if (data.success) {
- alert('Canal probado exitosamente: ' + data.message);
- } else {
- alert('Error al probar canal: ' + data.error);
- }
- })
- .catch(error => {
- alert('Error de conexión: ' + error);
- });
+  fetch(`/test-notification-channel/${channelId}/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+      'Content-Type': 'application/json'
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      alert('Canal probado exitosamente: ' + data.message);
+    } else {
+      alert('Error al probar canal: ' + data.error);
+    }
+  })
+  .catch(error => {
+    alert('Error de conexión: ' + error);
+  });
 }
 
 // Función para eliminar canal
 function deleteChannel(channelId, channelName) {
- if (confirm(`¿Está seguro de eliminar el canal "${channelName}"?`)) {
- fetch(`/delete-notification-channel/${channelId}/`, {
- method: 'POST',
- headers: {
- 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
- 'Content-Type': 'application/json'
- }
- })
- .then(response => response.json())
- .then(data => {
- if (data.success) {
- alert(data.message);
- location.reload();
- } else {
- alert('Error: ' + data.error);
- }
- });
- }
+  if (confirm(`¿Está seguro de eliminar el canal "${channelName}"?`)) {
+    fetch(`/delete-notification-channel/${channelId}/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert(data.message);
+        location.reload();
+      } else {
+        alert('Error: ' + data.error);
+      }
+    });
+  }
 }
 
 // Función para eliminar plantilla
 function deleteTemplate(templateId, templateName) {
- if (confirm(`¿Está seguro de eliminar la plantilla "${templateName}"?`)) {
- fetch(`/delete-notification-template/${templateId}/`, {
- method: 'POST',
- headers: {
- 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
- 'Content-Type': 'application/json'
- }
- })
- .then(response => response.json())
- .then(data => {
- if (data.success) {
- alert(data.message);
- location.reload();
- } else {
- alert('Error: ' + data.error);
- }
- });
- }
+  if (confirm(`¿Está seguro de eliminar la plantilla "${templateName}"?`)) {
+    fetch(`/delete-notification-template/${templateId}/`, {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        'Content-Type': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert(data.message);
+        location.reload();
+      } else {
+        alert('Error: ' + data.error);
+      }
+    });
+  }
 }
 
 // Función para actualizar estadísticas
 function refreshStats() {
- fetch('/notification-queue-status/')
- .then(response => response.json())
- .then(data => {
- // Actualizar los contadores en la interfaz
- const statsElements = document.querySelectorAll('.text-warning, .text-info, .text-danger');
- if (statsElements.length >= 3) {
- statsElements[0].textContent = data.pending; // pending
- statsElements[1].textContent = data.processing; // processing
- statsElements[2].textContent = data.failed; // failed
- }
- })
- .catch(error => {
- console.error('Error al actualizar estadísticas:', error);
- });
+  fetch('/notification-queue-status/')
+  .then(response => response.json())
+  .then(data => {
+    const statsElements = document.querySelectorAll('.text-2xl');
+    if (statsElements.length >= 5) {
+      statsElements[2].textContent = data.pending;
+      statsElements[3].textContent = data.processing;
+      statsElements[4].textContent = data.failed;
+    }
+  })
+  .catch(error => {
+    console.error('Error al actualizar estadísticas:', error);
+  });
 }
 
 // Actualizar estadísticas cada 30 segundos

@@ -15,9 +15,6 @@ VANT_SIEM_PRESENTATION.md
 scripts/README_COLLECTOR_AGENT.md
 
 # Build artifacts
-collector/
-scripts/build/collector_agent/
-scripts/collector_agent*
 scripts/dist/*
 
 # Test and development files
@@ -26,6 +23,9 @@ populate_test_data.py
 setup_chat_verification.py
 test_*.py
 *_test.py
+
+# Agent (separate repo)
+VANT-Agent/
 
 # Python
 __pycache__/

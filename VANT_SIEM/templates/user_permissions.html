@@ -3,169 +3,172 @@
 
 {% block content %}
 <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
-<div class="container-fluid">
- <div class="row">
- <div class="col-12">
- <div class="card bg-secondary">
- <div class="card-header d-flex justify-content-between align-items-center">
- <h3 class="text-info mb-0">
- <i class="fas fa-user-shield me-2"></i>Permisos de Usuario: {{ target_user.username }}
- </h3>
- <div class="d-flex align-items-center gap-2">
- <button id="saveChangesBtn" class="btn btn-success btn-sm" onclick="savePermissionChanges()">
- <i class="fas fa-save me-1"></i>Guardar cambios
- </button>
- <a href="{% url 'user-management' %}" class="btn btn-outline-light btn-sm">
- <i class="fas fa-arrow-left me-1"></i>Volver
- </a>
- </div>
- </div>
- <div class="card-body">
- <div class="alert alert-info">
- <i class="fas fa-info-circle me-2"></i>
- El permiso <strong>Puede Autenticarse</strong> controla si el usuario puede iniciar sesión. Marca/desmarca y luego pulsa <strong>Guardar cambios</strong>.
- </div>
- <div class="table-responsive">
- <table class="table table-dark table-hover align-middle">
- <thead>
- <tr>
- <th>Permiso</th>
- <th>Estado actual</th>
- <th>Marcar</th>
- </tr>
- </thead>
- <tbody>
- {% for perm in permissions %}
- <tr data-permission-id="{{ perm.id }}" data-update-url="{% url 'update-user-permission' target_user.id perm.id %}">
- <td>{{ perm.get_permission_type_display }}</td>
- <td>
- {% if perm.granted %}
- <span class="badge bg-success">Concedido</span>
- {% else %}
- <span class="badge bg-secondary">No concedido</span>
- {% endif %}
- </td>
- <td>
- <div class="form-check form-switch">
- <input class="form-check-input perm-toggle" type="checkbox" id="perm_{{ perm.id }}"
- {% if perm.granted %}checked{% endif %}
- data-original="{% if perm.granted %}true{% else %}false{% endif %}">
- <label class="form-check-label text-light small" for="perm_{{ perm.id }}">
- {% if perm.granted %}Marcado para mantener{% else %}Marcado para otorgar{% endif %}
- </label>
- </div>
- </td>
- </tr>
- {% endfor %}
- </tbody>
- </table>
- </div>
- <div class="text-end">
- <button id="saveChangesBtnBottom" class="btn btn-success" onclick="savePermissionChanges()">
- <i class="fas fa-save me-1"></i>Guardar cambios
- </button>
- </div>
- </div>
- </div>
- </div>
- </div>
+<div class="space-y-6">
+  <div class="glass-card rounded-2xl overflow-hidden">
+    <div class="px-6 py-4 border-b dark:border-surface-700 border-surface-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <h3 class="text-xl font-bold dark:text-surface-100 text-surface-900">
+        <i class="fas fa-user-shield me-2 text-brand-500"></i>Permisos de Usuario: {{ target_user.username }}
+      </h3>
+      <div class="flex items-center gap-3">
+        <button id="saveChangesBtn" class="px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-medium rounded-xl shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all duration-300 inline-flex items-center gap-2" onclick="savePermissionChanges()">
+          <i class="fas fa-save"></i>Guardar cambios
+        </button>
+        <a href="{% url 'user-management' %}" class="px-4 py-2.5 dark:bg-surface-800 dark:hover:bg-surface-700 dark:text-surface-200 dark:border-surface-700 bg-surface-100 hover:bg-surface-200 text-surface-800 border-surface-200 font-medium rounded-xl transition-all duration-200 inline-flex items-center gap-2">
+          <i class="fas fa-arrow-left"></i>Volver
+        </a>
+      </div>
+    </div>
+    <div class="p-6">
+      <div class="mb-6 p-4 rounded-xl dark:bg-brand-500/10 bg-brand-50 border dark:border-brand-500/20 border-brand-200">
+        <i class="fas fa-info-circle me-2 text-brand-500"></i>
+        <span class="dark:text-surface-300 text-surface-600">El permiso <strong class="dark:text-surface-100 text-surface-900">Puede Autenticarse</strong> controla si el usuario puede iniciar sesión. Marca/desmarca y luego pulsa <strong class="dark:text-surface-100 text-surface-900">Guardar cambios</strong>.</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full divide-y dark:divide-surface-700 divide-surface-200" id="permissions-table">
+          <thead class="dark:bg-surface-800 bg-surface-100">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Permiso</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Estado actual</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Marcar</th>
+            </tr>
+          </thead>
+          <tbody class="dark:divide-surface-700 divide-surface-200">
+            {% for perm in permissions %}
+            <tr class="dark:hover:bg-surface-700/50 hover:bg-surface-50 transition-colors" data-permission-id="{{ perm.id }}" data-update-url="{% url 'update-user-permission' target_user.id perm.id %}">
+              <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ perm.get_permission_type_display }}</td>
+              <td class="px-4 py-3 text-sm">
+                {% if perm.granted %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400">Concedido</span>
+                {% else %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium dark:bg-surface-700 bg-surface-200 dark:text-surface-400 text-surface-500">No concedido</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-sm">
+                <label class="inline-flex items-center cursor-pointer">
+                  <input type="checkbox" class="perm-toggle sr-only peer" id="perm_{{ perm.id }}"
+                    {% if perm.granted %}checked{% endif %}
+                    data-original="{% if perm.granted %}true{% else %}false{% endif %}">
+                  <div class="relative w-11 h-6 bg-surface-300 dark:bg-surface-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-500"></div>
+                  <span class="ml-3 text-sm dark:text-surface-400 text-surface-500">
+                    {% if perm.granted %}Marcado para mantener{% else %}Marcado para otorgar{% endif %}
+                  </span>
+                </label>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-6 text-right">
+        <button id="saveChangesBtnBottom" class="px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-medium rounded-xl shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all duration-300 inline-flex items-center gap-2" onclick="savePermissionChanges()">
+          <i class="fas fa-save"></i>Guardar cambios
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+  VANT_UI.initSortableTables({ tableId: 'permissions-table' });
+});
 const pendingChanges = new Map();
 
 function showToast(type, message) {
- const container = document.getElementById('toastContainer') || createToastContainer();
- const toast = document.createElement('div');
- toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : (type === 'info' ? 'info' : 'danger')} border-0`;
- toast.setAttribute('role', 'alert');
- toast.innerHTML = `
- <div class="d-flex">
- <div class="toast-body">${message}</div>
- <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
- </div>`;
- container.appendChild(toast);
- const bsToast = new bootstrap.Toast(toast);
- bsToast.show();
- toast.addEventListener('hidden.bs.toast', () => toast.remove());
+  const container = document.getElementById('toastContainer') || createToastContainer();
+  const toast = document.createElement('div');
+  const bgClass = type === 'success' ? 'dark:bg-emerald-500/20 bg-emerald-100 text-emerald-400 border-emerald-500/30' :
+                  type === 'info' ? 'dark:bg-brand-500/20 bg-brand-100 text-brand-400 border-brand-500/30' :
+                  'dark:bg-red-500/20 bg-red-100 text-red-400 border-red-500/30';
+  toast.className = `transform transition-all duration-300 ease-out translate-x-0 opacity-100 flex items-center p-4 mb-3 rounded-xl border backdrop-blur-sm ${bgClass}`;
+  toast.innerHTML = `
+    <i class="fas fa-${type === 'success' ? 'check-circle' : (type === 'info' ? 'info-circle' : 'exclamation-circle')} me-2"></i>
+    <span class="text-sm font-medium">${message}</span>
+    <button onclick="this.parentElement.remove()" class="ml-auto hover:opacity-70 transition-opacity">
+      <i class="fas fa-times"></i>
+    </button>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('translate-x-full', 'opacity-0');
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
 }
 
 function createToastContainer() {
- const container = document.createElement('div');
- container.id = 'toastContainer';
- container.className = 'toast-container position-fixed top-0 end-0 p-3';
- container.style.zIndex = '9999';
- document.body.appendChild(container);
- return container;
+  const container = document.createElement('div');
+  container.id = 'toastContainer';
+  container.className = 'fixed top-4 right-4 z-50 space-y-2';
+  document.body.appendChild(container);
+  return container;
 }
 
 // Marcar cambios al interactuar
 Array.from(document.querySelectorAll('.perm-toggle')).forEach(cb => {
- cb.addEventListener('change', (e) => {
- const row = e.target.closest('tr');
- const permId = row.dataset.permissionId;
- const original = e.target.dataset.original === 'true';
- const current = e.target.checked;
- if (current !== original) {
- pendingChanges.set(permId, {
- url: row.dataset.updateUrl,
- granted: current
- });
- showToast('info', `${current ? 'Marcado para otorgar' : 'Marcado para revocar'}`);
- } else {
- pendingChanges.delete(permId);
- }
- toggleSaveButtons();
- });
+  cb.addEventListener('change', (e) => {
+    const row = e.target.closest('tr');
+    const permId = row.dataset.permissionId;
+    const original = e.target.dataset.original === 'true';
+    const current = e.target.checked;
+    if (current !== original) {
+      pendingChanges.set(permId, {
+        url: row.dataset.updateUrl,
+        granted: current
+      });
+      showToast('info', `${current ? 'Marcado para otorgar' : 'Marcado para revocar'}`);
+    } else {
+      pendingChanges.delete(permId);
+    }
+    toggleSaveButtons();
+  });
 });
 
 function toggleSaveButtons() {
- const disabled = pendingChanges.size === 0;
- document.getElementById('saveChangesBtn').disabled = disabled;
- document.getElementById('saveChangesBtnBottom').disabled = disabled;
+  const disabled = pendingChanges.size === 0;
+  document.getElementById('saveChangesBtn').disabled = disabled;
+  document.getElementById('saveChangesBtnBottom').disabled = disabled;
 }
 
 toggleSaveButtons();
 
 async function savePermissionChanges() {
- if (pendingChanges.size === 0) {
- showToast('info', 'No hay cambios pendientes.');
- return;
- }
- const saveButtons = [document.getElementById('saveChangesBtn'), document.getElementById('saveChangesBtnBottom')];
- saveButtons.forEach(b => { b.disabled = true; b.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Guardando...'; });
- 
- const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
- let ok = 0, fail = 0;
- for (const [permId, { url, granted }] of pendingChanges.entries()) {
- try {
- const formData = new FormData();
- formData.append('granted', String(granted));
- formData.append('csrfmiddlewaretoken', csrf);
- const resp = await fetch(url, { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
- const data = await resp.json();
- if (data.success) {
- ok += 1;
- // Actualizar original para que no quede como pendiente
- const cb = document.getElementById(`perm_${permId}`);
- if (cb) cb.dataset.original = granted ? 'true' : 'false';
- } else {
- fail += 1;
- }
- } catch (err) {
- fail += 1;
- }
- }
- pendingChanges.clear();
- toggleSaveButtons();
- saveButtons.forEach(b => { b.disabled = false; b.innerHTML = '<i class="fas fa-save me-1"></i>Guardar cambios'; });
- if (fail === 0) {
- showToast('success', `Permisos actualizados con éxito (${ok}).`);
- // Recargar para refrescar badges
- setTimeout(() => location.reload(), 600);
- } else {
- showToast('danger', `Algunos permisos no se pudieron actualizar (OK: ${ok}, Fallidos: ${fail}).`);
- }
+  if (pendingChanges.size === 0) {
+    showToast('info', 'No hay cambios pendientes.');
+    return;
+  }
+  const saveButtons = [document.getElementById('saveChangesBtn'), document.getElementById('saveChangesBtnBottom')];
+  saveButtons.forEach(b => { b.disabled = true; b.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando...'; });
+
+  const csrf = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  let ok = 0, fail = 0;
+  for (const [permId, { url, granted }] of pendingChanges.entries()) {
+    try {
+      const formData = new FormData();
+      formData.append('granted', String(granted));
+      formData.append('csrfmiddlewaretoken', csrf);
+      const resp = await fetch(url, { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+      const data = await resp.json();
+      if (data.success) {
+        ok += 1;
+        // Actualizar original para que no quede como pendiente
+        const cb = document.getElementById(`perm_${permId}`);
+        if (cb) cb.dataset.original = granted ? 'true' : 'false';
+      } else {
+        fail += 1;
+      }
+    } catch (err) {
+      fail += 1;
+    }
+  }
+  pendingChanges.clear();
+  toggleSaveButtons();
+  saveButtons.forEach(b => { b.disabled = false; b.innerHTML = '<i class="fas fa-save me-2"></i>Guardar cambios'; });
+  if (fail === 0) {
+    showToast('success', `Permisos actualizados con éxito (${ok}).`);
+    // Recargar para refrescar badges
+    setTimeout(() => location.reload(), 600);
+  } else {
+    showToast('danger', `Algunos permisos no se pudieron actualizar (OK: ${ok}, Fallidos: ${fail}).`);
+  }
 }
 </script>
 {% endblock %}

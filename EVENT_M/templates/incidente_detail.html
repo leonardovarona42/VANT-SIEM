@@ -1,50 +1,90 @@
 {% extends "dashboard.html" %}
 {% block title %}Detalle de Incidente | VANT-SIEM{% endblock %}
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-10">
-        <div class="card bg-secondary shadow">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 text-info fw-bold">Detalle de Incidente</h5>
+<div class="max-w-5xl mx-auto">
+    <div class="glass-card shadow-xl rounded-2xl overflow-hidden">
+        <div class="flex justify-between items-center border-b border-white/10 px-6 py-4">
+            <h5 class="mb-0 text-cyan-400 font-bold flex items-center gap-2">
+                <i class="fas fa-exclamation-triangle"></i> Detalle de Incidente
+            </h5>
+            <div class="flex items-center gap-2">
+                <a href="{% url 'incidente-update' object.pk %}" class="text-xs font-semibold bg-gradient-to-r from-yellow-400 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-white px-4 py-2 rounded-xl transition-all duration-200 inline-flex items-center gap-1">
+                    <i class="fas fa-edit"></i> Editar
+                </a>
+                <a href="{% url 'incidente-delete' object.pk %}" class="text-xs font-semibold bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white px-4 py-2 rounded-xl transition-all duration-200 inline-flex items-center gap-1">
+                    <i class="fas fa-trash-alt"></i> Eliminar
+                </a>
+            </div>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <a href="{% url 'incidente-update' object.pk %}" class="btn btn-warning btn-sm me-2">Editar</a>
-                    <a href="{% url 'incidente-delete' object.pk %}" class="btn btn-danger btn-sm">Eliminar</a>
+                    <h6 class="text-cyan-400 text-sm font-semibold mb-1 flex items-center gap-2">
+                        <i class="fas fa-tag text-xs"></i> Nombre:
+                    </h6>
+                    <p class="text-gray-200 dark:text-gray-200">{{ object.nombre_incidente }}</p>
+                </div>
+                <div>
+                    <h6 class="text-cyan-400 text-sm font-semibold mb-1 flex items-center gap-2">
+                        <i class="fas fa-info-circle text-xs"></i> Estado:
+                    </h6>
+                    <p class="text-gray-200 dark:text-gray-200">{{ object.estado_solucion }}</p>
+                </div>
+                <div class="md:col-span-2">
+                    <h6 class="text-cyan-400 text-sm font-semibold mb-1 flex items-center gap-2">
+                        <i class="fas fa-align-left text-xs"></i> Descripción:
+                    </h6>
+                    <p class="text-gray-200 dark:text-gray-200">{{ object.descripcion }}</p>
+                </div>
+                <div class="md:col-span-2">
+                    <h6 class="text-cyan-400 text-sm font-semibold mb-1 flex items-center gap-2">
+                        <i class="fas fa-server text-xs"></i> Servicios:
+                    </h6>
+                    <p class="text-gray-200 dark:text-gray-200">
+                        {% for s in object.servicios.all %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 mr-1 mb-1">
+                                {{ s.nombre }}
+                            </span>
+                        {% empty %}
+                            <span class="text-gray-400">-</span>
+                        {% endfor %}
+                    </p>
+                </div>
+                <div class="md:col-span-2">
+                    <h6 class="text-cyan-400 text-sm font-semibold mb-1 flex items-center gap-2">
+                        <i class="fas fa-th text-xs"></i> Áreas:
+                    </h6>
+                    <p class="text-gray-200 dark:text-gray-200">
+                        {% for a in object.areas.all %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 mr-1 mb-1">
+                                {{ a.nombre }}
+                            </span>
+                        {% empty %}
+                            <span class="text-gray-400">-</span>
+                        {% endfor %}
+                    </p>
+                </div>
+                <div class="md:col-span-2">
+                    <h6 class="text-cyan-400 text-sm font-semibold mb-1 flex items-center gap-2">
+                        <i class="fas fa-tags text-xs"></i> Subcategorías:
+                    </h6>
+                    <p class="text-gray-200 dark:text-gray-200">
+                        {% for sc in object.subcategorias.all %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 mr-1 mb-1">
+                                {{ sc.nombre }}
+                            </span>
+                        {% empty %}
+                            <span class="text-gray-400">-</span>
+                        {% endfor %}
+                    </p>
                 </div>
             </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <h6 class="text-info">Nombre:</h6>
-                        <p class="text-light">{{ object.nombre_incidente }}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <h6 class="text-info">Estado:</h6>
-                        <p class="text-light">{{ object.estado_solucion }}</p>
-                    </div>
-                    <div class="col-12">
-                        <h6 class="text-info">Descripción:</h6>
-                        <p class="text-light">{{ object.descripcion }}</p>
-                    </div>
-                    <div class="col-12">
-                        <h6 class="text-info">Servicios:</h6>
-                        <p class="text-light">{% for s in object.servicios.all %}<span class="badge bg-info me-1">{{ s.nombre }}</span>{% empty %}-{% endfor %}</p>
-                    </div>
-                    <div class="col-12">
-                        <h6 class="text-info">Áreas:</h6>
-                        <p class="text-light">{% for a in object.areas.all %}<span class="badge bg-info me-1">{{ a.nombre }}</span>{% empty %}-{% endfor %}</p>
-                    </div>
-                    <div class="col-12">
-                        <h6 class="text-info">Subcategorías:</h6>
-                        <p class="text-light">{% for sc in object.subcategorias.all %}<span class="badge bg-info me-1">{{ sc.nombre }}</span>{% empty %}-{% endfor %}</p>
-                    </div>
-                </div>
-                <div class="mt-3">
-                    <a href="{% url 'incidente-list' %}" class="btn btn-secondary">Volver al Listado</a>
-                </div>
+            <div class="mt-6 pt-4 border-t border-white/10">
+                <a href="{% url 'incidente-list' %}" class="inline-flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold px-6 py-2 rounded-xl transition-all duration-200">
+                    <i class="fas fa-arrow-left"></i> Volver al Listado
+                </a>
             </div>
         </div>
     </div>
 </div>
 {% endblock %}
-
-

@@ -60,10 +60,5 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
-        'collector': {
-            'handlers': ['console', 'file', 'error_file'],
-            'level': 'INFO',
-            'propagate': False,
-        },
     },
 }

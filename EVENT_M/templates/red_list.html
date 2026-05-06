@@ -1,0 +1,233 @@
+{% extends "dashboard.html" %}
+{% block title %}Arbol de Redes | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="glass-card">
+    <div class="px-6 py-4 flex justify-between items-center border-b dark:border-surface-800 border-surface-200">
+        <h5 class="mb-0 text-lg font-bold dark:text-white text-surface-900">
+            <i class="fas fa-sitemap mr-2 text-purple-400"></i>Arbol de Redes y Subredes
+        </h5>
+        <div class="flex gap-2">
+            <a href="{% url 'servicio-create' %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors">
+                <i class="fas fa-plus mr-1"></i> Nueva Red
+            </a>
+        </div>
+    </div>
+    <div class="p-6">
+        <!-- Search -->
+        <div class="mb-4">
+            <div class="flex">
+                <span class="inline-flex items-center px-3 bg-surface-100 dark:bg-surface-800 border border-r-0 dark:border-surface-700 border-surface-300 rounded-l-lg text-surface-400">
+                    <i class="fas fa-search"></i>
+                </span>
+                <input type="text" id="search-input" class="flex-1 px-3 py-2 bg-white dark:bg-surface-800 border-y dark:border-surface-700 border-surface-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="Buscar por nombre, red, VLAN...">
+                <button type="button" id="clear-search" class="inline-flex items-center px-3 py-2 bg-white dark:bg-surface-800 border border-l-0 dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-r-lg transition-colors dark:text-surface-300 text-surface-600 hidden">
+                    <i class="fas fa-times mr-1"></i> Limpiar
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+            <div class="glass-card p-3 text-center">
+                <div class="text-xs dark:text-surface-400 text-surface-500">Redes</div>
+                <div class="text-2xl font-bold text-cyan-400" id="stat-redes">{{ redes|length }}</div>
+            </div>
+            <div class="glass-card p-3 text-center">
+                <div class="text-xs dark:text-surface-400 text-surface-500">Subredes</div>
+                <div class="text-2xl font-bold text-pink-400" id="stat-subredes">{{ subredes|length }}</div>
+            </div>
+            <div class="glass-card p-3 text-center">
+                <div class="text-xs dark:text-surface-400 text-surface-500">VLANs</div>
+                <div class="text-2xl font-bold text-purple-400" id="stat-vlans">{{ vlans|length }}</div>
+            </div>
+            <div class="glass-card p-3 text-center">
+                <div class="text-xs dark:text-surface-400 text-surface-500">Segmentos</div>
+                <div class="text-2xl font-bold text-violet-400" id="stat-segmentos">{{ segmentos|length }}</div>
+            </div>
+            <div class="glass-card p-3 text-center">
+                <div class="text-xs dark:text-surface-400 text-surface-500">Total Dispositivos</div>
+                <div class="text-2xl font-bold text-amber-400" id="stat-dispositivos">{{ total_dispositivos }}</div>
+            </div>
+        </div>
+
+        <!-- Tree Container -->
+        <div id="tree-container" class="space-y-2">
+            {% for red in redes_tree %}
+            <div class="tree-node glass-card border dark:border-surface-700 border-surface-200 rounded-lg overflow-hidden" data-id="{{ red.id }}">
+                <!-- Parent Node (Red/Subred/VLAN/Segmento) -->
+                <div class="tree-parent flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-surface-800/30 dark:hover:bg-surface-700/30 transition-colors" onclick="toggleTree({{ red.id }})">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-chevron-right text-xs dark:text-surface-400 text-surface-500 transition-transform" id="chevron-{{ red.id }}"></i>
+                        <span class="w-3 h-3 rounded-full" style="background: 
+                            {% if red.tipo == 'red' %}#06b6d4
+                            {% elif red.tipo == 'subred' %}#ec4899
+                            {% elif red.tipo == 'vlan' %}#8b5cf6
+                            {% elif red.tipo == 'segmento' %}#a78bfa
+                            {% else %}#6b7280{% endif %}"></span>
+                        <div>
+                            <div class="text-sm font-medium dark:text-white text-surface-900">{{ red.nombre }}</div>
+                            <div class="text-xs font-mono dark:text-surface-400 text-surface-500">{{ red.network|default:'-' }}{{ red.subnet_mask|default:'' }}{% if red.vlan_id %} | VLAN {{ red.vlan_id }}{% endif %}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <!-- Usage Badge -->
+                        <div class="hidden md:flex items-center gap-2">
+                            <div class="w-20 h-2 bg-surface-200 dark:bg-surface-800 rounded-full overflow-hidden">
+                                <div class="h-full rounded-full" style="width: {{ red.porcentaje_uso }}%; background: {% if red.porcentaje_uso > 80 %}#ef4444{% elif red.porcentaje_uso > 50 %}#f59e0b{% else %}#10b981{% endif %};"></div>
+                            </div>
+                            <span class="text-xs dark:text-surface-400 text-surface-500">{{ red.ips_asignadas }}/{{ red.total_ips }} ({{ red.porcentaje_uso }}%)</span>
+                        </div>
+                        <span class="text-xs dark:text-surface-400 text-surface-500">{{ red.num_hijos }} dispositivo{{ red.num_hijos|pluralize:"s" }}</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                            {% if red.tipo == 'subred' %}bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300
+                            {% elif red.tipo == 'red' %}bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-300
+                            {% elif red.tipo == 'segmento' %}bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300
+                            {% elif red.tipo == 'vlan' %}bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300
+                            {% else %}bg-surface-100 text-surface-800 dark:bg-surface-700 dark:text-surface-300{% endif %}">
+                            {{ red.get_tipo_display }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Children Container -->
+                <div id="children-{{ red.id }}" class="hidden border-t dark:border-surface-700 border-surface-200">
+                    <!-- Detail Bar -->
+                    <div class="px-4 py-2 dark:bg-surface-900/50 bg-surface-50 flex items-center justify-between text-xs">
+                        <div class="flex gap-4 dark:text-surface-400 text-surface-500">
+                            <span>Gateway: <span class="font-mono dark:text-surface-300 text-surface-700">{{ red.gateway|default:'-' }}</span></span>
+                            <span>DHCP: {% if red.dhcp_activo %}<span class="text-emerald-400">Si</span>{% else %}<span class="text-surface-400">No</span>{% endif %}</span>
+                            <span>Tipo Red: <span class="capitalize dark:text-surface-300 text-surface-700">{{ red.get_red_tipo_display|default:'-' }}</span></span>
+                        </div>
+                        <a href="{% url 'red-detail' red.id %}" class="text-blue-400 hover:text-blue-300 font-medium">
+                            Ver Detalle <i class="fas fa-external-link-alt ml-1"></i>
+                        </a>
+                    </div>
+                    
+                    {% if red.hijos %}
+                    <div class="p-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {% for hijo in red.hijos %}
+                        <a href="{% url 'servicio-detail' hijo.id %}" class="flex items-center justify-between px-3 py-2 dark:bg-surface-800/50 bg-white border dark:border-surface-700 border-surface-200 rounded-lg hover:bg-surface-700/50 dark:hover:bg-surface-700 transition-colors">
+                            <div class="flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full {% if hijo.activo %}bg-emerald-500{% else %}bg-red-500{% endif %}"></span>
+                                <div>
+                                    <div class="text-sm font-medium dark:text-white text-surface-900">{{ hijo.nombre }}</div>
+                                    <div class="text-xs dark:text-surface-400 text-surface-500">{{ hijo.tipo_display }}{% if hijo.host %} | {{ hijo.host }}{% endif %}</div>
+                                </div>
+                            </div>
+                            <div class="flex gap-2 text-xs">
+                                {% if hijo.monitorear %}
+                                <span class="text-blue-400" title="Monitoreado"><i class="fas fa-eye"></i></span>
+                                {% endif %}
+                                {% if hijo.estado_monitoreo %}
+                                <span class="text-emerald-400" title="Online"><i class="fas fa-circle"></i></span>
+                                {% endif %}
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-center text-xs dark:text-surface-400 text-surface-500">
+                        <i class="fas fa-info-circle mr-1"></i> Sin dispositivos asignados
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+
+            {% if not redes_tree %}
+            <div class="text-center py-8">
+                <i class="fas fa-sitemap text-4xl dark:text-surface-600 text-surface-400 mb-3"></i>
+                <p class="dark:text-surface-400 text-surface-500 mb-2">No hay redes registradas.</p>
+                <a href="{% url 'servicio-create' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors mt-2">
+                    <i class="fas fa-plus mr-1"></i> Crear Primera Red
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <nav aria-label="Navegacion" class="mt-6">
+            <ul class="flex justify-center space-x-1">
+                {% if page_obj.has_previous %}
+                    <li>
+                        <a class="inline-flex items-center px-3 py-2 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}">
+                            <i class="fas fa-chevron-left mr-1"></i> Anterior
+                        </a>
+                    </li>
+                {% endif %}
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li><span class="inline-flex items-center px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li>
+                            <a class="inline-flex items-center px-3 py-2 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600" href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                {% if page_obj.has_next %}
+                    <li>
+                        <a class="inline-flex items-center px-3 py-2 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}">
+                            Siguiente <i class="fas fa-chevron-right ml-1"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+            <div class="text-center mt-2 text-xs dark:text-surface-400 text-surface-500">
+                Pagina {{ page_obj.number }} de {{ paginator.num_pages }}. Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ paginator.count }} red{{ paginator.count|pluralize:"es" }}.
+            </div>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function toggleTree(id) {
+    var children = document.getElementById('children-' + id);
+    var chevron = document.getElementById('chevron-' + id);
+    if (children.classList.contains('hidden')) {
+        children.classList.remove('hidden');
+        chevron.style.transform = 'rotate(90deg)';
+    } else {
+        children.classList.add('hidden');
+        chevron.style.transform = 'rotate(0deg)';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('search-input');
+    const clearButton = document.getElementById('clear-search');
+    const treeContainer = document.getElementById('tree-container');
+
+    let searchTimeout;
+
+    searchInput.addEventListener('input', function() {
+        const query = this.value.trim();
+        if (query) {
+            clearButton.classList.remove('hidden');
+        } else {
+            clearButton.classList.add('hidden');
+        }
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            const nodes = document.querySelectorAll('.tree-node');
+            nodes.forEach(node => {
+                const text = node.textContent.toLowerCase();
+                if (text.includes(query.toLowerCase()) || query === '') {
+                    node.style.display = '';
+                } else {
+                    node.style.display = 'none';
+                }
+            });
+        }, 200);
+    });
+
+    clearButton.addEventListener('click', function() {
+        searchInput.value = '';
+        clearButton.classList.add('hidden');
+        const nodes = document.querySelectorAll('.tree-node');
+        nodes.forEach(node => { node.style.display = ''; });
+    });
+});
+</script>
+{% endblock %}

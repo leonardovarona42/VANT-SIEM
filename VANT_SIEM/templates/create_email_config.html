@@ -2,147 +2,147 @@
 {% load static %}
 
 {% block content %}
-<div class="container-fluid">
- <div class="row justify-content-center">
- <div class="col-md-8">
- <div class="card bg-secondary">
- <div class="card-header">
- <h3 class="text-info mb-0">
- <i class="fas fa-envelope me-2"></i>Nueva Configuración de Correo
- </h3>
- </div>
- <div class="card-body">
- <form method="post">
- {% csrf_token %}
- 
- <div class="row">
- <div class="col-md-6">
- <div class="mb-3">
- <label for="name" class="form-label fw-bold text-info">Nombre de la Configuración</label>
- <input type="text" class="form-control" id="name" name="name" required>
- <div class="form-text text-light">Nombre descriptivo para identificar esta configuración</div>
- </div>
- </div>
- <div class="col-md-6">
- <div class="mb-3">
- <label for="from_name" class="form-label fw-bold text-info">Nombre del Remitente</label>
- <input type="text" class="form-control" id="from_name" name="from_name" value="VANT-SIEM">
- <div class="form-text text-light">Nombre que aparecerá como remitente</div>
- </div>
- </div>
- </div>
+<div class="w-full">
+  <div class="flex justify-center">
+    <div class="w-full md:w-2/3">
+      <div class="glass-card">
+        <div class="p-6 border-b border-surface-700">
+          <h3 class="text-brand-400 mb-0 text-xl font-semibold">
+            <i class="fas fa-envelope mr-2"></i>Nueva Configuración de Correo
+          </h3>
+        </div>
+        <div class="p-6">
+          <form method="post">
+            {% csrf_token %}
 
- <div class="row">
- <div class="col-md-8">
- <div class="mb-3">
- <label for="smtp_server" class="form-label fw-bold text-info">Servidor SMTP</label>
- <input type="text" class="form-control" id="smtp_server" name="smtp_server" required>
- <div class="form-text text-light">Ejemplo: smtp.gmail.com, smtp.outlook.com</div>
- </div>
- </div>
- <div class="col-md-4">
- <div class="mb-3">
- <label for="smtp_port" class="form-label fw-bold text-info">Puerto</label>
- <input type="number" class="form-control" id="smtp_port" name="smtp_port" value="587" required>
- <div class="form-text text-light">587 (TLS) o 465 (SSL)</div>
- </div>
- </div>
- </div>
+            <div class="flex flex-wrap -mx-2">
+              <div class="w-full md:w-1/2 px-2">
+                <div class="mb-4">
+                  <label for="name" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Nombre de la Configuración</label>
+                  <input type="text" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="name" name="name" required>
+                  <div class="text-sm dark:text-surface-400 text-surface-500 mt-1">Nombre descriptivo para identificar esta configuración</div>
+                </div>
+              </div>
+              <div class="w-full md:w-1/2 px-2">
+                <div class="mb-4">
+                  <label for="from_name" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Nombre del Remitente</label>
+                  <input type="text" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="from_name" name="from_name" value="VANT-SIEM">
+                  <div class="text-sm dark:text-surface-400 text-surface-500 mt-1">Nombre que aparecerá como remitente</div>
+                </div>
+              </div>
+            </div>
 
- <div class="row">
- <div class="col-md-6">
- <div class="mb-3">
- <label for="username" class="form-label fw-bold text-info">Usuario SMTP</label>
- <input type="text" class="form-control" id="username" name="username" required>
- <div class="form-text text-light">Usuario del servidor de correo</div>
- </div>
- </div>
- <div class="col-md-6">
- <div class="mb-3">
- <label for="password" class="form-label fw-bold text-info">Contraseña</label>
- <input type="password" class="form-control" id="password" name="password" required>
- <div class="form-text text-light">Contraseña o contraseña de aplicación</div>
- </div>
- </div>
- </div>
+            <div class="flex flex-wrap -mx-2">
+              <div class="w-full md:w-2/3 px-2">
+                <div class="mb-4">
+                  <label for="smtp_server" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Servidor SMTP</label>
+                  <input type="text" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="smtp_server" name="smtp_server" required>
+                  <div class="text-sm dark:text-surface-400 text-surface-500 mt-1">Ejemplo: smtp.gmail.com, smtp.outlook.com</div>
+                </div>
+              </div>
+              <div class="w-full md:w-1/3 px-2">
+                <div class="mb-4">
+                  <label for="smtp_port" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Puerto</label>
+                  <input type="number" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="smtp_port" name="smtp_port" value="587" required>
+                  <div class="text-sm dark:text-surface-400 text-surface-500 mt-1">587 (TLS) o 465 (SSL)</div>
+                </div>
+              </div>
+            </div>
 
- <div class="mb-3">
- <label for="from_email" class="form-label fw-bold text-info">Email Remitente</label>
- <input type="email" class="form-control" id="from_email" name="from_email" required>
- <div class="form-text text-light">Dirección de correo que aparecerá como remitente</div>
- </div>
+            <div class="flex flex-wrap -mx-2">
+              <div class="w-full md:w-1/2 px-2">
+                <div class="mb-4">
+                  <label for="username" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Usuario SMTP</label>
+                  <input type="text" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="username" name="username" required>
+                  <div class="text-sm dark:text-surface-400 text-surface-500 mt-1">Usuario del servidor de correo</div>
+                </div>
+              </div>
+              <div class="w-full md:w-1/2 px-2">
+                <div class="mb-4">
+                  <label for="password" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Contraseña</label>
+                  <input type="password" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="password" name="password" required>
+                  <div class="text-sm dark:text-surface-400 text-surface-500 mt-1">Contraseña o contraseña de aplicación</div>
+                </div>
+              </div>
+            </div>
 
- <div class="row">
- <div class="col-md-4">
- <div class="mb-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="use_tls" name="use_tls" checked>
- <label class="form-check-label text-light" for="use_tls">
- <strong>Usar TLS</strong>
- </label>
- <div class="form-text text-light">Recomendado para puerto 587</div>
- </div>
- </div>
- </div>
- <div class="col-md-4">
- <div class="mb-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="use_ssl" name="use_ssl">
- <label class="form-check-label text-light" for="use_ssl">
- <strong>Usar SSL</strong>
- </label>
- <div class="form-text text-light">Para puerto 465</div>
- </div>
- </div>
- </div>
- <div class="col-md-4">
- <div class="mb-3">
- <div class="form-check">
- <input class="form-check-input" type="checkbox" id="is_active" name="is_active">
- <label class="form-check-label text-light" for="is_active">
- <strong>Activar Configuración</strong>
- </label>
- <div class="form-text text-light">Marcar como configuración activa</div>
- </div>
- </div>
- </div>
- </div>
+            <div class="mb-4">
+              <label for="from_email" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Email Remitente</label>
+              <input type="email" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="from_email" name="from_email" required>
+              <div class="text-sm dark:text-surface-400 text-surface-500 mt-1">Dirección de correo que aparecerá como remitente</div>
+            </div>
 
- <div class="alert alert-info">
- <i class="fas fa-info-circle me-2"></i>
- <strong>Nota:</strong> Para Gmail, necesitarás usar una "Contraseña de aplicación" en lugar de tu contraseña normal. 
- Para Outlook, asegúrate de que la autenticación de dos factores esté habilitada.
- </div>
+            <div class="flex flex-wrap -mx-2">
+              <div class="w-full md:w-1/3 px-2">
+                <div class="mb-4">
+                  <div class="flex items-center">
+                    <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="use_tls" name="use_tls" checked>
+                    <label class="ml-2 text-sm dark:text-surface-300 text-surface-600" for="use_tls">
+                      <strong>Usar TLS</strong>
+                    </label>
+                  </div>
+                  <div class="text-sm dark:text-surface-400 text-surface-500 mt-1">Recomendado para puerto 587</div>
+                </div>
+              </div>
+              <div class="w-full md:w-1/3 px-2">
+                <div class="mb-4">
+                  <div class="flex items-center">
+                    <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="use_ssl" name="use_ssl">
+                    <label class="ml-2 text-sm dark:text-surface-300 text-surface-600" for="use_ssl">
+                      <strong>Usar SSL</strong>
+                    </label>
+                  </div>
+                  <div class="text-sm dark:text-surface-400 text-surface-500 mt-1">Para puerto 465</div>
+                </div>
+              </div>
+              <div class="w-full md:w-1/3 px-2">
+                <div class="mb-4">
+                  <div class="flex items-center">
+                    <input class="w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 rounded focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600" type="checkbox" id="is_active" name="is_active">
+                    <label class="ml-2 text-sm dark:text-surface-300 text-surface-600" for="is_active">
+                      <strong>Activar Configuración</strong>
+                    </label>
+                  </div>
+                  <div class="text-sm dark:text-surface-400 text-surface-500 mt-1">Marcar como configuración activa</div>
+                </div>
+              </div>
+            </div>
 
- <div class="d-flex justify-content-between">
- <a href="{% url 'email-configuration' %}" class="btn btn-secondary">
- <i class="fas fa-arrow-left me-2"></i>Volver
- </a>
- <button type="submit" class="btn btn-success">
- <i class="fas fa-save me-2"></i>Guardar Configuración
- </button>
- </div>
- </form>
- </div>
- </div>
- </div>
- </div>
+            <div class="p-4 mb-4 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400">
+              <i class="fas fa-info-circle mr-2"></i>
+              <strong>Nota:</strong> Para Gmail, necesitarás usar una "Contraseña de aplicación" en lugar de tu contraseña normal.
+              Para Outlook, asegúrate de que la autenticación de dos factores esté habilitada.
+            </div>
+
+            <div class="flex justify-between">
+              <a href="{% url 'email-configuration' %}" class="px-6 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 dark:bg-surface-700 dark:hover:bg-surface-600 dark:text-surface-200 bg-surface-200 hover:bg-surface-300 text-surface-700">
+                <i class="fas fa-arrow-left mr-2"></i>Volver
+              </a>
+              <button type="submit" class="px-6 py-2.5 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 shadow-lg shadow-green-500/25 transition-all duration-200">
+                <i class="fas fa-save mr-2"></i>Guardar Configuración
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
 // Toggle entre TLS y SSL
 document.getElementById('use_tls').addEventListener('change', function() {
- if (this.checked) {
- document.getElementById('use_ssl').checked = false;
- document.getElementById('smtp_port').value = '587';
- }
+  if (this.checked) {
+    document.getElementById('use_ssl').checked = false;
+    document.getElementById('smtp_port').value = '587';
+  }
 });
 
 document.getElementById('use_ssl').addEventListener('change', function() {
- if (this.checked) {
- document.getElementById('use_tls').checked = false;
- document.getElementById('smtp_port').value = '465';
- }
+  if (this.checked) {
+    document.getElementById('use_tls').checked = false;
+    document.getElementById('smtp_port').value = '465';
+  }
 });
 </script>
 {% endblock %}

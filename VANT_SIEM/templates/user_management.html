@@ -2,202 +2,227 @@
 {% load static %}
 
 {% block content %}
-<div class="container-fluid">
- <div class="row">
- <div class="col-12">
- <div class="d-flex justify-content-between align-items-center mb-4">
- <h2 class="text-info">
- <i class="fas fa-users me-2"></i>Gestión de Usuarios
- </h2>
- <a href="{% url 'create-user-request' %}" class="btn btn-success">
- <i class="fas fa-plus me-2"></i>Crear Usuario
- </a>
- </div>
+<div class="space-y-6">
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <h2 class="text-2xl font-bold dark:text-surface-100 text-surface-900">
+      <i class="fas fa-users me-2 text-brand-500"></i>Gestión de Usuarios
+    </h2>
+    <a href="{% url 'create-user-request' %}" class="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-medium rounded-xl shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all duration-300 inline-flex items-center gap-2">
+      <i class="fas fa-plus"></i>Crear Usuario
+    </a>
+  </div>
 
- <!-- Pestañas -->
- <ul class="nav nav-tabs" id="userTabs" role="tablist">
- <li class="nav-item" role="presentation">
- <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab">
- <i class="fas fa-users me-2"></i>Usuarios Activos
- </button>
- </li>
- <li class="nav-item" role="presentation">
- <button class="nav-link" id="requests-tab" data-bs-toggle="tab" data-bs-target="#requests" type="button" role="tab">
- <i class="fas fa-clock me-2"></i>Solicitudes Pendientes
- {% if pending_requests.count > 0 %}
- <span class="badge bg-warning ms-2">{{ pending_requests.count }}</span>
- {% endif %}
- </button>
- </li>
- </ul>
+  <!-- Pestañas -->
+  <div class="glass-card rounded-2xl overflow-hidden">
+    <div class="border-b dark:border-surface-700 border-surface-200">
+      <div class="flex" id="userTabs">
+        <button class="tab-btn active px-6 py-3 text-sm font-medium border-b-2 border-brand-500 text-brand-500 dark:text-brand-400" data-tab="users">
+          <i class="fas fa-users me-2"></i>Usuarios Activos
+        </button>
+        <button class="tab-btn px-6 py-3 text-sm font-medium border-b-2 border-transparent dark:text-surface-400 text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 transition-colors" data-tab="requests">
+          <i class="fas fa-clock me-2"></i>Solicitudes Pendientes
+          {% if pending_requests.count > 0 %}
+          <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/20 text-amber-400">{{ pending_requests.count }}</span>
+          {% endif %}
+        </button>
+      </div>
+    </div>
 
- <div class="tab-content" id="userTabsContent">
- <!-- Tab de Usuarios Activos -->
- <div class="tab-pane fade show active" id="users" role="tabpanel">
- <div class="card bg-secondary mt-3">
- <div class="card-body">
- <div class="table-responsive">
- <table class="table table-dark table-hover">
- <thead>
- <tr>
- <th>Usuario</th>
- <th>Email</th>
- <th>Nombre Completo</th>
- <th>Staff</th>
- <th>Superusuario</th>
- <th>Último Acceso</th>
- <th>Fecha Registro</th>
- <th>Acciones</th>
- </tr>
- </thead>
- <tbody>
- {% for user in users %}
- <tr>
- <td>
- <strong>{{ user.username }}</strong>
- </td>
- <td>{{ user.email }}</td>
- <td>{{ user.first_name }} {{ user.last_name }}</td>
- <td>
- {% if user.is_staff %}
- <span class="badge bg-success">Sí</span>
- {% else %}
- <span class="badge bg-secondary">No</span>
- {% endif %}
- </td>
- <td>
- {% if user.is_superuser %}
- <span class="badge bg-danger">Sí</span>
- {% else %}
- <span class="badge bg-secondary">No</span>
- {% endif %}
- </td>
- <td>
- {% if user.last_login %}
- {{ user.last_login|date:"d/m/Y H:i" }}
- {% else %}
- <span class="text-muted">Nunca</span>
- {% endif %}
- </td>
- <td>{{ user.date_joined|date:"d/m/Y H:i" }}</td>
- <td>
- <a href="{% url 'user-permissions' user.id %}" class="btn btn-sm btn-info" title="Gestionar Permisos">
- <i class="fas fa-cog"></i>
- </a>
- </td>
- </tr>
- {% empty %}
- <tr>
- <td colspan="8" class="text-center text-muted">No hay usuarios registrados</td>
- </tr>
- {% endfor %}
- </tbody>
- </table>
- </div>
- </div>
- </div>
- </div>
+    <!-- Tab de Usuarios Activos -->
+    <div class="tab-pane active p-6" id="users">
+      <div class="overflow-x-auto">
+        <table class="w-full divide-y dark:divide-surface-700 divide-surface-200" id="users-table">
+          <thead class="dark:bg-surface-800 bg-surface-100">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Usuario</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Email</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Nombre Completo</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Staff</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Superusuario</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true" data-type="date">Último Acceso</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true" data-type="date">Fecha Registro</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="dark:divide-surface-700 divide-surface-200">
+            {% for user in users %}
+            <tr class="dark:hover:bg-surface-700/50 hover:bg-surface-50 transition-colors">
+              <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800 font-medium">{{ user.username }}</td>
+              <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ user.email }}</td>
+              <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ user.first_name }} {{ user.last_name }}</td>
+              <td class="px-4 py-3 text-sm">
+                {% if user.is_staff %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400">Sí</span>
+                {% else %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium dark:bg-surface-700 bg-surface-200 dark:text-surface-400 text-surface-500">No</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-sm">
+                {% if user.is_superuser %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-400">Sí</span>
+                {% else %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium dark:bg-surface-700 bg-surface-200 dark:text-surface-400 text-surface-500">No</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">
+                {% if user.last_login %}
+                {{ user.last_login|date:"d/m/Y H:i" }}
+                {% else %}
+                <span class="dark:text-surface-500 text-surface-400">Nunca</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ user.date_joined|date:"d/m/Y H:i" }}</td>
+              <td class="px-4 py-3 text-sm">
+                <a href="{% url 'user-permissions' user.id %}" class="inline-flex items-center px-3 py-1.5 text-xs font-medium dark:bg-brand-500/20 bg-brand-100 text-brand-400 dark:text-brand-400 rounded-lg hover:bg-brand-500/30 transition-colors" title="Gestionar Permisos">
+                  <i class="fas fa-cog"></i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="8" class="px-4 py-8 text-center dark:text-surface-500 text-surface-400">No hay usuarios registrados</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
 
- <!-- Tab de Solicitudes Pendientes -->
- <div class="tab-pane fade" id="requests" role="tabpanel">
- <div class="card bg-secondary mt-3">
- <div class="card-body">
- {% if pending_requests %}
- <div class="table-responsive">
- <table class="table table-dark table-hover">
- <thead>
- <tr>
- <th>Solicitante</th>
- <th>Usuario Solicitado</th>
- <th>Email</th>
- <th>Nombre Completo</th>
- <th>Permisos Solicitados</th>
- <th>Fecha Solicitud</th>
- <th>Acciones</th>
- </tr>
- </thead>
- <tbody>
- {% for request in pending_requests %}
- <tr>
- <td>
- <strong>{{ request.requested_by.username }}</strong>
- </td>
- <td>
- <strong>{{ request.username }}</strong>
- </td>
- <td>{{ request.email }}</td>
- <td>{{ request.first_name }} {{ request.last_name }}</td>
- <td>
- {% if request.details.requested_permissions %}
- <div class="d-flex flex-wrap gap-1">
- {% for perm in request.details.requested_permissions %}
- <span class="badge bg-info">{{ perm|title }}</span>
- {% endfor %}
- </div>
- {% else %}
- <span class="badge bg-secondary">Sin permisos específicos</span>
- {% endif %}
- </td>
- <td>{{ request.created_at|date:"d/m/Y H:i" }}</td>
- <td>
- <div class="btn-group" role="group">
- <form method="post" action="{% url 'approve-user-request' request.id %}" class="d-inline">
- {% csrf_token %}
- <button type="submit" class="btn btn-sm btn-success" title="Aprobar Usuario">
- <i class="fas fa-check"></i>
- </button>
- </form>
- <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal{{ request.id }}" title="Rechazar Usuario">
- <i class="fas fa-times"></i>
- </button>
- </div>
- </td>
- </tr>
- {% endfor %}
- </tbody>
- </table>
- </div>
- {% else %}
- <div class="text-center text-muted py-4">
- <i class="fas fa-inbox fa-3x mb-3"></i>
- <p>No hay solicitudes pendientes</p>
- </div>
- {% endif %}
- </div>
- </div>
- </div>
- </div>
- </div>
- </div>
+    <!-- Tab de Solicitudes Pendientes -->
+    <div class="tab-pane hidden p-6" id="requests">
+      {% if pending_requests %}
+      <div class="overflow-x-auto">
+        <table class="w-full divide-y dark:divide-surface-700 divide-surface-200" id="requests-table">
+          <thead class="dark:bg-surface-800 bg-surface-100">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Solicitante</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Usuario Solicitado</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Email</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Nombre Completo</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true">Permisos Solicitados</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider sortable-header" data-sortable="true" data-type="date">Fecha Solicitud</th>
+              <th class="px-4 py-3 text-left text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider">Acciones</th>
+            </tr>
+          </thead>
+          <tbody class="dark:divide-surface-700 divide-surface-200">
+            {% for request in pending_requests %}
+            <tr class="dark:hover:bg-surface-700/50 hover:bg-surface-50 transition-colors">
+              <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800 font-medium">{{ request.requested_by.username }}</td>
+              <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800 font-medium">{{ request.username }}</td>
+              <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ request.email }}</td>
+              <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ request.first_name }} {{ request.last_name }}</td>
+              <td class="px-4 py-3 text-sm">
+                {% if request.details.requested_permissions %}
+                <div class="flex flex-wrap gap-1">
+                  {% for perm in request.details.requested_permissions %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium dark:bg-brand-500/20 bg-brand-100 text-brand-400">{{ perm|title }}</span>
+                  {% endfor %}
+                </div>
+                {% else %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium dark:bg-surface-700 bg-surface-200 dark:text-surface-400 text-surface-500">Sin permisos específicos</span>
+                {% endif %}
+              </td>
+              <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ request.created_at|date:"d/m/Y H:i" }}</td>
+              <td class="px-4 py-3 text-sm">
+                <div class="flex items-center gap-2">
+                  <form method="post" action="{% url 'approve-user-request' request.id %}" class="inline">
+                    {% csrf_token %}
+                    <button type="submit" class="inline-flex items-center px-3 py-1.5 text-xs font-medium bg-emerald-500/20 text-emerald-400 rounded-lg hover:bg-emerald-500/30 transition-colors" title="Aprobar Usuario">
+                      <i class="fas fa-check"></i>
+                    </button>
+                  </form>
+                  <button type="button" class="inline-flex items-center px-3 py-1.5 text-xs font-medium bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors" onclick="openRejectModal({{ request.id }}, '{{ request.username|escapejs }}')" title="Rechazar Usuario">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-12">
+        <i class="fas fa-inbox fa-3x mb-3 dark:text-surface-600 text-surface-400"></i>
+        <p class="dark:text-surface-400 text-surface-500">No hay solicitudes pendientes</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
 </div>
 
-<!-- Modales de Rechazo -->
-{% for request in pending_requests %}
-<div class="modal fade" id="rejectModal{{ request.id }}" tabindex="-1">
- <div class="modal-dialog">
- <div class="modal-content bg-dark">
- <div class="modal-header">
- <h5 class="modal-title text-danger">
- <i class="fas fa-exclamation-triangle me-2"></i>Rechazar Usuario
- </h5>
- <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
- </div>
- <form method="post" action="{% url 'reject-user-request' request.id %}">
- {% csrf_token %}
- <div class="modal-body">
- <p>¿Estás seguro de que deseas rechazar la solicitud de usuario <strong>{{ request.username }}</strong>?</p>
- <div class="mb-3">
- <label for="reason{{ request.id }}" class="form-label">Motivo del rechazo (opcional):</label>
- <textarea class="form-control" id="reason{{ request.id }}" name="reason" rows="3" placeholder="Explica el motivo del rechazo..."></textarea>
- </div>
- </div>
- <div class="modal-footer">
- <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
- <button type="submit" class="btn btn-danger">Rechazar Usuario</button>
- </div>
- </form>
- </div>
- </div>
+<!-- Modal de Rechazo -->
+<div id="rejectModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="rejectModalLabel" aria-hidden="true">
+  <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+    <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" onclick="closeRejectModal()"></div>
+    <div class="inline-block align-bottom glass-card rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+      <div class="px-6 py-4 border-b dark:border-surface-700 border-surface-200">
+        <h5 class="text-lg font-medium text-red-400">
+          <i class="fas fa-exclamation-triangle me-2"></i>Rechazar Usuario
+        </h5>
+      </div>
+      <form id="rejectForm" method="post">
+        {% csrf_token %}
+        <div class="px-6 py-4">
+          <p class="dark:text-surface-200 text-surface-800 mb-4">¿Estás seguro de que deseas rechazar la solicitud de usuario <strong id="rejectUsername"></strong>?</p>
+          <div class="mb-3">
+            <label for="rejectReason" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">Motivo del rechazo (opcional):</label>
+            <textarea class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" id="rejectReason" name="reason" rows="3" placeholder="Explica el motivo del rechazo..."></textarea>
+          </div>
+        </div>
+        <div class="px-6 py-4 border-t dark:border-surface-700 border-surface-200 flex justify-end gap-3">
+          <button type="button" class="px-4 py-2.5 dark:bg-surface-800 dark:hover:bg-surface-700 dark:text-surface-200 dark:border-surface-700 bg-surface-100 hover:bg-surface-200 text-surface-800 border-surface-200 font-medium rounded-xl transition-all duration-200" onclick="closeRejectModal()">Cancelar</button>
+          <button type="submit" class="px-4 py-2.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-medium rounded-xl shadow-lg shadow-red-500/25 hover:shadow-red-500/40 transition-all duration-300">Rechazar Usuario</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
-{% endfor %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  VANT_UI.initSortableTables({ tableId: 'users-table' });
+  VANT_UI.initSortableTables({ tableId: 'requests-table' });
+// Tab functionality
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tabId = btn.dataset.tab;
+    // Update button styles
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.remove('active', 'border-brand-500', 'text-brand-500', 'dark:text-brand-400');
+      b.classList.add('border-transparent', 'dark:text-surface-400', 'text-surface-500');
+    });
+    btn.classList.add('active', 'border-brand-500', 'text-brand-500', 'dark:text-brand-400');
+    btn.classList.remove('border-transparent', 'dark:text-surface-400', 'text-surface-500');
+    // Show/hide tab panes
+    document.querySelectorAll('.tab-pane').forEach(pane => {
+      pane.classList.add('hidden');
+    });
+    document.getElementById(tabId).classList.remove('hidden');
+  });
+});
+
+// Reject modal functionality
+let currentRejectId = null;
+
+function openRejectModal(requestId, username) {
+  currentRejectId = requestId;
+  document.getElementById('rejectUsername').textContent = username;
+  document.getElementById('rejectForm').action = `/siem/user-management/reject/${requestId}/`;
+  document.getElementById('rejectModal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeRejectModal() {
+  document.getElementById('rejectModal').classList.add('hidden');
+  document.body.style.overflow = '';
+  currentRejectId = null;
+  document.getElementById('rejectReason').value = '';
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeRejectModal();
+});
+</script>
 {% endblock %}

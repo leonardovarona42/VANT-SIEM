@@ -1,0 +1,414 @@
+{% extends "dashboard.html" %}
+{% block title %}Esquema de Red | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="mb-6">
+    <h2 class="text-2xl font-bold text-center dark:text-white text-surface-900">
+        <i class="fas fa-network-wired mr-2 text-brand-400"></i>Esquema de Red
+    </h2>
+</div>
+
+<!-- Tabs -->
+<div class="flex gap-2 mb-6 justify-center">
+    <a href="{% url 'esquema-fisico' %}" class="px-6 py-2.5 rounded-xl font-medium transition-all {% if esquema_tipo == 'fisica' %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}glass-card dark:text-surface-300 hover:bg-surface-800/50{% endif %}">
+        <i class="fas fa-server mr-2"></i>Esquema Fisico
+    </a>
+    <a href="{% url 'esquema-logico' %}" class="px-6 py-2.5 rounded-xl font-medium transition-all {% if esquema_tipo == 'logica' %}bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-lg shadow-brand-500/30{% else %}glass-card dark:text-surface-300 hover:bg-surface-800/50{% endif %}">
+        <i class="fas fa-project-diagram mr-2"></i>Esquema Logico
+    </a>
+</div>
+
+<!-- Stats -->
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+    <div class="glass-card p-4 text-center">
+        <div class="text-sm dark:text-surface-400 text-surface-500">Total Servicios</div>
+        <div class="text-3xl font-bold text-brand-400">{{ total_servicios }}</div>
+    </div>
+    <div class="glass-card p-4 text-center">
+        <div class="text-sm dark:text-surface-400 text-surface-500">Conexiones</div>
+        <div class="text-3xl font-bold text-blue-400">{{ total_conexiones }}</div>
+    </div>
+    <div class="glass-card p-4 text-center">
+        <div class="text-sm dark:text-surface-400 text-surface-500">Monitoreados</div>
+        <div class="text-3xl font-bold text-emerald-400">{{ monitoreados }}</div>
+    </div>
+    <div class="glass-card p-4 text-center">
+        <div class="text-sm dark:text-surface-400 text-surface-500">Redes</div>
+        <div class="text-3xl font-bold text-purple-400">{{ total_redes }}</div>
+    </div>
+    <div class="glass-card p-4 text-center">
+        <div class="text-sm dark:text-surface-400 text-surface-500">Dispositivos Activos</div>
+        <div class="text-3xl font-bold text-amber-400">{{ total_dispositivos }}</div>
+    </div>
+</div>
+
+<!-- Legend -->
+<div class="glass-card p-4 mb-6">
+    <h3 class="text-sm font-semibold dark:text-white text-surface-900 mb-3">Leyenda</h3>
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div class="flex items-center gap-2">
+            <span class="w-4 h-4 rounded-full" style="background: #3b82f6"></span>
+            <span class="text-xs dark:text-surface-300 text-surface-600">Host/Servidor</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="w-4 h-4 rounded-full" style="background: #f59e0b"></span>
+            <span class="text-xs dark:text-surface-300 text-surface-600">Switch</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="w-4 h-4 rounded-full" style="background: #f97316"></span>
+            <span class="text-xs dark:text-surface-300 text-surface-600">Router</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="w-4 h-4 rounded-full" style="background: #ef4444"></span>
+            <span class="text-xs dark:text-surface-300 text-surface-600">Firewall</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="w-4 h-4 rounded-full" style="background: #8b5cf6"></span>
+            <span class="text-xs dark:text-surface-300 text-surface-600">VLAN</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="w-4 h-4 rounded-full" style="background: #ec4899"></span>
+            <span class="text-xs dark:text-surface-300 text-surface-600">Subred/Red</span>
+        </div>
+    </div>
+</div>
+        <div class="flex items-center gap-2">
+            <span class="w-4 h-4 rounded-full" style="background: #10b981"></span>
+            <span class="text-xs dark:text-surface-300 text-surface-600">Cluster</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="w-4 h-4 rounded-full" style="background: #6b7280"></span>
+            <span class="text-xs dark:text-surface-300 text-surface-600">Servicio Externo</span>
+        </div>
+    </div>
+</div>
+
+<!-- Topology Graph -->
+<div class="glass-card p-4 relative" id="topology-container">
+    <button onclick="toggleFullscreen()" id="fullscreen-btn" class="absolute top-4 right-4 z-10 px-3 py-1.5 text-xs font-medium dark:text-surface-300 text-surface-600 dark:bg-surface-800 bg-surface-100 border dark:border-surface-700 border-surface-300 rounded-lg hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors" title="Pantalla completa">
+        <i class="fas fa-expand mr-1"></i>Fullscreen
+    </button>
+    <div id="topologyGraph" class="w-full" style="height: 70vh; min-height: 500px;"></div>
+</div>
+
+<!-- Redes Table -->
+{% if total_redes > 0 %}
+<div class="glass-card p-6 mt-6">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold dark:text-white text-surface-900">
+            <i class="fas fa-network-wired mr-2 text-purple-400"></i>Redes Definidas
+        </h3>
+        <a href="{% url 'red-list' %}" class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors">
+            <i class="fas fa-external-link-alt mr-2"></i>Ver Todas
+        </a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full divide-y dark:divide-surface-800 divide-surface-200">
+            <thead class="dark:bg-surface-800 bg-surface-100">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Nombre</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Tipo</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Red</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">VLAN</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Gateway</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">DHCP</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Total IPs</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Activos</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Ultima Actividad</th>
+                </tr>
+            </thead>
+            <tbody id="redes-tbody" class="dark:divide-surface-800 divide-surface-200">
+                {% for r in redes_json|default:'[]' %}
+                <tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors cursor-pointer" onclick="window.location.href='{{ r.detail_url }}'">
+                    <td class="px-4 py-3 text-sm font-medium dark:text-white text-surface-900">{{ r.nombre }}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                            {% if r.tipo == 'subred' or r.tipo == 'red' %}bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300
+                            {% elif r.tipo == 'vlan' %}bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300
+                            {% elif r.tipo == 'segmento' %}bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300
+                            {% else %}bg-surface-100 text-surface-800 dark:bg-surface-700 dark:text-surface-300{% endif %}">
+                            {{ r.tipo_display }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-sm font-mono dark:text-surface-200 text-surface-800">{{ r.network }}{{ r.subnet_mask }}</td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ r.vlan_id }}</td>
+                    <td class="px-4 py-3 text-sm font-mono dark:text-surface-200 text-surface-800">{{ r.gateway }}</td>
+                    <td class="px-4 py-3 text-sm">
+                        {% if r.dhcp_activo %}<span class="text-emerald-400"><i class="fas fa-check mr-1"></i>Si</span>
+                        {% else %}<span class="text-surface-400"><i class="fas fa-times mr-1"></i>No</span>{% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ r.total_ips }}</td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ r.dispositivos_activos }}</td>
+                    <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">{{ r.ultima_actividad }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if redes_paginator.num_pages > 1 %}
+    <div id="redes-pagination" class="mt-4 flex items-center justify-between">
+        <div class="text-sm dark:text-surface-400 text-surface-500">
+            Mostrando {{ redes_page.start_index }}-{{ redes_page.end_index }} de {{ redes_paginator.count }} redes
+        </div>
+        <nav class="flex items-center gap-1">
+            {% if redes_page.has_previous %}
+            <button onclick="loadRedPage({{ redes_page.previous_page_number }})" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600">
+                <i class="fas fa-chevron-left mr-1"></i>Anterior
+            </button>
+            {% endif %}
+            {% for num in redes_paginator.page_range %}
+                {% if num == redes_page.number %}
+                <button class="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg">{{ num }}</button>
+                {% elif num > redes_page.number|add:'-3' and num < redes_page.number|add:'3' %}
+                <button onclick="loadRedPage({{ num }})" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600">{{ num }}</button>
+                {% endif %}
+            {% endfor %}
+            {% if redes_page.has_next %}
+            <button onclick="loadRedPage({{ redes_page.next_page_number }})" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600">
+                Siguiente<i class="fas fa-chevron-right ml-1"></i>
+            </button>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Service Detail Modal -->
+<div id="serviceModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="w-full max-w-lg dark:bg-surface-900 bg-white rounded-2xl shadow-2xl border dark:border-surface-700 border-surface-200 overflow-hidden">
+        <div class="px-6 py-4 border-b dark:border-surface-700 border-surface-200 flex items-center justify-between">
+            <h3 id="modalTitle" class="text-lg font-semibold dark:text-white text-surface-900"></h3>
+            <button onclick="closeServiceModal()" class="dark:text-surface-400 text-surface-500 hover:text-red-500 transition-colors">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+        <div id="modalContent" class="p-6 space-y-3 max-h-96 overflow-y-auto"></div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/vis-network@9.1.6/standalone/umd/vis-network.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var nodesData = {{ nodes_json|safe }};
+    var edgesData = {{ edges_json|safe }};
+
+    var visNodes = nodesData.map(function(n) {
+        var icon = '\ud83d\udcbb';
+        if (n.tipo === 'vlan') icon = '\ud83c\udf10';
+        else if (n.tipo === 'segmento') icon = '\ud83d\udd17';
+        else if (n.tipo === 'dispositivo_red') icon = n.dispositivo_tipo === 'switch' ? '\ud83d\udd0c' : n.dispositivo_tipo === 'router' ? '\ud83d\udce1' : '\ud83d\udee1\ufe0f';
+        else if (n.tipo === 'cluster') icon = '\ud83d\udda5\ufe0f';
+        else if (n.tipo === 'servicio_externo') icon = '\u2601\ufe0f';
+
+        var statusBorder = n.estado_monitoreo ? '#10b981' : '#ef4444';
+        if (!n.monitorear) statusBorder = '#6b7280';
+
+        return {
+            id: n.id,
+            label: n.label,
+            color: {
+                background: n.color,
+                border: statusBorder,
+                highlight: { background: n.color, border: '#ffffff' },
+                hover: { background: n.color, border: '#ffffff' }
+            },
+            font: {
+                color: '#ffffff',
+                size: 14,
+                face: 'system-ui, sans-serif',
+                bold: true,
+                strokeWidth: 3,
+                strokeColor: '#000000',
+                vadjust: -25
+            },
+            shape: n.tipo === 'dispositivo_red' ? 'diamond' : n.tipo === 'cluster' ? 'hexagon' : 'dot',
+            size: n.tipo === 'cluster' ? 35 : n.tipo === 'dispositivo_red' ? 30 : 25,
+            borderWidth: 3,
+            data: n
+        };
+    });
+
+    var visEdges = edgesData.filter(function(e) { return e.activa; }).map(function(e) {
+        var color = '#3b82f6';
+        if (e.tipo === 'wireless') color = '#f59e0b';
+        else if (e.tipo === 'vpn') color = '#10b981';
+        else if (e.tipo === 'virtual') color = '#8b5cf6';
+
+        return {
+            from: e.from,
+            to: e.to,
+            color: { color: color, opacity: 0.7 },
+            width: e.ancho_banda === '10Gbps' ? 3 : e.ancho_banda === '1Gbps' ? 2 : 1,
+            smooth: { type: 'curvedCW', roundness: 0.15 },
+            label: e.ancho_banda || '',
+            font: { size: 10, color: '#9ca3af' },
+            data: e
+        };
+    });
+
+    var container = document.getElementById('topologyGraph');
+    var data = {
+        nodes: new vis.DataSet(visNodes),
+        edges: new vis.DataSet(visEdges)
+    };
+    var options = {
+        physics: {
+            enabled: true,
+            stabilization: { iterations: 150 },
+            barnesHut: { gravitationalConstant: -3000, springLength: 200, springConstant: 0.01 }
+        },
+        interaction: { hover: true, tooltipDelay: 100, zoomView: true, dragView: true, dragNodes: true },
+        layout: { improvedLayout: true }
+    };
+
+    var network = new vis.Network(container, data, options);
+
+    network.on('click', function(params) {
+        if (params.nodes.length > 0) {
+            var nodeId = params.nodes[0];
+            var node = data.nodes.get(nodeId);
+            showServiceModal(node.data);
+        }
+    });
+
+    network.on('doubleClick', function(params) {
+        if (params.nodes.length > 0) {
+            network.focus(params.nodes[0], { scale: 1.5, animation: true });
+        }
+    });
+});
+
+function showServiceModal(d) {
+    var modal = document.getElementById('serviceModal');
+    var title = document.getElementById('modalTitle');
+    var content = document.getElementById('modalContent');
+
+    title.textContent = d.label;
+    
+    var statusHtml = d.estado_monitoreo ? '<span class="text-emerald-400"><i class="fas fa-check-circle mr-1"></i>Activo</span>' : '<span class="text-red-400"><i class="fas fa-times-circle mr-1"></i>Inactivo</span>';
+    var monitoringHtml = d.monitorear ? '<span class="text-blue-400"><i class="fas fa-eye mr-1"></i>Monitoreado</span>' : '<span class="text-surface-400">Sin monitoreo</span>';
+
+    var html = '<div class="space-y-3">';
+    html += '<div class="flex items-center gap-4"><div>' + monitoringHtml + '</div><div>' + statusHtml + '</div></div>';
+    html += '<div class="grid grid-cols-2 gap-3 text-sm">';
+    html += '<div class="dark:text-surface-400 text-surface-500">Tipo</div><div class="dark:text-white text-surface-900 font-medium">' + d.tipo_display + '</div>';
+    if (d.ip) html += '<div class="dark:text-surface-400 text-surface-500">IP</div><div class="dark:text-white text-surface-900 font-mono">' + d.ip + '</div>';
+    if (d.vlan_id) html += '<div class="dark:text-surface-400 text-surface-500">VLAN</div><div class="dark:text-white text-surface-900 font-medium">' + d.vlan_id + '</div>';
+    if (d.dispositivo_tipo) html += '<div class="dark:text-surface-400 text-surface-500">Dispositivo</div><div class="dark:text-white text-surface-900 capitalize">' + d.fabricante + ' ' + d.modelo + '</div>';
+    if (d.num_puertos) html += '<div class="dark:text-surface-400 text-surface-500">Puertos</div><div class="dark:text-white text-surface-900">' + d.num_puertos + '</div>';
+    if (d.subredes || d.network) html += '<div class="dark:text-surface-400 text-surface-500">Red</div><div class="dark:text-white text-surface-900 text-xs">' + (d.network || d.subredes || '-') + '</div>';
+    html += '<div class="dark:text-surface-400 text-surface-500">Disp. Activos</div><div class="dark:text-white text-surface-900">' + d.active_devices + '</div>';
+    html += '<div class="dark:text-surface-400 text-surface-500">Nivel Red</div><div class="dark:text-white text-surface-900">Nivel ' + d.nivel_red + '</div>';
+    html += '<div class="dark:text-surface-400 text-surface-500">Ultima Actividad</div><div class="dark:text-white text-surface-900">' + d.ultima_actividad + '</div>';
+    if (d.edificio !== '-') html += '<div class="dark:text-surface-400 text-surface-500">Ubicacion</div><div class="dark:text-white text-surface-900">' + d.edificio + ' ' + (d.piso || '') + ' | ' + (d.rack || '') + ' U' + (d.posicion_rack || '') + '</div>';
+    html += '</div></div>';
+
+    content.innerHTML = html;
+    modal.classList.remove('hidden');
+}
+
+function closeServiceModal() {
+    document.getElementById('serviceModal').classList.add('hidden');
+}
+
+document.getElementById('serviceModal').addEventListener('click', function(e) {
+    if (e.target === this) closeServiceModal();
+});
+
+function toggleFullscreen() {
+    var container = document.getElementById('topology-container');
+    var btn = document.getElementById('fullscreen-btn');
+    var graph = document.getElementById('topologyGraph');
+
+    if (!document.fullscreenElement) {
+        container.requestFullscreen().then(function() {
+            btn.innerHTML = '<i class="fas fa-compress mr-1"></i>Salir';
+            graph.style.height = '100vh';
+            graph.style.minHeight = '100vh';
+            setTimeout(function() { network.redraw(); }, 100);
+        }).catch(function(err) {
+            console.error('Fullscreen error:', err);
+        });
+    } else {
+        document.exitFullscreen().then(function() {
+            btn.innerHTML = '<i class="fas fa-expand mr-1"></i>Fullscreen';
+            graph.style.height = '70vh';
+            graph.style.minHeight = '500px';
+            setTimeout(function() { network.redraw(); }, 100);
+        });
+    }
+}
+
+document.addEventListener('fullscreenchange', function() {
+    if (!document.fullscreenElement) {
+        var btn = document.getElementById('fullscreen-btn');
+        var graph = document.getElementById('topologyGraph');
+        btn.innerHTML = '<i class="fas fa-expand mr-1"></i>Fullscreen';
+        graph.style.height = '70vh';
+        graph.style.minHeight = '500px';
+        setTimeout(function() { network.redraw(); }, 100);
+    }
+});
+
+function loadRedPage(page) {
+    var tbody = document.getElementById('redes-tbody');
+    tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-6 text-center dark:text-surface-400 text-surface-500"><i class="fas fa-spinner fa-spin mr-2"></i>Cargando...</td></tr>';
+
+    fetch(window.location.pathname + '?red_page=' + page, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        var html = '';
+        data.redes.forEach(function(r) {
+            var tipoClass = 'bg-surface-100 text-surface-800 dark:bg-surface-700 dark:text-surface-300';
+            if (r.tipo === 'subred' || r.tipo === 'red') tipoClass = 'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300';
+            else if (r.tipo === 'vlan') tipoClass = 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300';
+            else if (r.tipo === 'segmento') tipoClass = 'bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-300';
+
+            var dhcpHtml = r.dhcp_activo ? '<span class="text-emerald-400"><i class="fas fa-check mr-1"></i>Si</span>' : '<span class="text-surface-400"><i class="fas fa-times mr-1"></i>No</span>';
+            var vlanHtml = r.vlan_id || '-';
+
+            html += '<tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors cursor-pointer" onclick="window.location.href=\'' + r.detail_url + '\'">';
+            html += '<td class="px-4 py-3 text-sm font-medium dark:text-white text-surface-900">' + r.nombre + '</td>';
+            html += '<td class="px-4 py-3 text-sm"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' + tipoClass + '">' + r.tipo_display + '</span></td>';
+            html += '<td class="px-4 py-3 text-sm font-mono dark:text-surface-200 text-surface-800">' + r.network + r.subnet_mask + '</td>';
+            html += '<td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">' + vlanHtml + '</td>';
+            html += '<td class="px-4 py-3 text-sm font-mono dark:text-surface-200 text-surface-800">' + r.gateway + '</td>';
+            html += '<td class="px-4 py-3 text-sm">' + dhcpHtml + '</td>';
+            html += '<td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">' + r.total_ips + '</td>';
+            html += '<td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">' + r.dispositivos_activos + '</td>';
+            html += '<td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-800">' + r.ultima_actividad + '</td>';
+            html += '</tr>';
+        });
+        tbody.innerHTML = html;
+
+        var pagDiv = document.getElementById('redes-pagination');
+        if (pagDiv) {
+            var infoHtml = 'Mostrando ' + data.start_index + '-' + data.end_index + ' de ' + data.total_count + ' redes';
+            var navHtml = '<nav class="flex items-center gap-1">';
+            if (data.has_previous) {
+                navHtml += '<button onclick="loadRedPage(' + data.previous_page + ')" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600"><i class="fas fa-chevron-left mr-1"></i>Anterior</button>';
+            }
+            for (var i = 1; i <= data.total_pages; i++) {
+                if (i === data.page) {
+                    navHtml += '<button class="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg">' + i + '</button>';
+                } else if (i > data.page - 3 && i < data.page + 3) {
+                    navHtml += '<button onclick="loadRedPage(' + i + ')" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600">' + i + '</button>';
+                }
+            }
+            if (data.has_next) {
+                navHtml += '<button onclick="loadRedPage(' + data.next_page + ')" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors dark:text-surface-300 text-surface-600">Siguiente<i class="fas fa-chevron-right ml-1"></i></button>';
+            }
+            navHtml += '</nav>';
+            pagDiv.innerHTML = '<div class="text-sm dark:text-surface-400 text-surface-500">' + infoHtml + '</div>' + navHtml;
+        }
+    })
+    .catch(function(err) {
+        tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-6 text-center text-red-400">Error: ' + err.message + '</td></tr>';
+    });
+}
+</script>
+{% endblock %}
