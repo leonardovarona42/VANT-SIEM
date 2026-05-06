@@ -43,7 +43,6 @@ class Migration(migrations.Migration):
             ],
             options={
                 'db_table': 'logs_sources',
-                'indexes': [models.Index(fields=['source_type', 'enabled'], name='logs_source_source_b21e46_idx'), models.Index(fields=['vendor'], name='logs_source_vendor_19e51a_idx'), models.Index(fields=['host_ip'], name='logs_source_host_ip_4d3c0a_idx')],
             },
         ),
         migrations.CreateModel(
