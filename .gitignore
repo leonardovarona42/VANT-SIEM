@@ -18,14 +18,43 @@ scripts/README_COLLECTOR_AGENT.md
 scripts/dist/*
 
 # Test and development files
-test_chat_fix.py
-populate_test_data.py
-setup_chat_verification.py
 test_*.py
 *_test.py
 
-# Agent (separate repo)
+# Seed, fix, check, link dev scripts
+seed_*.py
+check_*.py
+fix_*.py
+link_*.py
+simple_train.py
+train_ai_model.py
+verify_*.py
+auto_ai_service.py
+real_time_ingest.py
+evidencias/
+
+# AI Models (binary)
+ai_models/
+*.pkl
+*.joblib
+*.onnx
+*.bin
+
+# Windows installers / binaries
+*.exe
+*.msi
+*.dll
+*.sys
+
+# Agent installers (Windows/Linux)
+opensearch_agents/
 VANT-Agent/
+collector/
+
+# Agent package outputs
+package/
+dist/
+build/
 
 # Python
 __pycache__/
@@ -35,7 +64,6 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
