@@ -60,9 +60,9 @@ def agent_stats(request):
             .filter(registered_at__gte=now - timedelta(days=30))
             .annotate(day=TruncDate('registered_at'))
             .values('day')
-            .annotate(count=Count('id'))
-            .order_by('day')
-            .values_list('day', 'count')
+        .annotate(count=Count('agent_id'))
+        .order_by('day')
+        .values_list('day', 'count')
         ),
     }
     return Response(stats)

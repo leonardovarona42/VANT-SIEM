@@ -26,7 +26,7 @@ def inventory_dashboard(request):
         agents.filter(registered_at__gte=now - timedelta(days=30))
         .annotate(day=TruncDate('registered_at'))
         .values('day')
-        .annotate(count=Count('id'))
+        .annotate(count=Count('agent_id'))
         .order_by('day')
     )
 
