@@ -83,7 +83,7 @@
 </div>
 
 <!-- Topology Graph -->
-<div class="glass-card p-4 relative" id="topology-container">
+<div class="glass-card p-4 relative overflow-hidden" id="topology-container">
     <button onclick="toggleFullscreen()" id="fullscreen-btn" class="absolute top-4 right-4 z-10 px-3 py-1.5 text-xs font-medium dark:text-surface-300 text-surface-600 dark:bg-surface-800 bg-surface-100 border dark:border-surface-700 border-surface-300 rounded-lg hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors" title="Pantalla completa">
         <i class="fas fa-expand mr-1"></i>Fullscreen
     </button>
@@ -195,13 +195,6 @@ document.addEventListener('DOMContentLoaded', function() {
     var edgesData = {{ edges_json|safe }};
 
     var visNodes = nodesData.map(function(n) {
-        var icon = '\ud83d\udcbb';
-        if (n.tipo === 'vlan') icon = '\ud83c\udf10';
-        else if (n.tipo === 'segmento') icon = '\ud83d\udd17';
-        else if (n.tipo === 'dispositivo_red') icon = n.dispositivo_tipo === 'switch' ? '\ud83d\udd0c' : n.dispositivo_tipo === 'router' ? '\ud83d\udce1' : '\ud83d\udee1\ufe0f';
-        else if (n.tipo === 'cluster') icon = '\ud83d\udda5\ufe0f';
-        else if (n.tipo === 'servicio_externo') icon = '\u2601\ufe0f';
-
         var statusBorder = n.estado_monitoreo ? '#10b981' : '#ef4444';
         if (!n.monitorear) statusBorder = '#6b7280';
 
@@ -216,16 +209,15 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             font: {
                 color: '#ffffff',
-                size: 14,
-                face: 'system-ui, sans-serif',
+                size: 13,
+                face: 'system-ui, -apple-system, sans-serif',
                 bold: true,
-                strokeWidth: 3,
-                strokeColor: '#000000',
-                vadjust: -25
+                strokeWidth: 2,
+                strokeColor: '#000000'
             },
-            shape: n.tipo === 'dispositivo_red' ? 'diamond' : n.tipo === 'cluster' ? 'hexagon' : 'dot',
-            size: n.tipo === 'cluster' ? 35 : n.tipo === 'dispositivo_red' ? 30 : 25,
-            borderWidth: 3,
+            shape: n.tipo === 'dispositivo_red' || n.tipo === 'switch' || n.tipo === 'router' || n.tipo === 'firewall' ? 'diamond' : n.tipo === 'cluster' ? 'hexagon' : 'dot',
+            size: n.tipo === 'cluster' ? 30 : n.tipo === 'dispositivo_red' || n.tipo === 'switch' || n.tipo === 'router' || n.tipo === 'firewall' ? 25 : n.tipo === 'subred' || n.tipo === 'red' || n.tipo === 'segmento' || n.tipo === 'vlan' ? 35 : 20,
+            borderWidth: 2,
             data: n
         };
     });
@@ -241,7 +233,7 @@ document.addEventListener('DOMContentLoaded', function() {
             to: e.to,
             color: { color: color, opacity: 0.7 },
             width: e.ancho_banda === '10Gbps' ? 3 : e.ancho_banda === '1Gbps' ? 2 : 1,
-            smooth: { type: 'curvedCW', roundness: 0.15 },
+            smooth: { type: 'continuous', roundness: 0.15 },
             label: e.ancho_banda || '',
             font: { size: 10, color: '#9ca3af' },
             data: e
@@ -259,8 +251,23 @@ document.addEventListener('DOMContentLoaded', function() {
             stabilization: { iterations: 150 },
             barnesHut: { gravitationalConstant: -3000, springLength: 200, springConstant: 0.01 }
         },
-        interaction: { hover: true, tooltipDelay: 100, zoomView: true, dragView: true, dragNodes: true },
-        layout: { improvedLayout: true }
+        interaction: { hover: true, tooltipDelay: 100, zoomView: true, dragView: true, dragNodes: true, zoomSpeed: 0.3 },
+        layout: { improvedLayout: true },
+        nodes: {
+            scaling: {
+                min: 15,
+                max: 40,
+                label: { enabled: false }
+            },
+            font: { size: 13 },
+            borderWidth: 2,
+            shadow: { enabled: true, color: 'rgba(0,0,0,0.3)', size: 8, x: 0, y: 0 }
+        },
+        edges: {
+            scaling: { min: 1, max: 3 },
+            smooth: { type: 'continuous', roundness: 0.15 }
+        },
+        zoomView: true
     };
 
     var network = new vis.Network(container, data, options);
@@ -327,7 +334,7 @@ function toggleFullscreen() {
             btn.innerHTML = '<i class="fas fa-compress mr-1"></i>Salir';
             graph.style.height = '100vh';
             graph.style.minHeight = '100vh';
-            setTimeout(function() { network.redraw(); }, 100);
+            setTimeout(function() { network.fit({ animation: { duration: 300 } }); }, 200);
         }).catch(function(err) {
             console.error('Fullscreen error:', err);
         });
@@ -336,7 +343,7 @@ function toggleFullscreen() {
             btn.innerHTML = '<i class="fas fa-expand mr-1"></i>Fullscreen';
             graph.style.height = '70vh';
             graph.style.minHeight = '500px';
-            setTimeout(function() { network.redraw(); }, 100);
+            setTimeout(function() { network.fit({ animation: { duration: 300 } }); }, 200);
         });
     }
 }
@@ -348,7 +355,7 @@ document.addEventListener('fullscreenchange', function() {
         btn.innerHTML = '<i class="fas fa-expand mr-1"></i>Fullscreen';
         graph.style.height = '70vh';
         graph.style.minHeight = '500px';
-        setTimeout(function() { network.redraw(); }, 100);
+        setTimeout(function() { network.fit({ animation: { duration: 300 } }); }, 200);
     }
 });
 
