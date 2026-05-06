@@ -20,7 +20,7 @@ def inventory_dashboard(request):
 
     recent_agents = agents.order_by('-last_heartbeat')[:10]
     os_dist = dict(
-        agents.values('os_type').annotate(c=Count('id')).order_by('-c').values_list('os_type', 'c')
+        agents.values('os_type').annotate(c=Count('agent_id')).order_by('-c').values_list('os_type', 'c')
     )
     agents_by_day = list(
         agents.filter(registered_at__gte=now - timedelta(days=30))

@@ -53,7 +53,7 @@ def agent_stats(request):
         'error': Agent.objects.filter(status='error').count(),
         'disabled': Agent.objects.filter(status='disabled').count(),
         'os_distribution': dict(
-            Agent.objects.values('os_type').annotate(c=Count('id')).order_by('-c').values_list('os_type', 'c')
+            Agent.objects.values('os_type').annotate(c=Count('agent_id')).order_by('-c').values_list('os_type', 'c')
         ),
         'agents_by_day': dict(
             Agent.objects
