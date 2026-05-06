@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Count, Q
+from django.db.models.functions import TruncDate
 from django.utils import timezone
 from django.http import JsonResponse
 from datetime import timedelta
@@ -18,10 +19,12 @@ def inventory_dashboard(request):
     pending = agents.filter(status='pending').count()
 
     recent_agents = agents.order_by('-last_heartbeat')[:10]
-    os_dist = dict(agents.values_list('os_type').annotate(count=Count('os_type')).order_by('-count'))
+    os_dist = dict(
+        agents.values('os_type').annotate(c=Count('id')).order_by('-c').values_list('os_type', 'c')
+    )
     agents_by_day = list(
         agents.filter(registered_at__gte=now - timedelta(days=30))
-        .extra({'day': "DATE(registered_at)"})
+        .annotate(day=TruncDate('registered_at'))
         .values('day')
         .annotate(count=Count('id'))
         .order_by('day')

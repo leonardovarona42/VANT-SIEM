@@ -2,6 +2,7 @@ import json
 import logging
 from datetime import datetime, timedelta
 from django.db.models import Count, Q
+from django.db.models.functions import TruncDate
 from django.utils import timezone
 from django.http import JsonResponse
 from rest_framework import status, viewsets
@@ -52,15 +53,16 @@ def agent_stats(request):
         'error': Agent.objects.filter(status='error').count(),
         'disabled': Agent.objects.filter(status='disabled').count(),
         'os_distribution': dict(
-            Agent.objects.values_list('os_type').annotate(count=Count('os_type')).order_by('-count')
+            Agent.objects.values('os_type').annotate(c=Count('id')).order_by('-c').values_list('os_type', 'c')
         ),
         'agents_by_day': dict(
             Agent.objects
             .filter(registered_at__gte=now - timedelta(days=30))
-            .extra({'day': "DATE(registered_at)"})
+            .annotate(day=TruncDate('registered_at'))
             .values('day')
             .annotate(count=Count('id'))
             .order_by('day')
+            .values_list('day', 'count')
         ),
     }
     return Response(stats)
