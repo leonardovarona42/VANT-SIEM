@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'VANT_SIEM.apps.VantSiemConfig',
     'EVENT_M',
+    'OPENSEARCH_LOGS',
 ]
 
 MIDDLEWARE = [
@@ -84,17 +85,33 @@ WSGI_APPLICATION = 'CORE.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'vant_siem',
-        'USER': 'vantsiem',
-        'PASSWORD': 'vantsiem123',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.getenv('SIEM_DB_NAME', 'vant_siem'),
+        'USER': os.getenv('SIEM_DB_USER', 'vantsiem'),
+        'PASSWORD': os.getenv('SIEM_DB_PASSWORD', 'vantsiem123'),
+        'HOST': os.getenv('SIEM_DB_HOST', 'localhost'),
+        'PORT': os.getenv('SIEM_DB_PORT', '5432'),
+    },
+    'vant_logs': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('LOGS_DB_NAME', 'vant_logs'),
+        'USER': os.getenv('LOGS_DB_USER', 'vantsiem'),
+        'PASSWORD': os.getenv('LOGS_DB_PASSWORD', 'vantsiem123'),
+        'HOST': os.getenv('LOGS_DB_HOST', 'localhost'),
+        'PORT': os.getenv('LOGS_DB_PORT', '5432'),
     },
 }
 
 DATABASE_ROUTERS = [
-
+    'CORE.db_router.LogsRouter',
 ]
+
+# TimescaleDB: auto-create hypertables after migrations
+TIMESCALEDB = {
+    'enabled': os.getenv('TIMESCALEDB_ENABLED', 'False').lower() == 'true',
+    'hypertables': {
+        'logs_events_raw': {'time_column': 'event_time', 'chunk_interval': '7 days'},
+    },
+}
 
 
 
