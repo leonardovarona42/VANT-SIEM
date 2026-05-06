@@ -8,6 +8,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--host', default='0.0.0.0', help='Host to bind (default: 0.0.0.0)')
         parser.add_argument('--port', default=9201, type=int, help='Port to listen on (default: 9201)')
+        parser.add_argument('--noreload', action='store_true', help='Disable auto-reloader')
 
     def handle(self, *args, **options):
         host = options['host']
@@ -34,4 +35,4 @@ class Command(BaseCommand):
         self.stdout.write('  - generic_syslog (RFC 3164/5424)')
         self.stdout.write('')
 
-        call_command('runserver', f'{host}:{port}')
+        call_command('runserver', f'{host}:{port}', '--noreload')

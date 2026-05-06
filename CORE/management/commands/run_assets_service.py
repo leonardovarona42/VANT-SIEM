@@ -23,6 +23,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--host', default='0.0.0.0', help='Host to bind')
         parser.add_argument('--port', type=int, default=8002, help='Port for HTTP API')
+        parser.add_argument('--noreload', action='store_true', help='Disable auto-reloader')
 
     def handle(self, *args, **options):
         os.environ['VANT_SERVICE_NAME'] = 'assets-service'
