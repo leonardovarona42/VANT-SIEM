@@ -1,54 +1,67 @@
 # VANT-SIEM Microservices Architecture
 
-> Version: 2.1 | Última actualización: 2026-05-06
+> Version: 3.0 | Última actualización: 2026-05-06
 
 ## Servicios
 
 | Servicio | Puerto | Base de datos | Funcion | Escala |
 |----------|--------|---------------|---------|--------|
-| **Web Portal** | 8000 | `vant_siem` | UI, auth, dashboard, agregacion | 1 instancia |
+| **Web Portal** | 8000 | `vant_siem` | UI, auth, dashboard, incidentes, red, agregacion | 1 instancia |
 | **Logs** | 9201 | `vant_logs` | Ingesta de logs (Snort, Suricata, firewall, DHCP) | 2+ instancias |
-| **Incidents** | 8001 | `vant_incidents` | Gestion de incidentes, reportes, compliance | 1 instancia |
 | **Assets** | 8002 | `vant_assets` | Inventario, DLP policies, agentes | 1 instancia |
-| **Network** | 8004 | `vant_network` | IPAM, VLANs, subnets, topologia, Servicios | 1 instancia |
 | **Celery Worker** | - | - | Tareas async (notificaciones, limpieza) | Escala horizontal |
 | **Celery Beat** | - | - | Scheduler de tareas periodicas | 1 instancia |
+
+## Integracion con EVENT_M (puerto 8000)
+
+La app `EVENT_M` integrada en el Web Portal gestiona:
+
+- **Incidentes**: deteccion, workflow, reportes, compliance, medidas, involucrados
+- **Red/IPAM**: modelo `Servicio` unificado (hosts, switches, routers, firewalls, VLANs, subredes, topologia)
+- **Esquemas**: vista fisica y logica de topologia de red
+
+Esto elimina la necesidad de microservicios separados para incidentes y red.
 
 ## Arquitectura
 
 ```
-┌───────────────────────────────────────────────────────────────────┐
-│                        VANT-SIEM Platform                          │
-├───────────────────────────────────────────────────────────────────┤
-│                                                                    │
-│  ┌──────┐ ┌──────────┐ ┌──────┐ ┌────────┐ ┌──────┐ ┌───┐ ┌───┐  │
-│  │ WEB  │ │INCIDENTS │ │ LOGS │ │ ASSETS │ │NETWRK│ │Cel│ │Cel│  │
-│  │:8000 │ │ :8001    │ │:9201 │ │ :8002  │ │:8004 │ │   │ │   │  │
-│  │      │ │          │ │      │ │        │ │      │ │   │ │   │  │
-│  │UI    │ │Incident  │ │Log   │ │Invent. │ │IPAM  │ │Cel│ │Beat│ │
-│  │Auth  │ │Workflow  │ │Ingest│ │DLP     │ │VLANs │ │Wrk│ │   │  │
-│  │Dash  │ │Compliance│ │Snort │ │Agents  │ │Topol │ │   │ │   │  │
-│  └──┬───┘ └────┬─────┘ └──┬───┘ └───┬────┘ └──┬───┘ └─┬─┘ └─┬─┘ │
-│     │          │          │         │         │      │       │    │
-│     └──────────┼──────────┼─────────┼─────────┼──────┘       │    │
-│                │          │         │         │              │    │
-│         ┌──────▼──────────▼─────────▼─────────▼──────────────▼──┐ │
-│         │              Service Bus (Redis pub/sub)               │ │
-│         │   vant:log.alert | vant:asset.dlp | vant:incident.*  │ │
-│         └────────────────────────────────────────────────────────┘ │
-│                                                                     │
-│         ┌─────────────────────────────────────────────────────┐    │
-│         │              PostgreSQL (5 DBs aisladas)             │    │
-│         │                                                      │    │
-│         │ vant_siem │ vant_logs │ vant_incidents │ vant_assets │   │
-│         │ (users)   │ (snort)   │ (incidents)    │ (devices)   │   │
-│         │ (auth)    │ (suricata)│ (reports)      │ (dlp pol)   │   │
-│         │ (config)  │ (firewall)│ (workflow)     │ (inventory) │   │
-│         │                                                      │    │
-│         │ vant_network                                          │   │
-│         │ (servicios) │ (VLANs)  │ (IPAM) │ (topologia)        │    │
-│         └─────────────────────────────────────────────────────┘    │
-└───────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────┐
+│                      VANT-SIEM Platform                    │
+├───────────────────────────────────────────────────────────┤
+│                                                            │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │              Web Portal (:8000)                       │  │
+│  │  ┌──────┐  ┌──────────┐  ┌────────────────────────┐  │  │
+│  │  │ Auth │  │Dashboard │  │   EVENT_M App          │  │  │
+│  │  │ UI   │  │Stats     │  │ - Incidentes/Workflow  │  │  │
+│  │  │      │  │Aggregator│  │ - IPAM/VLANs/Subnets   │  │  │
+│  │  │      │  │          │  │ - Topologia/Schemas    │  │  │
+│  │  └──────┘  └──────────┘  └────────────────────────┘  │  │
+│  └───────────────────────┬────────────────────────────────┘  │
+│                          │                                    │
+│           ┌──────────────┼──────────────┐                    │
+│           │              │              │                    │
+│    ┌──────▼──────┐ ┌────▼─────┐        │                    │
+│    │ Logs (:9201)│ │Assets    │        │                    │
+│    │ Ingesta     │ │(:8002)   │        │                    │
+│    │ Snort/Suri  │ │Invent/DLP│        │                    │
+│    └──────┬──────┘ └────┬─────┘        │                    │
+│           │              │              │                    │
+│     ┌─────▼──────────────▼──────────────▼──┐               │
+│     │        Service Bus (Redis pub/sub)    │               │
+│     │ vant:log.alert | vant:asset.dlp      │               │
+│     └───────────────────────────────────────┘               │
+│                                                              │
+│     ┌───────────────────────────────────────────┐           │
+│     │       PostgreSQL (3 DBs aisladas)          │           │
+│     │                                            │           │
+│     │ vant_siem │ vant_logs │ vant_assets        │           │
+│     │ (users)   │ (snort)   │ (devices)          │           │
+│     │ (auth)    │ (suricata)│ (dlp pol)          │           │
+│     │ (config)  │ (firewall)│ (inventory)        │           │
+│     │ (EVENT_M) │ (logs)    │                    │           │
+│     └───────────────────────────────────────────┘           │
+└───────────────────────────────────────────────────────────┘
 
     VANT-Agent (repo separado)
     ┌────────────────────────────────────────────────────┐
@@ -63,11 +76,9 @@
 
 | BD | Contenido | Backup | Riesgo si se pierde |
 |----|-----------|--------|-------------------|
-| `vant_siem` | Usuarios, auth, config UI, logs del sistema | Diario | Se pierden credenciales |
+| `vant_siem` | Usuarios, auth, config UI, EVENT_M (incidentes, red), logs del sistema | Diario | Se pierden credenciales + incidentes |
 | `vant_logs` | Snort, Suricata, firewall, DHCP logs | Semanal | Alto volumen, aceptable |
-| `vant_incidents` | Incidentes, reportes, medidas, involucrados | Diario + incremental | **CRITICO** |
 | `vant_assets` | Dispositivos, inventario, DLP policies | Diario | Se recupera re-sync |
-| `vant_network` | Servicios, VLANs, subnets, topologia, IPs | Diario | Moderado - planificar |
 
 ## Escenarios de fallo
 
@@ -76,10 +87,10 @@
 | Logs saturados (50GB/dia) | **Tumba toda la app** | Solo Logs Service degrada |
 | BD de logs corrupta | **Pierdes todo** | Solo pierdes logs |
 | AI en entrenamiento (RAM alta) | **Bloquea toda la app** | Solo AI Service lento |
-| Network service cae | No puedes gestionar IPAM | Solo network unavailable |
+| EVENT_M cae | No hay incidentes ni red | Web Portal degradado |
 | Escalar logs | Escalas todo | Solo logs-service: 2→5 |
 
-## Network Service - Modelo Unificado
+## EVENT_M - Modelo de Red Unificado
 
 El modelo `Servicio` unifica todas las entidades de red en un solo modelo con campo `tipo`:
 
@@ -135,13 +146,13 @@ Servicio.tipo:
 ## Standalone (sin Docker)
 
 ```bash
-# Terminal 1: Web Portal
+# Web Portal (auto-spawnea Logs + Assets como subprocess)
 python manage.py runserver 0.0.0.0:8000
 
-# Terminal 2: Celery Worker
+# Celery Worker
 celery -A CORE worker --loglevel=info
 
-# Terminal 3: Celery Beat
+# Celery Beat
 celery -A CORE beat --loglevel=info
 ```
 
@@ -167,8 +178,7 @@ Logs Service (detecta alerta critical)
     ▼
 Service Bus (Redis: vant:log.alert)
     │
-    ├── Incidents Service → crea Incidente
-    └── AI Service → analiza patron
+    └── Web Portal (EVENT_M) → crea Incidente + notificacion
 
 Assets Service (detecta DLP)
     │
@@ -177,9 +187,9 @@ Assets Service (detecta DLP)
     ▼
 Service Bus (Redis: vant:asset.dlp)
     │
-    └── Incidents Service → crea Incidente + Reporte
+    └── Web Portal (EVENT_M) → crea Incidente + Reporte
 
-Network Service (detecta cambio en red)
+Web Portal/EVENT_M (detecta cambio en red)
     │
     ├── publish("network.change", {service_id, change_type})
     │
@@ -188,6 +198,17 @@ Service Bus (Redis: vant:network.change)
     │
     └── Assets Service → actualiza inventario
 ```
+
+## Auto-start de microservicios
+
+`CORE/management/commands/runserver.py` spawnea automaticamente:
+
+| Servicio | Puerto | Comando |
+|----------|--------|---------|
+| Logs Service | 9201 | `run_logs_service` |
+| Assets Service | 8002 | `run_assets_service` |
+
+El Web Portal (8000) incluye EVENT_M que gestiona incidentes y red internamente.
 
 ## Variables de entorno
 
@@ -199,8 +220,6 @@ Ver `.env.example` para referencia completa.
 | `MICROSERVICE_MODE` | `standalone` | `standalone` \| `docker` |
 | `SERVICE_BUS_URL` | `redis://localhost:6379/10` | Redis pub/sub |
 | `LOGS_SERVICE_URL` | `http://localhost:9201` | Servicio de logs |
-| `INCIDENTS_SERVICE_URL` | `http://localhost:8001` | Servicio de incidentes |
 | `ASSETS_SERVICE_URL` | `http://localhost:8002` | Servicio de assets |
-| `NETWORK_SERVICE_URL` | `http://localhost:8004` | Servicio de red |
 | `CELERY_BROKER_URL` | `redis://localhost:6379/0` | Celery broker |
 | `CELERY_RESULT_BACKEND` | `redis://localhost:6379/1` | Celery backend |

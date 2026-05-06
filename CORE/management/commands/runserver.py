@@ -1,7 +1,7 @@
 """
 Override Django's runserver to auto-start all available microservices.
 Spawns each service as a subprocess on its designated port.
-Services: Web Portal (8000), Incidents (8001), Assets (8002), Logs (9201), Network (8004)
+Services: Web Portal (8000), Incidents (8001), Assets (8002), Logs (9201)
 """
 import os
 import sys
@@ -13,10 +13,8 @@ from django.conf import settings
 from django.core.management.commands.runserver import Command as RunserverCommand
 
 SERVICES = [
-    {'name': 'Incidents Service', 'command': 'run_incidents_service', 'port': 8001, 'enabled': True},
     {'name': 'Assets Service', 'command': 'run_assets_service', 'port': 8002, 'enabled': True},
     {'name': 'Logs Service', 'command': 'run_logs_service', 'port': 9201, 'enabled': True},
-    {'name': 'Network Service', 'command': 'run_network_service', 'port': 8004, 'enabled': True},
 ]
 
 
