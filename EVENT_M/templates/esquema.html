@@ -69,8 +69,6 @@
             <span class="w-4 h-4 rounded-full" style="background: #ec4899"></span>
             <span class="text-xs dark:text-surface-300 text-surface-600">Subred/Red</span>
         </div>
-    </div>
-</div>
         <div class="flex items-center gap-2">
             <span class="w-4 h-4 rounded-full" style="background: #10b981"></span>
             <span class="text-xs dark:text-surface-300 text-surface-600">Cluster</span>
@@ -117,7 +115,7 @@
                 </tr>
             </thead>
             <tbody id="redes-tbody" class="dark:divide-surface-800 divide-surface-200">
-                {% for r in redes_json|default:'[]' %}
+                {% for r in redes_page %}
                 <tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors cursor-pointer" onclick="window.location.href='{{ r.detail_url }}'">
                     <td class="px-4 py-3 text-sm font-medium dark:text-white text-surface-900">{{ r.nombre }}</td>
                     <td class="px-4 py-3 text-sm">
