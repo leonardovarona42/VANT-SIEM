@@ -95,8 +95,20 @@ class Command(RunserverCommand):
             )
             self.processes.append({'name': svc['name'], 'port': port, 'process': proc})
             self.stdout.write(self.style.SUCCESS(f' OK (PID: {proc.pid})'))
+
+            thread = threading.Thread(target=self._stream_output, args=(proc, svc['name']), daemon=True)
+            thread.start()
         except Exception as e:
             self.stdout.write(self.style.ERROR(f' FAILED: {e}'))
+
+    def _stream_output(self, proc, name):
+        try:
+            for line in iter(proc.stdout.readline, b''):
+                decoded = line.decode('utf-8', errors='replace').rstrip()
+                if decoded:
+                    self.stdout.write(self.style.WARNING(f'    [{name}] {decoded}'))
+        except Exception:
+            pass
 
     def _handle_shutdown(self, signum, frame):
         self.stdout.write('')

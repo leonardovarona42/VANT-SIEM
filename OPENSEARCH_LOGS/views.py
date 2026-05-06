@@ -22,13 +22,16 @@ logger = logging.getLogger(__name__)
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def health_check(request):
-    count = LogEvent.objects.filter(event_time__gte=timezone.now() - timedelta(hours=24)).count()
-    sources_active = LogSource.objects.filter(enabled=True).count()
+    try:
+        from django.db import connection
+        connection.ensure_connection()
+        db_ok = True
+    except Exception:
+        db_ok = False
     return Response({
-        'status': 'healthy',
+        'status': 'healthy' if db_ok else 'degraded',
         'service': 'opensearch_logs',
-        'events_24h': count,
-        'active_sources': sources_active,
+        'database': 'connected' if db_ok else 'disconnected',
         'timestamp': timezone.now().isoformat(),
     })
 
