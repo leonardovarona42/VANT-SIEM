@@ -265,11 +265,39 @@
  <a href="{% url 'medidaincidente-list' %}" class="nav-link">
  <i class="fas fa-check-double w-4"></i>Medidas Aplicadas
  </a>
- </div>
- </div>
- </div>
+  </div>
+  </div>
+  </div>
 
- <!-- Configuracion Dropdown -->
+  <!-- OpenSearch Logs Dropdown -->
+  <div class="relative group">
+  <button class="nav-link">
+  <i class="fas fa-stream text-purple-400"></i>
+  <span>Logs</span>
+  <i class="fas fa-chevron-down text-xs ml-1 opacity-50"></i>
+  </button>
+  <div class="absolute left-0 mt-2 w-72 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+  <div class="glass-card p-2 space-y-1 max-h-[calc(100vh-6rem)] overflow-y-auto scrollbar-thin">
+  <div class="px-3 py-2 text-xs font-semibold dark:text-accent-400 text-brand-600 uppercase tracking-wider">OpenSearch Logs</div>
+  <a href="{% url 'logs-dashboard' %}" class="nav-link">
+  <i class="fas fa-chart-line w-4"></i>Dashboard
+  </a>
+  <a href="{% url 'logs-list' %}" class="nav-link">
+  <i class="fas fa-list w-4"></i>Todos los Eventos
+  </a>
+  <div class="border-t dark:border-surface-800 border-surface-200 my-1"></div>
+  <div class="px-3 py-2 text-xs font-semibold dark:text-accent-400 text-brand-600 uppercase tracking-wider">Administracion</div>
+  <a href="{% url 'logs-sources' %}" class="nav-link">
+  <i class="fas fa-server w-4"></i>Fuentes de Logs
+  </a>
+  <a href="{% url 'logs-retention' %}" class="nav-link">
+  <i class="fas fa-clock-rotate-left w-4"></i>Politicas de Retencion
+  </a>
+  </div>
+  </div>
+  </div>
+
+  <!-- Configuracion Dropdown -->
  <div class="relative group">
  <button class="nav-link">
  <i class="fas fa-cog text-surface-400"></i>

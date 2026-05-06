@@ -1,0 +1,31 @@
+{% extends "dashboard.html" %}
+{% block title %}Confirmar Eliminacion | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="mb-6">
+    <h2 class="text-2xl font-bold dark:text-white text-surface-900">
+        <i class="fas fa-exclamation-triangle mr-2 text-red-400"></i>Confirmar Eliminacion
+    </h2>
+</div>
+
+<div class="glass-card p-6 max-w-lg">
+    <div class="flex items-center gap-4 mb-4">
+        <div class="w-12 h-12 rounded-lg bg-red-500/10 flex items-center justify-center">
+            <i class="fas fa-trash text-red-400 text-xl"></i>
+        </div>
+        <div>
+            <p class="text-sm dark:text-white text-surface-900">Eliminar fuente <strong>{{ source.source_id }}</strong></p>
+            <p class="text-xs dark:text-surface-400 text-surface-500">{{ source.events.count }} eventos asociados seran desvinculados</p>
+        </div>
+    </div>
+    <div class="p-3 dark:bg-red-500/10 bg-red-50 rounded-lg mb-6">
+        <p class="text-sm text-red-400"><i class="fas fa-exclamation-circle mr-2"></i>Esta accion no se puede deshacer. Los eventos permanecen pero sin referencia a esta fuente.</p>
+    </div>
+    <div class="flex gap-3 justify-end">
+        <a href="{% url 'logs-sources' %}" class="px-4 py-2 text-sm font-medium dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">Cancelar</a>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg">Eliminar</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

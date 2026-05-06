@@ -1,0 +1,78 @@
+{% extends "dashboard.html" %}
+{% block title %}Politicas de Retencion | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="mb-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-2xl font-bold dark:text-white text-surface-900">
+                <i class="fas fa-clock-rotate-left mr-2 text-purple-400"></i>Politicas de Retencion
+            </h2>
+            <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Configuracion automatica de eliminacion de logs antiguos</p>
+        </div>
+        <form method="post" action="{% url 'logs-cleanup' %}">
+            {% csrf_token %}
+            <button type="submit" class="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                <i class="fas fa-broom mr-1"></i>Ejecutar Limpieza Ahora
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="glass-card overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full divide-y dark:divide-surface-800 divide-surface-200">
+            <thead class="dark:bg-surface-800 bg-surface-100">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Tipo de Fuente</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Retencion (dias)</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Auto-Eliminar</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Ultima Limpieza</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Accion</th>
+                </tr>
+            </thead>
+            <tbody class="dark:divide-surface-800 divide-surface-200">
+                {% for policy in policies %}
+                <tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors">
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="policy_id" value="{{ policy.id }}">
+                        <td class="px-4 py-3 text-sm dark:text-white text-surface-900 capitalize">{{ policy.source_type }}</td>
+                        <td class="px-4 py-3">
+                            <input type="number" name="retention_days" value="{{ policy.retention_days }}" min="1" max="3650"
+                                class="w-20 px-2 py-1 text-sm bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 rounded dark:text-white text-surface-900 focus:ring-2 focus:ring-blue-500 outline-none">
+                        </td>
+                        <td class="px-4 py-3">
+                            <input type="checkbox" name="auto_delete" {% if policy.auto_delete %}checked{% endif %}
+                                class="w-4 h-4 text-blue-600 border-surface-300 rounded focus:ring-blue-500">
+                        </td>
+                        <td class="px-4 py-3 text-sm dark:text-surface-400 text-surface-500">
+                            {% if policy.last_cleanup_at %}{{ policy.last_cleanup_at|date:"d/m/Y H:i" }}{% else %}Nunca{% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            <button type="submit" class="px-3 py-1 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition-colors">Guardar</button>
+                        </td>
+                    </form>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-4 py-8 text-center text-sm dark:text-surface-500 text-surface-400">
+                        No hay politicas configuradas
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="glass-card p-6 mt-6">
+    <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-3">
+        <i class="fas fa-info-circle mr-2 text-blue-400"></i>Informacion
+    </h3>
+    <div class="space-y-2 text-sm dark:text-surface-400 text-surface-500">
+        <p><strong class="dark:text-surface-300 text-surface-600">Auto-Eliminar:</strong> Cuando esta activo, el sistema elimina automaticamente logs mas viejos que el periodo de retencion configurado. La limpieza se ejecuta via Celery (tarea programada).</p>
+        <p><strong class="dark:text-surface-300 text-surface-600">Ejecutar Limpieza Ahora:</strong> Dispara la tarea de limpieza inmediata para todas las politicas activas. Los logs viejos se eliminan de la base de datos.</p>
+        <p><strong class="dark:text-surface-300 text-surface-600">TimescaleDB:</strong> Si tienes TimescaleDB instalado, los logs se particionan automaticamente por semana. La eliminacion de particiones es mucho mas rapida que DELETE individual.</p>
+    </div>
+</div>
+{% endblock %}

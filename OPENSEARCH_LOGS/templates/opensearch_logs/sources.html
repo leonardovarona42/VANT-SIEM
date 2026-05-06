@@ -1,0 +1,88 @@
+{% extends "dashboard.html" %}
+{% block title %}Fuentes de Logs | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="mb-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-2xl font-bold dark:text-white text-surface-900">
+                <i class="fas fa-server mr-2 text-purple-400"></i>Fuentes de Logs
+            </h2>
+            <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ sources|length }} fuentes registradas</p>
+        </div>
+        <a href="{% url 'logs-source-create' %}" class="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+            <i class="fas fa-plus mr-1"></i>Nueva Fuente
+        </a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for source in sources %}
+    <div class="glass-card p-5 {% if not source.enabled %}opacity-50{% endif %}">
+        <div class="flex items-start justify-between mb-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg dark:bg-surface-800 bg-surface-100 flex items-center justify-center">
+                    <i class="fas {% if source.source_type == 'firewall_huawei' %}fa-shield-alt text-red-400
+                        {% elif source.source_type == 'snort' or source.source_type == 'suricata' %}fa-bug text-amber-400
+                        {% elif source.source_type == 'windows_ad' %}fa-users text-blue-400
+                        {% elif source.source_type == 'windows_dhcp' %}fa-network-wired text-green-400
+                        {% elif source.source_type == 'windows_dns' %}fa-globe text-purple-400
+                        {% elif source.source_type == 'samba' %}fa-folder text-cyan-400
+                        {% else %}fa-server text-surface-400{% endif %}"></i>
+                </div>
+                <div>
+                    <div class="text-sm font-medium dark:text-white text-surface-900">{{ source.source_id }}</div>
+                    <div class="text-xs dark:text-surface-400 text-surface-500 capitalize">{{ source.source_type }}</div>
+                </div>
+            </div>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                {% if source.enabled %}bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300
+                {% else %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300{% endif %}">
+                {% if source.enabled %}Activa{% else %}Inactiva{% endif %}
+            </span>
+        </div>
+        <div class="space-y-2 text-xs mb-4">
+            {% if source.vendor %}
+            <div class="flex justify-between"><span class="dark:text-surface-500 text-surface-400">Vendor</span><span class="dark:text-surface-300 text-surface-600">{{ source.vendor }}</span></div>
+            {% endif %}
+            {% if source.model %}
+            <div class="flex justify-between"><span class="dark:text-surface-500 text-surface-400">Model</span><span class="dark:text-surface-300 text-surface-600">{{ source.model }}</span></div>
+            {% endif %}
+            {% if source.host_ip %}
+            <div class="flex justify-between"><span class="dark:text-surface-500 text-surface-400">IP</span><span class="dark:text-surface-300 text-surface-600 font-mono">{{ source.host_ip }}</span></div>
+            {% endif %}
+            <div class="flex justify-between"><span class="dark:text-surface-500 text-surface-400">Protocolo</span><span class="dark:text-surface-300 text-surface-600 capitalize">{{ source.protocol }}</span></div>
+            {% if source.port %}
+            <div class="flex justify-between"><span class="dark:text-surface-500 text-surface-400">Puerto</span><span class="dark:text-surface-300 text-surface-600">{{ source.port }}</span></div>
+            {% endif %}
+            <div class="flex justify-between"><span class="dark:text-surface-500 text-surface-400">Eventos</span><span class="dark:text-surface-300 text-surface-600">{{ source.events.count }}</span></div>
+            {% if source.last_seen_at %}
+            <div class="flex justify-between"><span class="dark:text-surface-500 text-surface-400">Ultima vez</span><span class="dark:text-surface-300 text-surface-600">{{ source.last_seen_at|date:"d/m H:i" }}</span></div>
+            {% endif %}
+        </div>
+        <div class="flex gap-2 pt-3 border-t dark:border-surface-800 border-surface-200">
+            <form method="post" class="flex-1">
+                {% csrf_token %}
+                <input type="hidden" name="source_id" value="{{ source.source_id }}">
+                <button type="submit" class="w-full px-3 py-1.5 text-xs font-medium {% if source.enabled %}text-red-400 hover:bg-red-400/10{% else %}text-emerald-400 hover:bg-emerald-400/10{% endif %} rounded-lg transition-colors">
+                    {% if source.enabled %}<i class="fas fa-pause mr-1"></i>Deshabilitar{% else %}<i class="fas fa-play mr-1"></i>Habilitar{% endif %}
+                </button>
+            </form>
+            <a href="{% url 'logs-source-edit' source.source_id %}" class="px-3 py-1.5 text-xs font-medium dark:text-surface-300 text-surface-600 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg transition-colors">
+                <i class="fas fa-edit"></i>
+            </a>
+            <a href="{% url 'logs-source-delete' source.source_id %}" class="px-3 py-1.5 text-xs font-medium text-red-400 hover:bg-red-400/10 rounded-lg transition-colors">
+                <i class="fas fa-trash"></i>
+            </a>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-span-full text-center py-12">
+        <i class="fas fa-server text-4xl dark:text-surface-600 text-surface-400 mb-3 block"></i>
+        <p class="dark:text-surface-400 text-surface-500 mb-4">No hay fuentes configuradas</p>
+        <a href="{% url 'logs-source-create' %}" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+            <i class="fas fa-plus mr-1"></i>Crear Primera Fuente
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

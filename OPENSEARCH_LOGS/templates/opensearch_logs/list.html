@@ -1,0 +1,179 @@
+{% extends "dashboard.html" %}
+{% block title %}Eventos de Log | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="mb-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h2 class="text-2xl font-bold dark:text-white text-surface-900">
+                <i class="fas fa-list mr-2 text-purple-400"></i>Eventos de Log
+            </h2>
+            <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total_filtered }} eventos encontrados</p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="document.getElementById('deleteModal').classList.remove('hidden')" class="px-3 py-1.5 text-sm font-medium text-red-400 border border-red-400/30 rounded-lg hover:bg-red-400/10 transition-colors">
+                <i class="fas fa-trash mr-1"></i>Eliminar Viejos
+            </button>
+            <a href="{% url 'logs-dashboard' %}" class="px-3 py-1.5 text-sm font-medium dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
+                <i class="fas fa-chart-line mr-1"></i>Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="glass-card p-4 mb-6">
+    <form method="get" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-3">
+        <input type="text" name="q" value="{{ filters.search }}" placeholder="Buscar..." class="px-3 py-2 text-sm bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 rounded-lg dark:text-white text-surface-900 focus:ring-2 focus:ring-blue-500 outline-none">
+        <select name="source_type" class="px-3 py-2 text-sm bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 rounded-lg dark:text-white text-surface-900 focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="">Todos los tipos</option>
+            {% for st in source_types %}
+            <option value="{{ st }}" {% if filters.source_type == st %}selected{% endif %}>{{ st }}</option>
+            {% endfor %}
+        </select>
+        <select name="severity" class="px-3 py-2 text-sm bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 rounded-lg dark:text-white text-surface-900 focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="">Todas severidades</option>
+            {% for sev in severities %}
+            <option value="{{ sev }}" {% if filters.severity == sev %}selected{% endif %}>{{ sev }}</option>
+            {% endfor %}
+        </select>
+        <select name="category" class="px-3 py-2 text-sm bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 rounded-lg dark:text-white text-surface-900 focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="">Todas categorias</option>
+            {% for cat in categories %}
+            <option value="{{ cat }}" {% if filters.category == cat %}selected{% endif %}>{{ cat }}</option>
+            {% endfor %}
+        </select>
+        <input type="text" name="host_ip" value="{{ filters.host_ip }}" placeholder="IP del host" class="px-3 py-2 text-sm bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 rounded-lg dark:text-white text-surface-900 focus:ring-2 focus:ring-blue-500 outline-none">
+        <select name="hours" class="px-3 py-2 text-sm bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 rounded-lg dark:text-white text-surface-900 focus:ring-2 focus:ring-blue-500 outline-none">
+            <option value="1" {% if filters.hours == '1' %}selected{% endif %}>Ultima hora</option>
+            <option value="6" {% if filters.hours == '6' %}selected{% endif %}>Ultimas 6h</option>
+            <option value="24" {% if filters.hours == '24' %}selected{% endif %}>Ultimas 24h</option>
+            <option value="168" {% if filters.hours == '168' %}selected{% endif %}>Ultima semana</option>
+            <option value="720" {% if filters.hours == '720' %}selected{% endif %}>Ultimo mes</option>
+            <option value="" {% if not filters.hours %}selected{% endif %}>Todo</option>
+        </select>
+        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+            <i class="fas fa-search mr-1"></i>Filtrar
+        </button>
+    </form>
+</div>
+
+<!-- Events Table -->
+<div class="glass-card overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full divide-y dark:divide-surface-800 divide-surface-200">
+            <thead class="dark:bg-surface-800 bg-surface-100">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Hora</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Severidad</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Tipo</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Categoria</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Host</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Mensaje</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Tags</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase"></th>
+                </tr>
+            </thead>
+            <tbody class="dark:divide-surface-800 divide-surface-200">
+                {% for event in page_obj %}
+                <tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors cursor-pointer" onclick="window.location.href='{% url 'log-detail' event.pk %}'">
+                    <td class="px-4 py-2.5 text-xs dark:text-surface-300 text-surface-600 whitespace-nowrap">{{ event.event_time|date:"d/m/Y H:i:s" }}</td>
+                    <td class="px-4 py-2.5">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                            {% if event.severity == 'critical' %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300
+                            {% elif event.severity == 'high' %}bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300
+                            {% elif event.severity == 'medium' %}bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300
+                            {% elif event.severity == 'low' %}bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300
+                            {% elif event.severity == 'debug' %}bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300
+                            {% else %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300{% endif %}">
+                            {{ event.severity }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-2.5 text-xs dark:text-surface-300 text-surface-600 capitalize">{{ event.source_type }}</td>
+                    <td class="px-4 py-2.5 text-xs dark:text-surface-300 text-surface-600 capitalize">{{ event.event_category }}</td>
+                    <td class="px-4 py-2.5 text-xs font-mono dark:text-surface-300 text-surface-600">{{ event.host_ip|default:"-" }}</td>
+                    <td class="px-4 py-2.5 text-xs dark:text-surface-300 text-surface-600 truncate max-w-md">{{ event.message|truncatechars:100 }}</td>
+                    <td class="px-4 py-2.5">
+                        <div class="flex flex-wrap gap-1">
+                            {% for tag in event.tags|slice:":3" %}
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] bg-surface-100 dark:bg-surface-700 dark:text-surface-300 text-surface-600">{{ tag }}</span>
+                            {% endfor %}
+                            {% if event.tags|length > 3 %}
+                            <span class="text-[10px] dark:text-surface-500 text-surface-400">+{{ event.tags|length|add:"-3" }}</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="px-4 py-2.5">
+                        <a href="{% url 'log-detail' event.pk %}" class="text-blue-400 hover:text-blue-300 text-xs">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="px-4 py-12 text-center">
+                        <i class="fas fa-search text-3xl dark:text-surface-600 text-surface-400 mb-3 block"></i>
+                        <p class="dark:text-surface-400 text-surface-500 text-sm">No hay eventos con estos filtros</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="px-4 py-3 flex items-center justify-between border-t dark:border-surface-800 border-surface-200">
+        <span class="text-xs dark:text-surface-400 text-surface-500">
+            Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ page_obj.paginator.count }}
+        </span>
+        <nav class="flex items-center gap-1">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% if filters.source_type %}&source_type={{ filters.source_type }}{% endif %}{% if filters.severity %}&severity={{ filters.severity }}{% endif %}{% if filters.host_ip %}&host_ip={{ filters.host_ip }}{% endif %}{% if filters.category %}&category={{ filters.category }}{% endif %}{% if filters.search %}&q={{ filters.search }}{% endif %}{% if filters.hours %}&hours={{ filters.hours }}{% endif %}" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg dark:text-surface-300 text-surface-600">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if num == page_obj.number %}
+                <span class="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg">{{ num }}</span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}{% if filters.source_type %}&source_type={{ filters.source_type }}{% endif %}{% if filters.severity %}&severity={{ filters.severity }}{% endif %}{% if filters.host_ip %}&host_ip={{ filters.host_ip }}{% endif %}{% if filters.category %}&category={{ filters.category }}{% endif %}{% if filters.search %}&q={{ filters.search }}{% endif %}{% if filters.hours %}&hours={{ filters.hours }}{% endif %}" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg dark:text-surface-300 text-surface-600">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% if filters.source_type %}&source_type={{ filters.source_type }}{% endif %}{% if filters.severity %}&severity={{ filters.severity }}{% endif %}{% if filters.host_ip %}&host_ip={{ filters.host_ip }}{% endif %}{% if filters.category %}&category={{ filters.category }}{% endif %}{% if filters.search %}&q={{ filters.search }}{% endif %}{% if filters.hours %}&hours={{ filters.hours }}{% endif %}" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 hover:bg-surface-100 dark:hover:bg-surface-700 rounded-lg dark:text-surface-300 text-surface-600">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Delete Old Logs Modal -->
+<div id="deleteModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="w-full max-w-md dark:bg-surface-900 bg-white rounded-2xl shadow-2xl border dark:border-surface-700 border-surface-200 p-6">
+        <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">
+            <i class="fas fa-trash text-red-400 mr-2"></i>Eliminar Logs Viejos
+        </h3>
+        <form method="post" action="{% url 'logs-delete-filter' %}" class="space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="block text-sm dark:text-surface-400 text-surface-500 mb-1">Eliminar logs mas viejos de (dias)</label>
+                <input type="number" name="days" min="1" value="90" class="w-full px-3 py-2 text-sm bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 rounded-lg dark:text-white text-surface-900 focus:ring-2 focus:ring-red-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm dark:text-surface-400 text-surface-500 mb-1">Tipo de fuente (opcional)</label>
+                <select name="source_type" class="w-full px-3 py-2 text-sm bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 rounded-lg dark:text-white text-surface-900 outline-none">
+                    <option value="">Todos</option>
+                    {% for st in source_types %}
+                    <option value="{{ st }}">{{ st }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex gap-3 justify-end">
+                <button type="button" onclick="document.getElementById('deleteModal').classList.add('hidden')" class="px-4 py-2 text-sm font-medium dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800">Cancelar</button>
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg">Eliminar</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

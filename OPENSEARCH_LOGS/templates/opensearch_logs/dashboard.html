@@ -1,0 +1,209 @@
+{% extends "dashboard.html" %}
+{% load logs_extras %}
+{% block title %}Dashboard de Logs | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="mb-6">
+    <h2 class="text-2xl font-bold dark:text-white text-surface-900">
+        <i class="fas fa-stream mr-2 text-purple-400"></i>Dashboard de Logs
+    </h2>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Monitoreo centralizado de eventos de seguridad</p>
+</div>
+
+<!-- Stats Grid -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="glass-card p-4 text-center">
+        <div class="text-sm dark:text-surface-400 text-surface-500">Total Logs</div>
+        <div class="text-3xl font-bold text-blue-400">{{ total_events|default:0 }}</div>
+    </div>
+    <div class="glass-card p-4 text-center">
+        <div class="text-sm dark:text-surface-400 text-surface-500">Ultimas 24h</div>
+        <div class="text-3xl font-bold text-emerald-400">{{ events_24h|default:0 }}</div>
+    </div>
+    <div class="glass-card p-4 text-center">
+        <div class="text-sm dark:text-surface-400 text-surface-500">Criticos 24h</div>
+        <div class="text-3xl font-bold text-red-400">{{ critical_24h|default:0 }}</div>
+    </div>
+    <div class="glass-card p-4 text-center">
+        <div class="text-sm dark:text-surface-400 text-surface-500">Fuentes Activas</div>
+        <div class="text-3xl font-bold text-amber-400">{{ active_sources|default:0 }}<span class="text-lg text-surface-400">/{{ total_sources }}</span></div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Severity Distribution -->
+    <div class="glass-card p-6">
+        <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Severidad (24h)</h3>
+        <div id="severityChart" class="space-y-2">
+            {% for item in severity_dist %}
+            <div class="flex items-center gap-3">
+                <span class="w-20 text-xs dark:text-surface-400 text-surface-500 capitalize">{{ item.severity }}</span>
+                    <div class="flex-1 h-3 bg-surface-200 dark:bg-surface-800 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full transition-all
+                        {% if item.severity == 'critical' %}bg-red-500
+                        {% elif item.severity == 'high' %}bg-orange-500
+                        {% elif item.severity == 'medium' %}bg-amber-500
+                        {% elif item.severity == 'low' %}bg-blue-500
+                        {% else %}bg-green-500{% endif %}"
+                        style="width: {{ item.pct|default:0 }}%"></div>
+                </div>
+                <span class="w-12 text-xs dark:text-surface-300 text-surface-600 text-right">{{ item.count }}</span>
+            </div>
+            {% empty %}
+            <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Source Distribution -->
+    <div class="glass-card p-6">
+        <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Top Fuentes (24h)</h3>
+        <div class="space-y-2">
+            {% for item in source_dist %}
+            <div class="flex items-center justify-between">
+                <span class="text-xs dark:text-surface-300 text-surface-600 capitalize">{{ item.source_type }}</span>
+                <span class="text-xs font-medium dark:text-white text-surface-900 bg-surface-100 dark:bg-surface-800 px-2 py-0.5 rounded">{{ item.count }}</span>
+            </div>
+            {% empty %}
+            <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Category Distribution + Top Hosts -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Category Distribution -->
+    <div class="glass-card p-6">
+        <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Categorias (24h)</h3>
+        <div class="space-y-2">
+            {% for item in category_dist %}
+            <div class="flex items-center justify-between">
+                <span class="text-xs dark:text-surface-300 text-surface-600 capitalize">{{ item.event_category }}</span>
+                <span class="text-xs font-medium dark:text-white text-surface-900 bg-surface-100 dark:bg-surface-800 px-2 py-0.5 rounded">{{ item.count }}</span>
+            </div>
+            {% empty %}
+            <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Top Hosts -->
+    <div class="glass-card p-6">
+        <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Top Hosts (24h)</h3>
+        <div class="space-y-2">
+            {% for item in top_hosts %}
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-mono dark:text-surface-300 text-surface-600">{{ item.host_ip }}</span>
+                <span class="text-xs font-medium dark:text-white text-surface-900 bg-surface-100 dark:bg-surface-800 px-2 py-0.5 rounded">{{ item.count }}</span>
+            </div>
+            {% empty %}
+            <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Critical Alerts -->
+{% if recent_critical %}
+<div class="glass-card p-6 mb-6">
+    <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">
+        <i class="fas fa-exclamation-triangle text-red-400 mr-2"></i>Alertas Recientes (Critical/High)
+    </h3>
+    <div class="overflow-x-auto">
+        <table class="w-full divide-y dark:divide-surface-800 divide-surface-200">
+            <thead class="dark:bg-surface-800 bg-surface-100">
+                <tr>
+                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Hora</th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Severidad</th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Fuente</th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Host</th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Mensaje</th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase"></th>
+                </tr>
+            </thead>
+            <tbody class="dark:divide-surface-800 divide-surface-200">
+                {% for event in recent_critical %}
+                <tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors">
+                    <td class="px-3 py-2 text-xs dark:text-surface-300 text-surface-600">{{ event.event_time|date:"d/m H:i" }}</td>
+                    <td class="px-3 py-2">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                            {% if event.severity == 'critical' %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300
+                            {% else %}bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300{% endif %}">
+                            {{ event.severity }}
+                        </span>
+                    </td>
+                    <td class="px-3 py-2 text-xs dark:text-surface-300 text-surface-600 capitalize">{{ event.source_type }}</td>
+                    <td class="px-3 py-2 text-xs font-mono dark:text-surface-300 text-surface-600">{{ event.host_ip|default:"-" }}</td>
+                    <td class="px-3 py-2 text-xs dark:text-surface-300 text-surface-600 truncate max-w-xs">{{ event.message|truncatechars:80 }}</td>
+                    <td class="px-3 py-2">
+                        <a href="{% url 'log-detail' event.pk %}" class="text-blue-400 hover:text-blue-300 text-xs">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Recent Events -->
+<div class="glass-card p-6">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold dark:text-white text-surface-900">Eventos Recientes</h3>
+        <a href="{% url 'logs-list' %}" class="text-sm text-blue-400 hover:text-blue-300">
+            Ver Todos <i class="fas fa-arrow-right ml-1"></i>
+        </a>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full divide-y dark:divide-surface-800 divide-surface-200">
+            <thead class="dark:bg-surface-800 bg-surface-100">
+                <tr>
+                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Hora</th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Severidad</th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Tipo</th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Categoria</th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Host</th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Mensaje</th>
+                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase"></th>
+                </tr>
+            </thead>
+            <tbody class="dark:divide-surface-800 divide-surface-200">
+                {% for event in recent_events %}
+                <tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors">
+                    <td class="px-3 py-2 text-xs dark:text-surface-300 text-surface-600">{{ event.event_time|date:"d/m H:i" }}</td>
+                    <td class="px-3 py-2">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                            {% if event.severity == 'critical' %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300
+                            {% elif event.severity == 'high' %}bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300
+                            {% elif event.severity == 'medium' %}bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300
+                            {% elif event.severity == 'low' %}bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300
+                            {% else %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300{% endif %}">
+                            {{ event.severity }}
+                        </span>
+                    </td>
+                    <td class="px-3 py-2 text-xs dark:text-surface-300 text-surface-600 capitalize">{{ event.source_type }}</td>
+                    <td class="px-3 py-2 text-xs dark:text-surface-300 text-surface-600 capitalize">{{ event.event_category }}</td>
+                    <td class="px-3 py-2 text-xs font-mono dark:text-surface-300 text-surface-600">{{ event.host_ip|default:"-" }}</td>
+                    <td class="px-3 py-2 text-xs dark:text-surface-300 text-surface-600 truncate max-w-xs">{{ event.message|truncatechars:60 }}</td>
+                    <td class="px-3 py-2">
+                        <a href="{% url 'log-detail' event.pk %}" class="text-blue-400 hover:text-blue-300 text-xs">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="px-3 py-8 text-center text-sm dark:text-surface-500 text-surface-400">
+                        <i class="fas fa-inbox text-2xl mb-2 block"></i>
+                        No hay eventos registrados. Configure fuentes de logs o envie logs via API.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

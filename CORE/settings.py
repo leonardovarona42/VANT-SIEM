@@ -64,6 +64,7 @@ TEMPLATES = [
         'DIRS': [
             BASE_DIR / "VANT_SIEM/templates",
             BASE_DIR / "EVENT_M/templates",
+            BASE_DIR / "OPENSEARCH_LOGS/templates",
         ],
         'APP_DIRS': True,
         'OPTIONS': {

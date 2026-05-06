@@ -5,18 +5,36 @@ from .views import (
     ingest_log, ingest_bulk, ingest_syslog, log_statistics,
     LogRetentionPolicyViewSet,
 )
+from .ui_views import (
+    logs_dashboard, logs_list, log_detail, logs_sources, logs_retention,
+    log_source_create, log_source_edit, log_source_delete,
+    run_cleanup_now, delete_logs_by_filter,
+)
 
 router = DefaultRouter()
-router.register(r'sources', LogSourceViewSet, basename='log-source')
-router.register(r'retention', LogRetentionPolicyViewSet, basename='log-retention')
+router.register(r'api/sources', LogSourceViewSet, basename='log-source')
+router.register(r'api/retention', LogRetentionPolicyViewSet, basename='log-retention')
 
 urlpatterns = [
-    path('health/', health_check, name='logs-health'),
-    path('api/events/', LogEventListView.as_view(), name='log-events-list'),
-    path('api/events/<int:pk>/', LogEventDetailView.as_view(), name='log-events-detail'),
-    path('api/ingest/', ingest_log, name='log-ingest'),
-    path('api/ingest/bulk/', ingest_bulk, name='log-ingest-bulk'),
-    path('api/syslog/', ingest_syslog, name='log-syslog'),
-    path('api/statistics/', log_statistics, name='log-statistics'),
-    path('', include(router.urls)),
+    # UI - Dashboard
+    path('', logs_dashboard, name='logs-dashboard'),
+    path('list/', logs_list, name='logs-list'),
+    path('event/<int:pk>/', log_detail, name='log-detail'),
+    path('sources/', logs_sources, name='logs-sources'),
+    path('sources/new/', log_source_create, name='logs-source-create'),
+    path('sources/<str:source_id>/edit/', log_source_edit, name='logs-source-edit'),
+    path('sources/<str:source_id>/delete/', log_source_delete, name='logs-source-delete'),
+    path('retention/', logs_retention, name='logs-retention'),
+    path('actions/cleanup/', run_cleanup_now, name='logs-cleanup'),
+    path('actions/delete-filter/', delete_logs_by_filter, name='logs-delete-filter'),
+
+    # API
+    path('api/health/', health_check, name='logs-api-health'),
+    path('api/events/', LogEventListView.as_view(), name='log-api-events-list'),
+    path('api/events/<int:pk>/', LogEventDetailView.as_view(), name='log-api-events-detail'),
+    path('api/ingest/', ingest_log, name='log-api-ingest'),
+    path('api/ingest/bulk/', ingest_bulk, name='log-api-ingest-bulk'),
+    path('api/syslog/', ingest_syslog, name='log-api-syslog'),
+    path('api/statistics/', log_statistics, name='log-api-statistics'),
+    path('api/', include(router.urls)),
 ]
