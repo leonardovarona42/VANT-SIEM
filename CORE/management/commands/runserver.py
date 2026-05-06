@@ -14,6 +14,7 @@ from django.core.management.commands.runserver import Command as RunserverComman
 
 SERVICES = [
     {'name': 'Assets Service', 'command': 'run_assets_service', 'port': 8002, 'enabled': True},
+    {'name': 'Inventory Service', 'command': 'run_inventory_service', 'port': 8003, 'enabled': True},
     {'name': 'Logs Service', 'command': 'run_logs_service', 'port': 9201, 'enabled': True},
 ]
 

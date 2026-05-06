@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventory - VANT-SIEM{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold mb-3">
+                <i class="fas fa-laptop me-2"></i>Inventory Dashboard
+            </h2>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-primary bg-opacity-10 rounded-3 p-3">
+                                <i class="fas fa-desktop fa-2x text-primary"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="text-muted small">Total Agents</div>
+                            <div class="fs-3 fw-bold">{{ total }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-success bg-opacity-10 rounded-3 p-3">
+                                <i class="fas fa-circle-check fa-2x text-success"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="text-muted small">Online</div>
+                            <div class="fs-3 fw-bold text-success">{{ online }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-danger bg-opacity-10 rounded-3 p-3">
+                                <i class="fas fa-circle-xmark fa-2x text-danger"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="text-muted small">Offline</div>
+                            <div class="fs-3 fw-bold text-danger">{{ offline }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-warning bg-opacity-10 rounded-3 p-3">
+                                <i class="fas fa-clock fa-2x text-warning"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="text-muted small">Pending</div>
+                            <div class="fs-3 fw-bold text-warning">{{ pending }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Agent Registrations (30 days)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="agentsChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>OS Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="osChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-clock me-2"></i>Recent Activity
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Hostname</th>
+                                    <th>IP</th>
+                                    <th>Status</th>
+                                    <th>Last Seen</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for agent in recent_agents %}
+                                <tr>
+                                    <td>
+                                        <a href="{% url 'inventory-agent-detail' agent.agent_id %}" class="text-decoration-none fw-semibold">
+                                            {{ agent.hostname }}
+                                        </a>
+                                    </td>
+                                    <td><code>{{ agent.ip_address|default:"-" }}</code></td>
+                                    <td>
+                                        <span class="badge bg-{{ agent.status|yesno:'success,danger,warning,danger,secondary' }}">
+                                            {{ agent.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>{{ agent.last_heartbeat|timesince }} ago</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="4" class="text-muted text-center py-3">No agents registered</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-triangle-exclamation me-2"></i>Attention Required
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if offline_agents or agents_no_inventory %}
+                    <div class="list-group list-group-flush">
+                        {% for agent in offline_agents %}
+                        <div class="list-group-item d-flex align-items-center">
+                            <i class="fas fa-circle-xmark text-danger me-3"></i>
+                            <div class="flex-grow-1">
+                                <strong>{{ agent.hostname }}</strong>
+                                <div class="text-muted small">Offline - last seen {{ agent.last_heartbeat|timesince }} ago</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% for agent in agents_no_inventory %}
+                        <div class="list-group-item d-flex align-items-center">
+                            <i class="fas fa-database text-warning me-3"></i>
+                            <div class="flex-grow-1">
+                                <strong>{{ agent.hostname }}</strong>
+                                <div class="text-muted small">No inventory data received</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <p class="mb-0">All agents healthy</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if agents_by_day %}
+    const daysCtx = document.getElementById('agentsChart').getContext('2d');
+    new Chart(daysCtx, {
+        type: 'line',
+        data: {
+            labels: [{% for d in agents_by_day %}'{{ d.day|date:"M d" }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'New Agents',
+                data: [{% for d in agents_by_day %}{{ d.count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                borderColor: '#0d6efd',
+                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                fill: true,
+                tension: 0.3,
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+        }
+    });
+    {% endif %}
+
+    {% if os_dist %}
+    const osCtx = document.getElementById('osChart').getContext('2d');
+    const colors = ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#6f42c1', '#fd7e14', '#20c997', '#0dcaf0'];
+    new Chart(osCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for os, count in os_dist.items %}'{{ os }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                data: [{% for os, count in os_dist.items %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: colors.slice(0, {{ os_dist|length }}),
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+        }
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}

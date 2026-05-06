@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ agent.hostname }} - Agent Detail{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="fw-bold mb-1">
+                    <i class="fas fa-desktop me-2"></i>{{ agent.hostname }}
+                </h2>
+                {% if agent.machine_name %}
+                <p class="text-muted mb-0">{{ agent.machine_name }}</p>
+                {% endif %}
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'inventory-agents' %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>Back
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="mb-2">
+                        {% if agent.status == 'online' %}
+                        <i class="fas fa-circle-check fa-3x text-success"></i>
+                        {% elif agent.status == 'offline' %}
+                        <i class="fas fa-circle-xmark fa-3x text-danger"></i>
+                        {% elif agent.status == 'pending' %}
+                        <i class="fas fa-clock fa-3x text-warning"></i>
+                        {% else %}
+                        <i class="fas fa-circle-question fa-3x text-secondary"></i>
+                        {% endif %}
+                    </div>
+                    <h5 class="fw-bold">{{ agent.get_status_display }}</h5>
+                    <small class="text-muted">Agent ID: {{ agent.agent_id }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted mb-3">Operating System</h6>
+                    <div class="fw-bold fs-5">{{ agent.get_os_type_display }}</div>
+                    <div class="text-muted">{{ agent.os_version }}</div>
+                    <div class="text-muted small">Arch: {{ agent.os_arch }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted mb-3">Network</h6>
+                    <div><code class="fw-bold">{{ agent.ip_address|default:"-" }}</code></div>
+                    <div class="text-muted small">MAC: {{ agent.mac_address|default:"-" }}</div>
+                    {% if agent.domain %}
+                    <div class="text-muted small">Domain: {{ agent.domain }}</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted mb-3">Agent Info</h6>
+                    <div class="fw-bold">v{{ agent.agent_version }}</div>
+                    <div class="text-muted small">Registered: {{ agent.registered_at|date:"Y-m-d H:i" }}</div>
+                    <div class="text-muted small">Last heartbeat: {% if agent.last_heartbeat %}{{ agent.last_heartbeat|timesince }} ago{% else %}Never{% endif %}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if hardware %}
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0"><i class="fas fa-microchip me-2"></i>Hardware</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-muted mb-2">CPU</h6>
+                                <div class="fw-bold">{{ hardware.cpu_model }}</div>
+                                <div class="text-muted">{{ hardware.cpu_cores }} cores / {{ hardware.cpu_threads }} threads @ {{ hardware.cpu_speed_ghz }} GHz</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-muted mb-2">Memory</h6>
+                                <div class="fw-bold">{{ hardware.ram_total_gb }} GB</div>
+                                <div class="text-muted">{{ hardware.ram_slots_used }} / {{ hardware.ram_slots_total }} slots used</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-muted mb-2">Storage</h6>
+                                <div class="fw-bold">{{ hardware.disk_total_gb|floatformat:1 }} GB total</div>
+                                {% for disk in hardware.disks %}
+                                <div class="text-muted small">{{ disk.name|default:"Disk" }}: {{ disk.size_gb|floatformat:1 }} GB {% if disk.type %}({{ disk.type }}){% endif %}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-muted mb-2">Motherboard / BIOS</h6>
+                                <div class="fw-bold">{{ hardware.manufacturer }} {{ hardware.product_name }}</div>
+                                <div class="text-muted">{{ hardware.motherboard_model }} | BIOS {{ hardware.bios_version }}</div>
+                            </div>
+                        </div>
+                        {% if hardware.gpu_models %}
+                        <div class="col-md-12">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-muted mb-2">GPU</h6>
+                                {% for gpu in hardware.gpu_models %}
+                                <span class="badge bg-info me-1">{{ gpu }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if hardware.serial_number %}
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded">
+                                <h6 class="text-muted mb-2">Serial</h6>
+                                <code>{{ hardware.serial_number }}</code>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="card-title mb-0"><i class="fas fa-network-wired me-2"></i>Network Interfaces</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if hardware.network_interfaces %}
+                    <div class="list-group list-group-flush">
+                        {% for iface in hardware.network_interfaces %}
+                        <div class="list-group-item">
+                            <div class="fw-semibold">{{ iface.name|default:"Interface" }}</div>
+                            <div class="text-muted small">
+                                {% if iface.ip %}{{ iface.ip }}{% endif %}
+                                {% if iface.mac %} | {{ iface.mac }}{% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-3">No interface data</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body text-center py-4">
+            <i class="fas fa-microchip fa-3x text-muted mb-3"></i>
+            <h5>No hardware data received</h5>
+            <p class="text-muted">Agent needs to submit inventory data</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cube me-2"></i>Installed Software
+                        <span class="badge bg-secondary ms-2">{{ software_total }}</span>
+                    </h5>
+                    <a href="{% url 'inventory-software' %}?agent_id={{ agent.agent_id }}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Version</th>
+                                    <th>Publisher</th>
+                                    <th>Type</th>
+                                    <th>Size</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for sw in software %}
+                                <tr>
+                                    <td class="fw-semibold">{{ sw.name }}</td>
+                                    <td><code class="small">{{ sw.version|default:"-" }}</code></td>
+                                    <td>{{ sw.publisher|default:"-" }}</td>
+                                    <td>
+                                        {% if sw.is_system %}
+                                        <span class="badge bg-info">System</span>
+                                        {% else %}
+                                        <span class="badge bg-light text-dark">App</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ sw.size_mb|floatformat:0 }} MB</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="text-center text-muted py-3">No software data</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

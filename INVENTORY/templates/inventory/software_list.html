@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}Software Inventory{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <h2 class="fw-bold mb-0"><i class="fas fa-cube me-2"></i>Software Inventory</h2>
+            <a href="{% url 'inventory-dashboard' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-6">
+                    <input type="text" name="search" class="form-control" placeholder="Search software name or publisher..." value="{{ search }}">
+                </div>
+                <div class="col-md-4">
+                    <select name="software_type" class="form-select">
+                        <option value="">All Types</option>
+                        <option value="application" {% if type_filter == 'application' %}selected{% endif %}>Application</option>
+                        <option value="system" {% if type_filter == 'system' %}selected{% endif %}>System</option>
+                        <option value="driver" {% if type_filter == 'driver' %}selected{% endif %}>Driver</option>
+                        <option value="service" {% if type_filter == 'service' %}selected{% endif %}>Service</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-1"></i>Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Software</th>
+                            <th>Version</th>
+                            <th>Publisher</th>
+                            <th>Agent</th>
+                            <th>Type</th>
+                            <th>Size</th>
+                            <th>Installed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sw in software %}
+                        <tr>
+                            <td class="fw-semibold">{{ sw.name }}</td>
+                            <td><code class="small">{{ sw.version|default:"-" }}</code></td>
+                            <td>{{ sw.publisher|default:"-" }}</td>
+                            <td>
+                                <a href="{% url 'inventory-agent-detail' sw.agent.agent_id %}" class="text-decoration-none">
+                                    {{ sw.agent.hostname }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if sw.is_system %}
+                                <span class="badge bg-info">System</span>
+                                {% else %}
+                                <span class="badge bg-light text-dark">{{ sw.get_software_type_display|default:"App" }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ sw.size_mb|floatformat:0 }} MB</td>
+                            <td>{{ sw.install_date|default:"-" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="7" class="text-center text-muted py-4">No software found</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if total_pages > 1 %}
+    <nav class="mt-3">
+        <ul class="pagination justify-content-center">
+            {% if page > 1 %}
+            <li class="page-item"><a class="page-link" href="?page={{ page|add:'-1' }}&search={{ search }}&software_type={{ type_filter }}">Previous</a></li>
+            {% endif %}
+            {% for p in total_pages|make_list %}
+            <li class="page-item {% if forloop.counter == page %}active{% endif %}">
+                <a class="page-link" href="?page={{ forloop.counter }}&search={{ search }}&software_type={{ type_filter }}">{{ forloop.counter }}</a>
+            </li>
+            {% endfor %}
+            {% if page < total_pages %}
+            <li class="page-item"><a class="page-link" href="?page={{ page|add:'1' }}&search={{ search }}&software_type={{ type_filter }}">Next</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

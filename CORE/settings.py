@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'VANT_SIEM.apps.VantSiemConfig',
     'EVENT_M',
     'OPENSEARCH_LOGS',
+    'INVENTORY',
 ]
 
 MIDDLEWARE = [
@@ -66,6 +67,7 @@ TEMPLATES = [
             BASE_DIR / "VANT_SIEM/templates",
             BASE_DIR / "EVENT_M/templates",
             BASE_DIR / "OPENSEARCH_LOGS/templates",
+            BASE_DIR / "INVENTORY/templates",
         ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -102,10 +104,19 @@ DATABASES = {
         'HOST': os.getenv('LOGS_DB_HOST', 'localhost'),
         'PORT': os.getenv('LOGS_DB_PORT', '5432'),
     },
+    'vant_inventory': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('INVENTORY_DB_NAME', 'vant_inventory'),
+        'USER': os.getenv('INVENTORY_DB_USER', 'vantsiem'),
+        'PASSWORD': os.getenv('INVENTORY_DB_PASSWORD', 'vantsiem123'),
+        'HOST': os.getenv('INVENTORY_DB_HOST', 'localhost'),
+        'PORT': os.getenv('INVENTORY_DB_PORT', '5432'),
+    },
 }
 
 DATABASE_ROUTERS = [
     'CORE.db_router.LogsRouter',
+    'CORE.db_router.InventoryRouter',
 ]
 
 # TimescaleDB: auto-create hypertables after migrations
