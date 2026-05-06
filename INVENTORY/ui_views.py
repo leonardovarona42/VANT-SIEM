@@ -19,9 +19,12 @@ def inventory_dashboard(request):
     pending = agents.filter(status='pending').count()
 
     recent_agents = agents.order_by('-last_heartbeat')[:10]
-    os_dist = dict(
+
+    raw_os = list(
         agents.values('os_type').annotate(c=Count('agent_id')).order_by('-c').values_list('os_type', 'c')
     )
+    os_dist = [{'name': k, 'count': v, 'pct': round(v / total * 100, 1) if total else 0} for k, v in raw_os]
+
     agents_by_day = list(
         agents.filter(registered_at__gte=now - timedelta(days=30))
         .annotate(day=TruncDate('registered_at'))
@@ -33,11 +36,14 @@ def inventory_dashboard(request):
     offline_agents = agents.filter(status='offline').order_by('-last_heartbeat')[:5]
     agents_no_inventory = agents.filter(last_inventory_at__isnull=True)[:5]
 
+    health_pct = round(online / total * 100, 1) if total else 0
+
     context = {
         'total': total,
         'online': online,
         'offline': offline,
         'pending': pending,
+        'health_pct': health_pct,
         'recent_agents': recent_agents,
         'os_dist': os_dist,
         'agents_by_day': agents_by_day,

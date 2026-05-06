@@ -1,198 +1,241 @@
 {% extends 'dashboard.html' %}
 
-{% block title %}Inventory - VANT-SIEM{% endblock %}
+{% block title %}Inventory Dashboard | VANT-SIEM{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h2 class="fw-bold mb-3">
-                <i class="fas fa-laptop me-2"></i>Inventory Dashboard
-            </h2>
+<div class="mb-6">
+    <h2 class="text-2xl font-bold dark:text-white text-surface-900">
+        <i class="fas fa-laptop mr-2 text-cyan-400"></i>Inventory Dashboard
+    </h2>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Gestion de agentes, hardware y software de la infraestructura</p>
+</div>
+
+<!-- Stats Grid -->
+<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mb-6">
+    <div class="glass-card p-4 text-center">
+        <div class="text-sm dark:text-surface-400 text-surface-500">Total Agentes</div>
+        <div class="text-3xl font-bold text-blue-400">{{ total }}</div>
+    </div>
+    <div class="glass-card p-4 text-center">
+        <div class="text-sm dark:text-surface-400 text-surface-500">En Linea</div>
+        <div class="text-3xl font-bold text-emerald-400">{{ online }}</div>
+    </div>
+    <div class="glass-card p-4 text-center">
+        <div class="text-sm dark:text-surface-400 text-surface-500">Desconectados</div>
+        <div class="text-3xl font-bold text-red-400">{{ offline }}</div>
+    </div>
+    <div class="glass-card p-4 text-center">
+        <div class="text-sm dark:text-surface-400 text-surface-500">Pendientes</div>
+        <div class="text-3xl font-bold text-amber-400">{{ pending }}</div>
+    </div>
+    <div class="glass-card p-4 text-center">
+        <div class="text-sm dark:text-surface-400 text-surface-500">Salud</div>
+        {% if total > 0 %}
+        <div class="text-3xl font-bold text-cyan-400">{{ health_pct }}%</div>
+        {% else %}
+        <div class="text-3xl font-bold text-surface-500">-</div>
+        {% endif %}
+    </div>
+    <div class="glass-card p-4 text-center">
+        <div class="text-sm dark:text-surface-400 text-surface-500">OS Distintos</div>
+        <div class="text-3xl font-bold text-purple-400">{{ os_dist|length|default:0 }}</div>
+    </div>
+</div>
+
+<!-- Health Bar -->
+{% if total > 0 %}
+<div class="glass-card p-4 mb-6">
+    <div class="flex items-center justify-between mb-2">
+        <span class="text-sm font-medium dark:text-white text-surface-900">Estado General de la Flota</span>
+        <span class="text-xs dark:text-surface-400 text-surface-500">{{ health_pct }}% operativo</span>
+    </div>
+    <div class="flex h-4 rounded-full overflow-hidden gap-0.5">
+        {% if online > 0 %}
+        <div class="bg-emerald-500" style="width: {{ online|floatformat:0 }}%" title="Online: {{ online }}"></div>
+        {% endif %}
+        {% if offline > 0 %}
+        <div class="bg-red-500" style="width: {{ offline|floatformat:0 }}%" title="Offline: {{ offline }}"></div>
+        {% endif %}
+        {% if pending > 0 %}
+        <div class="bg-amber-500" style="width: {{ pending|floatformat:0 }}%" title="Pending: {{ pending }}"></div>
+        {% endif %}
+    </div>
+    <div class="flex gap-4 mt-2 text-xs dark:text-surface-400 text-surface-500">
+        {% if online > 0 %}<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Online {{ online }}</span>{% endif %}
+        {% if offline > 0 %}<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-500"></span>Offline {{ offline }}</span>{% endif %}
+        {% if pending > 0 %}<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500"></span>Pending {{ pending }}</span>{% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Charts Row -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <!-- OS Distribution -->
+    <div class="glass-card p-6">
+        <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">
+            <i class="fas fa-desktop mr-2 text-cyan-400"></i>Distribucion por OS
+        </h3>
+        {% if os_dist %}
+        <div class="space-y-3">
+            {% for item in os_dist %}
+            <div class="flex items-center gap-3">
+                <span class="w-28 text-xs dark:text-surface-400 text-surface-500 truncate" title="{{ item.name }}">{{ item.name }}</span>
+                <div class="flex-1 h-3 bg-surface-200 dark:bg-surface-800 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full transition-all
+                        {% if 'windows' in item.name %}bg-blue-500
+                        {% elif 'ubuntu' in item.name or 'debian' in item.name %}bg-orange-500
+                        {% elif 'rhel' in item.name or 'centos' in item.name %}bg-red-500
+                        {% elif 'macos' in item.name %}bg-purple-500
+                        {% else %}bg-teal-500{% endif %}"
+                        style="width: {{ item.pct }}%"></div>
+                </div>
+                <span class="w-16 text-xs font-medium dark:text-white text-surface-900 text-right">{{ item.count }} ({{ item.pct }}%)</span>
+            </div>
+            {% endfor %}
         </div>
+        {% else %}
+        <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
+        {% endif %}
     </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <div class="bg-primary bg-opacity-10 rounded-3 p-3">
-                                <i class="fas fa-desktop fa-2x text-primary"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <div class="text-muted small">Total Agents</div>
-                            <div class="fs-3 fw-bold">{{ total }}</div>
-                        </div>
+    <!-- Agent Registrations Chart -->
+    <div class="glass-card p-6 lg:col-span-2">
+        <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">
+            <i class="fas fa-chart-line mr-2 text-cyan-400"></i>Registros (30 dias)
+        </h3>
+        <canvas id="agentsChart" height="120"></canvas>
+    </div>
+</div>
+
+<!-- Agentes Recientes + Alertas -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Agentes Recientes -->
+    <div class="glass-card p-0 overflow-hidden">
+        <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-800">
+            <h3 class="text-lg font-semibold dark:text-white text-surface-900">
+                <i class="fas fa-clock mr-2 text-cyan-400"></i>Agentes Recientes
+            </h3>
+        </div>
+        <div class="divide-y divide-surface-200 dark:divide-surface-800">
+            {% for agent in recent_agents %}
+            <a href="{% url 'inventory-agent-detail' agent.agent_id %}" class="flex items-center gap-4 px-6 py-3 dark:hover:bg-surface-800/50 hover:bg-surface-50 transition-colors no-underline">
+                <div class="flex-shrink-0">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center
+                        {% if agent.status == 'online' %}bg-emerald-500/20 text-emerald-400
+                        {% elif agent.status == 'offline' %}bg-red-500/20 text-red-400
+                        {% elif agent.status == 'pending' %}bg-amber-500/20 text-amber-400
+                        {% else %}bg-surface-200 dark:bg-surface-800 text-surface-400{% endif %}">
+                        <i class="fas fa-{% if agent.status == 'online' %}check-circle{% elif agent.status == 'offline' %}times-circle{% elif agent.status == 'pending' %}clock{% else %}question-circle{% endif %}"></i>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <div class="bg-success bg-opacity-10 rounded-3 p-3">
-                                <i class="fas fa-circle-check fa-2x text-success"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <div class="text-muted small">Online</div>
-                            <div class="fs-3 fw-bold text-success">{{ online }}</div>
-                        </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-medium dark:text-white text-surface-900 truncate">{{ agent.hostname }}</span>
+                        {% if agent.hardware %}
+                        <span class="text-xs dark:text-surface-500 text-surface-400">{{ agent.hardware.cpu_cores }}c / {{ agent.hardware.ram_total_gb }}GB</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex items-center gap-3 text-xs dark:text-surface-400 text-surface-500">
+                        <span><i class="fas fa-network-wired mr-1"></i>{{ agent.ip_address|default:"-" }}</span>
+                        <span><i class="fas fa-desktop mr-1"></i>{{ agent.get_os_type_display }}</span>
                     </div>
                 </div>
-            </div>
-        </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <div class="bg-danger bg-opacity-10 rounded-3 p-3">
-                                <i class="fas fa-circle-xmark fa-2x text-danger"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <div class="text-muted small">Offline</div>
-                            <div class="fs-3 fw-bold text-danger">{{ offline }}</div>
-                        </div>
-                    </div>
+                <div class="text-right flex-shrink-0">
+                    <span class="text-xs dark:text-surface-500 text-surface-400">
+                        {% if agent.last_heartbeat %}{{ agent.last_heartbeat|timesince }}{% else %}Never{% endif %}
+                    </span>
                 </div>
+            </a>
+            {% empty %}
+            <div class="px-6 py-8 text-center">
+                <i class="fas fa-desktop fa-2x dark:text-surface-700 text-surface-300 mb-2"></i>
+                <p class="text-sm dark:text-surface-500 text-surface-400">No hay agentes registrados</p>
             </div>
+            {% endfor %}
         </div>
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <div class="bg-warning bg-opacity-10 rounded-3 p-3">
-                                <i class="fas fa-clock fa-2x text-warning"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <div class="text-muted small">Pending</div>
-                            <div class="fs-3 fw-bold text-warning">{{ pending }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        {% if recent_agents %}
+        <div class="px-6 py-3 border-t border-surface-200 dark:border-surface-800">
+            <a href="{% url 'inventory-agents' %}" class="text-sm text-cyan-400 hover:text-cyan-300 font-medium">
+                Ver todos los agentes <i class="fas fa-arrow-right ml-1"></i>
+            </a>
         </div>
+        {% endif %}
     </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-chart-bar me-2"></i>Agent Registrations (30 days)
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <canvas id="agentsChart" height="100"></canvas>
-                </div>
-            </div>
+    <!-- Attention Required -->
+    <div class="glass-card p-0 overflow-hidden">
+        <div class="px-6 py-4 border-b border-surface-200 dark:border-surface-800">
+            <h3 class="text-lg font-semibold dark:text-white text-surface-900">
+                <i class="fas fa-triangle-exclamation mr-2 text-amber-400"></i>Atencion Requerida
+            </h3>
         </div>
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-chart-pie me-2"></i>OS Distribution
-                    </h5>
+        <div class="divide-y divide-surface-200 dark:divide-surface-800">
+            {% if offline_agents or agents_no_inventory %}
+            {% for agent in offline_agents %}
+            <a href="{% url 'inventory-agent-detail' agent.agent_id %}" class="flex items-center gap-4 px-6 py-3 dark:hover:bg-surface-800/50 hover:bg-surface-50 transition-colors no-underline">
+                <div class="flex-shrink-0">
+                    <div class="w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center">
+                        <i class="fas fa-circle-xmark"></i>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <canvas id="osChart" height="200"></canvas>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium dark:text-white text-surface-900">{{ agent.hostname }}</div>
+                    <div class="text-xs text-red-400">Desconectado - hace {{ agent.last_heartbeat|timesince }}</div>
                 </div>
+            </a>
+            {% endfor %}
+            {% for agent in agents_no_inventory %}
+            <a href="{% url 'inventory-agent-detail' agent.agent_id %}" class="flex items-center gap-4 px-6 py-3 dark:hover:bg-surface-800/50 hover:bg-surface-50 transition-colors no-underline">
+                <div class="flex-shrink-0">
+                    <div class="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                        <i class="fas fa-database"></i>
+                    </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium dark:text-white text-surface-900">{{ agent.hostname }}</div>
+                    <div class="text-xs text-amber-400">Sin datos de inventario</div>
+                </div>
+            </a>
+            {% endfor %}
+            {% else %}
+            <div class="px-6 py-8 text-center">
+                <i class="fas fa-circle-check fa-2x text-emerald-400 mb-2"></i>
+                <p class="text-sm dark:text-surface-400 text-surface-500">Todos los agentes operativos</p>
             </div>
+            {% endif %}
         </div>
     </div>
+</div>
 
-    <div class="row g-4">
-        <div class="col-lg-6">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-clock me-2"></i>Recent Activity
-                    </h5>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Hostname</th>
-                                    <th>IP</th>
-                                    <th>Status</th>
-                                    <th>Last Seen</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for agent in recent_agents %}
-                                <tr>
-                                    <td>
-                                        <a href="{% url 'inventory-agent-detail' agent.agent_id %}" class="text-decoration-none fw-semibold">
-                                            {{ agent.hostname }}
-                                        </a>
-                                    </td>
-                                    <td><code>{{ agent.ip_address|default:"-" }}</code></td>
-                                    <td>
-                                        <span class="badge bg-{{ agent.status|yesno:'success,danger,warning,danger,secondary' }}">
-                                            {{ agent.get_status_display }}
-                                        </span>
-                                    </td>
-                                    <td>{{ agent.last_heartbeat|timesince }} ago</td>
-                                </tr>
-                                {% empty %}
-                                <tr><td colspan="4" class="text-muted text-center py-3">No agents registered</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+<!-- Quick Links -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <a href="{% url 'inventory-agents' %}" class="glass-card glass-card-hover p-6 flex items-center gap-4 no-underline">
+        <div class="w-12 h-12 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-desktop fa-lg"></i>
         </div>
-        <div class="col-lg-6">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-triangle-exclamation me-2"></i>Attention Required
-                    </h5>
-                </div>
-                <div class="card-body p-0">
-                    {% if offline_agents or agents_no_inventory %}
-                    <div class="list-group list-group-flush">
-                        {% for agent in offline_agents %}
-                        <div class="list-group-item d-flex align-items-center">
-                            <i class="fas fa-circle-xmark text-danger me-3"></i>
-                            <div class="flex-grow-1">
-                                <strong>{{ agent.hostname }}</strong>
-                                <div class="text-muted small">Offline - last seen {{ agent.last_heartbeat|timesince }} ago</div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                        {% for agent in agents_no_inventory %}
-                        <div class="list-group-item d-flex align-items-center">
-                            <i class="fas fa-database text-warning me-3"></i>
-                            <div class="flex-grow-1">
-                                <strong>{{ agent.hostname }}</strong>
-                                <div class="text-muted small">No inventory data received</div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="text-center text-muted py-4">
-                        <i class="fas fa-check-circle fa-2x mb-2"></i>
-                        <p class="mb-0">All agents healthy</p>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
+        <div>
+            <div class="text-sm font-semibold dark:text-white text-surface-900">Gestionar Agentes</div>
+            <div class="text-xs dark:text-surface-400 text-surface-500">Ver, filtrar y administrar todos los agentes</div>
         </div>
-    </div>
+    </a>
+    <a href="{% url 'inventory-software' %}" class="glass-card glass-card-hover p-6 flex items-center gap-4 no-underline">
+        <div class="w-12 h-12 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-cube fa-lg"></i>
+        </div>
+        <div>
+            <div class="text-sm font-semibold dark:text-white text-surface-900">Software Inventory</div>
+            <div class="text-xs dark:text-surface-400 text-surface-500">Buscar y auditar software instalado</div>
+        </div>
+    </a>
+    <a href="#" class="glass-card glass-card-hover p-6 flex items-center gap-4 no-underline">
+        <div class="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-file-export fa-lg"></i>
+        </div>
+        <div>
+            <div class="text-sm font-semibold dark:text-white text-surface-900">Exportar Reportes</div>
+            <div class="text-xs dark:text-surface-400 text-surface-500">Generar reportes de inventario</div>
+        </div>
+    </a>
 </div>
 {% endblock %}
 
@@ -200,44 +243,58 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const isDark = document.documentElement.classList.contains('dark');
+    const gridColor = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+    const textColor = isDark ? '#94a3b8' : '#64748b';
+
     {% if agents_by_day %}
-    const daysCtx = document.getElementById('agentsChart').getContext('2d');
-    new Chart(daysCtx, {
+    const ctx = document.getElementById('agentsChart').getContext('2d');
+    const gradient = ctx.createLinearGradient(0, 0, 0, 120);
+    gradient.addColorStop(0, 'rgba(6, 182, 212, 0.3)');
+    gradient.addColorStop(1, 'rgba(6, 182, 212, 0)');
+
+    new Chart(ctx, {
         type: 'line',
         data: {
             labels: [{% for d in agents_by_day %}'{{ d.day|date:"M d" }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
             datasets: [{
-                label: 'New Agents',
                 data: [{% for d in agents_by_day %}{{ d.count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-                borderColor: '#0d6efd',
-                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                borderColor: '#06b6d4',
+                backgroundColor: gradient,
                 fill: true,
-                tension: 0.3,
+                tension: 0.4,
+                pointRadius: 2,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#06b6d4',
+                borderWidth: 2,
             }]
         },
         options: {
             responsive: true,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-        }
-    });
-    {% endif %}
-
-    {% if os_dist %}
-    const osCtx = document.getElementById('osChart').getContext('2d');
-    const colors = ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#6f42c1', '#fd7e14', '#20c997', '#0dcaf0'];
-    new Chart(osCtx, {
-        type: 'doughnut',
-        data: {
-            labels: [{% for os, count in os_dist.items %}'{{ os }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
-            datasets: [{
-                data: [{% for os, count in os_dist.items %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-                backgroundColor: colors.slice(0, {{ os_dist|length }}),
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                    titleColor: isDark ? '#f1f5f9' : '#0f172a',
+                    bodyColor: isDark ? '#94a3b8' : '#475569',
+                    borderColor: isDark ? '#334155' : '#e2e8f0',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    padding: 10,
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: gridColor },
+                    ticks: { color: textColor, font: { size: 10 }, maxRotation: 45 }
+                },
+                y: {
+                    grid: { color: gridColor },
+                    ticks: { color: textColor, font: { size: 10 }, stepSize: 1 },
+                    beginAtZero: true,
+                }
+            }
         }
     });
     {% endif %}
