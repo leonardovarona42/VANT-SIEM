@@ -96,14 +96,60 @@ def agent_detail(request, agent_id):
     software = agent.software.all().order_by('name')[:100]
     commands = agent.commands.all()[:20]
 
+    pending_config_cmds = AgentCommand.objects.filter(
+        agent=agent, command_type='push_config', status='pending'
+    ).order_by('-created_at')[:5]
+
     context = {
         'agent': agent,
         'hardware': hardware,
         'software': software,
         'software_total': agent.software.count(),
         'commands': commands,
+        'pending_config_cmds': pending_config_cmds,
     }
     return render(request, 'inventory/agent_detail.html', context)
+
+
+@login_required
+def agent_config_view(request, agent_id):
+    agent = get_object_or_404(Agent, agent_id=agent_id)
+
+    pending_config_cmds = AgentCommand.objects.filter(
+        agent=agent, command_type='push_config', status='pending'
+    ).order_by('-created_at')
+
+    last_config_cmd = AgentCommand.objects.filter(
+        agent=agent, command_type='push_config'
+    ).order_by('-created_at').first()
+
+    last_config = {}
+    if last_config_cmd:
+        last_config = last_config_cmd.payload.get('config', {})
+
+    if request.method == 'POST':
+        import json
+        config_data = json.loads(request.body)
+
+        config_dict = config_data.get('config', {})
+
+        AgentCommand.objects.create(
+            agent=agent,
+            command_type='push_config',
+            payload={'config': config_dict},
+        )
+
+        return JsonResponse({
+            'status': 'ok',
+            'message': 'Config command queued',
+        })
+
+    context = {
+        'agent': agent,
+        'pending_config_cmds': pending_config_cmds,
+        'last_config': last_config,
+    }
+    return render(request, 'inventory/agent_config.html', context)
 
 
 @login_required

@@ -16,6 +16,7 @@ from .serializers import (
     HardwareInventorySerializer, SoftwareInventorySerializer,
     AgentCommandSerializer, AgentCommandCreateSerializer,
     HeartbeatSerializer, InventorySubmitSerializer, AgentStatsSerializer,
+    AgentConfigPushSerializer,
 )
 
 logger = logging.getLogger(__name__)
@@ -135,6 +136,8 @@ def heartbeat(request):
 
     pending_commands = AgentCommand.objects.filter(agent=agent, status__in=['pending', 'sent'])
     commands_data = AgentCommandSerializer(pending_commands, many=True).data
+
+    pending_commands.update(status='sent', sent_at=timezone.now())
 
     return Response({
         'status': agent.status,
@@ -309,3 +312,110 @@ class AgentCommandViewSet(viewsets.ModelViewSet):
         )
 
         return Response(AgentCommandSerializer(cmd).data, status=status.HTTP_201_CREATED)
+
+
+DEFAULT_CONFIG = {
+    'inventory': {'enabled': True, 'interval': 300},
+    'collectors': {
+        'snort': {'enabled': False, 'path': ''},
+        'suricata': {'enabled': False, 'path': ''},
+        'windows_eventlog': {'enabled': False, 'channels': ['Security', 'System']},
+        'postgres': {'enabled': False, 'path': ''},
+        'file_logs': {'enabled': False, 'items': []},
+    },
+    'dlp': {
+        'enabled': False,
+        'scan_paths': [],
+        'scan_extensions': ['.docx', '.xlsx', '.pdf', '.txt'],
+        'keywords': ['clasificado', 'secreto', 'restringido'],
+    },
+    'agent': {
+        'check_interval': 60,
+        'heartbeat_interval': 300,
+        'log_level': 'INFO',
+    },
+}
+
+
+@api_view(['PUT'])
+def push_config(request, agent_id):
+    serializer = AgentConfigPushSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        agent = Agent.objects.get(agent_id=agent_id)
+    except Agent.DoesNotExist:
+        return Response({'error': 'Agent not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    config_data = serializer.validated_data['config']
+
+    cmd = AgentCommand.objects.create(
+        agent=agent,
+        command_type='push_config',
+        payload={
+            'config': config_data,
+            'config_hash': hash(str(config_data)),
+        },
+    )
+
+    return Response({
+        'status': 'ok',
+        'command_id': str(cmd.command_id),
+        'message': 'Config command queued for agent',
+    })
+
+
+@api_view(['GET'])
+def get_agent_config(request, agent_id):
+    try:
+        agent = Agent.objects.get(agent_id=agent_id)
+    except Agent.DoesNotExist:
+        return Response({'error': 'Agent not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    pending_config_cmds = AgentCommand.objects.filter(
+        agent=agent, command_type='push_config', status='pending'
+    ).order_by('-created_at')
+
+    return Response({
+        'pending_config_commands': AgentCommandSerializer(pending_config_cmds, many=True).data,
+        'config_template': DEFAULT_CONFIG,
+    })
+
+
+@api_view(['GET'])
+def config_templates(request):
+    return Response({
+        'defaults': DEFAULT_CONFIG,
+        'module_definitions': {
+            'inventory': {
+                'name': 'Hardware & Software Inventory',
+                'enabled_by_default': True,
+                'options': {
+                    'enabled': {'type': 'boolean', 'default': True},
+                    'interval': {'type': 'integer', 'default': 300, 'min': 60, 'max': 86400},
+                },
+            },
+            'collectors': {
+                'name': 'Log Collectors',
+                'enabled_by_default': False,
+                'submodules': {
+                    'snort': {'name': 'Snort IDS Logs'},
+                    'suricata': {'name': 'Suricata IDS Logs'},
+                    'windows_eventlog': {'name': 'Windows Event Log', 'channels': ['Security', 'System', 'Application']},
+                    'postgres': {'name': 'PostgreSQL Logs'},
+                    'file_logs': {'name': 'File Log Collector'},
+                },
+            },
+            'dlp': {
+                'name': 'Data Loss Prevention (Aegis)',
+                'enabled_by_default': False,
+                'options': {
+                    'enabled': {'type': 'boolean', 'default': False},
+                    'scan_paths': {'type': 'array', 'default': []},
+                    'scan_extensions': {'type': 'array', 'default': ['.docx', '.xlsx', '.pdf', '.txt']},
+                    'keywords': {'type': 'array', 'default': ['clasificado', 'secreto', 'restringido']},
+                },
+            },
+        },
+    })

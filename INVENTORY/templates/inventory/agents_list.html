@@ -3,139 +3,242 @@
 {% block title %}Agents - Inventory{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-12 d-flex justify-content-between align-items-center">
-            <h2 class="fw-bold mb-0"><i class="fas fa-desktop me-2"></i>Agents</h2>
-            <a href="{% url 'inventory-dashboard' %}" class="btn btn-outline-secondary btn-sm">
-                <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
-            </a>
+<div class="mb-8">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold dark:text-white text-surface-900 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl dark:bg-cyan-500/20 bg-cyan-100 flex items-center justify-center">
+          <i class="fas fa-desktop text-cyan-500"></i>
         </div>
+        Agents
+      </h1>
+      <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total }} agents total</p>
     </div>
-
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body">
-            <form method="get" class="row g-3">
-                <div class="col-md-4">
-                    <input type="text" name="search" class="form-control" placeholder="Search hostname, IP, machine name..." value="{{ search }}">
-                </div>
-                <div class="col-md-3">
-                    <select name="status" class="form-select">
-                        <option value="">All Status</option>
-                        {% for value, label in status_choices %}
-                        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <select name="os_type" class="form-select">
-                        <option value="">All OS</option>
-                        {% for value, label in os_choices %}
-                        <option value="{{ value }}" {% if os_filter == value %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-search me-1"></i>Filter</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Hostname</th>
-                            <th>OS</th>
-                            <th>IP</th>
-                            <th>CPU / RAM</th>
-                            <th>Agent</th>
-                            <th>Status</th>
-                            <th>Last Heartbeat</th>
-                            <th>Software</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for agent in agents %}
-                        <tr>
-                            <td>
-                                <a href="{% url 'inventory-agent-detail' agent.agent_id %}" class="text-decoration-none fw-semibold">
-                                    {{ agent.hostname }}
-                                </a>
-                                {% if agent.machine_name %}
-                                <div class="text-muted small">{{ agent.machine_name }}</div>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="badge bg-light text-dark">{{ agent.get_os_type_display }}</span>
-                                <div class="text-muted small">{{ agent.os_version }}</div>
-                            </td>
-                            <td><code>{{ agent.ip_address|default:"-" }}</code></td>
-                            <td>
-                                {% if agent.hardware %}
-                                <div class="small">{{ agent.hardware.cpu_cores }} cores</div>
-                                <div class="small">{{ agent.hardware.ram_total_gb }} GB RAM</div>
-                                {% else %}
-                                <span class="text-muted">-</span>
-                                {% endif %}
-                            </td>
-                            <td><code class="small">{{ agent.agent_version }}</code></td>
-                            <td>
-                                {% if agent.status == 'online' %}
-                                <span class="badge bg-success">{{ agent.get_status_display }}</span>
-                                {% elif agent.status == 'offline' %}
-                                <span class="badge bg-danger">{{ agent.get_status_display }}</span>
-                                {% elif agent.status == 'pending' %}
-                                <span class="badge bg-warning text-dark">{{ agent.get_status_display }}</span>
-                                {% elif agent.status == 'error' %}
-                                <span class="badge bg-dark">{{ agent.get_status_display }}</span>
-                                {% else %}
-                                <span class="badge bg-secondary">{{ agent.get_status_display }}</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if agent.last_heartbeat %}
-                                <span title="{{ agent.last_heartbeat }}">{{ agent.last_heartbeat|timesince }} ago</span>
-                                {% else %}
-                                <span class="text-muted">Never</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ agent.software_count }}</td>
-                            <td>
-                                <a href="{% url 'inventory-agent-detail' agent.agent_id %}" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr><td colspan="9" class="text-center text-muted py-4">No agents found</td></tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    {% if total_pages > 1 %}
-    <nav class="mt-3">
-        <ul class="pagination justify-content-center">
-            {% if page > 1 %}
-            <li class="page-item"><a class="page-link" href="?page={{ page|add:'-1' }}&search={{ search }}&status={{ status_filter }}&os_type={{ os_filter }}">Previous</a></li>
-            {% endif %}
-            {% for p in total_pages|make_list %}
-            <li class="page-item {% if forloop.counter == page %}active{% endif %}">
-                <a class="page-link" href="?page={{ forloop.counter }}&search={{ search }}&status={{ status_filter }}&os_type={{ os_filter }}">{{ forloop.counter }}</a>
-            </li>
-            {% endfor %}
-            {% if page < total_pages %}
-            <li class="page-item"><a class="page-link" href="?page={{ page|add:'1' }}&search={{ search }}&status={{ status_filter }}&os_type={{ os_filter }}">Next</a></li>
-            {% endif %}
-        </ul>
-    </nav>
-    {% endif %}
+    <a href="{% url 'inventory-dashboard' %}" class="btn-secondary text-sm">
+      <i class="fas fa-arrow-left mr-2"></i>Dashboard
+    </a>
+  </div>
 </div>
+
+<div class="glass-card p-4 mb-6">
+  <form method="get" class="flex flex-wrap gap-3">
+    <div class="flex-1 min-w-[200px]">
+      <div class="relative">
+        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 text-sm"></i>
+        <input
+          type="text"
+          name="search"
+          class="w-full pl-9 pr-4 py-2.5 dark:bg-surface-800/50 dark:border-surface-700 dark:text-surface-200 dark:focus:border-brand-500 bg-surface-50 border-surface-200 text-surface-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+          placeholder="Search hostname, IP, machine name..."
+          value="{{ search }}"
+        />
+      </div>
+    </div>
+    <div class="w-[180px]">
+      <select
+        name="status"
+        class="w-full px-3 py-2.5 dark:bg-surface-800/50 dark:border-surface-700 dark:text-surface-200 bg-surface-50 border-surface-200 text-surface-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+      >
+        <option value="">All Status</option>
+        {% for value, label in status_choices %}
+        <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="w-[180px]">
+      <select
+        name="os_type"
+        class="w-full px-3 py-2.5 dark:bg-surface-800/50 dark:border-surface-700 dark:text-surface-200 bg-surface-50 border-surface-200 text-surface-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all"
+      >
+        <option value="">All OS</option>
+        {% for value, label in os_choices %}
+        <option value="{{ value }}" {% if os_filter == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn-primary text-sm px-6">
+      <i class="fas fa-filter mr-2"></i>Filter
+    </button>
+  </form>
+</div>
+
+<div class="glass-card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full" id="agents-table">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="sortable-header text-left px-6 py-4 text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider" data-sortable data-type="string">
+            Hostname
+          </th>
+          <th class="sortable-header text-left px-6 py-4 text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider" data-sortable>
+            OS
+          </th>
+          <th class="sortable-header text-left px-6 py-4 text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider" data-sortable>
+            IP Address
+          </th>
+          <th class="text-left px-6 py-4 text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">
+            Hardware
+          </th>
+          <th class="sortable-header text-left px-6 py-4 text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider" data-sortable>
+            Agent
+          </th>
+          <th class="sortable-header text-left px-6 py-4 text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider" data-sortable>
+            Status
+          </th>
+          <th class="sortable-header text-left px-6 py-4 text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider" data-sortable data-type="date">
+            Last Heartbeat
+          </th>
+          <th class="sortable-header text-left px-6 py-4 text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider" data-sortable data-type="number">
+            Software
+          </th>
+          <th class="text-right px-6 py-4 text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">
+            Actions
+          </th>
+        </tr>
+      </thead>
+      <tbody class="divide-y dark:divide-surface-800 divide-surface-200">
+        {% for agent in agents %}
+        <tr class="dark:hover:bg-white/[0.03] hover:bg-surface-50/50 transition-colors">
+          <td class="px-6 py-4">
+            <a href="{% url 'inventory-agent-detail' agent.agent_id %}" class="text-sm font-semibold dark:text-white text-surface-900 hover:text-brand-500 dark:hover:text-brand-400 transition-colors">
+              {{ agent.hostname }}
+            </a>
+            {% if agent.machine_name %}
+            <p class="text-xs dark:text-surface-500 text-surface-400 mt-0.5">{{ agent.machine_name }}</p>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4">
+            <span class="inline-flex items-center px-2.5 py-1 dark:bg-surface-800 bg-surface-100 rounded-md text-xs font-medium dark:text-surface-300 text-surface-700">
+              {{ agent.get_os_type_display }}
+            </span>
+            {% if agent.os_version %}
+            <p class="text-xs dark:text-surface-500 text-surface-400 mt-1">{{ agent.os_version }}</p>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4">
+            <code class="text-xs dark:bg-surface-800 bg-surface-100 dark:text-surface-300 text-surface-700 px-2 py-1 rounded">{{ agent.ip_address|default:"-" }}</code>
+          </td>
+          <td class="px-6 py-4">
+            {% with hw=agent.hardware %}
+            {% if hw %}
+            <div class="text-xs dark:text-surface-300 text-surface-600">
+              <div class="flex items-center gap-1.5">
+                <i class="fas fa-microchip w-3.5 text-surface-400"></i>
+                <span>{{ hw.cpu_cores }} cores</span>
+              </div>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                <i class="fas fa-memory w-3.5 text-surface-400"></i>
+                <span>{{ hw.ram_total_gb }} GB</span>
+              </div>
+            </div>
+            {% else %}
+            <span class="text-xs dark:text-surface-600 text-surface-400">-</span>
+            {% endif %}
+            {% endwith %}
+          </td>
+          <td class="px-6 py-4">
+            <code class="text-xs dark:bg-surface-800 bg-surface-100 dark:text-surface-300 text-surface-700 px-2 py-1 rounded">v{{ agent.agent_version }}</code>
+          </td>
+          <td class="px-6 py-4">
+            {% if agent.status == 'online' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Online
+            </span>
+            {% elif agent.status == 'offline' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+              <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+              Offline
+            </span>
+            {% elif agent.status == 'pending' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+              Pending
+            </span>
+            {% elif agent.status == 'error' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-surface-200 text-surface-700 dark:bg-surface-700/50 dark:text-surface-300">
+              <span class="w-1.5 h-1.5 rounded-full bg-surface-500"></span>
+              Error
+            </span>
+            {% elif agent.status == 'disabled' %}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-500">
+              <span class="w-1.5 h-1.5 rounded-full bg-surface-400"></span>
+              Disabled
+            </span>
+            {% else %}
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400">
+              {{ agent.get_status_display }}
+            </span>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4">
+            {% if agent.last_heartbeat %}
+            <div class="text-sm dark:text-surface-300 text-surface-600">
+              <span title="{{ agent.last_heartbeat }}">{{ agent.last_heartbeat|timesince }} ago</span>
+            </div>
+            {% else %}
+            <span class="text-sm dark:text-surface-600 text-surface-400">Never</span>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4">
+            <span class="text-sm dark:text-surface-300 text-surface-600">{{ agent.software_count }}</span>
+          </td>
+          <td class="px-6 py-4 text-right">
+            <a href="{% url 'inventory-agent-detail' agent.agent_id %}" class="inline-flex items-center justify-center w-8 h-8 rounded-lg dark:hover:bg-white/10 hover:bg-surface-100 text-surface-400 dark:hover:text-white hover:text-brand-500 transition-all" title="View Details">
+              <i class="fas fa-eye text-sm"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="9" class="px-6 py-16 text-center">
+            <div class="flex flex-col items-center">
+              <div class="w-16 h-16 rounded-2xl dark:bg-surface-800 bg-surface-100 flex items-center justify-center mb-4">
+                <i class="fas fa-desktop text-2xl dark:text-surface-600 text-surface-400"></i>
+              </div>
+              <h3 class="text-base font-semibold dark:text-surface-300 text-surface-700">No agents found</h3>
+              <p class="text-sm dark:text-surface-500 text-surface-400 mt-1">Try adjusting your search or filter criteria</p>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if total_pages > 1 %}
+  <div class="dark:border-surface-800 border-surface-200 border-t px-6 py-4">
+    <div class="flex items-center justify-between">
+      <p class="text-sm dark:text-surface-400 text-surface-500">
+        Page <span class="font-medium dark:text-surface-300 text-surface-700">{{ page }}</span> of <span class="font-medium dark:text-surface-300 text-surface-700">{{ total_pages }}</span>
+      </p>
+      <div class="flex items-center gap-1">
+        {% if page > 1 %}
+        <a href="?page={{ page|add:'-1' }}&search={{ search }}&status={{ status_filter }}&os_type={{ os_filter }}" class="px-3 py-1.5 text-sm rounded-lg dark:hover:bg-white/10 hover:bg-surface-100 dark:text-surface-300 text-surface-600 transition-colors">
+          <i class="fas fa-chevron-left text-xs"></i>
+        </a>
+        {% endif %}
+        {% for p in total_pages|make_list %}
+        <a href="?page={{ forloop.counter }}&search={{ search }}&status={{ status_filter }}&os_type={{ os_filter }}" class="px-3 py-1.5 text-sm rounded-lg transition-colors {% if forloop.counter == page %}bg-brand-500 text-white{% else %}dark:hover:bg-white/10 hover:bg-surface-100 dark:text-surface-300 text-surface-600{% endif %}">
+          {{ forloop.counter }}
+        </a>
+        {% endfor %}
+        {% if page < total_pages %}
+        <a href="?page={{ page|add:'1' }}&search={{ search }}&status={{ status_filter }}&os_type={{ os_filter }}" class="px-3 py-1.5 text-sm rounded-lg dark:hover:bg-white/10 hover:bg-surface-100 dark:text-surface-300 text-surface-600 transition-colors">
+          <i class="fas fa-chevron-right text-xs"></i>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  window.VANT_UI.initSortableTables({ tableId: 'agents-table', defaultColumn: 'Last Heartbeat' });
+});
+</script>
 {% endblock %}

@@ -23,6 +23,7 @@ class LoggingMiddleware(MiddlewareMixin):
             '/inventory/api/heartbeat/',
             '/inventory/api/inventory/submit/',
             '/inventory/api/command-result/',
+            '/inventory/api/config/sync/',
             '/api/agent/',
             (settings.STATIC_URL or '/static/'),
             (getattr(settings, 'MEDIA_URL', '/media/') or '/media/'),

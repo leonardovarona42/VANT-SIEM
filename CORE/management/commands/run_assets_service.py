@@ -27,6 +27,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         os.environ['VANT_SERVICE_NAME'] = 'assets-service'
+        os.environ['VANT_MICROSERVICE_CHILD'] = 'true'
 
         self.stdout.write(self.style.SUCCESS('Starting Assets Service...'))
 

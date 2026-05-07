@@ -105,3 +105,15 @@ media/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Build artifacts and temporary files
+*.spec
+*.pfx
+*.pem
+*.crt
+*.key
+*.bak
+*.tmp
+.vant_state/
+*.pyi
+build-setup/

@@ -13,7 +13,6 @@ from django.conf import settings
 from django.core.management.commands.runserver import Command as RunserverCommand
 
 SERVICES = [
-    {'name': 'Assets Service', 'command': 'run_assets_service', 'port': 8002, 'enabled': True},
     {'name': 'Inventory Service', 'command': 'run_inventory_service', 'port': 8003, 'enabled': True},
     {'name': 'Logs Service', 'command': 'run_logs_service', 'port': 9201, 'enabled': True},
 ]
@@ -87,29 +86,22 @@ class Command(RunserverCommand):
         self.stdout.flush()
 
         try:
-            proc = subprocess.Popen(
-                [python_exe, manage_py, svc['command'], '--port', str(port), '--noreload'],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                env=env,
-                creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0,
-            )
-            self.processes.append({'name': svc['name'], 'port': port, 'process': proc})
-            self.stdout.write(self.style.SUCCESS(f' OK (PID: {proc.pid})'))
+            log_dir = os.path.join(settings.BASE_DIR, 'logs', 'services')
+            os.makedirs(log_dir, exist_ok=True)
+            log_file = os.path.join(log_dir, f'{svc["command"]}.log')
 
-            thread = threading.Thread(target=self._stream_output, args=(proc, svc['name']), daemon=True)
-            thread.start()
+            with open(log_file, 'a', encoding='utf-8') as log_f:
+                proc = subprocess.Popen(
+                    [python_exe, manage_py, svc['command'], '--port', str(port), '--noreload'],
+                    stdout=log_f,
+                    stderr=subprocess.STDOUT,
+                    env=env,
+                    creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0,
+                )
+            self.processes.append({'name': svc['name'], 'port': port, 'process': proc, 'log_file': log_file})
+            self.stdout.write(self.style.SUCCESS(f' OK (PID: {proc.pid}, log: {log_file})'))
         except Exception as e:
             self.stdout.write(self.style.ERROR(f' FAILED: {e}'))
-
-    def _stream_output(self, proc, name):
-        try:
-            for line in iter(proc.stdout.readline, b''):
-                decoded = line.decode('utf-8', errors='replace').rstrip()
-                if decoded:
-                    self.stdout.write(self.style.WARNING(f'    [{name}] {decoded}'))
-        except Exception:
-            pass
 
     def _handle_shutdown(self, signum, frame):
         self.stdout.write('')

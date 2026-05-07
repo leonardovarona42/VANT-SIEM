@@ -1,0 +1,262 @@
+{% extends 'dashboard.html' %}
+
+{% block title %}Config - {{ agent.hostname }}{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold dark:text-white text-surface-900 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl dark:bg-purple-500/20 bg-purple-100 flex items-center justify-center">
+          <i class="fas fa-sliders-h text-purple-500"></i>
+        </div>
+        Agent Configuration
+      </h1>
+      <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ agent.hostname }} ({{ agent.agent_id }})</p>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'inventory-agent-detail' agent.agent_id %}" class="btn-secondary text-sm">
+        <i class="fas fa-arrow-left mr-2"></i>Back
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2">
+    <div class="glass-card p-6">
+      <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4 flex items-center gap-2">
+        <i class="fas fa-cube text-brand-500"></i>Modules
+      </h3>
+
+      <div class="space-y-4">
+        <div class="p-4 dark:bg-surface-800/50 bg-surface-50 rounded-xl">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg dark:bg-brand-500/20 bg-brand-100 flex items-center justify-center">
+                <i class="fas fa-desktop text-brand-500 text-sm"></i>
+              </div>
+              <div>
+                <h4 class="text-sm font-semibold dark:text-white text-surface-900">Inventory</h4>
+                <p class="text-xs dark:text-surface-400 text-surface-500">Hardware & Software collection</p>
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="mod-inventory-enabled" class="sr-only peer" checked>
+              <div class="w-9 h-5 bg-surface-300 peer-focus:outline-none rounded-full peer dark:bg-surface-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-500"></div>
+            </label>
+          </div>
+          <div class="flex items-center gap-3 ml-11">
+            <label class="text-xs dark:text-surface-300 text-surface-600">Interval (s)</label>
+            <input type="number" id="mod-inventory-interval" value="300" min="60" max="86400" class="w-24 px-2 py-1 dark:bg-surface-700 bg-surface-100 dark:text-surface-200 text-surface-800 rounded text-xs border dark:border-surface-600 border-surface-200">
+          </div>
+        </div>
+
+        <div class="p-4 dark:bg-surface-800/50 bg-surface-50 rounded-xl">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg dark:bg-emerald-500/20 bg-emerald-100 flex items-center justify-center">
+                <i class="fas fa-stream text-emerald-500 text-sm"></i>
+              </div>
+              <div>
+                <h4 class="text-sm font-semibold dark:text-white text-surface-900">Log Collectors</h4>
+                <p class="text-xs dark:text-surface-400 text-surface-500">System & application logs</p>
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="mod-collectors-enabled" class="sr-only peer">
+              <div class="w-9 h-5 bg-surface-300 peer-focus:outline-none rounded-full peer dark:bg-surface-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+            </label>
+          </div>
+          <div class="ml-11 space-y-2">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="col-win-event" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
+              <label for="col-win-event" class="text-xs dark:text-surface-300 text-surface-600">Windows Event Log</label>
+              <select id="col-win-channels" multiple class="flex-1 px-2 py-1 dark:bg-surface-700 bg-surface-100 dark:text-surface-200 text-surface-800 rounded text-xs border dark:border-surface-600 border-surface-200 h-8">
+                <option value="Security" selected>Security</option>
+                <option value="System">System</option>
+                <option value="Application">Application</option>
+              </select>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="col-snort" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
+              <label for="col-snort" class="text-xs dark:text-surface-300 text-surface-600">Snort IDS</label>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="col-suricata" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
+              <label for="col-suricata" class="text-xs dark:text-surface-300 text-surface-600">Suricata IDS</label>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="col-postgres" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
+              <label for="col-postgres" class="text-xs dark:text-surface-300 text-surface-600">PostgreSQL Logs</label>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="col-file-logs" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
+              <label for="col-file-logs" class="text-xs dark:text-surface-300 text-surface-600">File Log Collector</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 dark:bg-surface-800/50 bg-surface-50 rounded-xl">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg dark:bg-amber-500/20 bg-amber-100 flex items-center justify-center">
+                <i class="fas fa-shield-alt text-amber-500 text-sm"></i>
+              </div>
+              <div>
+                <h4 class="text-sm font-semibold dark:text-white text-surface-900">DLP (Aegis)</h4>
+                <p class="text-xs dark:text-surface-400 text-surface-500">Data Loss Prevention scanning</p>
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="mod-dlp-enabled" class="sr-only peer">
+              <div class="w-9 h-5 bg-surface-300 peer-focus:outline-none rounded-full peer dark:bg-surface-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+            </label>
+          </div>
+          <div class="ml-11 space-y-2">
+            <div class="flex items-center gap-2">
+              <label class="text-xs dark:text-surface-300 text-surface-600 w-20">Scan Paths</label>
+              <input type="text" id="dlp-paths" placeholder="C:\Users, C:\Documents" class="flex-1 px-2 py-1 dark:bg-surface-700 bg-surface-100 dark:text-surface-200 text-surface-800 rounded text-xs border dark:border-surface-600 border-surface-200">
+            </div>
+            <div class="flex items-center gap-2">
+              <label class="text-xs dark:text-surface-300 text-surface-600 w-20">Keywords</label>
+              <input type="text" id="dlp-keywords" placeholder="clasificado, secreto, restringido" value="clasificado, secreto, restringido" class="flex-1 px-2 py-1 dark:bg-surface-700 bg-surface-100 dark:text-surface-200 text-surface-800 rounded text-xs border dark:border-surface-600 border-surface-200">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="space-y-6">
+    <div class="glass-card p-6">
+      <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4 flex items-center gap-2">
+        <i class="fas fa-info-circle text-brand-500"></i>Status
+      </h3>
+      <div class="space-y-3">
+        <div class="flex justify-between">
+          <span class="text-xs dark:text-surface-400 text-surface-500">Pending Commands</span>
+          <span class="text-xs font-medium dark:text-surface-200 text-surface-700">{{ pending_config_cmds|length }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-xs dark:text-surface-400 text-surface-500">Agent Status</span>
+          <span class="text-xs font-medium dark:text-surface-200 text-surface-700">{{ agent.status }}</span>
+        </div>
+      </div>
+      {% if pending_config_cmds %}
+      <div class="mt-4 pt-4 dark:border-surface-800 border-surface-200 border-t">
+        <p class="text-xs dark:text-surface-400 text-surface-500 mb-2">Recent pending:</p>
+        {% for cmd in pending_config_cmds|slice:":3" %}
+        <p class="text-xs dark:text-surface-300 text-surface-600">{{ cmd.created_at|timesince }} ago</p>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="glass-card p-6">
+      <button id="save-config" class="btn-primary w-full text-sm">
+        <i class="fas fa-paper-plane mr-2"></i>Push Configuration
+      </button>
+      <p class="text-xs dark:text-surface-500 text-surface-400 mt-2 text-center">Agent will receive config on next heartbeat</p>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="fixed bottom-20 right-8 z-50 hidden">
+  <div class="glass-card px-4 py-3 flex items-center gap-3">
+    <i id="toast-icon" class="fas fa-check-circle text-emerald-500"></i>
+    <span id="toast-msg" class="text-sm dark:text-surface-200 text-surface-700"></span>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const existingConfig = {{ last_config|safe|default:'{}' }};
+
+  if (existingConfig.inventory) {
+    document.getElementById('mod-inventory-enabled').checked = existingConfig.inventory.enabled !== false;
+    document.getElementById('mod-inventory-interval').value = existingConfig.inventory.interval || 300;
+  }
+
+  if (existingConfig.collectors) {
+    const cols = existingConfig.collectors;
+    const anyEnabled = Object.values(cols).some(c => typeof c === 'object' && c.enabled);
+    document.getElementById('mod-collectors-enabled').checked = anyEnabled;
+    if (cols.windows_eventlog) document.getElementById('col-win-event').checked = cols.windows_eventlog.enabled;
+    if (cols.snort) document.getElementById('col-snort').checked = cols.snort.enabled;
+    if (cols.suricata) document.getElementById('col-suricata').checked = cols.suricata.enabled;
+    if (cols.postgres) document.getElementById('col-postgres').checked = cols.postgres.enabled;
+    if (cols.file_logs) document.getElementById('col-file-logs').checked = cols.file_logs.enabled;
+  }
+
+  if (existingConfig.dlp) {
+    document.getElementById('mod-dlp-enabled').checked = existingConfig.dlp.enabled;
+    document.getElementById('dlp-paths').value = (existingConfig.dlp.scan_paths || []).join(', ');
+    document.getElementById('dlp-keywords').value = (existingConfig.dlp.keywords || []).join(', ');
+  }
+
+  document.getElementById('save-config').addEventListener('click', function() {
+    const btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Pushing...';
+
+    const config = {
+      inventory: {
+        enabled: document.getElementById('mod-inventory-enabled').checked,
+        interval: parseInt(document.getElementById('mod-inventory-interval').value) || 300,
+      },
+      collectors: {
+        windows_eventlog: {
+          enabled: document.getElementById('col-win-event').checked,
+          channels: Array.from(document.getElementById('col-win-channels').selectedOptions).map(o => o.value),
+        },
+        snort: { enabled: document.getElementById('col-snort').checked },
+        suricata: { enabled: document.getElementById('col-suricata').checked },
+        postgres: { enabled: document.getElementById('col-postgres').checked },
+        file_logs: { enabled: document.getElementById('col-file-logs').checked },
+      },
+      dlp: {
+        enabled: document.getElementById('mod-dlp-enabled').checked,
+        scan_paths: document.getElementById('dlp-paths').value.split(',').map(s => s.trim()).filter(Boolean),
+        scan_extensions: ['.docx', '.xlsx', '.pdf', '.txt'],
+        keywords: document.getElementById('dlp-keywords').value.split(',').map(s => s.trim()).filter(Boolean),
+      },
+    };
+
+    fetch('{% url "inventory-api-config-push" agent.agent_id %}', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}',
+      },
+      body: JSON.stringify({ config: config, push_immediately: true }),
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'ok') {
+        showToast('Configuration pushed successfully (v' + data.version + ')', 'success');
+      } else {
+        showToast('Failed: ' + JSON.stringify(data), 'error');
+      }
+    })
+    .catch(err => showToast('Error: ' + err.message, 'error'))
+    .finally(() => {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Push Configuration';
+    });
+  });
+
+  function showToast(msg, type) {
+    const toast = document.getElementById('toast');
+    const icon = document.getElementById('toast-icon');
+    const text = document.getElementById('toast-msg');
+    text.textContent = msg;
+    icon.className = type === 'success' ? 'fas fa-check-circle text-emerald-500' : 'fas fa-exclamation-circle text-red-500';
+    toast.classList.remove('hidden');
+    setTimeout(() => toast.classList.add('hidden'), 4000);
+  }
+});
+</script>
+{% endblock %}

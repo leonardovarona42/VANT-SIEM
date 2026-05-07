@@ -47,6 +47,7 @@ COMMAND_TYPE_CHOICES = [
     ('update_agent', 'Update Agent'),
     ('run_script', 'Run Script'),
     ('collect_logs', 'Collect Logs'),
+    ('push_config', 'Push Configuration'),
     ('custom', 'Custom'),
 ]
 

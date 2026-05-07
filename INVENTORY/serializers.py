@@ -89,7 +89,7 @@ class AgentCommandSerializer(serializers.ModelSerializer):
 
 
 class AgentCommandCreateSerializer(serializers.Serializer):
-    command_type = serializers.ChoiceField(choices=[c[0] for c in [('update_inventory', 'Update Inventory'), ('restart_agent', 'Restart Agent'), ('stop_agent', 'Stop Agent'), ('update_agent', 'Update Agent'), ('run_script', 'Run Script'), ('collect_logs', 'Collect Logs'), ('custom', 'Custom')]])
+    command_type = serializers.ChoiceField(choices=[c[0] for c in [('update_inventory', 'Update Inventory'), ('restart_agent', 'Restart Agent'), ('stop_agent', 'Stop Agent'), ('update_agent', 'Update Agent'), ('run_script', 'Run Script'), ('collect_logs', 'Collect Logs'), ('push_config', 'Push Configuration'), ('custom', 'Custom')]])
     payload = serializers.JSONField(required=False, default=dict)
 
 
@@ -113,3 +113,23 @@ class AgentStatsSerializer(serializers.Serializer):
     disabled = serializers.IntegerField()
     os_distribution = serializers.JSONField()
     agents_by_day = serializers.JSONField()
+
+
+class AgentConfigSerializer(serializers.Serializer):
+    inventory = serializers.JSONField(required=False)
+    collectors = serializers.JSONField(required=False)
+    dlp = serializers.JSONField(required=False)
+    agent = serializers.JSONField(required=False)
+
+
+class AgentConfigResponseSerializer(serializers.Serializer):
+    config = serializers.JSONField()
+    version = serializers.IntegerField()
+    server_url = serializers.CharField()
+    server_logs_url = serializers.CharField()
+    agent_version = serializers.CharField()
+
+
+class AgentConfigPushSerializer(serializers.Serializer):
+    config = serializers.JSONField()
+    push_immediately = serializers.BooleanField(required=False, default=True)

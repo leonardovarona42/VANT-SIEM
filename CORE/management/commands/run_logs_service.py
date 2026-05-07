@@ -1,3 +1,4 @@
+import os
 from django.core.management.base import BaseCommand
 from django.core.management import call_command
 
@@ -13,6 +14,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         host = options['host']
         port = options['port']
+
+        os.environ['VANT_SERVICE_NAME'] = 'logs-service'
+        os.environ['VANT_MICROSERVICE_CHILD'] = 'true'
 
         self.stdout.write(self.style.SUCCESS(f'Starting OpenSearch Logs Service on {host}:{port}'))
         self.stdout.write(self.style.SUCCESS('Endpoints:'))
