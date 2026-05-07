@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     health_check, agent_stats, register_agent, heartbeat, submit_inventory,
     command_result, AgentViewSet, SoftwareViewSet, AgentCommandViewSet,
-    push_config, get_agent_config, config_templates,
+    push_config, get_agent_config, config_templates, delete_agent, send_command,
 )
 from .ui_views import inventory_dashboard, agents_list, agent_detail, software_list, agent_config_view
 
@@ -28,5 +28,7 @@ urlpatterns = [
     path('api/config/templates/', config_templates, name='inventory-api-config-templates'),
     path('api/agent/<str:agent_id>/config/', get_agent_config, name='inventory-api-agent-config'),
     path('api/agent/<str:agent_id>/config/push/', push_config, name='inventory-api-config-push'),
+    path('api/agent/<str:agent_id>/command/', send_command, name='inventory-api-send-command'),
+    path('api/agent/<str:agent_id>/', delete_agent, name='inventory-api-delete-agent'),
     path('api/', include(router.urls)),
 ]

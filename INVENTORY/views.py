@@ -79,22 +79,32 @@ def register_agent(request):
     data = serializer.validated_data
     hostname = data['hostname']
     mac = data.get('mac_address', '')
+    machine_name = data.get('machine_name', hostname)
 
-    agent, created = Agent.objects.get_or_create(
-        mac_address=mac,
-        defaults={
-            'hostname': hostname,
-            'machine_name': data.get('machine_name', hostname),
-            'os_type': data.get('os_type', 'other'),
-            'os_version': data.get('os_version', ''),
-            'os_arch': data.get('os_arch', 'x86_64'),
-            'agent_version': data.get('agent_version', '1.0.0'),
-            'ip_address': data.get('ip_address'),
-            'domain': data.get('domain', ''),
-            'status': 'online',
-            'tags': data.get('tags', []),
-        },
-    )
+    # Deduplicate by machine_name first, then MAC
+    if machine_name:
+        agent = Agent.objects.filter(machine_name=machine_name).first()
+    elif mac:
+        agent = Agent.objects.filter(mac_address=mac).first()
+    else:
+        agent = None
+
+    created = False
+    if agent is None:
+        agent = Agent.objects.create(
+            hostname=hostname,
+            machine_name=machine_name,
+            os_type=data.get('os_type', 'other'),
+            os_version=data.get('os_version', ''),
+            os_arch=data.get('os_arch', 'x86_64'),
+            agent_version=data.get('agent_version', '1.0.0'),
+            ip_address=data.get('ip_address'),
+            mac_address=mac,
+            domain=data.get('domain', ''),
+            status='online',
+            tags=data.get('tags', []),
+        )
+        created = True
 
     if not created:
         agent.hostname = hostname
@@ -102,11 +112,13 @@ def register_agent(request):
         agent.os_version = data.get('os_version', agent.os_version)
         agent.agent_version = data.get('agent_version', agent.agent_version)
         agent.ip_address = data.get('ip_address', agent.ip_address)
+        if mac:
+            agent.mac_address = mac
         agent.domain = data.get('domain', agent.domain)
         if agent.status in ('offline', 'pending'):
             agent.status = 'online'
         agent.heartbeat()
-        agent.save(update_fields=['hostname', 'os_type', 'os_version', 'agent_version', 'ip_address', 'domain', 'status'])
+        agent.save(update_fields=['hostname', 'os_type', 'os_version', 'agent_version', 'ip_address', 'mac_address', 'domain', 'status'])
 
     return Response({
         'agent_id': str(agent.agent_id),
@@ -418,4 +430,42 @@ def config_templates(request):
                 },
             },
         },
+    })
+
+
+@api_view(['DELETE'])
+def delete_agent(request, agent_id):
+    try:
+        agent = Agent.objects.get(agent_id=agent_id)
+    except Agent.DoesNotExist:
+        return Response({'error': 'Agent not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    hostname = agent.hostname
+    agent.delete()
+    return Response({'status': 'ok', 'message': f'Agent "{hostname}" deleted'})
+
+
+@api_view(['POST'])
+def send_command(request, agent_id):
+    try:
+        agent = Agent.objects.get(agent_id=agent_id)
+    except Agent.DoesNotExist:
+        return Response({'error': 'Agent not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    command_type = request.data.get('command_type', '')
+    payload = request.data.get('payload', {})
+
+    if command_type not in [c[0] for c in COMMAND_TYPE_CHOICES]:
+        return Response({'error': 'Invalid command type'}, status=status.HTTP_400_BAD_REQUEST)
+
+    cmd = AgentCommand.objects.create(
+        agent=agent,
+        command_type=command_type,
+        payload=payload,
+    )
+
+    return Response({
+        'status': 'ok',
+        'command_id': str(cmd.command_id),
+        'message': f'Command "{command_type}" queued for agent',
     })
