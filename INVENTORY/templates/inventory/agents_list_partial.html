@@ -1,0 +1,105 @@
+{% for agent in agents %}
+<tr class="dark:hover:bg-white/[0.03] hover:bg-surface-50/50 transition-colors">
+  <td class="px-6 py-4">
+    <a href="{% url 'inventory-agent-detail' agent.agent_id %}" class="text-sm font-semibold dark:text-white text-surface-900 hover:text-brand-500 dark:hover:text-brand-400 transition-colors">
+      {{ agent.hostname }}
+    </a>
+    {% if agent.machine_name %}
+    <p class="text-xs dark:text-surface-500 text-surface-400 mt-0.5">{{ agent.machine_name }}</p>
+    {% endif %}
+  </td>
+  <td class="px-6 py-4">
+    <span class="inline-flex items-center px-2.5 py-1 dark:bg-surface-800 bg-surface-100 rounded-md text-xs font-medium dark:text-surface-300 text-surface-700">
+      {{ agent.get_os_type_display }}
+    </span>
+    {% if agent.os_version %}
+    <p class="text-xs dark:text-surface-500 text-surface-400 mt-1">{{ agent.os_version }}</p>
+    {% endif %}
+  </td>
+  <td class="px-6 py-4">
+    <code class="text-xs dark:bg-surface-800 bg-surface-100 dark:text-surface-300 text-surface-700 px-2 py-1 rounded">{{ agent.ip_address|default:"-" }}</code>
+  </td>
+  <td class="px-6 py-4">
+    {% with hw=agent.hardware %}
+    {% if hw %}
+    <div class="text-xs dark:text-surface-300 text-surface-600">
+      <div class="flex items-center gap-1.5">
+        <i class="fas fa-microchip w-3.5 text-surface-400"></i>
+        <span>{{ hw.cpu_cores }} cores</span>
+      </div>
+      <div class="flex items-center gap-1.5 mt-0.5">
+        <i class="fas fa-memory w-3.5 text-surface-400"></i>
+        <span>{{ hw.ram_total_gb }} GB</span>
+      </div>
+    </div>
+    {% else %}
+    <span class="text-xs dark:text-surface-600 text-surface-400">-</span>
+    {% endif %}
+    {% endwith %}
+  </td>
+  <td class="px-6 py-4">
+    <code class="text-xs dark:bg-surface-800 bg-surface-100 dark:text-surface-300 text-surface-700 px-2 py-1 rounded">v{{ agent.agent_version }}</code>
+  </td>
+  <td class="px-6 py-4">
+    {% if agent.status == 'online' %}
+    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+      Online
+    </span>
+    {% elif agent.status == 'offline' %}
+    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+      <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+      Offline
+    </span>
+    {% elif agent.status == 'pending' %}
+    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+      <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+      Pending
+    </span>
+    {% elif agent.status == 'error' %}
+    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-surface-200 text-surface-700 dark:bg-surface-700/50 dark:text-surface-300">
+      <span class="w-1.5 h-1.5 rounded-full bg-surface-500"></span>
+      Error
+    </span>
+    {% elif agent.status == 'disabled' %}
+    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-500">
+      <span class="w-1.5 h-1.5 rounded-full bg-surface-400"></span>
+      Disabled
+    </span>
+    {% else %}
+    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400">
+      {{ agent.get_status_display }}
+    </span>
+    {% endif %}
+  </td>
+  <td class="px-6 py-4">
+    {% if agent.last_heartbeat %}
+    <div class="text-sm dark:text-surface-300 text-surface-600">
+      <span title="{{ agent.last_heartbeat }}">{{ agent.last_heartbeat|timesince }} ago</span>
+    </div>
+    {% else %}
+    <span class="text-sm dark:text-surface-600 text-surface-400">Never</span>
+    {% endif %}
+  </td>
+  <td class="px-6 py-4">
+    <span class="text-sm dark:text-surface-300 text-surface-600">{{ agent.software_count }}</span>
+  </td>
+  <td class="px-6 py-4 text-right">
+    <button class="agent-action-btn inline-flex items-center justify-center w-8 h-8 rounded-lg dark:hover:bg-white/10 hover:bg-surface-100 text-surface-400 dark:hover:text-white hover:text-brand-500 transition-all" data-agent-id="{{ agent.agent_id }}" data-hostname="{{ agent.hostname }}" data-ip="{{ agent.ip_address|default:'' }}" data-os="{{ agent.os_type }}" title="Actions">
+      <i class="fas fa-ellipsis-v text-sm"></i>
+    </button>
+  </td>
+</tr>
+{% empty %}
+<tr>
+  <td colspan="9" class="px-6 py-16 text-center">
+    <div class="flex flex-col items-center">
+      <div class="w-16 h-16 rounded-2xl dark:bg-surface-800 bg-surface-100 flex items-center justify-center mb-4">
+        <i class="fas fa-desktop text-2xl dark:text-surface-600 text-surface-400"></i>
+      </div>
+      <h3 class="text-base font-semibold dark:text-surface-300 text-surface-700">No agents found</h3>
+      <p class="text-sm dark:text-surface-500 text-surface-400 mt-1">Try adjusting your search or filter criteria</p>
+    </div>
+  </td>
+</tr>
+{% endfor %}

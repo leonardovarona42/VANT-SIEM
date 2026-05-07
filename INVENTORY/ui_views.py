@@ -86,6 +86,10 @@ def agents_list(request):
         'status_choices': [('online', 'Online'), ('offline', 'Offline'), ('pending', 'Pending'), ('error', 'Error'), ('disabled', 'Disabled')],
         'os_choices': Agent._meta.get_field('os_type').choices,
     }
+
+    if request.headers.get('X-Partial') == 'table-body':
+        return render(request, 'inventory/agents_list_partial.html', context)
+
     return render(request, 'inventory/agents_list.html', context)
 
 

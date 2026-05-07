@@ -97,143 +97,7 @@
         </tr>
       </thead>
       <tbody class="divide-y dark:divide-surface-800 divide-surface-200">
-        {% for agent in agents %}
-        <tr class="dark:hover:bg-white/[0.03] hover:bg-surface-50/50 transition-colors">
-          <td class="px-6 py-4">
-            <a href="{% url 'inventory-agent-detail' agent.agent_id %}" class="text-sm font-semibold dark:text-white text-surface-900 hover:text-brand-500 dark:hover:text-brand-400 transition-colors">
-              {{ agent.hostname }}
-            </a>
-            {% if agent.machine_name %}
-            <p class="text-xs dark:text-surface-500 text-surface-400 mt-0.5">{{ agent.machine_name }}</p>
-            {% endif %}
-          </td>
-          <td class="px-6 py-4">
-            <span class="inline-flex items-center px-2.5 py-1 dark:bg-surface-800 bg-surface-100 rounded-md text-xs font-medium dark:text-surface-300 text-surface-700">
-              {{ agent.get_os_type_display }}
-            </span>
-            {% if agent.os_version %}
-            <p class="text-xs dark:text-surface-500 text-surface-400 mt-1">{{ agent.os_version }}</p>
-            {% endif %}
-          </td>
-          <td class="px-6 py-4">
-            <code class="text-xs dark:bg-surface-800 bg-surface-100 dark:text-surface-300 text-surface-700 px-2 py-1 rounded">{{ agent.ip_address|default:"-" }}</code>
-          </td>
-          <td class="px-6 py-4">
-            {% with hw=agent.hardware %}
-            {% if hw %}
-            <div class="text-xs dark:text-surface-300 text-surface-600">
-              <div class="flex items-center gap-1.5">
-                <i class="fas fa-microchip w-3.5 text-surface-400"></i>
-                <span>{{ hw.cpu_cores }} cores</span>
-              </div>
-              <div class="flex items-center gap-1.5 mt-0.5">
-                <i class="fas fa-memory w-3.5 text-surface-400"></i>
-                <span>{{ hw.ram_total_gb }} GB</span>
-              </div>
-            </div>
-            {% else %}
-            <span class="text-xs dark:text-surface-600 text-surface-400">-</span>
-            {% endif %}
-            {% endwith %}
-          </td>
-          <td class="px-6 py-4">
-            <code class="text-xs dark:bg-surface-800 bg-surface-100 dark:text-surface-300 text-surface-700 px-2 py-1 rounded">v{{ agent.agent_version }}</code>
-          </td>
-          <td class="px-6 py-4">
-            {% if agent.status == 'online' %}
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Online
-            </span>
-            {% elif agent.status == 'offline' %}
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
-              <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-              Offline
-            </span>
-            {% elif agent.status == 'pending' %}
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
-              <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-              Pending
-            </span>
-            {% elif agent.status == 'error' %}
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-surface-200 text-surface-700 dark:bg-surface-700/50 dark:text-surface-300">
-              <span class="w-1.5 h-1.5 rounded-full bg-surface-500"></span>
-              Error
-            </span>
-            {% elif agent.status == 'disabled' %}
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-500">
-              <span class="w-1.5 h-1.5 rounded-full bg-surface-400"></span>
-              Disabled
-            </span>
-            {% else %}
-            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400">
-              {{ agent.get_status_display }}
-            </span>
-            {% endif %}
-          </td>
-          <td class="px-6 py-4">
-            {% if agent.last_heartbeat %}
-            <div class="text-sm dark:text-surface-300 text-surface-600">
-              <span title="{{ agent.last_heartbeat }}">{{ agent.last_heartbeat|timesince }} ago</span>
-            </div>
-            {% else %}
-            <span class="text-sm dark:text-surface-600 text-surface-400">Never</span>
-            {% endif %}
-          </td>
-          <td class="px-6 py-4">
-            <span class="text-sm dark:text-surface-300 text-surface-600">{{ agent.software_count }}</span>
-          </td>
-          <td class="px-6 py-4 text-right">
-            <div class="relative inline-block" data-dropdown>
-              <button class="inline-flex items-center justify-center w-8 h-8 rounded-lg dark:hover:bg-white/10 hover:bg-surface-100 text-surface-400 dark:hover:text-white hover:text-brand-500 transition-all" onclick="toggleAgentMenu(this)" title="Actions">
-                <i class="fas fa-ellipsis-v text-sm"></i>
-              </button>
-              <div class="hidden absolute right-0 mt-2 w-64 glass-card z-50 shadow-xl rounded-xl overflow-hidden border dark:border-surface-700 border-surface-200">
-                <div class="p-2">
-                  <a href="{% url 'inventory-agent-detail' agent.agent_id %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm dark:text-surface-300 text-surface-700 dark:hover:bg-white/5 hover:bg-surface-50 transition-colors">
-                    <i class="fas fa-eye w-4 text-brand-500"></i>View Details
-                  </a>
-                  <a href="{% url 'inventory-agent-config' agent.agent_id %}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm dark:text-surface-300 text-surface-700 dark:hover:bg-white/5 hover:bg-surface-50 transition-colors">
-                    <i class="fas fa-sliders-h w-4 text-amber-500"></i>Configuration
-                  </a>
-                  <div class="my-1 dark:border-surface-700 border-surface-200 border-t"></div>
-                  <button onclick="sendCommand('{{ agent.agent_id }}', 'update_inventory')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm dark:text-surface-300 text-surface-700 dark:hover:bg-white/5 hover:bg-surface-50 transition-colors">
-                    <i class="fas fa-sync w-4 text-emerald-500"></i>Sync Inventory
-                  </button>
-                  <button onclick="sendCommand('{{ agent.agent_id }}', 'collect_logs')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm dark:text-surface-300 text-surface-700 dark:hover:bg-white/5 hover:bg-surface-50 transition-colors">
-                    <i class="fas fa-stream w-4 text-blue-500"></i>Collect Logs
-                  </button>
-                  <div class="my-1 dark:border-surface-700 border-surface-200 border-t"></div>
-                  <button onclick="sendCommand('{{ agent.agent_id }}', 'restart_agent')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm dark:text-surface-300 text-surface-700 dark:hover:bg-white/5 hover:bg-surface-50 transition-colors">
-                    <i class="fas fa-redo w-4 text-purple-500"></i>Restart Agent
-                  </button>
-                  {% if agent.os_type|slice:":7" == "windows" %}
-                  <button onclick="rdpConnect('{{ agent.ip_address|default:"" }}')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm dark:text-surface-300 text-surface-700 dark:hover:bg-white/5 hover:bg-surface-50 transition-colors">
-                    <i class="fas fa-desktop w-4 text-cyan-500"></i>Share RDP Session
-                  </button>
-                  {% endif %}
-                  <div class="my-1 dark:border-surface-700 border-surface-200 border-t"></div>
-                  <button onclick="confirmDelete('{{ agent.agent_id }}', '{{ agent.hostname }}')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-red-500 dark:hover:bg-red-500/10 hover:bg-red-50 transition-colors">
-                    <i class="fas fa-trash w-4"></i>Delete Agent
-                  </button>
-                </div>
-              </div>
-            </div>
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="9" class="px-6 py-16 text-center">
-            <div class="flex flex-col items-center">
-              <div class="w-16 h-16 rounded-2xl dark:bg-surface-800 bg-surface-100 flex items-center justify-center mb-4">
-                <i class="fas fa-desktop text-2xl dark:text-surface-600 text-surface-400"></i>
-              </div>
-              <h3 class="text-base font-semibold dark:text-surface-300 text-surface-700">No agents found</h3>
-              <p class="text-sm dark:text-surface-500 text-surface-400 mt-1">Try adjusting your search or filter criteria</p>
-            </div>
-          </td>
-        </tr>
-        {% endfor %}
+        {% include 'inventory/agents_list_partial.html' %}
       </tbody>
     </table>
   </div>
@@ -265,105 +129,158 @@
   </div>
   {% endif %}
 </div>
+
+<div id="agent-dropdown" class="hidden fixed z-[9999] w-64 glass-card shadow-xl rounded-xl overflow-hidden border dark:border-surface-700 border-surface-200">
+  <div class="p-2">
+    <a id="dd-view" href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm dark:text-surface-300 text-surface-700 dark:hover:bg-white/5 hover:bg-surface-50 transition-colors">
+      <i class="fas fa-eye w-4 text-brand-500"></i>View Details
+    </a>
+    <a id="dd-config" href="#" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm dark:text-surface-300 text-surface-700 dark:hover:bg-white/5 hover:bg-surface-50 transition-colors">
+      <i class="fas fa-sliders-h w-4 text-amber-500"></i>Configuration
+    </a>
+    <div class="my-1 dark:border-surface-700 border-surface-200 border-t"></div>
+    <button id="dd-sync" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm dark:text-surface-300 text-surface-700 dark:hover:bg-white/5 hover:bg-surface-50 transition-colors">
+      <i class="fas fa-sync w-4 text-emerald-500"></i>Sync Inventory
+    </button>
+    <button id="dd-logs" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm dark:text-surface-300 text-surface-700 dark:hover:bg-white/5 hover:bg-surface-50 transition-colors">
+      <i class="fas fa-stream w-4 text-blue-500"></i>Collect Logs
+    </button>
+    <div class="my-1 dark:border-surface-700 border-surface-200 border-t"></div>
+    <button id="dd-restart" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm dark:text-surface-300 text-surface-700 dark:hover:bg-white/5 hover:bg-surface-50 transition-colors">
+      <i class="fas fa-redo w-4 text-purple-500"></i>Restart Agent
+    </button>
+    <button id="dd-rdp" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm dark:text-surface-300 text-surface-700 dark:hover:bg-white/5 hover:bg-surface-50 transition-colors hidden">
+      <i class="fas fa-desktop w-4 text-cyan-500"></i>Share RDP Session
+    </button>
+    <div class="my-1 dark:border-surface-700 border-surface-200 border-t"></div>
+    <button id="dd-delete" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-red-500 dark:hover:bg-red-500/10 hover:bg-red-50 transition-colors">
+      <i class="fas fa-trash w-4"></i>Delete Agent
+    </button>
+  </div>
+</div>
+
+<div id="refresh-indicator" class="fixed bottom-20 left-8 z-50 hidden">
+  <div class="glass-card px-3 py-2 flex items-center gap-2">
+    <i class="fas fa-sync fa-spin text-brand-500 text-sm"></i>
+    <span class="text-xs dark:text-surface-300 text-surface-600">Refreshing...</span>
+  </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   window.VANT_UI.initSortableTables({ tableId: 'agents-table', defaultColumn: 'Last Heartbeat' });
+  initAgentActions();
+  startAutoRefresh();
 });
 
-function toggleAgentMenu(btn) {
-  const dropdown = btn.parentElement;
-  const menu = dropdown.querySelector('div.glass-card');
-  const isOpen = !menu.classList.contains('hidden');
+let _ddAgentId = null, _ddHostname = '', _ddIp = '', _ddOs = '';
 
-  document.querySelectorAll('[data-dropdown] .glass-card').forEach(m => {
-    if (m !== menu) m.classList.add('hidden');
+function initAgentActions() {
+  document.querySelectorAll('.agent-action-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      closeDropdown();
+      const dd = document.getElementById('agent-dropdown');
+      _ddAgentId = this.dataset.agentId;
+      _ddHostname = this.dataset.hostname;
+      _ddIp = this.dataset.ip;
+      _ddOs = this.dataset.os;
+
+      document.getElementById('dd-view').href = '/inventory/agent/' + _ddAgentId + '/';
+      document.getElementById('dd-config').href = '/inventory/agent/' + _ddAgentId + '/config/';
+      document.getElementById('dd-sync').onclick = function() { sendCommand(_ddAgentId, 'update_inventory'); };
+      document.getElementById('dd-logs').onclick = function() { sendCommand(_ddAgentId, 'collect_logs'); };
+      document.getElementById('dd-restart').onclick = function() { sendCommand(_ddAgentId, 'restart_agent'); };
+      document.getElementById('dd-delete').onclick = function() { confirmDelete(_ddAgentId, _ddHostname); };
+
+      const rdpBtn = document.getElementById('dd-rdp');
+      if (_ddOs && _ddOs.slice(0, 7) === 'windows') {
+        rdpBtn.classList.remove('hidden');
+        rdpBtn.onclick = function() { rdpConnect(_ddIp); };
+      } else {
+        rdpBtn.classList.add('hidden');
+      }
+
+      const rect = this.getBoundingClientRect();
+      dd.style.top = (rect.bottom + 4) + 'px';
+      dd.style.left = Math.min(rect.right - 256, window.innerWidth - 270) + 'px';
+      dd.classList.remove('hidden');
+    });
   });
 
-  if (isOpen) {
-    menu.classList.add('hidden');
-  } else {
-    menu.classList.remove('hidden');
-    const rect = btn.getBoundingClientRect();
-    const menuRect = menu.getBoundingClientRect();
-    if (rect.left + menuRect.width > window.innerWidth) {
-      menu.style.left = 'auto';
-      menu.style.right = '0';
-    }
-  }
+  document.addEventListener('click', function() { closeDropdown(); });
 }
 
-document.addEventListener('click', function(e) {
-  if (!e.target.closest('[data-dropdown]')) {
-    document.querySelectorAll('[data-dropdown] .glass-card').forEach(m => m.classList.add('hidden'));
-  }
-});
+function closeDropdown() {
+  document.getElementById('agent-dropdown').classList.add('hidden');
+}
 
 function sendCommand(agentId, commandType) {
-  closeAllMenus();
+  closeDropdown();
   if (!confirm('Send ' + commandType.replace('_', ' ') + ' command to this agent?')) return;
-
   fetch('/inventory/api/agent/' + agentId + '/command/', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': '{{ csrf_token }}',
-    },
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
     body: JSON.stringify({ command_type: commandType }),
   })
   .then(r => r.json())
-  .then(data => {
-    if (data.status === 'ok') {
-      showToast('Command sent successfully', 'success');
-    } else {
-      showToast('Failed: ' + (data.error || JSON.stringify(data)), 'error');
-    }
-  })
+  .then(data => { showToast(data.status === 'ok' ? 'Command sent' : 'Failed: ' + (data.error || ''), data.status === 'ok' ? 'success' : 'error'); })
   .catch(err => showToast('Error: ' + err.message, 'error'));
 }
 
 function rdpConnect(ip) {
-  closeAllMenus();
-  if (!ip) {
-    showToast('No IP address available for RDP', 'error');
-    return;
-  }
-  const rdpContent = 'full address:s:' + ip + '\n';
-  const blob = new Blob([rdpContent], { type: 'application/x-rdp' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = ip + '.rdp';
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('RDP file downloaded for ' + ip, 'success');
+  closeDropdown();
+  if (!ip) { showToast('No IP address', 'error'); return; }
+  const blob = new Blob(['full address:s:' + ip + '\n'], { type: 'application/x-rdp' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = ip + '.rdp'; a.click();
+  showToast('RDP file downloaded', 'success');
 }
 
 function confirmDelete(agentId, hostname) {
-  closeAllMenus();
-  if (!confirm('Are you sure you want to delete agent "' + hostname + '"?\nThis action cannot be undone.')) return;
-
+  closeDropdown();
+  if (!confirm('Delete agent "' + hostname + '"? This cannot be undone.')) return;
   fetch('/inventory/api/agent/' + agentId + '/', {
     method: 'DELETE',
-    headers: {
-      'X-CSRFToken': '{{ csrf_token }}',
-    },
+    headers: { 'X-CSRFToken': getCookie('csrftoken') },
   })
-  .then(r => {
-    if (r.ok) {
-      showToast('Agent deleted successfully', 'success');
-      setTimeout(() => location.reload(), 1000);
-    } else {
-      return r.json().then(d => { throw new Error(d.error || 'Delete failed'); });
-    }
-  })
+  .then(r => r.ok ? location.reload() : r.json().then(d => { throw new Error(d.error || 'Failed'); }))
   .catch(err => showToast('Error: ' + err.message, 'error'));
 }
 
-function closeAllMenus() {
-  document.querySelectorAll('[data-dropdown] .glass-card').forEach(m => m.classList.add('hidden'));
+function getCookie(name) {
+  const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+  return v ? v.pop() : '';
+}
+
+let _refreshTimer = null;
+function startAutoRefresh() {
+  if (_refreshTimer) clearInterval(_refreshTimer);
+  _refreshTimer = setInterval(refreshTable, 5000);
+}
+
+function refreshTable() {
+  const indicator = document.getElementById('refresh-indicator');
+  indicator.classList.remove('hidden');
+  const url = window.location.pathname + window.location.search;
+  fetch(url, {
+    headers: { 'X-Partial': 'table-body', 'X-Requested-With': 'XMLHttpRequest' },
+  })
+  .then(r => r.text())
+  .then(html => {
+    const tbody = document.querySelector('#agents-table tbody');
+    if (tbody) {
+      const tmp = document.createElement('tbody');
+      tmp.innerHTML = html;
+      tbody.replaceWith(tmp);
+      tmp.id = 'agents-table';
+      tmp.classList.add('divide-y', 'dark:divide-surface-800', 'divide-surface-200');
+      initAgentActions();
+    }
+    indicator.classList.add('hidden');
+  })
+  .catch(() => indicator.classList.add('hidden'));
 }
 
 function showToast(msg, type) {
