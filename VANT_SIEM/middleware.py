@@ -18,6 +18,8 @@ class LoggingMiddleware(MiddlewareMixin):
             '/siem/dashboard/login/',
             '/siem/login/',
             '/logs/api/health/',
+            '/logs/api/ingest/',
+            '/logs/api/syslog/',
             '/inventory/api/health/',
             '/inventory/api/register/',
             '/inventory/api/heartbeat/',

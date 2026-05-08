@@ -68,15 +68,50 @@
               <div class="w-9 h-5 bg-surface-300 peer-focus:outline-none rounded-full peer dark:bg-surface-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
             </label>
           </div>
-          <div class="ml-11 space-y-2">
-            <div class="flex items-center gap-2">
-              <input type="checkbox" id="col-win-event" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
-              <label for="col-win-event" class="text-xs dark:text-surface-300 text-surface-600">Windows Event Log</label>
-              <select id="col-win-channels" multiple class="flex-1 px-2 py-1 dark:bg-surface-700 bg-surface-100 dark:text-surface-200 text-surface-800 rounded text-xs border dark:border-surface-600 border-surface-200 h-8">
-                <option value="Security" selected>Security</option>
-                <option value="System">System</option>
-                <option value="Application">Application</option>
-              </select>
+          <div class="ml-11 space-y-3">
+            <div>
+              <div class="flex items-center gap-2 mb-2">
+                <input type="checkbox" id="col-win-event" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
+                <label for="col-win-event" class="text-xs font-medium dark:text-surface-300 text-surface-600">Windows Event Log</label>
+              </div>
+              <div id="win-event-config" class="hidden ml-6 space-y-2">
+                <label class="text-xs dark:text-surface-400 text-surface-500">Channels (select multiple):</label>
+                <div class="grid grid-cols-2 gap-2">
+                  <label class="flex items-center gap-2 px-3 py-2 dark:bg-surface-700/50 bg-surface-100 rounded-lg cursor-pointer hover:dark:bg-surface-700 hover:bg-surface-200">
+                    <input type="checkbox" value="Security" class="win-channel rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
+                    <span class="text-xs dark:text-surface-300 text-surface-600"><i class="fas fa-shield-alt text-emerald-500 mr-1"></i>Security</span>
+                  </label>
+                  <label class="flex items-center gap-2 px-3 py-2 dark:bg-surface-700/50 bg-surface-100 rounded-lg cursor-pointer hover:dark:bg-surface-700 hover:bg-surface-200">
+                    <input type="checkbox" value="System" class="win-channel rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
+                    <span class="text-xs dark:text-surface-300 text-surface-600"><i class="fas fa-server text-blue-500 mr-1"></i>System</span>
+                  </label>
+                  <label class="flex items-center gap-2 px-3 py-2 dark:bg-surface-700/50 bg-surface-100 rounded-lg cursor-pointer hover:dark:bg-surface-700 hover:bg-surface-200">
+                    <input type="checkbox" value="Application" class="win-channel rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
+                    <span class="text-xs dark:text-surface-300 text-surface-600"><i class="fas fa-th-large text-amber-500 mr-1"></i>Application</span>
+                  </label>
+                  <label class="flex items-center gap-2 px-3 py-2 dark:bg-surface-700/50 bg-surface-100 rounded-lg cursor-pointer hover:dark:bg-surface-700 hover:bg-surface-200">
+                    <input type="checkbox" value="Setup" class="win-channel rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
+                    <span class="text-xs dark:text-surface-300 text-surface-600"><i class="fas fa-wrench text-purple-500 mr-1"></i>Setup</span>
+                  </label>
+                  <label class="flex items-center gap-2 px-3 py-2 dark:bg-surface-700/50 bg-surface-100 rounded-lg cursor-pointer hover:dark:bg-surface-700 hover:bg-surface-200">
+                    <input type="checkbox" value="ForwardedEvents" class="win-channel rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
+                    <span class="text-xs dark:text-surface-300 text-surface-600"><i class="fas fa-exchange-alt text-cyan-500 mr-1"></i>ForwardedEvents</span>
+                  </label>
+                  <label class="flex items-center gap-2 px-3 py-2 dark:bg-surface-700/50 bg-surface-100 rounded-lg cursor-pointer hover:dark:bg-surface-700 hover:bg-surface-200">
+                    <input type="checkbox" value="Microsoft-Windows-PowerShell/Operational" class="win-channel rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
+                    <span class="text-xs dark:text-surface-300 text-surface-600"><i class="fas fa-terminal text-red-500 mr-1"></i>PowerShell</span>
+                  </label>
+                  <label class="flex items-center gap-2 px-3 py-2 dark:bg-surface-700/50 bg-surface-100 rounded-lg cursor-pointer hover:dark:bg-surface-700 hover:bg-surface-200 col-span-2">
+                    <input type="checkbox" value="Microsoft-Windows-Sysmon/Operational" class="win-channel rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
+                    <span class="text-xs dark:text-surface-300 text-surface-600"><i class="fas fa-eye text-pink-500 mr-1"></i>Sysmon</span>
+                  </label>
+                </div>
+                <div class="flex items-center gap-2 mt-2">
+                  <input type="text" id="win-custom-channel" placeholder="Add custom channel..." class="flex-1 px-2 py-1 dark:bg-surface-700 bg-surface-100 dark:text-surface-200 text-surface-800 rounded text-xs border dark:border-surface-600 border-surface-200">
+                  <button id="win-channel-add" class="px-2 py-1 bg-brand-500 text-white rounded text-xs hover:bg-brand-600"><i class="fas fa-plus"></i></button>
+                </div>
+                <div id="win-custom-channels" class="flex flex-wrap gap-1 mt-1"></div>
+              </div>
             </div>
             <div class="flex items-center gap-2">
               <input type="checkbox" id="col-snort" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
@@ -90,9 +125,23 @@
               <input type="checkbox" id="col-postgres" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
               <label for="col-postgres" class="text-xs dark:text-surface-300 text-surface-600">PostgreSQL Logs</label>
             </div>
-            <div class="flex items-center gap-2">
-              <input type="checkbox" id="col-file-logs" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
-              <label for="col-file-logs" class="text-xs dark:text-surface-300 text-surface-600">File Log Collector</label>
+            <div>
+              <div class="flex items-center gap-2">
+                <input type="checkbox" id="col-file-logs" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
+                <label for="col-file-logs" class="text-xs dark:text-surface-300 text-surface-600">File Log Collector</label>
+              </div>
+              <div id="file-logs-config" class="hidden ml-6 mt-2 space-y-2">
+                <label class="text-xs dark:text-surface-400 text-surface-500">Log sources:</label>
+                <div class="flex items-center gap-2">
+                  <select id="file-source-type" class="w-20 px-2 py-1 dark:bg-surface-700 bg-surface-100 dark:text-surface-200 text-surface-800 rounded text-xs border dark:border-surface-600 border-surface-200">
+                    <option value="directory">DIR</option>
+                    <option value="file">FILE</option>
+                  </select>
+                  <input type="text" id="file-source-path" placeholder="C:\logs\* or C:\app\logfile.log" class="flex-1 px-2 py-1 dark:bg-surface-700 bg-surface-100 dark:text-surface-200 text-surface-800 rounded text-xs border dark:border-surface-600 border-surface-200">
+                  <button id="file-source-add" class="px-2 py-1 bg-brand-500 text-white rounded text-xs hover:bg-brand-600"><i class="fas fa-plus"></i></button>
+                </div>
+                <div id="file-sources-list" class="space-y-1 max-h-32 overflow-y-auto"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -136,7 +185,7 @@
       <div class="space-y-3">
         <div class="flex justify-between">
           <span class="text-xs dark:text-surface-400 text-surface-500">Pending Commands</span>
-          <span class="text-xs font-medium dark:text-surface-200 text-surface-700">{{ pending_config_cmds|length }}</span>
+          <span id="pending-count" class="text-xs font-medium dark:text-surface-200 text-surface-700">{{ pending_config_cmds|length }}</span>
         </div>
         <div class="flex justify-between">
           <span class="text-xs dark:text-surface-400 text-surface-500">Agent Status</span>
@@ -173,7 +222,102 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-  const existingConfig = {{ last_config|safe|default:'{}' }};
+  let fileSources = [];
+
+  function addFileSource(path, type) {
+    if (!path) return;
+    fileSources.push({ path: path, type: type || 'directory' });
+    renderFileSources();
+  }
+
+  function removeFileSource(index) {
+    fileSources.splice(index, 1);
+    renderFileSources();
+  }
+
+  function renderFileSources() {
+    const container = document.getElementById('file-sources-list');
+    if (!container) return;
+    container.innerHTML = fileSources.map((src, i) => `
+      <div class="flex items-center gap-2 p-2 dark:bg-surface-700/50 bg-surface-100 rounded-lg">
+        <span class="text-xs px-2 py-0.5 rounded ${src.type === 'file' ? 'bg-blue-500/20 text-blue-400' : 'bg-purple-500/20 text-purple-400'}">${src.type === 'file' ? 'FILE' : 'DIR'}</span>
+        <span class="text-xs dark:text-surface-300 text-surface-600 font-mono flex-1 truncate">${src.path}</span>
+        <button type="button" data-remove-index="${i}" class="file-src-remove text-red-400 hover:text-red-300 text-xs"><i class="fas fa-times"></i></button>
+      </div>
+    `).join('');
+    container.querySelectorAll('.file-src-remove').forEach(btn => {
+      btn.addEventListener('click', function() {
+        removeFileSource(parseInt(this.dataset.removeIndex));
+      });
+    });
+  }
+
+  const fileLogsCheckbox = document.getElementById('col-file-logs');
+  const fileLogsConfig = document.getElementById('file-logs-config');
+  fileLogsCheckbox.addEventListener('change', function() {
+    fileLogsConfig.classList.toggle('hidden', !this.checked);
+  });
+
+  const winEventCheckbox = document.getElementById('col-win-event');
+  const winEventConfig = document.getElementById('win-event-config');
+  winEventCheckbox.addEventListener('change', function() {
+    winEventConfig.classList.toggle('hidden', !this.checked);
+  });
+
+  let winCustomChannels = [];
+
+  function renderWinCustomChannels() {
+    const container = document.getElementById('win-custom-channels');
+    container.innerHTML = winCustomChannels.map((ch, i) => `
+      <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-brand-500/20 text-brand-400 rounded text-xs">
+        <i class="fas fa-tag text-[10px]"></i>${ch}
+        <button type="button" data-remove-ch="${i}" class="win-ch-remove hover:text-red-400"><i class="fas fa-times"></i></button>
+      </span>
+    `).join('');
+    container.querySelectorAll('.win-ch-remove').forEach(btn => {
+      btn.addEventListener('click', function() {
+        winCustomChannels.splice(parseInt(this.dataset.removeCh), 1);
+        renderWinCustomChannels();
+      });
+    });
+  }
+
+  document.getElementById('win-channel-add').addEventListener('click', function() {
+    const ch = document.getElementById('win-custom-channel').value.trim();
+    if (!ch) return;
+    if (!winCustomChannels.includes(ch)) {
+      winCustomChannels.push(ch);
+      renderWinCustomChannels();
+    }
+    document.getElementById('win-custom-channel').value = '';
+  });
+
+  document.getElementById('win-custom-channel').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('win-channel-add').click();
+    }
+  });
+
+  document.getElementById('file-source-add').addEventListener('click', function() {
+    const path = document.getElementById('file-source-path').value.trim();
+    const type = document.getElementById('file-source-type').value;
+    if (!path) {
+      showToast('Enter a valid path', 'error');
+      return;
+    }
+    addFileSource(path, type);
+    document.getElementById('file-source-path').value = '';
+  });
+
+  document.getElementById('file-source-path').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('file-source-add').click();
+    }
+  });
+
+  const existingConfig = {{ last_config_json|safe }};
 
   if (existingConfig.inventory) {
     document.getElementById('mod-inventory-enabled').checked = existingConfig.inventory.enabled !== false;
@@ -184,11 +328,32 @@ document.addEventListener('DOMContentLoaded', function() {
     const cols = existingConfig.collectors;
     const anyEnabled = Object.values(cols).some(c => typeof c === 'object' && c.enabled);
     document.getElementById('mod-collectors-enabled').checked = anyEnabled;
-    if (cols.windows_eventlog) document.getElementById('col-win-event').checked = cols.windows_eventlog.enabled;
+    if (cols.windows_eventlog) {
+      document.getElementById('col-win-event').checked = cols.windows_eventlog.enabled;
+      winEventConfig.classList.toggle('hidden', !cols.windows_eventlog.enabled);
+      if (cols.windows_eventlog.channels) {
+        const knownChannels = ['Security', 'System', 'Application', 'Setup', 'ForwardedEvents', 'Microsoft-Windows-PowerShell/Operational', 'Microsoft-Windows-Sysmon/Operational'];
+        cols.windows_eventlog.channels.forEach(ch => {
+          if (knownChannels.includes(ch)) {
+            const cb = document.querySelector('.win-channel[value="' + ch + '"]');
+            if (cb) cb.checked = true;
+          } else {
+            winCustomChannels.push(ch);
+          }
+        });
+        renderWinCustomChannels();
+      }
+    }
     if (cols.snort) document.getElementById('col-snort').checked = cols.snort.enabled;
     if (cols.suricata) document.getElementById('col-suricata').checked = cols.suricata.enabled;
     if (cols.postgres) document.getElementById('col-postgres').checked = cols.postgres.enabled;
-    if (cols.file_logs) document.getElementById('col-file-logs').checked = cols.file_logs.enabled;
+    if (cols.file_logs) {
+      document.getElementById('col-file-logs').checked = cols.file_logs.enabled;
+      fileLogsConfig.classList.toggle('hidden', !cols.file_logs.enabled);
+      if (cols.file_logs.sources && cols.file_logs.sources.length > 0) {
+        cols.file_logs.sources.forEach(src => addFileSource(src.path, src.type));
+      }
+    }
   }
 
   if (existingConfig.dlp) {
@@ -202,6 +367,9 @@ document.addEventListener('DOMContentLoaded', function() {
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Pushing...';
 
+    const winChannels = Array.from(document.querySelectorAll('.win-channel:checked')).map(cb => cb.value);
+    const allWinChannels = [...winChannels, ...winCustomChannels];
+
     const config = {
       inventory: {
         enabled: document.getElementById('mod-inventory-enabled').checked,
@@ -210,12 +378,15 @@ document.addEventListener('DOMContentLoaded', function() {
       collectors: {
         windows_eventlog: {
           enabled: document.getElementById('col-win-event').checked,
-          channels: Array.from(document.getElementById('col-win-channels').selectedOptions).map(o => o.value),
+          channels: allWinChannels,
         },
         snort: { enabled: document.getElementById('col-snort').checked },
         suricata: { enabled: document.getElementById('col-suricata').checked },
         postgres: { enabled: document.getElementById('col-postgres').checked },
-        file_logs: { enabled: document.getElementById('col-file-logs').checked },
+        file_logs: {
+          enabled: document.getElementById('col-file-logs').checked,
+          sources: fileSources,
+        },
       },
       dlp: {
         enabled: document.getElementById('mod-dlp-enabled').checked,
@@ -225,18 +396,22 @@ document.addEventListener('DOMContentLoaded', function() {
       },
     };
 
-    fetch('{% url "inventory-api-config-push" agent.agent_id %}', {
-      method: 'PUT',
+    fetch('{% url "inventory-agent-config" agent.agent_id %}', {
+      method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        'X-CSRFToken': '{{ csrf_token }}',
+        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}',
       },
-      body: JSON.stringify({ config: config, push_immediately: true }),
+      body: JSON.stringify({ config: config }),
     })
-    .then(r => r.json())
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
     .then(data => {
       if (data.status === 'ok') {
-        showToast('Configuration pushed successfully (v' + data.version + ')', 'success');
+        showToast('Configuration pushed successfully', 'success');
       } else {
         showToast('Failed: ' + JSON.stringify(data), 'error');
       }

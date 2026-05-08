@@ -10,7 +10,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from .models import Agent, HardwareInventory, SoftwareInventory, AgentCommand
+from .models import Agent, HardwareInventory, SoftwareInventory, AgentCommand, COMMAND_TYPE_CHOICES
 from .serializers import (
     AgentListSerializer, AgentDetailSerializer, AgentRegisterSerializer,
     HardwareInventorySerializer, SoftwareInventorySerializer,
@@ -469,3 +469,36 @@ def send_command(request, agent_id):
         'command_id': str(cmd.command_id),
         'message': f'Command "{command_type}" queued for agent',
     })
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def pull_commands(request):
+    agent_id = request.data.get('agent_id', '')
+    if not agent_id:
+        return Response({'error': 'agent_id required'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        agent = Agent.objects.get(agent_id=agent_id)
+    except Agent.DoesNotExist:
+        return Response({'error': 'Agent not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    pending = AgentCommand.objects.filter(
+        agent=agent, status__in=['pending', 'sent']
+    ).order_by('created_at')
+
+    if not pending.exists():
+        return Response({'status': 'ok', 'commands': []})
+
+    commands = []
+    for cmd in pending:
+        cmd.status = 'sent'
+        cmd.sent_at = timezone.now()
+        cmd.save(update_fields=['status', 'sent_at'])
+        commands.append({
+            'command_id': str(cmd.command_id),
+            'command_type': cmd.command_type,
+            'payload': cmd.payload or {},
+            'created_at': cmd.created_at.isoformat(),
+        })
+
+    return Response({'status': 'ok', 'commands': commands})

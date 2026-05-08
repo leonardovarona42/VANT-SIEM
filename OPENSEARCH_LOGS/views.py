@@ -143,6 +143,90 @@ def ingest_log(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def ingest_bulk(request):
+    data = request.data
+
+    if 'events' in data and 'source_id' not in data:
+        events = data.get('events', [])
+        if not events:
+            return Response({'status': 'ok', 'ingested': 0})
+
+        source_type = events[0].get('source_type', 'generic')
+        source_id = f"agent-{source_type}"
+
+        try:
+            source = LogSource.objects.get(source_id=source_id)
+        except LogSource.DoesNotExist:
+            source = LogSource.objects.create(
+                source_id=source_id,
+                source_type=source_type,
+                host_name=events[0].get('host_name', ''),
+                enabled=True,
+            )
+
+        source.touch()
+        events_to_create = []
+        alerts = []
+        now = timezone.now()
+
+        for event in events:
+            raw = json.dumps(event) if isinstance(event, dict) else str(event)
+            event_time_str = event.get('event_time')
+            if event_time_str and isinstance(event_time_str, str):
+                try:
+                    event_time = datetime.fromisoformat(event_time_str.replace('Z', '+00:00'))
+                except ValueError:
+                    event_time = now
+            else:
+                event_time = now
+
+            parsed = {
+                'event_category': event.get('event_category', 'generic'),
+                'severity': event.get('severity', 'info'),
+                'host_ip': event.get('host_ip', ''),
+                'host_name': event.get('host_name', ''),
+                'message': event.get('message', ''),
+            }
+
+            log_event = LogEvent(
+                source=source,
+                source_type=source_type,
+                raw_payload=json.loads(raw) if isinstance(raw, str) else raw,
+                event_time=event_time,
+                event_category=parsed['event_category'],
+                severity=parsed['severity'],
+                host_ip=parsed['host_ip'],
+                host_name=parsed['host_name'],
+                message=parsed['message'][:512],
+                tags=event.get('tags', []),
+            )
+            events_to_create.append(log_event)
+
+            if parsed['severity'] in ('critical', 'high'):
+                alerts.append({
+                    'source_type': source_type,
+                    'severity': parsed['severity'],
+                    'category': parsed['event_category'],
+                    'host_ip': parsed['host_ip'],
+                })
+
+        created = LogEvent.bulk_create_events(events_to_create)
+
+        if alerts:
+            try:
+                from CORE.service_bus import ServiceBus
+                from CORE.events import LOG_ALERT_TRIGGERED
+                bus = ServiceBus()
+                for alert in alerts:
+                    bus.publish(LOG_ALERT_TRIGGERED, alert)
+            except Exception as e:
+                logger.warning(f'Failed to publish alerts: {e}')
+
+        return Response({
+            'status': 'ok',
+            'ingested': created,
+            'alerts_triggered': len(alerts),
+        }, status=status.HTTP_201_CREATED)
+
     serializer = LogBulkIngestSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

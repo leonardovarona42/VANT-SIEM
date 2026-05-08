@@ -1,3 +1,4 @@
+import json
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Count, Q
@@ -132,7 +133,6 @@ def agent_config_view(request, agent_id):
         last_config = last_config_cmd.payload.get('config', {})
 
     if request.method == 'POST':
-        import json
         config_data = json.loads(request.body)
 
         config_dict = config_data.get('config', {})
@@ -151,7 +151,7 @@ def agent_config_view(request, agent_id):
     context = {
         'agent': agent,
         'pending_config_cmds': pending_config_cmds,
-        'last_config': last_config,
+        'last_config_json': json.dumps(last_config),
     }
     return render(request, 'inventory/agent_config.html', context)
 
