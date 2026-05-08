@@ -18,6 +18,8 @@ urlpatterns = [
     path('eventos/', include('EVENT_M.urls')),
     path('logs/', include('OPENSEARCH_LOGS.urls')),
     path('inventory/', include('INVENTORY.urls')),
+    path('assets/', include('ASSETS.urls')),
+    path('dlp/', include('DLP.urls')),
     path('siem/dashboard/logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

@@ -1,0 +1,128 @@
+{% extends "dashboard.html" %}
+{% block title %}Incidentes DLP | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="mb-6">
+    <h2 class="text-2xl font-bold dark:text-white text-surface-900">
+        <i class="fas fa-exclamation-triangle mr-2 text-red-400"></i>Incidentes DLP
+    </h2>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Gestion de incidentes de fuga de datos</p>
+</div>
+
+<div class="glass-card p-4 mb-6">
+    <form method="get" class="flex flex-wrap gap-3 items-end">
+        <div class="flex-1 min-w-[200px]">
+            <label class="text-xs dark:text-surface-400 text-surface-500">Buscar</label>
+            <input type="text" name="q" value="{{ search }}" placeholder="Archivo, ruta, actor..."
+                   class="w-full px-3 py-2 bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded text-sm dark:text-white">
+        </div>
+        <div>
+            <label class="text-xs dark:text-surface-400 text-surface-500">Severidad</label>
+            <select name="severity" class="px-3 py-2 bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded text-sm dark:text-white">
+                <option value="">Todas</option>
+                <option value="critical" {% if severity == 'critical' %}selected{% endif %}>Critical</option>
+                <option value="high" {% if severity == 'high' %}selected{% endif %}>High</option>
+                <option value="medium" {% if severity == 'medium' %}selected{% endif %}>Medium</option>
+                <option value="low" {% if severity == 'low' %}selected{% endif %}>Low</option>
+            </select>
+        </div>
+        <div>
+            <label class="text-xs dark:text-surface-400 text-surface-500">Estado</label>
+            <select name="status" class="px-3 py-2 bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded text-sm dark:text-white">
+                <option value="">Todos</option>
+                <option value="open" {% if status_filter == 'open' %}selected{% endif %}>Open</option>
+                <option value="acknowledged" {% if status_filter == 'acknowledged' %}selected{% endif %}>Acknowledged</option>
+                <option value="resolved" {% if status_filter == 'resolved' %}selected{% endif %}>Resolved</option>
+                <option value="false_positive" {% if status_filter == 'false_positive' %}selected{% endif %}>False Positive</option>
+            </select>
+        </div>
+        <div>
+            <label class="text-xs dark:text-surface-400 text-surface-500">Canal</label>
+            <select name="channel" class="px-3 py-2 bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded text-sm dark:text-white">
+                <option value="">Todos</option>
+                <option value="filesystem" {% if channel == 'filesystem' %}selected{% endif %}>Filesystem</option>
+                <option value="email" {% if channel == 'email' %}selected{% endif %}>Email</option>
+                <option value="cloud" {% if channel == 'cloud' %}selected{% endif %}>Cloud</option>
+                <option value="usb" {% if channel == 'usb' %}selected{% endif %}>USB</option>
+                <option value="web" {% if channel == 'web' %}selected{% endif %}>Web</option>
+                <option value="network" {% if channel == 'network' %}selected{% endif %}>Network</option>
+            </select>
+        </div>
+        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm">
+            <i class="fas fa-search mr-1"></i>Filtrar
+        </button>
+        {% if search or severity or status_filter or channel %}
+        <a href="{% url 'dlp-incidents' %}" class="px-4 py-2 bg-surface-200 dark:bg-surface-700 hover:bg-surface-300 dark:hover:bg-surface-600 rounded text-sm dark:text-white">
+            Limpiar
+        </a>
+        {% endif %}
+    </form>
+</div>
+
+<div class="glass-card overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead class="bg-surface-50 dark:bg-surface-800">
+                <tr class="border-b border-surface-200 dark:border-surface-700">
+                    <th class="text-left py-3 px-4 text-surface-500 dark:text-surface-400 font-medium">Severidad</th>
+                    <th class="text-left py-3 px-4 text-surface-500 dark:text-surface-400 font-medium">Archivo</th>
+                    <th class="text-left py-3 px-4 text-surface-500 dark:text-surface-400 font-medium">Politica</th>
+                    <th class="text-left py-3 px-4 text-surface-500 dark:text-surface-400 font-medium">Canal</th>
+                    <th class="text-left py-3 px-4 text-surface-500 dark:text-surface-400 font-medium">Estado</th>
+                    <th class="text-left py-3 px-4 text-surface-500 dark:text-surface-400 font-medium">Detectado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inc in incidents %}
+                <tr class="border-b border-surface-100 dark:border-surface-800 hover:bg-surface-50 dark:hover:bg-surface-800">
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-0.5 rounded text-xs font-bold
+                            {% if inc.severity == 'critical' %}bg-red-500/20 text-red-400
+                            {% elif inc.severity == 'high' %}bg-orange-400/20 text-orange-400
+                            {% elif inc.severity == 'medium' %}bg-yellow-400/20 text-yellow-400
+                            {% else %}bg-blue-400/20 text-blue-400{% endif %}">
+                            {{ inc.severity }}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4">
+                        <a href="{% url 'dlp-incident-detail' inc.pk %}" class="text-blue-400 hover:text-blue-300">{{ inc.file_name }}</a>
+                        <div class="text-xs dark:text-surface-500 text-surface-400 truncate max-w-xs">{{ inc.file_path }}</div>
+                    </td>
+                    <td class="py-3 px-4 dark:text-white text-surface-900">{{ inc.policy_code }}<div class="text-xs dark:text-surface-500 text-surface-400">{{ inc.rule_name }}</div></td>
+                    <td class="py-3 px-4 capitalize dark:text-white text-surface-900">{{ inc.channel }}</td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-0.5 rounded text-xs
+                            {% if inc.status == 'open' %}bg-red-500/20 text-red-400
+                            {% elif inc.status == 'acknowledged' %}bg-blue-400/20 text-blue-400
+                            {% elif inc.status == 'resolved' %}bg-green-500/20 text-green-400
+                            {% elif inc.status == 'false_positive' %}bg-gray-500/20 text-gray-400
+                            {% else %}bg-gray-400/20 text-gray-400{% endif %}">
+                            {{ inc.status }}
+                        </span>
+                    </td>
+                    <td class="py-3 px-4 text-xs dark:text-surface-400 text-surface-500">{{ inc.detected_at|date:"Y-m-d H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="py-8 text-center dark:text-surface-400 text-surface-500">No se encontraron incidentes</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if incidents.has_other_pages %}
+    <div class="p-4 border-t border-surface-200 dark:border-surface-700 flex justify-between items-center">
+        <span class="text-sm dark:text-surface-400 text-surface-500">
+            Pagina {{ incidents.number }} de {{ incidents.paginator.num_pages }}
+        </span>
+        <div class="flex gap-2">
+            {% if incidents.has_previous %}
+            <a href="?page={{ incidents.previous_page_number }}{% if severity %}&severity={{ severity }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if classification %}&classification={{ classification }}{% endif %}{% if channel %}&channel={{ channel }}{% endif %}{% if search %}&q={{ search }}{% endif %}"
+               class="px-3 py-1 bg-surface-200 dark:bg-surface-700 rounded text-sm dark:text-white">Anterior</a>
+            {% endif %}
+            {% if incidents.has_next %}
+            <a href="?page={{ incidents.next_page_number }}{% if severity %}&severity={{ severity }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if classification %}&classification={{ classification }}{% endif %}{% if channel %}&channel={{ channel }}{% endif %}{% if search %}&q={{ search }}{% endif %}"
+               class="px-3 py-1 bg-surface-200 dark:bg-surface-700 rounded text-sm dark:text-white">Siguiente</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

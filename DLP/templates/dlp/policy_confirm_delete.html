@@ -1,0 +1,25 @@
+{% extends "dashboard.html" %}
+{% block title %}Eliminar Politica | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="mb-6">
+    <h2 class="text-2xl font-bold dark:text-white text-surface-900">
+        <i class="fas fa-exclamation-triangle mr-2 text-red-400"></i>Confirmar Eliminacion
+    </h2>
+</div>
+
+<div class="glass-card p-6 max-w-lg">
+    <p class="dark:text-white text-surface-900 mb-4">
+        Esta seguro de eliminar la politica <strong>{{ policy.code }} - {{ policy.name }}</strong>?
+    </p>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mb-6">
+        Esta accion eliminara tambien todas las reglas asociadas. No se puede deshacer.
+    </p>
+    <form method="post">
+        {% csrf_token %}
+        <div class="flex gap-3">
+            <button type="submit" class="px-6 py-2 bg-red-600 hover:bg-red-500 text-white rounded">Eliminar</button>
+            <a href="{% url 'dlp-policies' %}" class="px-6 py-2 bg-surface-200 dark:bg-surface-700 hover:bg-surface-300 dark:hover:bg-surface-600 rounded dark:text-white">Cancelar</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

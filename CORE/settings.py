@@ -45,6 +45,8 @@ INSTALLED_APPS = [
     'EVENT_M',
     'OPENSEARCH_LOGS',
     'INVENTORY',
+    'ASSETS',
+    'DLP',
 ]
 
 MIDDLEWARE = [
@@ -68,6 +70,7 @@ TEMPLATES = [
             BASE_DIR / "EVENT_M/templates",
             BASE_DIR / "OPENSEARCH_LOGS/templates",
             BASE_DIR / "INVENTORY/templates",
+            BASE_DIR / "DLP/templates",
         ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -112,11 +115,20 @@ DATABASES = {
         'HOST': os.getenv('INVENTORY_DB_HOST', 'localhost'),
         'PORT': os.getenv('INVENTORY_DB_PORT', '5432'),
     },
+    'vant_dlp': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DLP_DB_NAME', 'vant_dlp'),
+        'USER': os.getenv('DLP_DB_USER', 'vantsiem'),
+        'PASSWORD': os.getenv('DLP_DB_PASSWORD', 'vantsiem123'),
+        'HOST': os.getenv('DLP_DB_HOST', 'localhost'),
+        'PORT': os.getenv('DLP_DB_PORT', '5432'),
+    },
 }
 
 DATABASE_ROUTERS = [
     'CORE.db_router.LogsRouter',
     'CORE.db_router.InventoryRouter',
+    'CORE.db_router.DlpRouter',
 ]
 
 # TimescaleDB: auto-create hypertables after migrations

@@ -1,14 +1,16 @@
 # VANT-SIEM Microservices Architecture
 
-> Version: 3.0 | Última actualización: 2026-05-06
+> Version: 3.0 | Última actualización: 2026-05-07
 
 ## Servicios
 
 | Servicio | Puerto | Base de datos | Funcion | Escala |
 |----------|--------|---------------|---------|--------|
-| **Web Portal** | 8000 | `vant_siem` | UI, auth, dashboard, incidentes, red, agregacion | 1 instancia |
-| **Logs** | 9201 | `vant_logs` | Ingesta de logs (Snort, Suricata, firewall, DHCP) | 2+ instancias |
-| **Assets** | 8002 | `vant_assets` | Inventario, DLP policies, agentes | 1 instancia |
+| **Web Portal** | 8000 | `vant_siem` | UI, auth, dashboard, EVENT_M, agregacion | 1 instancia |
+| **Logs** | 9201 | `vant_logs` | Ingesta de logs (Snort, Suricata, firewall, DHCP, file_log) | 2+ instancias |
+| **Inventory** | - | `vant_inventory` | Agentes endpoint, inventario, comandos, config push | 1 instancia |
+| **DLP** | - | `vant_dlp` | Politicas, reglas, incidentes, escaneos | 1 instancia |
+| **Assets** | 8002 | `vant_assets` | API de assets (standalone/distributed) | 1 instancia |
 | **Celery Worker** | - | - | Tareas async (notificaciones, limpieza) | Escala horizontal |
 | **Celery Beat** | - | - | Scheduler de tareas periodicas | 1 instancia |
 
@@ -20,65 +22,88 @@ La app `EVENT_M` integrada en el Web Portal gestiona:
 - **Red/IPAM**: modelo `Servicio` unificado (hosts, switches, routers, firewalls, VLANs, subredes, topologia)
 - **Esquemas**: vista fisica y logica de topologia de red
 
-Esto elimina la necesidad de microservicios separados para incidentes y red.
+## Modulo DLP
+
+El modulo DLP (Data Loss Prevention) opera como app Django con base de datos propia:
+
+- **Politicas**: configuracion de paths de escaneo, extensiones monitoreadas, tamano maximo
+- **Reglas**: patrones keyword, regex o metadata con clasificacion y severidad
+- **Incidentes**: detecciones con fingerprint unico, archivo, hash, actor, canal
+- **Escaneos**: resumen de ejecuciones del motor DLP en agentes endpoint
+
+El agente `aegis_dlp` obtiene politicas via `GET /dlp/api/agent/dlp/config/` y reporta incidentes via `POST /dlp/api/agent/dlp/threats/`.
 
 ## Arquitectura
 
 ```
-┌───────────────────────────────────────────────────────────┐
-│                      VANT-SIEM Platform                    │
-├───────────────────────────────────────────────────────────┤
-│                                                            │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │              Web Portal (:8000)                       │  │
-│  │  ┌──────┐  ┌──────────┐  ┌────────────────────────┐  │  │
-│  │  │ Auth │  │Dashboard │  │   EVENT_M App          │  │  │
-│  │  │ UI   │  │Stats     │  │ - Incidentes/Workflow  │  │  │
-│  │  │      │  │Aggregator│  │ - IPAM/VLANs/Subnets   │  │  │
-│  │  │      │  │          │  │ - Topologia/Schemas    │  │  │
-│  │  └──────┘  └──────────┘  └────────────────────────┘  │  │
-│  └───────────────────────┬────────────────────────────────┘  │
-│                          │                                    │
-│           ┌──────────────┼──────────────┐                    │
-│           │              │              │                    │
-│    ┌──────▼──────┐ ┌────▼─────┐        │                    │
-│    │ Logs (:9201)│ │Assets    │        │                    │
-│    │ Ingesta     │ │(:8002)   │        │                    │
-│    │ Snort/Suri  │ │Invent/DLP│        │                    │
-│    └──────┬──────┘ └────┬─────┘        │                    │
-│           │              │              │                    │
-│     ┌─────▼──────────────▼──────────────▼──┐               │
-│     │        Service Bus (Redis pub/sub)    │               │
-│     │ vant:log.alert | vant:asset.dlp      │               │
-│     └───────────────────────────────────────┘               │
-│                                                              │
-│     ┌───────────────────────────────────────────┐           │
-│     │       PostgreSQL (3 DBs aisladas)          │           │
-│     │                                            │           │
-│     │ vant_siem │ vant_logs │ vant_assets        │           │
-│     │ (users)   │ (snort)   │ (devices)          │           │
-│     │ (auth)    │ (suricata)│ (dlp pol)          │           │
-│     │ (config)  │ (firewall)│ (inventory)        │           │
-│     │ (EVENT_M) │ (logs)    │                    │           │
-│     └───────────────────────────────────────────┘           │
-└───────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                      VANT-SIEM Platform                           │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                    │
+│  ┌────────────────────────────────────────────────────────────┐   │
+│  │              Web Portal (:8000)                              │   │
+│  │  ┌──────┐  ┌──────────┐  ┌────────┐  ┌────────┐ ┌───────┐  │   │
+│  │  │ Auth │  │Dashboard │  │EVENT_M │  │  DLP   │ │Invent.│  │   │
+│  │  │ UI   │  │Stats     │  │Inc/Red │  │Policies│ │Agents │  │   │
+│  │  │      │  │Aggregator│  │Topolog.│  │Incidents│ │Cmds  │  │   │
+│  │  └──────┘  └──────────┘  └────────┘  └────────┘ └───────┘  │   │
+│  └────────────────────────┬────────────────────────────────────┘   │
+│                           │                                         │
+│           ┌───────────────┼───────────────┐                        │
+│           │               │               │                        │
+│    ┌──────▼──────┐ ┌──────▼──────┐ ┌──────▼──────┐                │
+│    │ Logs (:9201)│ │ Inventory   │ │ Assets      │                │
+│    │ Ingesta     │ │ (:8000)     │ │ (:8002)     │                │
+│    │ Snort/Suri  │ │ Agents      │ │ API         │                │
+│    └──────┬──────┘ └──────┬──────┘ └──────┬──────┘                │
+│           │               │               │                        │
+│     ┌─────▼───────────────▼───────────────▼─────┐                │
+│     │        Service Bus (Redis pub/sub)          │                │
+│     │ vant:log.alert | vant:asset.dlp | ...     │                │
+│     └─────────────────────────────────────────────┘                │
+│                                                                      │
+│     ┌───────────────────────────────────────────────────┐          │
+│     │       PostgreSQL (4 DBs aisladas)                   │          │
+│     │                                                      │          │
+│     │ vant_siem │ vant_logs │ vant_inventory │ vant_dlp  │          │
+│     │ (users)   │ (events)  │ (agents)       │ (policies)│          │
+│     │ (auth)    │ Timescale │ (software)     │ (rules)   │          │
+│     │ (config)  │ hypertable│ (commands)     │ (incidents)│         │
+│     │ (EVENT_M) │ (logs)    │                │ (scans)   │          │
+│     └───────────────────────────────────────────────────┘          │
+└──────────────────────────────────────────────────────────────────┘
 
     VANT-Agent (repo separado)
-    ┌────────────────────────────────────────────────────┐
-    │ collectors → POST /logs/bulk (:9201)               │
-    │ dlp scan   → POST /assets/dlp/incident (:8002)     │
-    │ inventory  → POST /assets/inventory (:8002)        │
-    │ heartbeat  → POST /assets/heartbeat (:8002)        │
-    └────────────────────────────────────────────────────┘
+    ┌────────────────────────────────────────────────────────────┐
+    │ collectors    → POST /logs/api/bulk/ (:9201)               │
+    │ dlp scan      → POST /dlp/api/agent/dlp/threats/ (:8000)   │
+    │ dlp config    → GET  /dlp/api/agent/dlp/config/ (:8000)    │
+    │ inventory     → POST /inventory/api/inventory/submit/      │
+    │ heartbeat     → POST /inventory/api/heartbeat/             │
+    │ config pull   → GET  /inventory/api/agent/{id}/config/     │
+    └────────────────────────────────────────────────────────────┘
 ```
 
 ## Aislamiento de bases de datos
 
-| BD | Contenido | Backup | Riesgo si se pierde |
-|----|-----------|--------|-------------------|
-| `vant_siem` | Usuarios, auth, config UI, EVENT_M (incidentes, red), logs del sistema | Diario | Se pierden credenciales + incidentes |
-| `vant_logs` | Snort, Suricata, firewall, DHCP logs | Semanal | Alto volumen, aceptable |
-| `vant_assets` | Dispositivos, inventario, DLP policies | Diario | Se recupera re-sync |
+| BD | Contenido | App | Backup | Riesgo si se pierde |
+|----|-----------|-----|--------|-------------------|
+| `vant_siem` | Usuarios, auth, config UI, EVENT_M (incidentes, red) | `VANT_SIEM`, `EVENT_M` | Diario | Se pierden credenciales + incidentes |
+| `vant_logs` | Snort, Suricata, firewall, DHCP, file_log | `OPENSEARCH_LOGS` | Semanal | Alto volumen, aceptable |
+| `vant_inventory` | Agentes, software, comandos | `INVENTORY` | Diario | Se recupera re-sync de agentes |
+| `vant_dlp` | Politicas, reglas, incidentes DLP, escaneos | `DLP` | Diario | Se pierden incidentes DLP |
+
+## Database Router
+
+`CORE/db_router.py` define 3 routers:
+
+| Router | Apps | Database |
+|--------|------|----------|
+| `LogsRouter` | `OPENSEARCH_LOGS` | `vant_logs` |
+| `InventoryRouter` | `INVENTORY` | `vant_inventory` |
+| `DlpRouter` | `DLP` | `vant_dlp` |
+
+Cualquier app no enrutada usa `default` (`vant_siem`).
 
 ## Escenarios de fallo
 
@@ -86,8 +111,7 @@ Esto elimina la necesidad de microservicios separados para incidentes y red.
 |-------|------------------------|---------------------------|
 | Logs saturados (50GB/dia) | **Tumba toda la app** | Solo Logs Service degrada |
 | BD de logs corrupta | **Pierdes todo** | Solo pierdes logs |
-| AI en entrenamiento (RAM alta) | **Bloquea toda la app** | Solo AI Service lento |
-| EVENT_M cae | No hay incidentes ni red | Web Portal degradado |
+| BD de DLP corrupta | **Pierdes todo** | Solo pierdes incidentes DLP |
 | Escalar logs | Escalas todo | Solo logs-service: 2→5 |
 
 ## EVENT_M - Modelo de Red Unificado
@@ -112,21 +136,6 @@ Servicio.tipo:
 └── servicio_externo → APIs externas (url_servicio, api_key)
 ```
 
-### Campos de red (tipos: vlan, segmento, subred, red)
-
-| Campo | Tipo | Descripcion |
-|-------|------|-------------|
-| `network` | GenericIPAddressField | Direccion de red (ej: 10.10.0.0) |
-| `subnet_mask` | CharField | Mascara CIDR (ej: /24 o 255.255.255.0) |
-| `gateway` | GenericIPAddressField | Gateway por defecto |
-| `red_tipo` | CharField | Tipo de red: interna, dmz, gestion, usuarios, etc. |
-| `vlan_id` | IntegerField | Tag VLAN (1-4094) |
-| `dns_primario` | GenericIPAddressField | DNS primario |
-| `dns_secundario` | GenericIPAddressField | DNS secundario |
-| `dhcp_activo` | BooleanField | DHCP habilitado |
-| `dhcp_rango_inicio` | GenericIPAddressField | Rango DHCP inicio |
-| `dhcp_rango_fin` | GenericIPAddressField | Rango DHCP fin |
-
 ### Topologia
 
 - `ConexionTopologica` define conexiones entre servicios
@@ -142,6 +151,37 @@ Servicio.tipo:
 | `/eventos/red/<pk>/` | `RedDetailView` | Detalle: IPs, hosts activos, % uso, stats |
 | `/eventos/esquema/fisico/` | `TopologiaFisicaView` | Grafo topologico fisico |
 | `/eventos/esquema/logico/` | `TopologiaLogicaView` | Grafo topologico logico |
+
+## DLP - Politicas y Reglas
+
+### Politicas (`DlpPolicy`)
+
+| Campo | Tipo | Descripcion |
+|-------|------|-------------|
+| `code` | CharField | Identificador unico (ej: `estado_clasificado`) |
+| `scan_paths` | JSONField | Lista de directorios a escanear |
+| `monitored_extensions` | JSONField | Extensiones de archivo a monitorear |
+| `max_file_size_mb` | IntegerField | Tamano maximo de archivo para escanear |
+
+### Reglas (`DlpRule`)
+
+| Campo | Tipo | Descripcion |
+|-------|------|-------------|
+| `pattern` | TextField | Patron keyword o regex a buscar |
+| `match_type` | CharField | `keyword`, `regex`, `metadata` |
+| `classification` | CharField | Clasificacion del dato detectado |
+| `severity` | CharField | `critical`, `high`, `medium`, `low` |
+
+### Incidentes (`DlpIncident`)
+
+| Campo | Tipo | Descripcion |
+|-------|------|-------------|
+| `fingerprint` | CharField | Hash unico del incidente (dedup) |
+| `file_name` / `file_path` | CharField/TextField | Archivo detectado |
+| `file_hash` | CharField | SHA-256 del archivo |
+| `actor` | CharField | Usuario propietario del archivo |
+| `channel` | CharField | Via de deteccion: `filesystem`, `email`, `cloud`, `usb`, `web`, `network` |
+| `status` | CharField | `open`, `acknowledged`, `resolved`, `false_positive` |
 
 ## Standalone (sin Docker)
 
@@ -180,14 +220,16 @@ Service Bus (Redis: vant:log.alert)
     │
     └── Web Portal (EVENT_M) → crea Incidente + notificacion
 
-Assets Service (detecta DLP)
+DLP Agent (detecta documento clasificado)
     │
-    ├── publish("asset.dlp", {filename, classification})
+    ├── POST /dlp/api/agent/dlp/threats/
     │
     ▼
-Service Bus (Redis: vant:asset.dlp)
+DLP Service → crea DlpIncident + notificacion
     │
-    └── Web Portal (EVENT_M) → crea Incidente + Reporte
+    └── publish("asset.dlp", {filename, classification})
+        ▼
+        Web Portal (EVENT_M) → crea Reporte de seguridad
 
 Web Portal/EVENT_M (detecta cambio en red)
     │
@@ -208,7 +250,7 @@ Service Bus (Redis: vant:network.change)
 | Logs Service | 9201 | `run_logs_service` |
 | Assets Service | 8002 | `run_assets_service` |
 
-El Web Portal (8000) incluye EVENT_M que gestiona incidentes y red internamente.
+El Web Portal (8000) incluye EVENT_M, DLP, e INVENTORY que operan internamente.
 
 ## Variables de entorno
 
@@ -223,3 +265,6 @@ Ver `.env.example` para referencia completa.
 | `ASSETS_SERVICE_URL` | `http://localhost:8002` | Servicio de assets |
 | `CELERY_BROKER_URL` | `redis://localhost:6379/0` | Celery broker |
 | `CELERY_RESULT_BACKEND` | `redis://localhost:6379/1` | Celery backend |
+| `DLP_DB_NAME` | `vant_dlp` | Base de datos DLP |
+| `DLP_DB_HOST` | `localhost` | Host de la BD DLP |
+| `DLP_DB_PORT` | `5432` | Puerto de la BD DLP |

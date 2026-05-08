@@ -1,0 +1,55 @@
+{% extends "dashboard.html" %}
+{% block title %}Escaneos DLP | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="mb-6">
+    <h2 class="text-2xl font-bold dark:text-white text-surface-900">
+        <i class="fas fa-search mr-2 text-amber-400"></i>Historial de Escaneos DLP
+    </h2>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Resumen de ejecuciones del motor DLP</p>
+</div>
+
+<div class="glass-card overflow-hidden">
+    <table class="w-full text-sm">
+        <thead class="bg-surface-50 dark:bg-surface-800">
+            <tr class="border-b border-surface-200 dark:border-surface-700">
+                <th class="text-left py-3 px-4 text-surface-500 dark:text-surface-400 font-medium">Agente</th>
+                <th class="text-left py-3 px-4 text-surface-500 dark:text-surface-400 font-medium">Inicio</th>
+                <th class="text-left py-3 px-4 text-surface-500 dark:text-surface-400 font-medium">Fin</th>
+                <th class="text-left py-3 px-4 text-surface-500 dark:text-surface-400 font-medium">Duracion</th>
+                <th class="text-left py-3 px-4 text-surface-500 dark:text-surface-400 font-medium">Escaneados</th>
+                <th class="text-left py-3 px-4 text-surface-500 dark:text-surface-400 font-medium">Detectados</th>
+                <th class="text-left py-3 px-4 text-surface-500 dark:text-surface-400 font-medium">Creados</th>
+                <th class="text-left py-3 px-4 text-surface-500 dark:text-surface-400 font-medium">Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for summary in summaries %}
+            <tr class="border-b border-surface-100 dark:border-surface-800 hover:bg-surface-50 dark:hover:bg-surface-800">
+                <td class="py-3 px-4">
+                    <div class="dark:text-white text-surface-900">{{ summary.host_name|default:summary.remote_agent_id }}</div>
+                </td>
+                <td class="py-3 px-4 text-xs dark:text-surface-300 text-surface-600">{{ summary.started_at|date:"Y-m-d H:i" }}</td>
+                <td class="py-3 px-4 text-xs dark:text-surface-300 text-surface-600">{{ summary.finished_at|date:"Y-m-d H:i"|default:"-" }}</td>
+                <td class="py-3 px-4 text-xs dark:text-surface-300 text-surface-600">
+                    {% if summary.duration_seconds %}{{ summary.duration_seconds|floatformat:1 }}s{% else %}-{% endif %}
+                </td>
+                <td class="py-3 px-4 dark:text-white text-surface-900">{{ summary.files_scanned }}</td>
+                <td class="py-3 px-4 dark:text-white text-surface-900">{{ summary.files_flagged }}</td>
+                <td class="py-3 px-4 dark:text-white text-surface-900">{{ summary.incidents_created }}</td>
+                <td class="py-3 px-4">
+                    <span class="px-2 py-0.5 rounded text-xs
+                        {% if summary.status == 'completed' %}bg-green-500/20 text-green-400
+                        {% elif summary.status == 'running' %}bg-blue-400/20 text-blue-400
+                        {% elif summary.status == 'timeout' %}bg-orange-400/20 text-orange-400
+                        {% else %}bg-red-500/20 text-red-400{% endif %}">
+                        {{ summary.status }}
+                    </span>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="py-8 text-center dark:text-surface-400 text-surface-500">Sin escaneos registrados</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,8 +1,8 @@
 # VANT-SIEM Roadmap
 
-> Última actualización: 2026-05-06 | Version: 2.1
+> Última actualización: 2026-05-07 | Version: 3.0
 
-## Estado Actual (v2.1)
+## Estado Actual (v3.0)
 
 ### Completado
 
@@ -19,7 +19,6 @@
 - [x] Tipos de eventos definidos (`CORE/events.py`)
 - [x] Celery configurado (`CORE/celery.py`)
 - [x] Tasks async en EVENT_M y VANT_SIEM
-- [x] `docker-compose.yml` con 5 bases de datos PostgreSQL
 - [x] Modulos legacy eliminados (IRIS, Ollama, ai_models)
 - [x] `Subred` modelo eliminado, fusionado en `Servicio`
 - [x] Servicio como modelo unificado de red (host, switch, router, firewall, VLAN, subred, segmento, red, cluster, plataforma, servicio_externo)
@@ -31,38 +30,26 @@
 - [x] Paginacion en todas las vistas de listas
 - [x] Busqueda en tiempo real en listas
 - [x] Formulario dinamico de servicio con secciones por tipo
-
-### En progreso
-
-- [ ] Implementar `CORE/db_router.py` para enrutar modelos a BDs correctas
-- [ ] Completar management commands para servicios aislados
-- [ ] URLs API por servicio (`/api/logs/`, `/api/incidents/`, `/api/network/`)
-- [ ] Health check endpoints por servicio
-- [ ] API contracts entre servicios
-
----
-
-## Fase 2: Separacion de Bases de Datos (Semana 2-3)
-
-### 2.1 Database Router
-- [ ] Implementar `CORE/db_router.py`
-- [ ] Configurar 5 conexiones en `settings.py`:
-  - `default` → `vant_siem` (users, auth, config)
-  - `logs` → `vant_logs` (LogEvent, LogSource)
-  - `incidents` → `vant_incidents` (EVENT_M models)
-  - `assets` → `vant_assets` (inventory, DLP, agents)
-  - `network` → `vant_network` (Servicio, ServicioIP, PuertoDispositivo)
-
-### 2.2 Migraciones por BD
-- [ ] `makemigrations` para cada base de datos
-- [ ] Scripts de migracion de datos existentes
-- [ ] Testing de queries cross-database
-
-### 2.3 Docker Compose
-- [x] 5 contenedores PostgreSQL con volumenes separados
-- [x] Servicios aislados con health checks
-- [x] Redis para Service Bus y Celery
-- [x] Variables de entorno en `.env.example`
+- [x] Database Router implementado (`CORE/db_router.py`) con 3 routers
+- [x] 4 bases de datos PostgreSQL aisladas: `vant_siem`, `vant_logs`, `vant_inventory`, `vant_dlp`
+- [x] Docker Compose con 5 contenedores PostgreSQL, Redis, service bus
+- [x] DLP Microservice completo: modelos, API REST, UI de gestion
+- [x] DLP: Politicas (`DlpPolicy`) con paths, extensiones, tamano max
+- [x] DLP: Reglas (`DlpRule`) keyword/regex/metadata con severidad
+- [x] DLP: Incidentes (`DlpIncident`) con fingerprint unico y dedup
+- [x] DLP: Escaneos (`DlpScanSummary`) con resumen de ejecuciones
+- [x] DLP: API para agente (`/dlp/api/agent/dlp/config/`, `/dlp/api/agent/dlp/threats/`)
+- [x] DLP: UI completa (dashboard, incidentes, politicas, reglas, escaneos)
+- [x] INVENTORY: Modelos `Agent`, `AgentSoftware`, `AgentCommand` con BD aislada
+- [x] INVENTORY: API de heartbeat, inventory submit, config pull, comandos
+- [x] INVENTORY: UI de agentes con dashboard, lista, detalle, config push
+- [x] Logs Service auto-spawn via management command en standalone mode
+- [x] Assets Service auto-spawn via management command en standalone mode
+- [x] JSON array parsing en `file_log.py` con dedup por `id`/`event_id`
+- [x] TimescaleDB integrado para `logs_events_raw` con hypertables
+- [x] VANT-Agent JSON parsing con soporte UTF-8 BOM
+- [x] VANT-Agent con collectors: windows_eventlog, file_log, aegis_dlp, inventory
+- [x] Agente ejecutable Windows con PyInstaller + PyQt6 tray mode
 
 ---
 
@@ -94,7 +81,7 @@
 ## Fase 4: Servicios Independientes (Semana 4-6)
 
 ### 4.1 Logs Service (Puerto 9201)
-- [ ] Aislar completamente en proceso separado
+- [ ] Aislar completamente en proceso separado (Docker)
 - [ ] Bulk ingest API (`/api/logs/bulk/`)
 - [ ] Query API con filtros avanzados
 - [ ] Retention policies (auto-delete logs > N dias)
@@ -106,7 +93,7 @@
 - [ ] Reportes y compliance
 
 ### 4.3 Assets Service (Puerto 8002)
-- [ ] Aislar inventory + DLP en proceso separado
+- [ ] Aislar inventory + DLP en proceso separado (Docker)
 - [ ] Agent management API
 - [ ] Inventory sync
 - [ ] DLP policies e incidentes
@@ -129,15 +116,16 @@
 ## Fase 5: Integracion con VANT-Agent (Semana 5-6)
 
 ### 5.1 Agent API Endpoints
-- [ ] `/api/assets/enroll/` - Registro de agente
-- [ ] `/api/assets/heartbeat/` - Heartbeat
-- [ ] `/api/logs/bulk/` - Envio de logs al Logs Service
-- [ ] `/api/assets/inventory/` - Envio de inventario al Assets Service
-- [ ] `/api/assets/dlp/incident/` - Envio de incidentes DLP
+- [x] `/logs/api/bulk/` - Envio de logs al Logs Service
+- [x] `/inventory/api/inventory/submit/` - Envio de inventario
+- [x] `/inventory/api/heartbeat/` - Heartbeat + pull de comandos
+- [x] `/dlp/api/agent/dlp/config/` - Config DLP para agente
+- [x] `/dlp/api/agent/dlp/threats/` - Envio de incidentes DLP
+- [ ] `/api/assets/enroll/` - Registro/bootstrap de agente
 
 ### 5.2 Agent Commands
-- [ ] Issue commands desde Web Portal
-- [ ] Agent pull de comandos pendientes
+- [x] Issue commands desde Web Portal
+- [x] Agent pull de comandos pendientes
 - [ ] Ack de comandos ejecutados
 
 ### 5.3 Agent Auth
