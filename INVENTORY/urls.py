@@ -4,9 +4,9 @@ from .views import (
     health_check, agent_stats, register_agent, enroll_agent, heartbeat, submit_inventory,
     command_result, AgentViewSet, SoftwareViewSet, AgentCommandViewSet,
     push_config, get_agent_config, config_templates, delete_agent, send_command,
-    pull_commands,
+    pull_commands, screen_upload, screen_latest,
 )
-from .ui_views import inventory_dashboard, agents_list, agent_detail, software_list, agent_config_view
+from .ui_views import inventory_dashboard, agents_list, agent_detail, software_list, agent_config_view, screen_viewer
 
 router = DefaultRouter()
 router.register(r'api/agents', AgentViewSet, basename='agent')
@@ -17,6 +17,7 @@ urlpatterns = [
     path('', inventory_dashboard, name='inventory-dashboard'),
     path('agents/', agents_list, name='inventory-agents'),
     path('agent/<str:agent_id>/', agent_detail, name='inventory-agent-detail'),
+    path('agent/<str:agent_id>/screen/', screen_viewer, name='inventory-agent-screen'),
     path('agent/<str:agent_id>/config/', agent_config_view, name='inventory-agent-config'),
     path('software/', software_list, name='inventory-software'),
 
@@ -32,6 +33,8 @@ urlpatterns = [
     path('api/agent/<str:agent_id>/config/push/', push_config, name='inventory-api-config-push'),
     path('api/agent/<str:agent_id>/command/', send_command, name='inventory-api-send-command'),
     path('api/agent/commands/pull/', pull_commands, name='inventory-api-pull-commands'),
+    path('api/screen/upload/', screen_upload, name='inventory-api-screen-upload'),
+    path('api/screen/latest/<str:agent_id>/', screen_latest, name='inventory-api-screen-latest'),
     path('api/agent/<str:agent_id>/', delete_agent, name='inventory-api-delete-agent'),
     path('api/', include(router.urls)),
 ]

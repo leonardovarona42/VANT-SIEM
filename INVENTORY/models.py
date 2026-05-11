@@ -49,6 +49,8 @@ COMMAND_TYPE_CHOICES = [
     ('run_script', 'Run Script'),
     ('collect_logs', 'Collect Logs'),
     ('push_config', 'Push Configuration'),
+    ('start_screen_share', 'Start Screen Sharing'),
+    ('stop_screen_share', 'Stop Screen Sharing'),
     ('custom', 'Custom'),
 ]
 
@@ -206,3 +208,16 @@ class AgentCommand(models.Model):
         self.completed_at = timezone.now()
         self.error_message = error
         self.save(update_fields=['status', 'completed_at', 'error_message'])
+
+
+class ScreenCapture(models.Model):
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='screenshots')
+    image = models.TextField()
+    captured_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'screen_captures'
+        ordering = ['-captured_at']
+        indexes = [
+            models.Index(fields=['agent', '-captured_at']),
+        ]

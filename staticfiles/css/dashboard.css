@@ -1,5 +1,27 @@
 /* Dashboard Styles - VANT-SIEM */
 
+html, body {
+    min-height: 100%;
+}
+
+body.dashboard-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.dashboard-main {
+    flex: 1 0 auto;
+    padding-bottom: 2.5rem;
+}
+
+.site-footer {
+    flex-shrink: 0;
+    border-top: 1px solid rgba(148, 163, 184, 0.12);
+    background: linear-gradient(180deg, rgba(2, 6, 23, 0.2), rgba(2, 6, 23, 0.85));
+    padding: 1rem 1.25rem 1.5rem;
+}
+
 /* Navbar Styles */
 .navbar {
     background-color: #0d6efd !important;
@@ -11,6 +33,28 @@
     z-index: 1030;
 }
 
+.navbar > .container,
+.navbar > .container-fluid {
+    align-items: center;
+}
+
+.navbar-collapse {
+    min-width: 0;
+}
+
+.navbar-nav {
+    gap: 0.15rem;
+}
+
+.navbar-nav.ms-auto {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.navbar-nav .nav-item {
+    min-width: 0;
+}
+
 .navbar-nav .nav-link {
     color: rgba(255, 255, 255, 0.95) !important;
     font-weight: 500;
@@ -18,6 +62,8 @@
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
+    white-space: nowrap;
+    border-radius: 0.5rem;
 }
 
 .navbar-nav .nav-link:hover {
@@ -97,4 +143,85 @@
 
 .dashboard-logo:hover .logo-svg {
     transform: scale(1.08);
+}
+
+/* Responsive navbar improvements */
+@media (max-width: 1399.98px) {
+    .navbar-collapse {
+        background-color: #0d6efd;
+        padding: 1rem;
+        border-radius: 0 0 0.5rem 0.5rem;
+        margin-top: 0.5rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .navbar-nav .nav-link {
+        padding: 0.75rem 0.5rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        justify-content: space-between;
+    }
+    
+    .navbar-nav .nav-link:last-child {
+        border-bottom: none;
+    }
+    
+    .dropdown-menu {
+        background-color: rgba(0, 0, 0, 0.2) !important;
+        border: none;
+        padding: 0.5rem;
+        margin-top: 0.25rem;
+    }
+    
+    .dropdown-item {
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .dropdown-item:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+        color: #fff;
+    }
+    
+    .dropdown-header {
+        color: #00c3ff !important;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+    }
+    
+    .dropdown-divider {
+        border-color: rgba(255, 255, 255, 0.2);
+    }
+    
+    .navbar-brand .logo-svg {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .navbar-brand span {
+        font-size: 1.1rem;
+    }
+}
+
+/* Small mobile devices */
+@media (max-width: 575.98px) {
+    .dashboard-main .container {
+        padding-left: 0.9rem;
+        padding-right: 0.9rem;
+    }
+
+    .navbar-collapse {
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    
+    .dropdown-menu {
+        max-height: 50vh;
+        overflow-y: auto;
+    }
+
+    .site-footer {
+        font-size: 0.8rem;
+        line-height: 1.5;
+    }
 }

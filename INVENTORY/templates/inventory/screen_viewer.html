@@ -1,0 +1,187 @@
+{% extends 'dashboard.html' %}
+
+{% block title %}{{ agent.hostname }} - Screen View{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <div class="w-12 h-12 rounded-xl dark:bg-cyan-500/20 bg-cyan-100 flex items-center justify-center">
+        <i class="fas fa-desktop text-cyan-500 text-xl"></i>
+      </div>
+      <div>
+        <h1 class="text-2xl font-bold dark:text-white text-surface-900">{{ agent.hostname }}</h1>
+        <p id="status-text" class="text-sm dark:text-surface-400 text-surface-500">Screen sharing inactive</p>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <button id="btn-start" class="btn-primary text-sm">
+        <i class="fas fa-play mr-2"></i>Start Sharing
+      </button>
+      <button id="btn-stop" class="btn-secondary text-sm hidden">
+        <i class="fas fa-stop mr-2"></i>Stop Sharing
+      </button>
+      <a href="{% url 'inventory-agent-detail' agent.agent_id %}" class="btn-secondary text-sm">
+        <i class="fas fa-arrow-left mr-2"></i>Back
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="glass-card p-4">
+  <div id="screen-container" class="relative bg-surface-900 rounded-xl overflow-hidden min-h-[400px] flex items-center justify-center">
+    <img id="screen-image" class="max-w-full max-h-[80vh] object-contain hidden" alt="Screen capture" />
+    <div id="screen-placeholder" class="text-center">
+      <div class="w-20 h-20 rounded-2xl dark:bg-surface-800 bg-surface-100 flex items-center justify-center mx-auto mb-4">
+        <i class="fas fa-desktop text-4xl dark:text-surface-600 text-surface-400"></i>
+      </div>
+      <h3 class="text-lg font-semibold dark:text-surface-300 text-surface-700">No active screen sharing</h3>
+      <p class="text-sm dark:text-surface-500 text-surface-400 mt-1">Click "Start Sharing" to begin viewing this agent's screen</p>
+    </div>
+    <div id="screen-loading" class="hidden absolute inset-0 bg-surface-900/80 flex items-center justify-center">
+      <div class="flex items-center gap-3">
+        <i class="fas fa-spinner fa-spin text-brand-500 text-lg"></i>
+        <span class="text-sm dark:text-surface-300 text-surface-100">Waiting for capture...</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="mt-4 glass-card p-4">
+  <div class="flex items-center justify-between text-sm">
+    <div class="flex items-center gap-4">
+      <span class="dark:text-surface-400 text-surface-500">
+        <i class="fas fa-sync mr-1"></i>Refresh: <span id="refresh-interval">3</span>s
+      </span>
+      <span class="dark:text-surface-400 text-surface-500">
+        <i class="fas fa-clock mr-1"></i>Last capture: <span id="capture-time">-</span>
+      </span>
+    </div>
+    <label class="flex items-center gap-2 cursor-pointer">
+      <span class="dark:text-surface-400 text-surface-500">Auto-refresh</span>
+      <input type="checkbox" id="auto-refresh" checked class="toggle-checkbox" />
+    </label>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getCookie(name) {
+  const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+  return v ? v.pop() : '';
+}
+
+function showToast(msg, type) {
+  let toast = document.getElementById('toast-notification');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toast-notification';
+    toast.className = 'fixed bottom-20 right-8 z-50 transition-all duration-300';
+    document.body.appendChild(toast);
+  }
+  const icon = type === 'success' ? 'fa-check-circle text-emerald-500' : 'fa-exclamation-circle text-red-500';
+  toast.innerHTML = '<div class="glass-card px-4 py-3 flex items-center gap-3"><i class="fas ' + icon + '"></i><span class="text-sm dark:text-surface-200 text-surface-700">' + msg + '</span></div>';
+  toast.classList.remove('hidden');
+  setTimeout(() => toast.classList.add('hidden'), 4000);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const agentId = '{{ agent.agent_id }}';
+  const img = document.getElementById('screen-image');
+  const placeholder = document.getElementById('screen-placeholder');
+  const loading = document.getElementById('screen-loading');
+  const statusText = document.getElementById('status-text');
+  const captureTime = document.getElementById('capture-time');
+  const btnStart = document.getElementById('btn-start');
+  const btnStop = document.getElementById('btn-stop');
+  const autoRefresh = document.getElementById('auto-refresh');
+  const refreshInterval = document.getElementById('refresh-interval');
+
+  let timer = null;
+  let isActive = false;
+
+  function refresh() {
+    if (!autoRefresh.checked) return;
+    loading.classList.remove('hidden');
+    fetch('/inventory/api/screen/latest/' + agentId + '/')
+      .then(r => r.json())
+      .then(data => {
+        loading.classList.add('hidden');
+        if (data.status === 'ok' && data.image) {
+          img.src = 'data:image/jpeg;base64,' + data.image;
+          img.classList.remove('hidden');
+          placeholder.classList.add('hidden');
+          captureTime.textContent = data.captured_at ? new Date(data.captured_at + 'Z').toLocaleTimeString() : 'just now';
+          if (!isActive) {
+            statusText.textContent = 'Receiving screen capture';
+          }
+        }
+      })
+      .catch(() => {
+        loading.classList.add('hidden');
+      });
+  }
+
+  function startSharing() {
+    fetch('/inventory/api/agent/' + agentId + '/command/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      body: JSON.stringify({ command_type: 'start_screen_share' }),
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'ok') {
+        isActive = true;
+        btnStart.classList.add('hidden');
+        btnStop.classList.remove('hidden');
+        statusText.textContent = 'Screen sharing active';
+        statusText.className = 'text-sm text-emerald-500';
+        refresh();
+        timer = setInterval(refresh, 3000);
+        showToast('Screen sharing started', 'success');
+      } else {
+        showToast('Failed: ' + (data.error || 'unknown'), 'error');
+      }
+    })
+    .catch(err => showToast('Error: ' + err.message, 'error'));
+  }
+
+  function stopSharing() {
+    fetch('/inventory/api/agent/' + agentId + '/command/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+      body: JSON.stringify({ command_type: 'stop_screen_share' }),
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'ok') {
+        isActive = false;
+        btnStart.classList.remove('hidden');
+        btnStop.classList.add('hidden');
+        statusText.textContent = 'Screen sharing stopped';
+        statusText.className = 'text-sm dark:text-surface-400 text-surface-500';
+        if (timer) { clearInterval(timer); timer = null; }
+        showToast('Screen sharing stopped', 'success');
+      } else {
+        showToast('Failed: ' + (data.error || 'unknown'), 'error');
+      }
+    })
+    .catch(err => showToast('Error: ' + err.message, 'error'));
+  }
+
+  btnStart.addEventListener('click', startSharing);
+  btnStop.addEventListener('click', stopSharing);
+
+  autoRefresh.addEventListener('change', function() {
+    if (this.checked && isActive) {
+      refresh();
+      timer = setInterval(refresh, 3000);
+    } else if (!this.checked && timer) {
+      clearInterval(timer);
+      timer = null;
+    }
+  });
+});
+</script>
+{% endblock %}

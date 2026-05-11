@@ -14,7 +14,7 @@ from rest_framework.decorators import api_view, permission_classes, authenticati
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 
-from .models import Agent, HardwareInventory, SoftwareInventory, AgentCommand, COMMAND_TYPE_CHOICES
+from .models import Agent, HardwareInventory, SoftwareInventory, AgentCommand, ScreenCapture, COMMAND_TYPE_CHOICES
 from OPENSEARCH_LOGS.models import LogSource
 from .serializers import (
     AgentListSerializer, AgentDetailSerializer, AgentRegisterSerializer,
@@ -548,7 +548,7 @@ def delete_agent(request, agent_id):
 
 
 @api_view(['POST'])
-@permission_classes([IsAdminUser])
+@permission_classes([IsAuthenticated])
 def send_command(request, agent_id):
     try:
         agent = Agent.objects.get(agent_id=agent_id)
@@ -605,3 +605,36 @@ def pull_commands(request):
         })
 
     return Response({'status': 'ok', 'commands': commands})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def screen_upload(request):
+    agent_id = request.data.get('agent_id', '')
+    image = request.data.get('image', '')
+    if not agent_id or not image:
+        return Response({'error': 'agent_id and image required'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        agent = _resolve_agent(agent_id)
+    except Agent.DoesNotExist:
+        return Response({'error': 'Agent not found'}, status=status.HTTP_404_NOT_FOUND)
+    new_cap = ScreenCapture.objects.create(agent=agent, image=image)
+    ScreenCapture.objects.filter(agent=agent).exclude(pk=new_cap.pk).delete()
+    return Response({'status': 'ok'})
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def screen_latest(request, agent_id):
+    try:
+        agent = _resolve_agent(agent_id)
+    except Agent.DoesNotExist:
+        return Response({'error': 'Agent not found'}, status=status.HTTP_404_NOT_FOUND)
+    cap = ScreenCapture.objects.filter(agent=agent).first()
+    if not cap:
+        return Response({'status': 'no_data'})
+    return Response({
+        'status': 'ok',
+        'image': cap.image,
+        'captured_at': cap.captured_at.isoformat(),
+    })

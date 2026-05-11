@@ -27,6 +27,7 @@ class LoggingMiddleware(MiddlewareMixin):
             '/inventory/api/command-result/',
             '/inventory/api/config/sync/',
             '/inventory/api/agent/',
+            '/inventory/api/screen/',
             '/aegis/api/',
             '/api/agent/',
             (settings.STATIC_URL or '/static/'),

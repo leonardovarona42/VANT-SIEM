@@ -17,6 +17,9 @@
       </div>
     </div>
     <div class="flex gap-2">
+      <a href="{% url 'inventory-agent-screen' agent.agent_id %}" class="btn-secondary text-sm">
+        <i class="fas fa-eye mr-2"></i>View Screen
+      </a>
       <a href="{% url 'inventory-agent-config' agent.agent_id %}" class="btn-secondary text-sm">
         <i class="fas fa-sliders-h mr-2"></i>Config
       </a>

@@ -190,3 +190,9 @@ def software_list(request):
         'type_filter': type_filter,
     }
     return render(request, 'inventory/software_list.html', context)
+
+
+@login_required
+def screen_viewer(request, agent_id):
+    agent = get_object_or_404(Agent, agent_id=agent_id)
+    return render(request, 'inventory/screen_viewer.html', {'agent': agent})
