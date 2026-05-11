@@ -151,18 +151,11 @@
  <nav class="sticky top-0 z-50 dark:bg-surface-950/80 dark:border-surface-800/50 bg-white/80 border-surface-200/50 backdrop-blur-xl border-b">
  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
  <div class="flex items-center justify-between h-16">
- <!-- Logo -->
- <a href="{% url 'dashboard' %}" class="flex items-center gap-3 group">
- <div class="relative">
- <div class="absolute inset-0 bg-accent-500/20 rounded-full blur-xl group-hover:bg-accent-500/30 transition-all duration-300"></div>
- <img
- src="{% static 'img/logo.png' %}"
- alt="Logo"
- class="relative w-9 h-9 rounded-full object-cover"
- />
- </div>
- <span class="text-lg font-bold bg-gradient-to-r from-brand-400 to-accent-400 bg-clip-text text-transparent tracking-tight">VANT-SIEM</span>
- </a>
+  <!-- Logo -->
+  <a href="{% url 'dashboard' %}" class="flex items-center gap-3 shrink-0">
+  <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover shrink-0" />
+   <span class="text-lg font-bold bg-gradient-to-r from-brand-400 to-accent-400 bg-clip-text text-transparent tracking-tight">VANT-SIEM</span>
+  </a>
 
  <!-- Desktop Navigation -->
  <div class="hidden xl:flex items-center gap-1">
