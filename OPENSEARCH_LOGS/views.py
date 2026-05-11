@@ -152,18 +152,27 @@ def ingest_bulk(request):
         if not events:
             return Response({'status': 'ok', 'ingested': 0})
 
-        source_type = events[0].get('source_type', 'generic')
-        source_id = f"agent-{source_type}"
+        agent_id = events[0].get('agent_id', '')
+        if not agent_id:
+            return Response(
+                {'error': 'agent_id is required. Enroll the agent first.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         try:
-            source = LogSource.objects.get(source_id=source_id)
+            source = LogSource.objects.get(source_id=agent_id)
+            if not source.enabled:
+                return Response(
+                    {'error': f'Agent source {agent_id} is disabled'},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
         except LogSource.DoesNotExist:
-            source = LogSource.objects.create(
-                source_id=source_id,
-                source_type=source_type,
-                host_name=events[0].get('host_name', ''),
-                enabled=True,
+            return Response(
+                {'error': f'Agent {agent_id} not found as log source. Enroll the agent first.'},
+                status=status.HTTP_403_FORBIDDEN,
             )
+
+        source_type = source.source_type
 
         source.touch()
         events_to_create = []

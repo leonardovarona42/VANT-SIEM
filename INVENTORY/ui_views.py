@@ -12,6 +12,7 @@ from .models import Agent, HardwareInventory, SoftwareInventory, AgentCommand
 
 @login_required
 def inventory_dashboard(request):
+    Agent.mark_stale_offline()
     now = timezone.now()
     agents = Agent.objects
     total = agents.count()
@@ -56,6 +57,7 @@ def inventory_dashboard(request):
 
 @login_required
 def agents_list(request):
+    Agent.mark_stale_offline()
     qs = Agent.objects.all()
     status_filter = request.GET.get('status', '')
     os_filter = request.GET.get('os_type', '')
@@ -96,6 +98,7 @@ def agents_list(request):
 
 @login_required
 def agent_detail(request, agent_id):
+    Agent.mark_stale_offline()
     agent = get_object_or_404(Agent, agent_id=agent_id)
     hardware = getattr(agent, 'hardware', None)
     software = agent.software.all().order_by('name')[:100]

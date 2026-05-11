@@ -15,6 +15,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 
 from .models import Agent, HardwareInventory, SoftwareInventory, AgentCommand, COMMAND_TYPE_CHOICES
+from OPENSEARCH_LOGS.models import LogSource
 from .serializers import (
     AgentListSerializer, AgentDetailSerializer, AgentRegisterSerializer,
     HardwareInventorySerializer, SoftwareInventorySerializer,
@@ -52,6 +53,7 @@ def health_check(request):
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def agent_stats(request):
+    Agent.mark_stale_offline()
     now = timezone.now()
     stats = {
         'total_agents': Agent.objects.count(),
@@ -126,6 +128,26 @@ def register_agent(request):
             agent.status = 'online'
         agent.heartbeat()
         agent.save(update_fields=['hostname', 'os_type', 'os_version', 'agent_version', 'ip_address', 'mac_address', 'domain', 'status'])
+
+    LogSource.objects.update_or_create(
+        source_id=str(agent.agent_id),
+        defaults={
+            'source_type': 'agent_push',
+            'vendor': 'OpenSource',
+            'host_name': agent.hostname,
+            'host_ip': agent.ip_address,
+            'protocol': 'agent_push',
+            'enabled': agent.status != 'disabled',
+            'meta': {
+                'agent_id': str(agent.agent_id),
+                'machine_name': agent.machine_name,
+                'os_type': agent.os_type,
+                'os_version': agent.os_version,
+                'agent_version': agent.agent_version,
+                'mac_address': agent.mac_address,
+            },
+        }
+    )
 
     return Response({
         'agent_id': str(agent.agent_id),
@@ -520,6 +542,7 @@ def delete_agent(request, agent_id):
         return Response({'error': 'Agent not found'}, status=status.HTTP_404_NOT_FOUND)
 
     hostname = agent.hostname
+    LogSource.objects.filter(source_id=str(agent.agent_id)).delete()
     agent.delete()
     return Response({'status': 'ok', 'message': f'Agent "{hostname}" deleted'})
 

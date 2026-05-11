@@ -1,5 +1,6 @@
 import uuid
 import logging
+from datetime import timedelta
 from django.db import models
 from django.utils import timezone
 
@@ -92,6 +93,16 @@ class Agent(models.Model):
     def go_offline(self):
         self.status = 'offline'
         self.save(update_fields=['status', 'updated_at'])
+
+    @classmethod
+    def mark_stale_offline(cls, minutes=15):
+        threshold = timezone.now() - timedelta(minutes=minutes)
+        updated = cls.objects.filter(last_heartbeat__lt=threshold, status='online').update(
+            status='offline', updated_at=timezone.now()
+        )
+        if updated:
+            logger.info("Marked %s stale agents as offline", updated)
+        return updated
 
 
 class HardwareInventory(models.Model):
