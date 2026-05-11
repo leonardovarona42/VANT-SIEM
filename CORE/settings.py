@@ -21,13 +21,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-^(*y6l84+o!c#060jy^i!i$nf47o$c#aukx4)1&1=e7$b8l7)@'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-^(*y6l84+o!c#060jy^i!i$nf47o$c#aukx4)1&1=e7$b8l7)@')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DJANGO_DEBUG', 'True').lower() == 'true'
 
-ALLOWED_HOSTS = ['localhost','127.0.0.1','192.168.137.1','vantsc.duckdns.org','172.23.48.1','host.docker.internal','192.168.1.12','192.168.12.43','192.168.137.1']
+ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.12.43').split(',') if h.strip()]
 
+CSRF_TRUSTED_ORIGINS = ['http://vsiem.cmg.test.cu', 'http://192.168.12.43']
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Application definition
 
@@ -45,8 +48,7 @@ INSTALLED_APPS = [
     'EVENT_M',
     'OPENSEARCH_LOGS',
     'INVENTORY',
-    'ASSETS',
-    'DLP',
+    'AEGIS',
 ]
 
 MIDDLEWARE = [
@@ -70,7 +72,7 @@ TEMPLATES = [
             BASE_DIR / "EVENT_M/templates",
             BASE_DIR / "OPENSEARCH_LOGS/templates",
             BASE_DIR / "INVENTORY/templates",
-            BASE_DIR / "DLP/templates",
+            BASE_DIR / "AEGIS/templates",
         ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -95,7 +97,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv('SIEM_DB_NAME', 'vant_siem'),
         'USER': os.getenv('SIEM_DB_USER', 'vantsiem'),
-        'PASSWORD': os.getenv('SIEM_DB_PASSWORD', 'vantsiem123'),
+        'PASSWORD': os.getenv('SIEM_DB_PASSWORD'),
         'HOST': os.getenv('SIEM_DB_HOST', 'localhost'),
         'PORT': os.getenv('SIEM_DB_PORT', '5432'),
     },
@@ -103,7 +105,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv('LOGS_DB_NAME', 'vant_logs'),
         'USER': os.getenv('LOGS_DB_USER', 'vantsiem'),
-        'PASSWORD': os.getenv('LOGS_DB_PASSWORD', 'vantsiem123'),
+        'PASSWORD': os.getenv('LOGS_DB_PASSWORD'),
         'HOST': os.getenv('LOGS_DB_HOST', 'localhost'),
         'PORT': os.getenv('LOGS_DB_PORT', '5432'),
     },
@@ -111,7 +113,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv('INVENTORY_DB_NAME', 'vant_inventory'),
         'USER': os.getenv('INVENTORY_DB_USER', 'vantsiem'),
-        'PASSWORD': os.getenv('INVENTORY_DB_PASSWORD', 'vantsiem123'),
+        'PASSWORD': os.getenv('INVENTORY_DB_PASSWORD'),
         'HOST': os.getenv('INVENTORY_DB_HOST', 'localhost'),
         'PORT': os.getenv('INVENTORY_DB_PORT', '5432'),
     },
@@ -119,9 +121,12 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.getenv('DLP_DB_NAME', 'vant_dlp'),
         'USER': os.getenv('DLP_DB_USER', 'vantsiem'),
-        'PASSWORD': os.getenv('DLP_DB_PASSWORD', 'vantsiem123'),
+        'PASSWORD': os.getenv('DLP_DB_PASSWORD'),
         'HOST': os.getenv('DLP_DB_HOST', 'localhost'),
         'PORT': os.getenv('DLP_DB_PORT', '5432'),
+        'TEST': {
+            'DEPENDENCIES': [],
+        },
     },
 }
 

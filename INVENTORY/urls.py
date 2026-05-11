@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
-    health_check, agent_stats, register_agent, heartbeat, submit_inventory,
+    health_check, agent_stats, register_agent, enroll_agent, heartbeat, submit_inventory,
     command_result, AgentViewSet, SoftwareViewSet, AgentCommandViewSet,
     push_config, get_agent_config, config_templates, delete_agent, send_command,
     pull_commands,
@@ -23,6 +23,7 @@ urlpatterns = [
     path('api/health/', health_check, name='inventory-api-health'),
     path('api/stats/', agent_stats, name='inventory-api-stats'),
     path('api/register/', register_agent, name='inventory-api-register'),
+    path('api/agent/enroll/', enroll_agent, name='inventory-api-enroll'),
     path('api/heartbeat/', heartbeat, name='inventory-api-heartbeat'),
     path('api/inventory/submit/', submit_inventory, name='inventory-api-submit'),
     path('api/command-result/', command_result, name='inventory-api-command-result'),

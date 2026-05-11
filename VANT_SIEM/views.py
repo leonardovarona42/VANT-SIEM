@@ -162,8 +162,11 @@ def password_change_view(request):
         if new_password1 != new_password2:
             messages.error(request, 'Las nuevas contrasenas no coinciden.')
             return render(request, 'password_change.html')
-        if len(new_password1) < 8:
-            messages.error(request, 'La contrasena debe tener al menos 8 caracteres.')
+        try:
+            from django.contrib.auth.password_validation import validate_password
+            validate_password(new_password1, user=user)
+        except Exception as e:
+            messages.error(request, '; '.join(e.messages) if hasattr(e, 'messages') else str(e))
             return render(request, 'password_change.html')
         user.set_password(new_password1)
         user.save()

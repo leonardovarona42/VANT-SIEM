@@ -1784,21 +1784,42 @@ class InvolucradoIncidenteDeleteView(DeleteView):
         messages.success(request, f'Involucrado en incidente "{involucrado_nombre}" eliminado exitosamente.')
         return response
 
-# Vista para reportes externos (sin autenticación requerida)
+_RATE_LIMIT_CACHE = {}
+
+def _check_rate_limit(ip):
+    now = time.time()
+    window = 60
+    max_requests = 5
+    if ip not in _RATE_LIMIT_CACHE:
+        _RATE_LIMIT_CACHE[ip] = []
+    _RATE_LIMIT_CACHE[ip] = [t for t in _RATE_LIMIT_CACHE[ip] if now - t < window]
+    if len(_RATE_LIMIT_CACHE[ip]) >= max_requests:
+        return False
+    _RATE_LIMIT_CACHE[ip].append(now)
+    while len(_RATE_LIMIT_CACHE) > 10000:
+        _RATE_LIMIT_CACHE.pop(next(iter(_RATE_LIMIT_CACHE)), None)
+    return True
+
+
 @csrf_exempt
 @require_http_methods(["GET", "POST"])
 def reporte_externo(request):
     """Vista pública para que usuarios externos reporten incidentes"""
 
     if request.method == 'POST':
+        ip = request.META.get('REMOTE_ADDR', 'unknown')
+        if not _check_rate_limit(ip):
+            return render(request, 'reporte_externo.html', {
+                'error': 'Demasiadas solicitudes. Espere un minuto antes de intentar de nuevo.',
+                'areas': Area.objects.all(),
+            }, status=429)
+
         try:
-            # Crear reporte sin autenticación
             nombre_informante = request.POST.get('nombre_informante', '').strip()
             email_informante = request.POST.get('email_informante', '').strip()
             area_id = request.POST.get('area')
             descripcion = request.POST.get('descripcion', '').strip()
 
-            # Validaciones básicas
             if not nombre_informante or not email_informante or not area_id or not descripcion:
                 return render(request, 'reporte_externo.html', {
                     'error': 'Todos los campos son obligatorios.',
@@ -1806,7 +1827,13 @@ def reporte_externo(request):
                     'form_data': request.POST
                 })
 
-            # Verificar que el área existe
+            if len(descripcion) > 5000:
+                return render(request, 'reporte_externo.html', {
+                    'error': 'La descripción es demasiado larga (máx. 5000 caracteres).',
+                    'areas': Area.objects.all(),
+                    'form_data': request.POST
+                })
+
             try:
                 area = Area.objects.get(pk=area_id)
             except Area.DoesNotExist:
@@ -1816,7 +1843,6 @@ def reporte_externo(request):
                     'form_data': request.POST
                 })
 
-            # Crear el reporte
             reporte = Reporte.objects.create(
                 nombre_informante=nombre_informante,
                 email_informante=email_informante,
@@ -1825,41 +1851,33 @@ def reporte_externo(request):
                 estado_solucion='Nuevo'
             )
 
-            # Enviar notificación por email
             try:
                 subject = "VANT-SIEM - Nuevo Reporte Externo"
-                body = f"""
-                <html>
-                <body>
-                    <h3>Nuevo Reporte Externo de Incidente</h3>
-                    <p><strong>Informante:</strong> {reporte.nombre_informante}</p>
-                    <p><strong>Email:</strong> {reporte.email_informante}</p>
-                    <p><strong>Área:</strong> {reporte.area.nombre}</p>
-                    <p><strong>Fecha:</strong> {reporte.fecha_hora.strftime('%d/%m/%Y %H:%M')}</p>
-                    <p><strong>Descripción:</strong><br/>{reporte.descripcion}</p>
-                    <hr>
-                    <p><em>Reporte enviado desde formulario público</em></p>
-                </body>
-                </html>
-                """
+                body = f"""<html><body>
+                <h3>Nuevo Reporte Externo</h3>
+                <p><strong>Informante:</strong> {reporte.nombre_informante}</p>
+                <p><strong>Email:</strong> {reporte.email_informante}</p>
+                <p><strong>Área:</strong> {reporte.area.nombre}</p>
+                <p><strong>Fecha:</strong> {reporte.fecha_hora.strftime('%d/%m/%Y %H:%M')}</p>
+                <p><strong>Descripción:</strong><br/>{reporte.descripcion}</p>
+                </body></html>"""
                 send_system_alert('REPORT_CREATED', subject, body, priority='HIGH')
             except Exception:
-                pass  # No fallar si el email no se puede enviar
+                pass
 
             return render(request, 'reporte_externo.html', {
                 'success': True,
                 'reporte_id': reporte.id,
-                'mensaje': f'Su reporte ha sido enviado exitosamente. ID del reporte: {reporte.id}'
+                'mensaje': f'Reporte enviado. ID: {reporte.id}'
             })
 
-        except Exception as e:
+        except Exception:
             return render(request, 'reporte_externo.html', {
-                'error': 'Error al procesar el reporte. Por favor, inténtelo nuevamente.',
+                'error': 'Error al procesar el reporte.',
                 'areas': Area.objects.all(),
                 'form_data': request.POST
             })
 
-    # GET request - mostrar formulario
     return render(request, 'reporte_externo.html', {
         'areas': Area.objects.all()
     })

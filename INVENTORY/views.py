@@ -1,13 +1,17 @@
+import hashlib
+import hmac
 import json
 import logging
+import os
+import uuid
 from datetime import datetime, timedelta
 from django.db.models import Count, Q
 from django.db.models.functions import TruncDate
 from django.utils import timezone
 from django.http import JsonResponse
 from rest_framework import status, viewsets
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 
 from .models import Agent, HardwareInventory, SoftwareInventory, AgentCommand, COMMAND_TYPE_CHOICES
@@ -20,6 +24,8 @@ from .serializers import (
 )
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_AGENT_SHARED_SECRET = os.getenv('AGENT_SHARED_SECRET', '')
 
 
 @api_view(['GET'])
@@ -44,6 +50,7 @@ def health_check(request):
 
 
 @api_view(['GET'])
+@permission_classes([IsAdminUser])
 def agent_stats(request):
     now = timezone.now()
     stats = {
@@ -130,6 +137,74 @@ def register_agent(request):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+def enroll_agent(request):
+    raw_agent_id = request.data.get('agent_id', '')
+    host_name = request.data.get('host_name', '')
+    timestamp = request.data.get('timestamp', '')
+    signature = request.data.get('signature', '')
+    install_owner = request.data.get('install_owner_account', '')
+    shared_secret = request.data.get('shared_secret', '') or DEFAULT_AGENT_SHARED_SECRET
+
+    if not all([raw_agent_id, host_name, timestamp, signature]):
+        return Response({'ok': False, 'error': 'Missing required fields'}, status=status.HTTP_400_BAD_REQUEST)
+
+    expected = hmac.new(
+        shared_secret.encode('utf-8'),
+        f'{raw_agent_id}:{host_name}:{timestamp}'.encode('utf-8'),
+        hashlib.sha256,
+    ).hexdigest()
+
+    if not hmac.compare_digest(expected, signature):
+        return Response({'ok': False, 'error': 'Invalid signature'}, status=status.HTTP_401_UNAUTHORIZED)
+
+    try:
+        agent_id = uuid.UUID(raw_agent_id)
+    except (ValueError, AttributeError):
+        agent_id = uuid.uuid4()
+        request._enroll_original_id = raw_agent_id
+
+    try:
+        agent = Agent.objects.get(agent_id=agent_id)
+        agent.hostname = host_name
+        agent.heartbeat()
+        agent.save(update_fields=['hostname', 'last_heartbeat', 'status', 'updated_at'])
+    except Agent.DoesNotExist:
+        agent = Agent.objects.create(
+            agent_id=agent_id,
+            hostname=host_name,
+            machine_name=host_name,
+            os_type='other_linux',
+            status='online',
+        )
+
+    auth_token = str(uuid.uuid4())
+    meta = dict(agent.meta or {})
+    meta['auth_token'] = auth_token
+    meta['install_owner_account'] = install_owner
+    if hasattr(request, '_enroll_original_id'):
+        meta['original_agent_id'] = request._enroll_original_id
+    agent.meta = meta
+    agent.save(update_fields=['meta', 'updated_at'])
+
+    return Response({
+        'ok': True,
+        'token': auth_token,
+        'agent_id': str(agent.agent_id),
+        'hostname': agent.hostname,
+        'issued_by': 'inventory.enroll',
+    })
+
+
+def _resolve_agent(agent_id_str):
+    try:
+        uid = uuid.UUID(str(agent_id_str))
+        return Agent.objects.get(agent_id=uid)
+    except (ValueError, AttributeError, Agent.DoesNotExist):
+        return Agent.objects.get(meta__original_agent_id=str(agent_id_str))
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
 def heartbeat(request):
     serializer = HeartbeatSerializer(data=request.data)
     if not serializer.is_valid():
@@ -137,7 +212,7 @@ def heartbeat(request):
 
     agent_id = serializer.validated_data['agent_id']
     try:
-        agent = Agent.objects.get(agent_id=agent_id)
+        agent = _resolve_agent(agent_id)
     except Agent.DoesNotExist:
         return Response({'error': 'Agent not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -167,7 +242,7 @@ def submit_inventory(request):
 
     agent_id = serializer.validated_data['agent_id']
     try:
-        agent = Agent.objects.get(agent_id=agent_id)
+        agent = _resolve_agent(agent_id)
     except Agent.DoesNotExist:
         return Response({'error': 'Agent not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -350,6 +425,7 @@ DEFAULT_CONFIG = {
 
 
 @api_view(['PUT'])
+@permission_classes([IsAdminUser])
 def push_config(request, agent_id):
     serializer = AgentConfigPushSerializer(data=request.data)
     if not serializer.is_valid():
@@ -379,6 +455,7 @@ def push_config(request, agent_id):
 
 
 @api_view(['GET'])
+@permission_classes([IsAdminUser])
 def get_agent_config(request, agent_id):
     try:
         agent = Agent.objects.get(agent_id=agent_id)
@@ -396,6 +473,7 @@ def get_agent_config(request, agent_id):
 
 
 @api_view(['GET'])
+@permission_classes([IsAdminUser])
 def config_templates(request):
     return Response({
         'defaults': DEFAULT_CONFIG,
@@ -434,6 +512,7 @@ def config_templates(request):
 
 
 @api_view(['DELETE'])
+@permission_classes([IsAdminUser])
 def delete_agent(request, agent_id):
     try:
         agent = Agent.objects.get(agent_id=agent_id)
@@ -446,6 +525,7 @@ def delete_agent(request, agent_id):
 
 
 @api_view(['POST'])
+@permission_classes([IsAdminUser])
 def send_command(request, agent_id):
     try:
         agent = Agent.objects.get(agent_id=agent_id)
@@ -478,7 +558,7 @@ def pull_commands(request):
     if not agent_id:
         return Response({'error': 'agent_id required'}, status=status.HTTP_400_BAD_REQUEST)
     try:
-        agent = Agent.objects.get(agent_id=agent_id)
+        agent = _resolve_agent(agent_id)
     except Agent.DoesNotExist:
         return Response({'error': 'Agent not found'}, status=status.HTTP_404_NOT_FOUND)
 

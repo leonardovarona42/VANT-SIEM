@@ -94,12 +94,12 @@ class AgentCommandCreateSerializer(serializers.Serializer):
 
 
 class HeartbeatSerializer(serializers.Serializer):
-    agent_id = serializers.UUIDField()
+    agent_id = serializers.CharField(max_length=255)
     ip_address = serializers.IPAddressField(required=False, allow_null=True)
 
 
 class InventorySubmitSerializer(serializers.Serializer):
-    agent_id = serializers.UUIDField()
+    agent_id = serializers.CharField(max_length=255)
     hardware = serializers.JSONField()
     software = serializers.JSONField(required=False, default=list)
 

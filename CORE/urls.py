@@ -3,7 +3,6 @@ from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from django.shortcuts import redirect
 from django.conf import settings
-from django.conf.urls.static import static
 
 
 def root_redirect(request):
@@ -18,8 +17,11 @@ urlpatterns = [
     path('eventos/', include('EVENT_M.urls')),
     path('logs/', include('OPENSEARCH_LOGS.urls')),
     path('inventory/', include('INVENTORY.urls')),
-    path('assets/', include('ASSETS.urls')),
-    path('dlp/', include('DLP.urls')),
+    path('aegis/', include('AEGIS.urls')),
     path('siem/dashboard/logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+
+if settings.DEBUG:
+    from django.conf.urls.static import static
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

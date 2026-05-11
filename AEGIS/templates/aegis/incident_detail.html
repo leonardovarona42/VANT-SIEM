@@ -1,0 +1,202 @@
+{% extends "dashboard.html" %}
+{% block title %}Detalle Incidente DLP | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="mb-6">
+    <a href="{% url 'aegis-incidents' %}" class="text-sm text-blue-400 hover:text-blue-300 mb-2 inline-block">
+        <i class="fas fa-arrow-left mr-1"></i>Volver a incidentes
+    </a>
+    <h2 class="text-2xl font-bold dark:text-white text-surface-900">
+        <i class="fas fa-file-alt mr-2 text-amber-400"></i>Detalle de Incidente
+    </h2>
+</div>
+
+{% if messages %}
+{% for msg in messages %}
+<div class="glass-card p-3 mb-4 bg-green-500/20 border border-green-500/30 text-green-300 rounded">{{ msg }}</div>
+{% endfor %}
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 space-y-6">
+        <div class="glass-card p-6">
+            <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Informacion del Archivo</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs dark:text-surface-400 text-surface-500">Nombre</label>
+                    <div class="text-sm dark:text-white text-surface-900 font-mono">{{ incident.file_name }}</div>
+                </div>
+                <div>
+                    <label class="text-xs dark:text-surface-400 text-surface-500">Ruta</label>
+                    <div class="text-sm dark:text-white text-surface-900 font-mono break-all">{{ incident.file_path }}</div>
+                </div>
+                <div>
+                    <label class="text-xs dark:text-surface-400 text-surface-500">Hash SHA-256</label>
+                    <div class="text-xs dark:text-white text-surface-900 font-mono">{{ incident.file_hash|default:"N/A" }}</div>
+                </div>
+                <div>
+                    <label class="text-xs dark:text-surface-400 text-surface-500">Evidencia</label>
+                    <div class="text-sm">
+                        {% if incident.evidence_file %}
+                        <a href="{% url 'aegis-evidence-download' incident.pk %}" class="text-blue-400 hover:text-blue-300">
+                            <i class="fas fa-download mr-1"></i>Descargar
+                        </a>
+                        {% else %}
+                        <span class="text-xs dark:text-surface-400 text-surface-500">No disponible</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs dark:text-surface-400 text-surface-500">Canal</label>
+                    <div class="text-sm dark:text-white text-surface-900 capitalize">{{ incident.channel }}</div>
+                </div>
+                <div>
+                    <label class="text-xs dark:text-surface-400 text-surface-500">Actor</label>
+                    <div class="text-sm dark:text-white text-surface-900">{{ incident.actor|default:"N/A" }}</div>
+                </div>
+                <div>
+                    <label class="text-xs dark:text-surface-400 text-surface-500">Detectado</label>
+                    <div class="text-sm dark:text-white text-surface-900">{{ incident.detected_at|date:"Y-m-d H:i:s" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card p-6">
+            <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Politica y Regla</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="text-xs dark:text-surface-400 text-surface-500">Codigo Politica</label>
+                    <div class="text-sm dark:text-white text-surface-900">{{ incident.policy_code }}</div>
+                </div>
+                <div>
+                    <label class="text-xs dark:text-surface-400 text-surface-500">Regla</label>
+                    <div class="text-sm dark:text-white text-surface-900">{{ incident.rule_name }}</div>
+                </div>
+                <div>
+                    <label class="text-xs dark:text-surface-400 text-surface-500">Clasificacion</label>
+                    <div class="text-sm dark:text-white text-surface-900">{{ incident.classification }}</div>
+                </div>
+                <div>
+                    <label class="text-xs dark:text-surface-400 text-surface-500">Palabras Coincidentes</label>
+                    <div class="flex flex-wrap gap-1 mt-1">
+                        {% for kw in incident.matched_keywords %}
+                        <span class="px-2 py-0.5 bg-red-500/20 text-red-400 rounded text-xs">{{ kw }}</span>
+                        {% empty %}
+                        <span class="text-xs dark:text-surface-400 text-surface-500">N/A</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if incident.summary %}
+        <div class="glass-card p-6">
+            <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-2">Resumen</h3>
+            <p class="text-sm dark:text-white text-surface-900">{{ incident.summary }}</p>
+        </div>
+        {% endif %}
+
+        {% if incident.metadata %}
+        <div class="glass-card p-6">
+            <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Metadatos</h3>
+            <pre class="text-xs dark:text-surface-300 text-surface-600 bg-surface-100 dark:bg-surface-800 p-3 rounded overflow-x-auto">{{ incident.metadata|safe }}</pre>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="space-y-6">
+        <div class="glass-card p-6">
+            <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Estado</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs dark:text-surface-400 text-surface-500">Severidad</label>
+                    <div>
+                        <span class="px-3 py-1 rounded text-sm font-bold
+                            {% if incident.severity == 'critical' %}bg-red-500/20 text-red-400
+                            {% elif incident.severity == 'high' %}bg-orange-400/20 text-orange-400
+                            {% elif incident.severity == 'medium' %}bg-yellow-400/20 text-yellow-400
+                            {% else %}bg-blue-400/20 text-blue-400{% endif %}">
+                            {{ incident.severity|upper }}
+                        </span>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs dark:text-surface-400 text-surface-500">Estado</label>
+                    <div>
+                        <span class="px-3 py-1 rounded text-sm
+                            {% if incident.status == 'open' %}bg-red-500/20 text-red-400
+                            {% elif incident.status == 'acknowledged' %}bg-blue-400/20 text-blue-400
+                            {% elif incident.status == 'resolved' %}bg-green-500/20 text-green-400
+                            {% else %}bg-gray-500/20 text-gray-400{% endif %}">
+                            {{ incident.status|upper }}
+                        </span>
+                    </div>
+                </div>
+                {% if incident.acknowledged_at %}
+                <div>
+                    <label class="text-xs dark:text-surface-400 text-surface-500">Reconocido</label>
+                    <div class="text-sm dark:text-white text-surface-900">{{ incident.acknowledged_at|date:"Y-m-d H:i" }} por {{ incident.acknowledged_by }}</div>
+                </div>
+                {% endif %}
+                {% if incident.resolved_at %}
+                <div>
+                    <label class="text-xs dark:text-surface-400 text-surface-500">Resuelto</label>
+                    <div class="text-sm dark:text-white text-surface-900">{{ incident.resolved_at|date:"Y-m-d H:i" }} por {{ incident.resolved_by }}</div>
+                    {% if incident.resolution_notes %}
+                    <div class="text-xs dark:text-surface-400 text-surface-500 mt-1">{{ incident.resolution_notes }}</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if incident.status == 'open' %}
+        <div class="glass-card p-6">
+            <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Acciones</h3>
+            <form action="{% url 'aegis-incident-ack' incident.pk %}" method="post" class="mb-3">
+                {% csrf_token %}
+                <button type="submit" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded text-sm">
+                    <i class="fas fa-check mr-1"></i>Reconocer
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
+        {% if incident.status != 'resolved' and incident.status != 'false_positive' %}
+        <div class="glass-card p-6">
+            <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Resolver</h3>
+            <form action="{% url 'aegis-incident-resolve' incident.pk %}" method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="text-xs dark:text-surface-400 text-surface-500">Estado final</label>
+                    <select name="status" class="w-full px-3 py-2 bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded text-sm dark:text-white">
+                        <option value="resolved">Resuelto</option>
+                        <option value="false_positive">Falso Positivo</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="text-xs dark:text-surface-400 text-surface-500">Notas</label>
+                    <textarea name="notes" rows="3" class="w-full px-3 py-2 bg-surface-100 dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded text-sm dark:text-white"></textarea>
+                </div>
+                <button type="submit" class="w-full px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded text-sm">
+                    <i class="fas fa-check-circle mr-1"></i>Resolver
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
+        <div class="glass-card p-6">
+            <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Agente</h3>
+            <div class="space-y-2">
+                <div>
+                    <label class="text-xs dark:text-surface-400 text-surface-500">Agent ID</label>
+                    <div class="text-sm dark:text-white text-surface-900 font-mono">{{ incident.remote_agent_id|default:"N/A" }}</div>
+                </div>
+                <div>
+                    <label class="text-xs dark:text-surface-400 text-surface-500">Host</label>
+                    <div class="text-sm dark:text-white text-surface-900">{{ incident.host_name|default:"N/A" }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

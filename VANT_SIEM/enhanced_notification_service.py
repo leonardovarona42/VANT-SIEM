@@ -198,32 +198,23 @@ class EnhancedNotificationService:
             )
 
     def _render_template(self, template, notification):
-        """Renderizar contenido usando plantilla"""
-        # Variables disponibles en el contexto
         context = {
-            'notification': notification,
-            'user': notification.user,
-            'title': notification.title,
-            'message': notification.message,
-            'event_type': notification.event_type,
-            'created_at': notification.created_at,
+            'notification_title': notification.title,
+            'notification_message': notification.message,
+            'notification_event_type': notification.event_type,
+            'notification_created_at': notification.created_at.isoformat() if notification.created_at else '',
         }
-
-        # Agregar variables personalizadas de la plantilla
         if template.available_variables:
             for var_name, var_value in template.available_variables.items():
-                context[var_name] = var_value
+                if isinstance(var_value, (str, int, float, bool)):
+                    context[var_name] = var_value
 
-        # Renderizar asunto
         if template.subject_template:
-            subject_template = Template(template.subject_template)
-            subject = subject_template.render(Context(context))
+            subject = template.subject_template.format(**context)
         else:
             subject = notification.title
 
-        # Renderizar cuerpo
-        body_template = Template(template.body_template)
-        body = body_template.render(Context(context))
+        body = template.body_template.format(**context)
 
         return {
             'subject': subject,

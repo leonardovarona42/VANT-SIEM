@@ -1,0 +1,17 @@
+[Unit]
+Description=VANT-SIEM Django (custom runserver + microservicios)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/vant-siem
+Environment=PATH=/home/vant-siem/venv/bin:/usr/bin:/bin
+Environment=TIMESCALEDB_ENABLED=True
+ExecStart=/home/vant-siem/start.sh
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/vantsiem.log
+StandardError=append:/var/log/vantsiem.log
+
+[Install]
+WantedBy=default.target

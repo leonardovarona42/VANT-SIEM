@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.http import JsonResponse
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from .models import LogSource, LogEvent, LogRetentionPolicy
@@ -40,10 +40,12 @@ class LogSourceViewSet(viewsets.ModelViewSet):
     queryset = LogSource.objects.all()
     serializer_class = LogSourceSerializer
     lookup_field = 'source_id'
+    permission_classes = [IsAuthenticated]
 
 
 class LogEventListView(generics.ListAPIView):
     serializer_class = LogEventListSerializer
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         qs = LogEvent.objects.all()
@@ -78,10 +80,11 @@ class LogEventDetailView(generics.RetrieveAPIView):
     queryset = LogEvent.objects.all()
     serializer_class = LogEventDetailSerializer
     lookup_field = 'pk'
+    permission_classes = [IsAuthenticated]
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def ingest_log(request):
     serializer = LogIngestSerializer(data=request.data)
     if not serializer.is_valid():
@@ -118,8 +121,7 @@ def ingest_log(request):
 
     if parsed.get('severity') in ('critical', 'high'):
         try:
-            from CORE.service_bus import ServiceBus
-            from CORE.events import LOG_ALERT_TRIGGERED
+            from CORE.arkangel import ServiceBus, LOG_ALERT_TRIGGERED
             bus = ServiceBus()
             bus.publish(LOG_ALERT_TRIGGERED, {
                 'source_id': source_id,
@@ -141,7 +143,7 @@ def ingest_log(request):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def ingest_bulk(request):
     data = request.data
 
@@ -213,8 +215,7 @@ def ingest_bulk(request):
 
         if alerts:
             try:
-                from CORE.service_bus import ServiceBus
-                from CORE.events import LOG_ALERT_TRIGGERED
+                from CORE.arkangel import ServiceBus, LOG_ALERT_TRIGGERED
                 bus = ServiceBus()
                 for alert in alerts:
                     bus.publish(LOG_ALERT_TRIGGERED, alert)
@@ -273,8 +274,7 @@ def ingest_bulk(request):
 
     if alerts:
         try:
-            from CORE.service_bus import ServiceBus
-            from CORE.events import LOG_ALERT_TRIGGERED
+            from CORE.arkangel import ServiceBus, LOG_ALERT_TRIGGERED
             bus = ServiceBus()
             for alert in alerts:
                 bus.publish(LOG_ALERT_TRIGGERED, alert)
@@ -289,7 +289,7 @@ def ingest_bulk(request):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def ingest_syslog(request):
     raw = request.body.decode('utf-8', errors='replace').strip()
     if not raw:
@@ -325,7 +325,7 @@ def ingest_syslog(request):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def log_statistics(request):
     hours = int(request.query_params.get('hours', 24))
     cutoff = timezone.now() - timedelta(hours=hours)
@@ -356,3 +356,4 @@ class LogRetentionPolicyViewSet(viewsets.ModelViewSet):
     queryset = LogRetentionPolicy.objects.all()
     serializer_class = LogRetentionPolicySerializer
     lookup_field = 'source_type'
+    permission_classes = [IsAuthenticated]

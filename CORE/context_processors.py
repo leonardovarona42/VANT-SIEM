@@ -1,18 +1,21 @@
-import requests
 import logging
+from django.db import connections, DEFAULT_DB_ALIAS
 
 logger = logging.getLogger(__name__)
 
+
+def _db_connected(alias):
+    try:
+        conn = connections[alias]
+        conn.ensure_connection()
+        return conn.is_usable()
+    except Exception:
+        return False
+
+
 def service_health(request):
-    services = {
-        'logs_service': {'url': 'http://localhost:9201/logs/api/health/', 'key': 'logs_service_healthy'},
-        'inventory_service': {'url': 'http://localhost:8003/inventory/api/health/', 'key': 'inventory_service_healthy'},
+    return {
+        'aegis_service_healthy': _db_connected('vant_dlp'),
+        'inventory_service_healthy': _db_connected('vant_inventory'),
+        'logs_service_healthy': _db_connected('vant_logs'),
     }
-    context = {}
-    for key, config in services.items():
-        try:
-            resp = requests.get(config['url'], timeout=2)
-            context[config['key']] = resp.status_code == 200
-        except Exception:
-            context[config['key']] = False
-    return context

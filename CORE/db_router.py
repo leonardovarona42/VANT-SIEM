@@ -6,7 +6,7 @@ LOGS_DB_NAME = os.getenv('LOGS_DB_NAME', 'vant_logs')
 INVENTORY_APP_LABELS = ('INVENTORY',)
 INVENTORY_DB_NAME = os.getenv('INVENTORY_DB_NAME', 'vant_inventory')
 
-DLP_APP_LABELS = ('DLP',)
+DLP_APP_LABELS = ('AEGIS',)
 DLP_DB_NAME = os.getenv('DLP_DB_NAME', 'vant_dlp')
 
 

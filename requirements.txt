@@ -86,3 +86,4 @@ APScheduler==3.10.4
 ldap3>=2.9
 celery>=5.3.4
 redis>=5.0.1
+gunicorn>=23.0.0

@@ -153,4 +153,4 @@ class LogRetentionPolicy(models.Model):
         db_table = 'logs_retention_policies'
 
     def __str__(self):
-        return f'{self.source_type}: {self.revision_days} days'
+        return f'{self.source_type}: {self.retention_days} days'
