@@ -90,7 +90,7 @@
                     </td>
                     <td class="px-4 py-2.5 text-xs dark:text-surface-300 text-surface-600 capitalize">{{ event.source_type }}</td>
                     <td class="px-4 py-2.5 text-xs dark:text-surface-300 text-surface-600 capitalize">{{ event.event_category }}</td>
-                    <td class="px-4 py-2.5 text-xs font-mono dark:text-surface-300 text-surface-600">{{ event.host_ip|default:"-" }}</td>
+                    <td class="px-4 py-2.5 text-xs font-mono dark:text-surface-300 text-surface-600">{{ event.host_name|default:event.host_ip|default:"-" }}</td>
                     <td class="px-4 py-2.5 text-xs dark:text-surface-300 text-surface-600 truncate max-w-md">{{ event.message|truncatechars:100 }}</td>
                     <td class="px-4 py-2.5">
                         <div class="flex flex-wrap gap-1">
