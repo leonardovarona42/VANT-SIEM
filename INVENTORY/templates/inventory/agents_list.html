@@ -146,6 +146,9 @@
       <i class="fas fa-stream w-4 text-blue-500"></i>Collect Logs
     </button>
     <div class="my-1 dark:border-surface-700 border-surface-200 border-t"></div>
+    <button id="dd-processes" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm dark:text-surface-300 text-surface-700 dark:hover:bg-white/5 hover:bg-surface-50 transition-colors">
+      <i class="fas fa-microchip w-4 text-cyan-500"></i>View Processes
+    </button>
     <button id="dd-restart" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm dark:text-surface-300 text-surface-700 dark:hover:bg-white/5 hover:bg-surface-50 transition-colors">
       <i class="fas fa-redo w-4 text-purple-500"></i>Restart Agent
     </button>
@@ -163,6 +166,51 @@
   <div class="glass-card px-3 py-2 flex items-center gap-2">
     <i class="fas fa-sync fa-spin text-brand-500 text-sm"></i>
     <span class="text-xs dark:text-surface-300 text-surface-600">Refreshing...</span>
+  </div>
+</div>
+
+<div id="processes-modal" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-black/50 backdrop-blur-sm">
+  <div class="relative w-full max-w-5xl max-h-[90vh] mx-4 glass-card rounded-2xl overflow-hidden flex flex-col">
+    <div class="flex items-center justify-between px-6 py-4 dark:border-surface-800 border-surface-200 border-b">
+      <div>
+        <h3 class="text-lg font-bold dark:text-white text-surface-900 flex items-center gap-2">
+          <i class="fas fa-microchip text-cyan-500"></i>
+          Active Processes — <span id="proc-hostname" class="text-brand-400"></span>
+        </h3>
+        <p class="text-xs dark:text-surface-400 text-surface-500 mt-0.5">
+          <span id="proc-count"></span> processes · <span id="proc-connections"></span> connections · Last updated: <span id="proc-timestamp"></span>
+        </p>
+      </div>
+      <button onclick="closeProcessesModal()" class="w-8 h-8 flex items-center justify-center rounded-lg dark:hover:bg-white/10 hover:bg-surface-100 dark:text-surface-400 text-surface-600 transition-colors">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="flex-1 overflow-auto p-6" id="proc-body">
+      <div id="proc-loading" class="flex items-center justify-center py-16">
+        <i class="fas fa-spinner fa-spin text-2xl text-brand-500"></i>
+        <span class="ml-3 dark:text-surface-300 text-surface-600">Collecting processes from agent...</span>
+      </div>
+      <div id="proc-content" class="hidden">
+        <div class="mb-4 flex items-center gap-3">
+          <input id="proc-search" type="text" placeholder="Filter processes..." class="flex-1 px-4 py-2.5 dark:bg-surface-800/50 dark:border-surface-700 dark:text-surface-200 bg-surface-50 border-surface-200 text-surface-800 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all" oninput="filterProcesses()">
+          <span class="text-xs dark:text-surface-500 text-surface-400" id="proc-filter-count"></span>
+        </div>
+        <div class="overflow-x-auto rounded-xl dark:border-surface-800 border-surface-200 border">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="dark:bg-surface-800/50 bg-surface-50 dark:border-surface-800 border-surface-200 border-b">
+                <th class="text-left px-4 py-3 text-xs font-semibold dark:text-surface-400 text-surface-500">PID</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold dark:text-surface-400 text-surface-500">Name</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold dark:text-surface-400 text-surface-500">CPU %</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold dark:text-surface-400 text-surface-500">Memory (MB)</th>
+                <th class="text-left px-4 py-3 text-xs font-semibold dark:text-surface-400 text-surface-500">Ports</th>
+              </tr>
+            </thead>
+            <tbody id="proc-tbody" class="divide-y dark:divide-surface-800 divide-surface-200"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}
@@ -192,6 +240,7 @@ function initAgentActions() {
       document.getElementById('dd-config').href = '/inventory/agent/' + _ddAgentId + '/config/';
       document.getElementById('dd-sync').onclick = function() { sendCommand(_ddAgentId, 'update_inventory'); };
       document.getElementById('dd-logs').onclick = function() { sendCommand(_ddAgentId, 'collect_logs'); };
+      document.getElementById('dd-processes').onclick = function() { collectProcesses(_ddAgentId, _ddHostname); };
       document.getElementById('dd-restart').onclick = function() { sendCommand(_ddAgentId, 'restart_agent'); };
       document.getElementById('dd-delete').onclick = function() { confirmDelete(_ddAgentId, _ddHostname); };
       document.getElementById('dd-screen').href = '/inventory/agent/' + _ddAgentId + '/screen/';
@@ -274,6 +323,103 @@ function refreshTable() {
     indicator.classList.add('hidden');
   })
   .catch(() => indicator.classList.add('hidden'));
+}
+
+let _procAgentId = null;
+function collectProcesses(agentId, hostname) {
+  closeDropdown();
+  _procAgentId = agentId;
+  document.getElementById('proc-hostname').textContent = hostname;
+  document.getElementById('proc-loading').classList.remove('hidden');
+  document.getElementById('proc-content').classList.add('hidden');
+  document.getElementById('proc-tbody').innerHTML = '';
+  document.getElementById('proc-search').value = '';
+  openProcessesModal();
+  sendCommand(agentId, 'collect_processes');
+  setTimeout(fetchProcesses, 3000);
+}
+
+function fetchProcesses() {
+  if (!_procAgentId) return;
+  fetch('/inventory/api/agent/' + _procAgentId + '/processes/')
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('proc-loading').classList.add('hidden');
+    document.getElementById('proc-content').classList.remove('hidden');
+    if (data.status === 'no_data') {
+      document.getElementById('proc-tbody').innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-sm dark:text-surface-400 text-surface-500">Waiting for agent response...</td></tr>';
+      setTimeout(fetchProcesses, 3000);
+      return;
+    }
+    renderProcesses(data.processes || [], data.connections || []);
+    document.getElementById('proc-count').textContent = (data.processes || []).length + ' processes';
+    document.getElementById('proc-connections').textContent = (data.connections || []).length + ' connections';
+    document.getElementById('proc-timestamp').textContent = data.captured_at ? new Date(data.captured_at).toLocaleString() : '-';
+  })
+  .catch(err => {
+    document.getElementById('proc-loading').classList.add('hidden');
+    document.getElementById('proc-tbody').innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-sm text-red-500">Error: ' + err.message + '</td></tr>';
+    document.getElementById('proc-content').classList.remove('hidden');
+  });
+}
+
+function renderProcesses(processes, connections) {
+  const pidPorts = {};
+  connections.forEach(c => {
+    const pid = c.owning_pid || c.pid;
+    if (!pid) return;
+    if (!pidPorts[pid]) pidPorts[pid] = [];
+    pidPorts[pid].push((c.local_port || '') + '/' + (c.protocol || 'tcp'));
+  });
+  const tbody = document.getElementById('proc-tbody');
+  if (!processes.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-8 text-center text-sm dark:text-surface-400 text-surface-500">No processes found</td></tr>';
+    return;
+  }
+  processes.forEach(p => {
+    const pid = p.pid || p.process_id || 0;
+    const ports = (pidPorts[pid] || []).join(', ');
+    const cpu = p.cpu_percent != null ? p.cpu_percent.toFixed(1) : '-';
+    const mem = p.memory_mb != null ? p.memory_mb.toFixed(1) : p.working_set_mb != null ? p.working_set_mb.toFixed(1) : '-';
+    const name = p.name || p.process_name || 'Unknown';
+    const row = document.createElement('tr');
+    row.className = 'dark:hover:bg-white/[0.03] hover:bg-surface-50/50 transition-colors';
+    row.dataset.name = name.toLowerCase();
+    row.innerHTML = '<td class="px-4 py-2.5 text-xs font-mono dark:text-surface-300 text-surface-600">' + pid + '</td>' +
+      '<td class="px-4 py-2.5 text-sm dark:text-white text-surface-900 font-medium">' + name + '</td>' +
+      '<td class="px-4 py-2.5 text-xs dark:text-surface-300 text-surface-600">' + cpu + '</td>' +
+      '<td class="px-4 py-2.5 text-xs dark:text-surface-300 text-surface-600">' + mem + '</td>' +
+      '<td class="px-4 py-2.5 text-xs font-mono dark:text-cyan-400 text-cyan-600">' + ports + '</td>';
+    tbody.appendChild(row);
+  });
+  filterProcesses();
+}
+
+function filterProcesses() {
+  const q = document.getElementById('proc-search').value.toLowerCase();
+  const rows = document.querySelectorAll('#proc-tbody tr');
+  let visible = 0;
+  rows.forEach(r => {
+    if (!q || r.dataset.name.includes(q)) {
+      r.style.display = ''; visible++;
+    } else {
+      r.style.display = 'none';
+    }
+  });
+  document.getElementById('proc-filter-count').textContent = visible + '/' + rows.length + ' shown';
+}
+
+function openProcessesModal() {
+  document.getElementById('processes-modal').classList.remove('hidden');
+  document.getElementById('processes-modal').classList.add('flex');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeProcessesModal() {
+  document.getElementById('processes-modal').classList.add('hidden');
+  document.getElementById('processes-modal').classList.remove('flex');
+  document.body.style.overflow = '';
+  _procAgentId = null;
 }
 
 function showToast(msg, type) {

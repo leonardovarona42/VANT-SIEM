@@ -1,209 +1,532 @@
 {% extends "dashboard.html" %}
 {% load logs_extras %}
-{% block title %}Dashboard de Logs | VANT-SIEM{% endblock %}
+{% block title %}Discovery | VANT-SIEM{% endblock %}
 {% block content %}
-<div class="mb-6">
+<style>
+.event-row { cursor: pointer; }
+.event-row.expanded { background: rgba(59,130,246,0.05); }
+.event-detail-row { display: none; }
+.event-detail-row.visible { display: table-row; }
+.detail-cell { padding: 0; }
+.detail-cell pre { margin: 0; max-height: 200px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; font-size: 11px; }
+.field-pill { cursor: pointer; transition: all 0.15s; }
+.field-pill:hover { opacity: 0.8; transform: translateY(-1px); }
+.field-pill.active { outline: 2px solid #3b82f6; outline-offset: 1px; }
+.histogram-bar { cursor: pointer; transition: opacity 0.15s; }
+.histogram-bar:hover { opacity: 0.7; }
+.filter-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11px; background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); }
+.filter-tag button { border: none; background: none; cursor: pointer; padding: 0; color: inherit; opacity: 0.6; font-size: 13px; line-height: 1; }
+.filter-tag button:hover { opacity: 1; }
+#fieldSidebar { transition: width 0.2s; }
+#fieldSidebar.collapsed { width: 0 !important; min-width: 0 !important; padding: 0 !important; overflow: hidden; }
+.bucket-btn { padding: 2px 8px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.15s; }
+.bucket-btn:hover { background: rgba(59,130,246,0.1); }
+.bucket-btn.active { background: rgba(59,130,246,0.2); color: #60a5fa; font-weight: 600; }
+</style>
+
+<div class="mb-4 flex items-center justify-between">
+  <div>
     <h2 class="text-2xl font-bold dark:text-white text-surface-900">
-        <i class="fas fa-stream mr-2 text-purple-400"></i>Dashboard de Logs
+      <i class="fas fa-compass mr-2 text-purple-400"></i>Discovery
     </h2>
-    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Monitoreo centralizado de eventos de seguridad</p>
+    <p class="text-xs dark:text-surface-400 text-surface-500 mt-0.5">Explore y filtre todos los eventos de log en tiempo real</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <span class="text-xs dark:text-surface-400 text-surface-500" id="eventCount">0 eventos</span>
+    <select id="refreshInterval" class="text-xs bg-transparent border dark:border-surface-700 border-surface-300 rounded px-2 py-1 dark:text-surface-300 text-surface-600">
+      <option value="0">Off</option>
+      <option value="5000">5s</option>
+      <option value="10000">10s</option>
+      <option value="30000">30s</option>
+      <option value="60000">1m</option>
+    </select>
+    <button onclick="refresh()" class="px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+      <i class="fas fa-sync-alt mr-1" id="refreshIcon"></i>Refresh
+    </button>
+  </div>
 </div>
 
-<!-- Stats Grid -->
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-    <div class="glass-card p-4 text-center">
-        <div class="text-sm dark:text-surface-400 text-surface-500">Total Logs</div>
-        <div class="text-3xl font-bold text-blue-400">{{ total_events|default:0 }}</div>
+<!-- Filters Bar -->
+<div class="glass-card p-3 mb-4">
+  <div class="flex flex-wrap items-center gap-2">
+    <div class="relative flex-1 min-w-[200px]">
+      <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-xs dark:text-surface-500 text-surface-400"></i>
+      <input id="searchInput" type="text" placeholder="Busqueda libre (host, IP, mensaje...)" class="w-full pl-8 pr-3 py-2 text-sm bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 rounded-lg dark:text-white text-surface-900 focus:ring-2 focus:ring-blue-500 outline-none">
     </div>
-    <div class="glass-card p-4 text-center">
-        <div class="text-sm dark:text-surface-400 text-surface-500">Ultimas 24h</div>
-        <div class="text-3xl font-bold text-emerald-400">{{ events_24h|default:0 }}</div>
+    <select id="timePreset" class="px-3 py-2 text-sm bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 rounded-lg dark:text-white text-surface-900 focus:ring-2 focus:ring-blue-500 outline-none">
+      <option value="15m">Ultimos 15 min</option>
+      <option value="30m">Ultimos 30 min</option>
+      <option value="1h" selected>Ultima 1 hora</option>
+      <option value="6h">Ultimas 6 horas</option>
+      <option value="24h">Ultimas 24 horas</option>
+      <option value="7d">Ultimos 7 dias</option>
+      <option value="30d">Ultimos 30 dias</option>
+    </select>
+    <button id="addFilterBtn" class="px-3 py-2 text-sm dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
+      <i class="fas fa-plus mr-1"></i>Filtro
+    </button>
+    <button onclick="clearFilters()" class="px-3 py-2 text-sm text-red-400 border border-red-400/30 rounded-lg hover:bg-red-400/10 transition-colors">
+      <i class="fas fa-times mr-1"></i>Limpiar
+    </button>
+  </div>
+  <!-- Active filter tags -->
+  <div id="filterTags" class="flex flex-wrap items-center gap-1.5 mt-2 min-h-[24px]"></div>
+  <!-- Add filter dropdown (hidden by default) -->
+  <div id="filterDropdown" class="hidden mt-2 p-3 dark:bg-surface-800 bg-surface-50 rounded-lg border dark:border-surface-700 border-surface-200">
+    <div class="flex items-center gap-2 flex-wrap">
+      <select id="filterField" class="px-2 py-1.5 text-xs bg-white dark:bg-surface-700 border dark:border-surface-600 border-surface-300 rounded dark:text-white text-surface-900">
+        <option value="source_type">Tipo de Fuente</option>
+        <option value="severity">Severidad</option>
+        <option value="event_category">Categoria</option>
+        <option value="host_ip">Host IP</option>
+      </select>
+      <select id="filterOperator" class="px-2 py-1.5 text-xs bg-white dark:bg-surface-700 border dark:border-surface-600 border-surface-300 rounded dark:text-white text-surface-900">
+        <option value="is">es</option>
+        <option value="is_not">no es</option>
+        <option value="contains">contiene</option>
+      </select>
+      <input id="filterValue" type="text" placeholder="Valor..." class="flex-1 px-2 py-1.5 text-xs bg-white dark:bg-surface-700 border dark:border-surface-600 border-surface-300 rounded dark:text-white text-surface-900 min-w-[120px]">
+      <button onclick="addFilter()" class="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg">Agregar</button>
+      <button onclick="document.getElementById('filterDropdown').classList.add('hidden')" class="px-3 py-1.5 text-xs dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded-lg">Cancelar</button>
     </div>
-    <div class="glass-card p-4 text-center">
-        <div class="text-sm dark:text-surface-400 text-surface-500">Criticos 24h</div>
-        <div class="text-3xl font-bold text-red-400">{{ critical_24h|default:0 }}</div>
-    </div>
-    <div class="glass-card p-4 text-center">
-        <div class="text-sm dark:text-surface-400 text-surface-500">Fuentes Activas</div>
-        <div class="text-3xl font-bold text-amber-400">{{ active_sources|default:0 }}<span class="text-lg text-surface-400">/{{ total_sources }}</span></div>
-    </div>
+  </div>
 </div>
 
-<!-- Charts Row -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-    <!-- Severity Distribution -->
-    <div class="glass-card p-6">
-        <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Severidad (24h)</h3>
-        <div id="severityChart" class="space-y-2">
-            {% for item in severity_dist %}
-            <div class="flex items-center gap-3">
-                <span class="w-20 text-xs dark:text-surface-400 text-surface-500 capitalize">{{ item.severity }}</span>
-                    <div class="flex-1 h-3 bg-surface-200 dark:bg-surface-800 rounded-full overflow-hidden">
-                    <div class="h-full rounded-full transition-all
-                        {% if item.severity == 'critical' %}bg-red-500
-                        {% elif item.severity == 'high' %}bg-orange-500
-                        {% elif item.severity == 'medium' %}bg-amber-500
-                        {% elif item.severity == 'low' %}bg-blue-500
-                        {% else %}bg-green-500{% endif %}"
-                        style="width: {{ item.pct|default:0 }}%"></div>
-                </div>
-                <span class="w-12 text-xs dark:text-surface-300 text-surface-600 text-right">{{ item.count }}</span>
-            </div>
-            {% empty %}
-            <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
-            {% endfor %}
-        </div>
+<!-- Histogram -->
+<div class="glass-card p-4 mb-4">
+  <div class="flex items-center justify-between mb-3">
+    <h3 class="text-sm font-semibold dark:text-white text-surface-900">Distribucion Temporal</h3>
+    <div class="flex items-center gap-1">
+      <span class="bucket-btn" data-minutes="1">1m</span>
+      <span class="bucket-btn active" data-minutes="5">5m</span>
+      <span class="bucket-btn" data-minutes="15">15m</span>
+      <span class="bucket-btn" data-minutes="60">1h</span>
+      <span class="bucket-btn" data-minutes="1440">1d</span>
     </div>
-
-    <!-- Source Distribution -->
-    <div class="glass-card p-6">
-        <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Top Fuentes (24h)</h3>
-        <div class="space-y-2">
-            {% for item in source_dist %}
-            <div class="flex items-center justify-between">
-                <span class="text-xs dark:text-surface-300 text-surface-600 capitalize">{{ item.source_type }}</span>
-                <span class="text-xs font-medium dark:text-white text-surface-900 bg-surface-100 dark:bg-surface-800 px-2 py-0.5 rounded">{{ item.count }}</span>
-            </div>
-            {% empty %}
-            <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
-            {% endfor %}
-        </div>
-    </div>
+  </div>
+  <div class="relative" style="height: 90px;">
+    <canvas id="histogramChart"></canvas>
+  </div>
 </div>
 
-<!-- Category Distribution + Top Hosts -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-    <!-- Category Distribution -->
-    <div class="glass-card p-6">
-        <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Categorias (24h)</h3>
-        <div class="space-y-2">
-            {% for item in category_dist %}
-            <div class="flex items-center justify-between">
-                <span class="text-xs dark:text-surface-300 text-surface-600 capitalize">{{ item.event_category }}</span>
-                <span class="text-xs font-medium dark:text-white text-surface-900 bg-surface-100 dark:bg-surface-800 px-2 py-0.5 rounded">{{ item.count }}</span>
-            </div>
-            {% empty %}
-            <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
-            {% endfor %}
-        </div>
+<!-- Main Content: Sidebar + Table -->
+<div class="flex gap-4">
+  <!-- Field Sidebar -->
+  <div id="fieldSidebar" class="glass-card p-3 shrink-0" style="width: 220px; min-width: 220px;">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-xs font-semibold dark:text-white text-surface-900 uppercase tracking-wider">Campos</h3>
+      <button onclick="toggleFieldSidebar()" class="text-xs dark:text-surface-500 text-surface-400 hover:text-surface-700 dark:hover:text-surface-300">
+        <i class="fas fa-times"></i>
+      </button>
     </div>
-
-    <!-- Top Hosts -->
-    <div class="glass-card p-6">
-        <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Top Hosts (24h)</h3>
-        <div class="space-y-2">
-            {% for item in top_hosts %}
-            <div class="flex items-center justify-between">
-                <span class="text-xs font-mono dark:text-surface-300 text-surface-600">{{ item.host_ip }}</span>
-                <span class="text-xs font-medium dark:text-white text-surface-900 bg-surface-100 dark:bg-surface-800 px-2 py-0.5 rounded">{{ item.count }}</span>
-            </div>
-            {% empty %}
-            <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
-            {% endfor %}
-        </div>
+    <div id="fieldList" class="space-y-3">
+      <div class="field-group" data-field="severity">
+        <div class="text-[10px] uppercase font-semibold dark:text-surface-400 text-surface-500 mb-1 tracking-wider">severity</div>
+        <div class="space-y-0.5" id="field-severity"></div>
+      </div>
+      <div class="field-group" data-field="source_type">
+        <div class="text-[10px] uppercase font-semibold dark:text-surface-400 text-surface-500 mb-1 tracking-wider">source_type</div>
+        <div class="space-y-0.5" id="field-source_type"></div>
+      </div>
+      <div class="field-group" data-field="event_category">
+        <div class="text-[10px] uppercase font-semibold dark:text-surface-400 text-surface-500 mb-1 tracking-wider">event_category</div>
+        <div class="space-y-0.5" id="field-event_category"></div>
+      </div>
+      <div class="field-group" data-field="host_ip">
+        <div class="text-[10px] uppercase font-semibold dark:text-surface-400 text-surface-500 mb-1 tracking-wider">host_ip</div>
+        <div class="space-y-0.5" id="field-host_ip"></div>
+      </div>
     </div>
-</div>
+  </div>
 
-<!-- Critical Alerts -->
-{% if recent_critical %}
-<div class="glass-card p-6 mb-6">
-    <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">
-        <i class="fas fa-exclamation-triangle text-red-400 mr-2"></i>Alertas Recientes (Critical/High)
-    </h3>
-    <div class="overflow-x-auto">
+  <!-- Events Table -->
+  <div class="flex-1 min-w-0">
+    <div class="glass-card overflow-hidden">
+      <div class="overflow-x-auto">
         <table class="w-full divide-y dark:divide-surface-800 divide-surface-200">
-            <thead class="dark:bg-surface-800 bg-surface-100">
-                <tr>
-                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Hora</th>
-                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Severidad</th>
-                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Fuente</th>
-                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Host</th>
-                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Mensaje</th>
-                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase"></th>
-                </tr>
-            </thead>
-            <tbody class="dark:divide-surface-800 divide-surface-200">
-                {% for event in recent_critical %}
-                <tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors">
-                    <td class="px-3 py-2 text-xs dark:text-surface-300 text-surface-600">{{ event.event_time|date:"d/m H:i" }}</td>
-                    <td class="px-3 py-2">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-                            {% if event.severity == 'critical' %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300
-                            {% else %}bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300{% endif %}">
-                            {{ event.severity }}
-                        </span>
-                    </td>
-                    <td class="px-3 py-2 text-xs dark:text-surface-300 text-surface-600 capitalize">{{ event.source_type }}</td>
-                    <td class="px-3 py-2 text-xs font-mono dark:text-surface-300 text-surface-600">{{ event.host_name|default:event.host_ip|default:"-" }}</td>
-                    <td class="px-3 py-2 text-xs dark:text-surface-300 text-surface-600 truncate max-w-xs">{{ event.message|truncatechars:80 }}</td>
-                    <td class="px-3 py-2">
-                        <a href="{% url 'log-detail' event.pk %}" class="text-blue-400 hover:text-blue-300 text-xs">
-                            <i class="fas fa-eye"></i>
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
+          <thead class="dark:bg-surface-800 bg-surface-100">
+            <tr>
+              <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase w-8"></th>
+              <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Hora</th>
+              <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Severidad</th>
+              <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Fuente</th>
+              <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Categoria</th>
+              <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Host</th>
+              <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Mensaje</th>
+            </tr>
+          </thead>
+          <tbody id="eventsBody" class="dark:divide-surface-800 divide-surface-200 text-xs">
+            <tr><td colspan="7" class="px-3 py-12 text-center dark:text-surface-500 text-surface-400"><i class="fas fa-spinner fa-spin text-lg mb-2 block"></i>Cargando eventos...</td></tr>
+          </tbody>
         </table>
+      </div>
+      <!-- Pagination -->
+      <div id="pagination" class="hidden px-3 py-2 flex items-center justify-between border-t dark:border-surface-800 border-surface-200"></div>
     </div>
+  </div>
 </div>
-{% endif %}
 
-<!-- Recent Events -->
-<div class="glass-card p-6">
-    <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold dark:text-white text-surface-900">Eventos Recientes</h3>
-        <a href="{% url 'logs-list' %}" class="text-sm text-blue-400 hover:text-blue-300">
-            Ver Todos <i class="fas fa-arrow-right ml-1"></i>
-        </a>
-    </div>
-    <div class="overflow-x-auto">
-        <table class="w-full divide-y dark:divide-surface-800 divide-surface-200">
-            <thead class="dark:bg-surface-800 bg-surface-100">
-                <tr>
-                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Hora</th>
-                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Severidad</th>
-                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Tipo</th>
-                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Categoria</th>
-                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Host</th>
-                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase">Mensaje</th>
-                    <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase"></th>
-                </tr>
-            </thead>
-            <tbody class="dark:divide-surface-800 divide-surface-200">
-                {% for event in recent_events %}
-                <tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors">
-                    <td class="px-3 py-2 text-xs dark:text-surface-300 text-surface-600">{{ event.event_time|date:"d/m H:i" }}</td>
-                    <td class="px-3 py-2">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-                            {% if event.severity == 'critical' %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300
-                            {% elif event.severity == 'high' %}bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300
-                            {% elif event.severity == 'medium' %}bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300
-                            {% elif event.severity == 'low' %}bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300
-                            {% else %}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300{% endif %}">
-                            {{ event.severity }}
-                        </span>
-                    </td>
-                    <td class="px-3 py-2 text-xs dark:text-surface-300 text-surface-600 capitalize">{{ event.source_type }}</td>
-                    <td class="px-3 py-2 text-xs dark:text-surface-300 text-surface-600 capitalize">{{ event.event_category }}</td>
-                    <td class="px-3 py-2 text-xs font-mono dark:text-surface-300 text-surface-600">{{ event.host_name|default:event.host_ip|default:"-" }}</td>
-                    <td class="px-3 py-2 text-xs dark:text-surface-300 text-surface-600 truncate max-w-xs">{{ event.message|truncatechars:60 }}</td>
-                    <td class="px-3 py-2">
-                        <a href="{% url 'log-detail' event.pk %}" class="text-blue-400 hover:text-blue-300 text-xs">
-                            <i class="fas fa-eye"></i>
-                        </a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7" class="px-3 py-8 text-center text-sm dark:text-surface-500 text-surface-400">
-                        <i class="fas fa-inbox text-2xl mb-2 block"></i>
-                        No hay eventos registrados. Configure fuentes de logs o envie logs via API.
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+<!-- Hidden: show field sidebar toggle when collapsed -->
+<button id="showFieldSidebarBtn" onclick="toggleFieldSidebar()" class="hidden fixed bottom-4 left-4 z-50 w-10 h-10 rounded-full bg-blue-600 text-white shadow-lg items-center justify-center">
+  <i class="fas fa-list"></i>
+</button>
+
+<script>
+const API_EVENTS = '{% url 'log-api-events-list' %}';
+const API_HISTOGRAM = '{% url 'log-api-histogram' %}';
+const API_STATS = '{% url 'log-api-statistics' %}';
+const API_DETAIL = '{% url 'log-detail' 0 %}'.replace('/0/', '/');
+
+let currentFilters = {};
+let currentPage = 1;
+let pageSize = 50;
+let totalEvents = 0;
+let bucketMinutes = 5;
+let histogramChart = null;
+let refreshTimer = null;
+
+function getTimeParams() {
+  const val = document.getElementById('timePreset').value;
+  const match = val.match(/(\d+)([mhd])/);
+  if (!match) return { hours: 1, label: val };
+  const num = parseInt(match[1]);
+  const unit = match[2];
+  if (unit === 'm') return { hours: num / 60, label: val };
+  if (unit === 'h') return { hours: num, label: val };
+  if (unit === 'd') return { hours: num * 24, label: val };
+  return { hours: 1, label: '1h' };
+}
+
+function getApiParams(page) {
+  const tp = getTimeParams();
+  const params = new URLSearchParams();
+  params.set('hours', Math.ceil(tp.hours));
+  params.set('page', page || currentPage);
+  params.set('page_size', pageSize);
+  const q = document.getElementById('searchInput').value.trim();
+  if (q) params.set('q', q);
+  if (currentFilters.source_type) params.set('source_type', currentFilters.source_type);
+  if (currentFilters.severity) params.set('severity', currentFilters.severity);
+  if (currentFilters.event_category) params.set('category', currentFilters.event_category);
+  if (currentFilters.host_ip) params.set('host_ip', currentFilters.host_ip);
+  return params;
+}
+
+function getHistogramParams() {
+  const tp = getTimeParams();
+  const params = new URLSearchParams();
+  params.set('hours', Math.ceil(tp.hours));
+  params.set('bucket_minutes', bucketMinutes);
+  const q = document.getElementById('searchInput').value.trim();
+  if (q) params.set('q', q);
+  if (currentFilters.source_type) params.set('source_type', currentFilters.source_type);
+  if (currentFilters.severity) params.set('severity', currentFilters.severity);
+  if (currentFilters.event_category) params.set('category', currentFilters.event_category);
+  if (currentFilters.host_ip) params.set('host_ip', currentFilters.host_ip);
+  return params;
+}
+
+async function fetchEvents(page) {
+  const params = getApiParams(page);
+  const url = `${API_EVENTS}?${params}`;
+  try {
+    const resp = await fetch(url);
+    const data = await resp.json();
+    totalEvents = data.count || 0;
+    document.getElementById('eventCount').textContent = `${totalEvents.toLocaleString()} eventos`;
+    renderTable(data.results || []);
+    renderPagination(data.count, data.next, data.previous);
+  } catch (e) {
+    document.getElementById('eventsBody').innerHTML = '<tr><td colspan="7" class="px-3 py-12 text-center dark:text-surface-500 text-surface-400"><i class="fas fa-exclamation-triangle text-lg mb-2 block"></i>Error al cargar eventos</td></tr>';
+  }
+}
+
+function renderTable(events) {
+  const tbody = document.getElementById('eventsBody');
+  if (!events.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="px-3 py-12 text-center dark:text-surface-500 text-surface-400"><i class="fas fa-inbox text-2xl mb-2 block"></i>No hay eventos con estos filtros</td></tr>';
+    return;
+  }
+  tbody.innerHTML = events.map(e => `
+    <tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors event-row" data-id="${e.id}" onclick="toggleDetail(${e.id})">
+      <td class="px-3 py-2"><i class="fas fa-chevron-right text-[10px] dark:text-surface-500 text-surface-400 transition-transform" id="arrow-${e.id}"></i></td>
+      <td class="px-3 py-2 whitespace-nowrap dark:text-surface-300 text-surface-600">${formatTime(e.event_time)}</td>
+      <td class="px-3 py-2">${severityBadge(e.severity)}</td>
+      <td class="px-3 py-2 dark:text-surface-300 text-surface-600 capitalize">${e.source_type}</td>
+      <td class="px-3 py-2 dark:text-surface-300 text-surface-600 capitalize"><span class="field-pill" onclick="event.stopPropagation();quickFilter('event_category','${e.event_category}')">${e.event_category}</span></td>
+      <td class="px-3 py-2 font-mono dark:text-surface-300 text-surface-600">${e.host_name || e.host_ip || '-'}</td>
+      <td class="px-3 py-2 dark:text-surface-300 text-surface-600 truncate max-w-xs">${escapeHtml((e.message || '').substring(0, 120))}</td>
+    </tr>
+    <tr class="event-detail-row" id="detail-${e.id}">
+      <td colspan="7" class="detail-cell">
+        <div class="p-3 dark:bg-surface-800/50 bg-surface-50 border-t dark:border-surface-700 border-surface-200">
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-2">
+            <div><span class="text-[10px] dark:text-surface-500 text-surface-400">ID</span><div class="text-xs font-mono dark:text-surface-200 text-surface-800">${e.id}</div></div>
+            <div><span class="text-[10px] dark:text-surface-500 text-surface-400">Tipo</span><div class="text-xs capitalize dark:text-surface-200 text-surface-800">${e.source_type}</div></div>
+            <div><span class="text-[10px] dark:text-surface-500 text-surface-400">Host</span><div class="text-xs dark:text-surface-200 text-surface-800">${e.host_name || '-'}</div></div>
+            <div><span class="text-[10px] dark:text-surface-500 text-surface-400">IP</span><div class="text-xs font-mono dark:text-surface-200 text-surface-800">${e.host_ip || '-'}</div></div>
+          </div>
+          <div class="mb-2"><span class="text-[10px] dark:text-surface-500 text-surface-400">Tags</span>
+            <div class="flex flex-wrap gap-1 mt-0.5">${(e.tags || []).map(t => '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] dark:bg-surface-700 bg-surface-200 dark:text-surface-300 text-surface-600">' + escapeHtml(t) + '</span>').join('') || '<span class="text-xs dark:text-surface-500 text-surface-400">-</span>'}</div>
+          </div>
+          <div><span class="text-[10px] dark:text-surface-500 text-surface-400">Mensaje</span>
+            <pre class="mt-0.5 text-xs font-mono dark:text-surface-200 text-surface-800 whitespace-pre-wrap break-all max-h-24 overflow-y-auto p-2 dark:bg-surface-900 bg-white rounded">${escapeHtml(e.message || '')}</pre>
+          </div>
+          <div class="mt-2">
+            <a href="${API_DETAIL}${e.id}/" class="text-xs text-blue-400 hover:text-blue-300"><i class="fas fa-external-link-alt mr-1"></i>Ver detalle completo</a>
+          </div>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function toggleDetail(id) {
+  const row = document.getElementById('detail-' + id);
+  const arrow = document.getElementById('arrow-' + id);
+  const visible = row.classList.toggle('visible');
+  if (arrow) arrow.style.transform = visible ? 'rotate(90deg)' : '';
+}
+
+function formatTime(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return d.toLocaleDateString('es', { day: '2-digit', month: '2-digit' }) + ' ' +
+    d.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+}
+
+function severityBadge(s) {
+  const colors = {
+    critical: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+    high: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+    medium: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+    low: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+    info: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+    debug: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300',
+  };
+  const cls = colors[s] || colors.info;
+  return `<span class="field-pill inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${cls}" onclick="event.stopPropagation();quickFilter('severity','${s}')">${s}</span>`;
+}
+
+function quickFilter(field, value) {
+  currentFilters[field] = value;
+  currentPage = 1;
+  updateFilterTags();
+  refresh();
+}
+
+function renderPagination(count, nextUrl, prevUrl) {
+  const div = document.getElementById('pagination');
+  const totalPages = Math.ceil(count / pageSize);
+  if (totalPages <= 1) { div.classList.add('hidden'); return; }
+  div.classList.remove('hidden');
+  let html = `<span class="text-xs dark:text-surface-400 text-surface-500">Pagina ${currentPage} de ${totalPages} (${count} total)</span><nav class="flex items-center gap-1">`;
+  if (prevUrl) html += `<button onclick="goPage(${currentPage - 1})" class="px-2 py-1 text-xs dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded hover:bg-surface-100 dark:hover:bg-surface-800"><i class="fas fa-chevron-left"></i></button>`;
+  for (let p = Math.max(1, currentPage - 2); p <= Math.min(totalPages, currentPage + 2); p++) {
+    html += p === currentPage
+      ? `<span class="px-2 py-1 text-xs font-medium bg-blue-600 text-white rounded">${p}</span>`
+      : `<button onclick="goPage(${p})" class="px-2 py-1 text-xs dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded hover:bg-surface-100 dark:hover:bg-surface-800">${p}</button>`;
+  }
+  if (nextUrl) html += `<button onclick="goPage(${currentPage + 1})" class="px-2 py-1 text-xs dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded hover:bg-surface-100 dark:hover:bg-surface-800"><i class="fas fa-chevron-right"></i></button>`;
+  html += '</nav>';
+  div.innerHTML = html;
+}
+
+function goPage(page) {
+  currentPage = page;
+  fetchEvents(page);
+  fetchHistogram();
+}
+
+async function fetchHistogram() {
+  const params = getHistogramParams();
+  const url = `${API_HISTOGRAM}?${params}`;
+  try {
+    const resp = await fetch(url);
+    const data = await resp.json();
+    renderHistogram(data.timeline || []);
+  } catch (e) {}
+}
+
+function renderHistogram(timeline) {
+  const isDark = document.documentElement.classList.contains('dark');
+  const textColor = isDark ? '#94a3b8' : '#64748b';
+  const gridColor = isDark ? 'rgba(51,65,85,0.3)' : 'rgba(226,232,240,0.8)';
+  const brandColor = 'rgba(14,165,233,0.6)';
+  const brandBorder = 'rgba(14,165,233,1)';
+
+  const labels = timeline.map(t => t.time);
+  const values = timeline.map(t => t.count);
+
+  const ctx = document.getElementById('histogramChart').getContext('2d');
+  if (histogramChart) { histogramChart.destroy(); }
+
+  histogramChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: values,
+        backgroundColor: brandColor,
+        borderColor: brandBorder,
+        borderWidth: 1,
+        borderRadius: 2,
+        barPercentage: 0.9,
+        categoryPercentage: 1,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 300 },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { title: items => items[0].label, label: item => 'Eventos: ' + item.raw } } },
+      scales: {
+        x: { display: true, ticks: { color: textColor, maxTicksLimit: 20, font: { size: 9 } }, grid: { display: false } },
+        y: { display: true, beginAtZero: true, ticks: { color: textColor, font: { size: 9 }, maxTicksLimit: 6 }, grid: { color: gridColor } },
+      },
+      onClick: (e, elements) => {
+        if (elements.length > 0) {
+          const idx = elements[0].index;
+          const time = labels[idx];
+          document.getElementById('searchInput').value = time.substring(0, 16);
+          refresh();
+        }
+      },
+    },
+  });
+}
+
+async function fetchFieldStats() {
+  const params = getHistogramParams();
+  const url = `${API_STATS}?${params}`;
+  try {
+    const resp = await fetch(url);
+    const data = await resp.json();
+    renderFieldStats(data);
+  } catch (e) {}
+}
+
+function renderFieldStats(data) {
+  renderFieldGroup('severity', data.severity_distribution || [], 'severity');
+  renderFieldGroup('source_type', data.source_distribution || [], 'source_type');
+  renderFieldGroup('event_category', data.category_distribution || [], 'event_category');
+  const topHosts = (data.top_hosts || []).map(h => ({ value: h.host_ip, count: h.count }));
+  renderFieldGroup('host_ip', topHosts, 'host_ip');
+}
+
+function renderFieldGroup(field, items, labelField) {
+  const container = document.getElementById('field-' + field);
+  if (!container) return;
+  if (!items.length) { container.innerHTML = '<div class="text-[10px] dark:text-surface-500 text-surface-400">Sin datos</div>'; return; }
+  const maxCount = Math.max(...items.map(i => i.count), 1);
+  container.innerHTML = items.slice(0, 8).map(item => {
+    const val = item[labelField] || item.value || item;
+    const count = item.count;
+    const pct = (count / maxCount * 100);
+    const active = currentFilters[field] === val;
+    return `<div class="flex items-center gap-1.5 cursor-pointer field-pill ${active ? 'active' : ''}" onclick="quickFilter('${field}','${val}')" title="${val}: ${count} eventos">
+      <span class="flex-1 text-[10px] truncate dark:text-surface-300 text-surface-600">${escapeHtml(String(val).substring(0, 24))}</span>
+      <span class="text-[9px] dark:text-surface-500 text-surface-400">${count}</span>
+      <div class="w-10 h-1.5 dark:bg-surface-700 bg-surface-200 rounded-full overflow-hidden shrink-0">
+        <div class="h-full rounded-full ${active ? 'bg-blue-500' : 'dark:bg-blue-500/50 bg-blue-400'}" style="width:${pct}%"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateFilterTags() {
+  const container = document.getElementById('filterTags');
+  const entries = Object.entries(currentFilters).filter(([, v]) => v);
+  if (!entries.length) { container.innerHTML = ''; return; }
+  container.innerHTML = entries.map(([k, v]) =>
+    `<span class="filter-tag"><span class="text-[10px] opacity-70">${k}:</span> ${escapeHtml(v)} <button onclick="removeFilter('${k}')">&times;</button></span>`
+  ).join('');
+}
+
+function removeFilter(field) {
+  delete currentFilters[field];
+  currentPage = 1;
+  updateFilterTags();
+  refresh();
+}
+
+function clearFilters() {
+  currentFilters = {};
+  document.getElementById('searchInput').value = '';
+  currentPage = 1;
+  updateFilterTags();
+  refresh();
+}
+
+function addFilter() {
+  const field = document.getElementById('filterField').value;
+  const op = document.getElementById('filterOperator').value;
+  let value = document.getElementById('filterValue').value.trim();
+  if (!value) return;
+  if (op === 'is_not') value = '!' + value;
+  if (op === 'contains') value = '*' + value + '*';
+  currentFilters[field] = value;
+  currentPage = 1;
+  updateFilterTags();
+  document.getElementById('filterValue').value = '';
+  document.getElementById('filterDropdown').classList.add('hidden');
+  refresh();
+}
+
+function toggleFieldSidebar() {
+  const sidebar = document.getElementById('fieldSidebar');
+  const btn = document.getElementById('showFieldSidebarBtn');
+  sidebar.classList.toggle('collapsed');
+  btn.classList.toggle('hidden');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function refresh() {
+  document.getElementById('refreshIcon').classList.add('fa-spin');
+  fetchEvents();
+  fetchHistogram();
+  fetchFieldStats();
+  setTimeout(() => document.getElementById('refreshIcon').classList.remove('fa-spin'), 500);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('searchInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { currentPage = 1; refresh(); }
+  });
+  document.getElementById('timePreset').addEventListener('change', function() {
+    const tp = getTimeParams();
+    const h = tp.hours;
+    if (h <= 1) bucketMinutes = 1;
+    else if (h <= 6) bucketMinutes = 5;
+    else if (h <= 24) bucketMinutes = 15;
+    else if (h <= 168) bucketMinutes = 60;
+    else bucketMinutes = 1440;
+    document.querySelectorAll('.bucket-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.minutes) === bucketMinutes));
+    currentPage = 1;
+    refresh();
+  });
+  document.querySelectorAll('.bucket-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.bucket-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      bucketMinutes = parseInt(this.dataset.minutes);
+      currentPage = 1;
+      refresh();
+    });
+  });
+  document.getElementById('addFilterBtn').addEventListener('click', function() {
+    document.getElementById('filterDropdown').classList.toggle('hidden');
+  });
+  document.getElementById('refreshInterval').addEventListener('change', function() {
+    if (refreshTimer) clearInterval(refreshTimer);
+    const val = parseInt(this.value);
+    if (val > 0) refreshTimer = setInterval(refresh, val);
+  });
+  refresh();
+});
+</script>
 {% endblock %}

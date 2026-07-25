@@ -10,10 +10,23 @@ def create_hypertable(apps, schema_editor):
         try:
             cursor.execute("SELECT extname FROM pg_extension WHERE extname = 'timescaledb';")
             if cursor.fetchone():
-                cursor.execute(
-                    "SELECT create_hypertable('logs_events_raw', 'event_time', "
-                    "if_not_exists => TRUE, chunk_time_interval => interval '7 days');"
-                )
+                cursor.execute("""
+                    DO $$
+                    BEGIN
+                        IF NOT EXISTS (
+                            SELECT 1 FROM timescaledb_information.hypertables
+                            WHERE hypertable_name = 'logs_events_raw'
+                        ) THEN
+                            ALTER TABLE logs_events_raw DROP CONSTRAINT IF EXISTS logs_events_raw_pkey;
+                            PERFORM create_hypertable(
+                                'logs_events_raw', 'event_time',
+                                if_not_exists => TRUE,
+                                chunk_time_interval => interval '7 days'
+                            );
+                        END IF;
+                    END
+                    $$;
+                """)
             else:
                 print("TimescaleDB not installed. Skipping hypertable creation.")
         except Exception as e:

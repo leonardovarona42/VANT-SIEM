@@ -14,7 +14,7 @@ from rest_framework.decorators import api_view, permission_classes, authenticati
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 
-from .models import Agent, HardwareInventory, SoftwareInventory, AgentCommand, ScreenCapture, COMMAND_TYPE_CHOICES
+from .models import Agent, HardwareInventory, SoftwareInventory, AgentCommand, ScreenCapture, ProcessSnapshot, COMMAND_TYPE_CHOICES
 from OPENSEARCH_LOGS.models import LogSource
 from .serializers import (
     AgentListSerializer, AgentDetailSerializer, AgentRegisterSerializer,
@@ -27,6 +27,21 @@ from .serializers import (
 logger = logging.getLogger(__name__)
 
 DEFAULT_AGENT_SHARED_SECRET = os.getenv('AGENT_SHARED_SECRET', '')
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([AllowAny])
+def request_bootstrap(request):
+    secret = os.getenv('AGENT_SHARED_SECRET', '')
+    if not secret:
+        return Response({'ok': False, 'error': 'Bootstrap not configured'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    token = str(uuid.uuid4())
+    logger.info("bootstrap.token_issued token=%s", token)
+    return Response({
+        'ok': True,
+        'bootstrap_token': token,
+        'shared_secret': secret,
+    })
 
 
 @api_view(['GET'])
@@ -429,6 +444,8 @@ DEFAULT_CONFIG = {
         'snort': {'enabled': False, 'path': ''},
         'suricata': {'enabled': False, 'path': ''},
         'windows_eventlog': {'enabled': False, 'channels': ['Security', 'System']},
+        'syslog': {'enabled': False, 'path': '/var/log/syslog'},
+        'journald': {'enabled': False},
         'postgres': {'enabled': False, 'path': ''},
         'file_logs': {'enabled': False, 'items': []},
     },
@@ -437,6 +454,15 @@ DEFAULT_CONFIG = {
         'scan_paths': [],
         'scan_extensions': ['.docx', '.xlsx', '.pdf', '.txt'],
         'keywords': ['clasificado', 'secreto', 'restringido'],
+    },
+    'monitoring': {
+        'enabled': False,
+        'services': {
+            'enabled': False,
+            'monitored_services': [],
+            'check_apt_updates': True,
+            'apt_check_interval': 86400,
+        },
     },
     'agent': {
         'check_interval': 60,
@@ -527,6 +553,20 @@ def config_templates(request):
                     'scan_paths': {'type': 'array', 'default': []},
                     'scan_extensions': {'type': 'array', 'default': ['.docx', '.xlsx', '.pdf', '.txt']},
                     'keywords': {'type': 'array', 'default': ['clasificado', 'secreto', 'restringido']},
+                },
+            },
+            'monitoring': {
+                'name': 'Internal Services Monitoring',
+                'enabled_by_default': False,
+                'linux_only': True,
+                'options': {
+                    'enabled': {'type': 'boolean', 'default': False},
+                    'services': {
+                        'enabled': {'type': 'boolean', 'default': False},
+                        'monitored_services': {'type': 'array', 'default': []},
+                        'check_apt_updates': {'type': 'boolean', 'default': True},
+                        'apt_check_interval': {'type': 'integer', 'default': 86400, 'min': 3600, 'max': 604800},
+                    },
                 },
             },
         },
@@ -637,4 +677,41 @@ def screen_latest(request, agent_id):
         'status': 'ok',
         'image': cap.image,
         'captured_at': cap.captured_at.isoformat(),
+    })
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def processes_upload(request):
+    agent_id = request.data.get('agent_id', '')
+    processes = request.data.get('processes', [])
+    connections = request.data.get('connections', [])
+    if not agent_id:
+        return Response({'error': 'agent_id required'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        agent = _resolve_agent(agent_id)
+    except Agent.DoesNotExist:
+        return Response({'error': 'Agent not found'}, status=status.HTTP_404_NOT_FOUND)
+    ProcessSnapshot.objects.create(agent=agent, processes=processes, connections=connections)
+    ProcessSnapshot.objects.filter(agent=agent).exclude(
+        pk=ProcessSnapshot.objects.filter(agent=agent).first().pk
+    ).delete()
+    return Response({'status': 'ok'})
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def processes_latest(request, agent_id):
+    try:
+        agent = _resolve_agent(agent_id)
+    except Agent.DoesNotExist:
+        return Response({'error': 'Agent not found'}, status=status.HTTP_404_NOT_FOUND)
+    snap = ProcessSnapshot.objects.filter(agent=agent).first()
+    if not snap:
+        return Response({'status': 'no_data'})
+    return Response({
+        'status': 'ok',
+        'processes': snap.processes,
+        'connections': snap.connections,
+        'captured_at': snap.captured_at.isoformat(),
     })

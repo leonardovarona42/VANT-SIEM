@@ -12,73 +12,26 @@ from .forms import LogSourceForm, LogRetentionPolicyForm
 
 
 @login_required
-def logs_dashboard(request):
-    now = timezone.now()
-    hours_24 = now - timedelta(hours=24)
-    hours_7 = now - timedelta(hours=168)
-    hours_30 = now - timedelta(hours=720)
+def logs_discovery(request):
+    source_types = list(LogSource.objects.values_list('source_type', flat=True).distinct())
+    all_source_types = [st[0] for st in LogEvent._meta.get_field('source_type').choices]
+    for st in all_source_types:
+        if st not in source_types:
+            source_types.append(st)
 
+    severities = [s[0] for s in LogEvent._meta.get_field('severity').choices]
+    categories = LogEvent.objects.values_list('event_category', flat=True).distinct()
+
+    from django.utils import timezone
     total_events = LogEvent.objects.count()
-    events_24h = LogEvent.objects.filter(event_time__gte=hours_24).count()
-    events_7d = LogEvent.objects.filter(event_time__gte=hours_7).count()
-    events_30d = LogEvent.objects.filter(event_time__gte=hours_30).count()
-
-    critical_24h = LogEvent.objects.filter(event_time__gte=hours_24, severity='critical').count()
-    high_24h = LogEvent.objects.filter(event_time__gte=hours_24, severity='high').count()
-
-    active_sources = LogSource.objects.filter(enabled=True, last_seen_at__gte=hours_24).count()
     total_sources = LogSource.objects.count()
-
-    severity_dist = list(
-        LogEvent.objects.filter(event_time__gte=hours_24)
-        .values('severity').annotate(count=Count('id')).order_by('-count')
-    )
-    for item in severity_dist:
-        item['pct'] = round(item['count'] / events_24h * 100, 1) if events_24h > 0 else 0
-
-    source_dist = list(
-        LogEvent.objects.filter(event_time__gte=hours_24)
-        .values('source_type').annotate(count=Count('id')).order_by('-count')[:10]
-    )
-
-    category_dist = list(
-        LogEvent.objects.filter(event_time__gte=hours_24)
-        .values('event_category').annotate(count=Count('id')).order_by('-count')[:10]
-    )
-
-    hourly_timeline = list(
-        LogEvent.objects.filter(event_time__gte=hours_24)
-        .extra(select={'hour': "date_trunc('hour', event_time)"})
-        .values('hour').annotate(count=Count('id')).order_by('hour')
-    )
-
-    top_hosts = list(
-        LogEvent.objects.filter(event_time__gte=hours_24, host_ip__isnull=False)
-        .values('host_ip').annotate(count=Count('id')).order_by('-count')[:10]
-    )
-
-    recent_critical = LogEvent.objects.filter(
-        event_time__gte=hours_24, severity__in=('critical', 'high')
-    ).select_related('source').order_by('-event_time')[:15]
-
-    recent_events = LogEvent.objects.select_related('source').order_by('-event_time')[:20]
 
     context = {
         'total_events': total_events,
-        'events_24h': events_24h,
-        'events_7d': events_7d,
-        'events_30d': events_30d,
-        'critical_24h': critical_24h,
-        'high_24h': high_24h,
-        'active_sources': active_sources,
         'total_sources': total_sources,
-        'severity_dist': severity_dist,
-        'source_dist': source_dist,
-        'category_dist': category_dist,
-        'hourly_timeline': hourly_timeline,
-        'top_hosts': top_hosts,
-        'recent_critical': recent_critical,
-        'recent_events': recent_events,
+        'source_types': list(source_types),
+        'severities': severities,
+        'categories': list(categories),
     }
     return render(request, 'opensearch_logs/dashboard.html', context)
 
@@ -253,6 +206,93 @@ def run_cleanup_now(request):
     result = cleanup_old_logs.delay()
     messages.success(request, 'Limpieza de logs iniciada. Se ejecutara en segundo plano.')
     return redirect('logs-retention')
+
+
+@login_required
+def suricata_dashboard(request):
+    hours = int(request.GET.get('hours', 24))
+    cutoff = timezone.now() - timedelta(hours=hours)
+    qs = LogEvent.objects.filter(source_type='suricata', event_time__gte=cutoff)
+
+    total_events = qs.count()
+
+    sig_qs = qs.filter(parsed_fields__has_key='signature')
+    total_signatures = sig_qs.values('parsed_fields__signature').distinct().count()
+
+    top_signatures = list(
+        sig_qs.values('parsed_fields__signature')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:15]
+    )
+
+    top_src_ips = list(
+        qs.filter(parsed_fields__has_key='src_ip')
+        .values('parsed_fields__src_ip')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:10]
+    )
+
+    top_dst_ips = list(
+        qs.filter(parsed_fields__has_key='dst_ip')
+        .values('parsed_fields__dst_ip')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:10]
+    )
+
+    severity_dist = list(
+        qs.values('severity').annotate(count=Count('id')).order_by('-count')
+    )
+
+    event_type_dist = list(
+        qs.filter(parsed_fields__has_key='event_type')
+        .values('parsed_fields__event_type')
+        .annotate(count=Count('id'))
+        .order_by('-count')
+    )
+
+    proto_dist = list(
+        qs.filter(parsed_fields__has_key='protocol')
+        .values('parsed_fields__protocol')
+        .annotate(count=Count('id'))
+        .order_by('-count')
+    )
+
+    classtype_dist = list(
+        qs.filter(parsed_fields__has_key='classtype')
+        .values('parsed_fields__classtype')
+        .annotate(count=Count('id'))
+        .order_by('-count')
+    )
+
+    action_dist = list(
+        qs.filter(parsed_fields__has_key='action')
+        .values('parsed_fields__action')
+        .annotate(count=Count('id'))
+        .order_by('-count')
+    )
+
+    top_ports = list(
+        qs.filter(parsed_fields__has_key='dst_port')
+        .values('parsed_fields__dst_port')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:10]
+    )
+
+    context = {
+        'hours': hours,
+        'total_events': total_events,
+        'total_signatures': total_signatures,
+        'top_signatures': top_signatures,
+        'top_src_ips': top_src_ips,
+        'top_dst_ips': top_dst_ips,
+        'severity_dist': severity_dist,
+        'event_type_dist': event_type_dist,
+        'proto_dist': proto_dist,
+        'classtype_dist': classtype_dist,
+        'action_dist': action_dist,
+        'top_ports': top_ports,
+    }
+    return render(request, 'opensearch_logs/suricata_dashboard.html', context)
 
 
 @login_required

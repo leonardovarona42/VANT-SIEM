@@ -123,6 +123,8 @@ def agent_detail(request, agent_id):
 def agent_config_view(request, agent_id):
     agent = get_object_or_404(Agent, agent_id=agent_id)
 
+    is_linux = not agent.os_type.startswith('windows') and agent.os_type not in ('other', 'macos_14', 'macos_15')
+
     pending_config_cmds = AgentCommand.objects.filter(
         agent=agent, command_type='push_config', status='pending'
     ).order_by('-created_at')
@@ -153,10 +155,62 @@ def agent_config_view(request, agent_id):
 
     context = {
         'agent': agent,
+        'is_linux': is_linux,
         'pending_config_cmds': pending_config_cmds,
         'last_config_json': json.dumps(last_config),
     }
     return render(request, 'inventory/agent_config.html', context)
+
+
+@login_required
+def request_services_list(request, agent_id):
+    agent = get_object_or_404(Agent, agent_id=agent_id)
+
+    if request.method == 'POST':
+        existing = AgentCommand.objects.filter(
+            agent=agent, command_type='list_services', status__in=('pending', 'sent')
+        ).order_by('-created_at').first()
+
+        if existing:
+            return JsonResponse({
+                'status': 'pending',
+                'command_id': str(existing.command_id),
+                'message': 'Command already pending',
+            })
+
+        cmd = AgentCommand.objects.create(
+            agent=agent,
+            command_type='list_services',
+            payload={},
+        )
+        return JsonResponse({
+            'status': 'pending',
+            'command_id': str(cmd.command_id),
+            'message': 'Service list request queued',
+        })
+
+    cmd_id = request.GET.get('command_id', '')
+    if cmd_id:
+        try:
+            cmd = AgentCommand.objects.get(command_id=cmd_id)
+            if cmd.status == 'completed':
+                result = cmd.result or {}
+                return JsonResponse({
+                    'status': 'completed',
+                    'services': result.get('services', []),
+                    'apt_updates': result.get('apt_updates', []),
+                })
+            elif cmd.status == 'failed':
+                return JsonResponse({
+                    'status': 'failed',
+                    'error': cmd.error_message or 'Unknown error',
+                })
+            else:
+                return JsonResponse({'status': cmd.status})
+        except AgentCommand.DoesNotExist:
+            return JsonResponse({'status': 'not_found'}, status=404)
+
+    return JsonResponse({'status': 'error', 'message': 'command_id required'}, status=400)
 
 
 @login_required

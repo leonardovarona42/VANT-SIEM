@@ -17,6 +17,7 @@ class LogEventListSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'source_name', 'source_type', 'host_name', 'host_ip',
             'event_time', 'severity', 'event_category', 'message', 'tags', 'ingested_at',
+            'parsed_fields',
         )
 
 

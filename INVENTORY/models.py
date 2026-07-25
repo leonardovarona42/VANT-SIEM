@@ -48,9 +48,12 @@ COMMAND_TYPE_CHOICES = [
     ('update_agent', 'Update Agent'),
     ('run_script', 'Run Script'),
     ('collect_logs', 'Collect Logs'),
+    ('collect_processes', 'Collect Processes & Ports'),
     ('push_config', 'Push Configuration'),
     ('start_screen_share', 'Start Screen Sharing'),
     ('stop_screen_share', 'Stop Screen Sharing'),
+    ('list_services', 'List System Services'),
+    ('list_apt_updates', 'Check APT Updates'),
     ('custom', 'Custom'),
 ]
 
@@ -133,13 +136,47 @@ class HardwareInventory(models.Model):
     def __str__(self):
         return f'Hardware: {self.agent.hostname}'
 
+    @staticmethod
+    def _parse_size_to_gb(value):
+        if not value:
+            return 0.0
+        if isinstance(value, (int, float)):
+            return float(value)
+        s = str(value).strip().upper()
+        if not s:
+            return 0.0
+        try:
+            return float(s)
+        except ValueError:
+            pass
+        multipliers = {'K': 1 / (1024 * 1024), 'M': 1 / 1024, 'G': 1, 'T': 1024}
+        for suffix, factor in multipliers.items():
+            if s.endswith(suffix):
+                try:
+                    return float(s[:-1]) * factor
+                except ValueError:
+                    return 0.0
+        try:
+            return float(s)
+        except ValueError:
+            return 0.0
+
     @property
     def disk_total_gb(self):
-        return sum(d.get('size_gb', 0) for d in self.disks)
+        return sum(self._parse_size_to_gb(d.get('size_gb', 0)) for d in self.disks)
+
+    @property
+    def disks_parsed(self):
+        result = []
+        for d in self.disks:
+            d = dict(d)
+            d['size_gb_numeric'] = self._parse_size_to_gb(d.get('size_gb', 0))
+            result.append(d)
+        return result
 
     @property
     def ram_used_gb(self):
-        return self.ram_total_gb - sum(d.get('available_gb', 0) for d in self.ram_modules or [])
+        return self.ram_total_gb - sum(self._parse_size_to_gb(d.get('available_gb', 0)) for d in self.ram_modules or [])
 
 
 class SoftwareInventory(models.Model):
@@ -217,6 +254,20 @@ class ScreenCapture(models.Model):
 
     class Meta:
         db_table = 'screen_captures'
+        ordering = ['-captured_at']
+        indexes = [
+            models.Index(fields=['agent', '-captured_at']),
+        ]
+
+
+class ProcessSnapshot(models.Model):
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='process_snapshots')
+    processes = models.JSONField(default=list)
+    connections = models.JSONField(default=list)
+    captured_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'process_snapshots'
         ordering = ['-captured_at']
         indexes = [
             models.Index(fields=['agent', '-captured_at']),

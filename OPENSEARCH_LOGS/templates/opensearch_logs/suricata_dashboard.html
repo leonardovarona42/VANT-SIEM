@@ -1,0 +1,800 @@
+{% extends "dashboard.html" %}
+{% load static %}
+{% block title %}Suricata IDS | VANT-SIEM{% endblock %}
+{% block content %}
+<style>
+.stat-value { font-size: 1.75rem; font-weight: 700; line-height: 1.2; }
+.stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.6; }
+.chart-container { position: relative; min-height: 160px; }
+.chart-container-sm { position: relative; min-height: 140px; }
+.event-row { cursor: pointer; }
+.event-row.expanded { background: rgba(59,130,246,0.05); }
+.event-detail-row { display: none; }
+.event-detail-row.visible { display: table-row; }
+.detail-cell { padding: 0; }
+.detail-cell pre { margin: 0; max-height: 160px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; font-size: 11px; }
+.field-pill { cursor: pointer; transition: all 0.15s; }
+.field-pill:hover { opacity: 0.8; transform: translateY(-1px); }
+.histogram-bar { cursor: pointer; transition: opacity 0.15s; }
+.histogram-bar:hover { opacity: 0.7; }
+.bucket-btn { padding: 2px 8px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.15s; }
+.bucket-btn:hover { background: rgba(59,130,246,0.1); }
+.bucket-btn.active { background: rgba(59,130,246,0.2); color: #60a5fa; font-weight: 600; }
+.card-hover { transition: all 0.2s; }
+.card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+</style>
+
+<div class="mb-4 flex items-center justify-between">
+  <div>
+    <h2 class="text-2xl font-bold dark:text-white text-surface-900">
+      <i class="fas fa-shield-halved mr-2 text-amber-400"></i>Suricata IDS
+    </h2>
+    <p class="text-xs dark:text-surface-400 text-surface-500 mt-0.5">Monitoreo de alertas y eventos de red en tiempo real</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <span class="text-xs dark:text-surface-400 text-surface-500" id="eventCount">0 eventos</span>
+    <select id="timePreset" class="px-3 py-1.5 text-xs bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 rounded-lg dark:text-white text-surface-900 outline-none">
+      <option value="1h">Ultima 1 hora</option>
+      <option value="6h" selected>Ultimas 6 horas</option>
+      <option value="24h">Ultimas 24 horas</option>
+      <option value="7d">Ultimos 7 dias</option>
+    </select>
+    <select id="refreshInterval" class="text-xs bg-transparent border dark:border-surface-700 border-surface-300 rounded px-2 py-1.5 dark:text-surface-300 text-surface-600">
+      <option value="0">Off</option>
+      <option value="10000">10s</option>
+      <option value="30000">30s</option>
+      <option value="60000">1m</option>
+    </select>
+    <button onclick="refresh()" class="px-3 py-1.5 text-xs font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+      <i class="fas fa-sync-alt mr-1" id="refreshIcon"></i>Refresh
+    </button>
+  </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
+  <div class="glass-card p-4 card-hover">
+    <div class="flex items-center gap-2 mb-1"><i class="fas fa-bell text-red-400 text-sm"></i><span class="stat-label dark:text-surface-400 text-surface-500">Alertas</span></div>
+    <div class="stat-value dark:text-white text-surface-900" id="statTotal">{{ total_events }}</div>
+  </div>
+  <div class="glass-card p-4 card-hover">
+    <div class="flex items-center gap-2 mb-1"><i class="fas fa-fingerprint text-purple-400 text-sm"></i><span class="stat-label dark:text-surface-400 text-surface-500">Firmas</span></div>
+    <div class="stat-value dark:text-white text-surface-900" id="statSignatures">{{ total_signatures }}</div>
+  </div>
+  <div class="glass-card p-4 card-hover">
+    <div class="flex items-center gap-2 mb-1"><i class="fas fa-arrow-up text-cyan-400 text-sm"></i><span class="stat-label dark:text-surface-400 text-surface-500">IPs Origen</span></div>
+    <div class="stat-value dark:text-white text-surface-900" id="statSrcIps">{{ top_src_ips|length }}</div>
+  </div>
+  <div class="glass-card p-4 card-hover">
+    <div class="flex items-center gap-2 mb-1"><i class="fas fa-arrow-down text-orange-400 text-sm"></i><span class="stat-label dark:text-surface-400 text-surface-500">IPs Destino</span></div>
+    <div class="stat-value dark:text-white text-surface-900" id="statDstIps">{{ top_dst_ips|length }}</div>
+  </div>
+  <div class="glass-card p-4 card-hover">
+    <div class="flex items-center gap-2 mb-1"><i class="fas fa-tag text-emerald-400 text-sm"></i><span class="stat-label dark:text-surface-400 text-surface-500">Classtypes</span></div>
+    <div class="stat-value dark:text-white text-surface-900" id="statClasstypes">{{ classtype_dist|length }}</div>
+  </div>
+  <div class="glass-card p-4 card-hover">
+    <div class="flex items-center gap-2 mb-1"><i class="fas fa-plug text-amber-400 text-sm"></i><span class="stat-label dark:text-surface-400 text-surface-500">Protocolos</span></div>
+    <div class="stat-value dark:text-white text-surface-900" id="statProtos">{{ proto_dist|length }}</div>
+  </div>
+</div>
+
+<!-- Timeline + Severity Row -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+  <div class="lg:col-span-2 glass-card p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-sm font-semibold dark:text-white text-surface-900">Distribucion Temporal</h3>
+      <div class="flex items-center gap-1">
+        <span class="bucket-btn" data-minutes="1">1m</span>
+        <span class="bucket-btn active" data-minutes="5">5m</span>
+        <span class="bucket-btn" data-minutes="15">15m</span>
+        <span class="bucket-btn" data-minutes="60">1h</span>
+      </div>
+    </div>
+    <div class="relative" style="height: 100px;">
+      <canvas id="histogramChart"></canvas>
+    </div>
+  </div>
+  <div class="glass-card p-4">
+    <div class="flex items-center mb-3">
+      <h3 class="text-sm font-semibold dark:text-white text-surface-900">Severidad</h3>
+    </div>
+    <div class="chart-container-sm flex items-center justify-center">
+      <canvas id="severityChart"></canvas>
+    </div>
+    <div class="mt-2 space-y-1" id="severityLegend"></div>
+  </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+  <div class="glass-card p-4">
+    <h3 class="text-xs font-semibold dark:text-white text-surface-900 mb-2 uppercase tracking-wider">Tipo de Evento</h3>
+    <div class="chart-container-sm">
+      <canvas id="eventTypeChart"></canvas>
+    </div>
+  </div>
+  <div class="glass-card p-4">
+    <h3 class="text-xs font-semibold dark:text-white text-surface-900 mb-2 uppercase tracking-wider">Protocolo</h3>
+    <div class="chart-container-sm">
+      <canvas id="protoChart"></canvas>
+    </div>
+  </div>
+  <div class="glass-card p-4">
+    <h3 class="text-xs font-semibold dark:text-white text-surface-900 mb-2 uppercase tracking-wider">Accion</h3>
+    <div class="chart-container-sm">
+      <canvas id="actionChart"></canvas>
+    </div>
+  </div>
+  <div class="glass-card p-4">
+    <h3 class="text-xs font-semibold dark:text-white text-surface-900 mb-2 uppercase tracking-wider">Puertos Destino</h3>
+    <div class="chart-container-sm">
+      <canvas id="portsChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Top Signatures + Classtype Row -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+  <div class="glass-card p-4">
+    <h3 class="text-sm font-semibold dark:text-white text-surface-900 mb-3">Top Firmas</h3>
+    <div class="relative" style="height: 220px;">
+      <canvas id="signaturesChart"></canvas>
+    </div>
+  </div>
+  <div class="glass-card p-4">
+    <h3 class="text-sm font-semibold dark:text-white text-surface-900 mb-3">Clasificacion (classtype)</h3>
+    <div class="relative" style="height: 220px;">
+      <canvas id="classtypeChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Top Talkers Row -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+  <div class="glass-card p-4">
+    <h3 class="text-sm font-semibold dark:text-white text-surface-900 mb-3">Top IPs Origen</h3>
+    <div class="relative" style="height: 200px;">
+      <canvas id="srcIpChart"></canvas>
+    </div>
+  </div>
+  <div class="glass-card p-4">
+    <h3 class="text-sm font-semibold dark:text-white text-surface-900 mb-3">Top IPs Destino</h3>
+    <div class="relative" style="height: 200px;">
+      <canvas id="dstIpChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Events Table -->
+<div class="glass-card overflow-hidden mb-4">
+  <div class="px-4 py-3 flex items-center justify-between border-b dark:border-surface-800 border-surface-200">
+    <h3 class="text-sm font-semibold dark:text-white text-surface-900">Alertas Recientes</h3>
+    <div class="flex items-center gap-2">
+      <input id="searchInput" type="text" placeholder="Buscar en firma, IP..." class="px-3 py-1.5 text-xs bg-white dark:bg-surface-800 border dark:border-surface-700 border-surface-300 rounded-lg dark:text-white text-surface-900 focus:ring-2 focus:ring-blue-500 outline-none w-48">
+    </div>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full divide-y dark:divide-surface-800 divide-surface-200">
+      <thead class="dark:bg-surface-800 bg-surface-100">
+        <tr>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase w-8"></th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Hora</th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Severidad</th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Firma / Signature</th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Origen</th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Destino</th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Proto</th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Accion</th>
+        </tr>
+      </thead>
+      <tbody id="eventsBody" class="dark:divide-surface-800 divide-surface-200 text-xs">
+        <tr><td colspan="8" class="px-3 py-12 text-center dark:text-surface-500 text-surface-400"><i class="fas fa-spinner fa-spin text-lg mb-2 block"></i>Cargando eventos...</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div id="pagination" class="hidden px-3 py-2 flex items-center justify-between border-t dark:border-surface-800 border-surface-200"></div>
+</div>
+
+<!-- Connection Pairs Table -->
+<div class="glass-card overflow-hidden mb-4">
+  <div class="px-4 py-3 flex items-center justify-between border-b dark:border-surface-800 border-surface-200">
+    <h3 class="text-sm font-semibold dark:text-white text-surface-900">Pares de Conexion</h3>
+    <span class="text-xs dark:text-surface-400 text-surface-500" id="pairCount">0 pares</span>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full divide-y dark:divide-surface-800 divide-surface-200">
+      <thead class="dark:bg-surface-800 bg-surface-100">
+        <tr>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Origen : Puerto</th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase"></th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Destino : Puerto</th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Firma / Signature</th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Proto</th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Eventos</th>
+        </tr>
+      </thead>
+      <tbody id="pairsBody" class="dark:divide-surface-800 divide-surface-200 text-xs">
+        <tr><td colspan="6" class="px-3 py-12 text-center dark:text-surface-500 text-surface-400"><i class="fas fa-spinner fa-spin text-lg mb-2 block"></i>Cargando pares...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const API_EVENTS = '{% url 'log-api-events-list' %}';
+const API_HISTOGRAM = '{% url 'log-api-histogram' %}';
+const API_DETAIL = '{% url 'log-detail' 0 %}'.replace('/0/', '/');
+
+let currentPage = 1;
+let pageSize = 50;
+let totalEvents = 0;
+let bucketMinutes = 5;
+let histogramChart = null;
+let severityChart = null;
+let eventTypeChart = null;
+let protoChart = null;
+let actionChart = null;
+let portsChart = null;
+let signaturesChart = null;
+let classtypeChart = null;
+let srcIpChart = null;
+let dstIpChart = null;
+let refreshTimer = null;
+
+const SEVERITY_COLORS = {
+  critical: '#ef4444',
+  high: '#f97316',
+  medium: '#f59e0b',
+  low: '#3b82f6',
+  info: '#22c55e',
+  debug: '#6b7280',
+};
+
+function getTimeParams() {
+  const val = document.getElementById('timePreset').value;
+  const match = val.match(/(\d+)([hd])/);
+  if (!match) return { hours: 6 };
+  const num = parseInt(match[1]);
+  const unit = match[2];
+  if (unit === 'h') return { hours: num };
+  if (unit === 'd') return { hours: num * 24 };
+  return { hours: 6 };
+}
+
+function getApiParams(page) {
+  const tp = getTimeParams();
+  const params = new URLSearchParams();
+  params.set('source_type', 'suricata');
+  params.set('hours', Math.ceil(tp.hours));
+  if (page) params.set('page', page);
+  params.set('page_size', pageSize);
+  const q = document.getElementById('searchInput').value.trim();
+  if (q) params.set('q', q);
+  return params;
+}
+
+function getHistogramParams() {
+  const tp = getTimeParams();
+  const params = new URLSearchParams();
+  params.set('source_type', 'suricata');
+  params.set('hours', Math.ceil(tp.hours));
+  params.set('bucket_minutes', bucketMinutes);
+  const q = document.getElementById('searchInput').value.trim();
+  if (q) params.set('q', q);
+  return params;
+}
+
+async function fetchEvents(page) {
+  const params = getApiParams(page);
+  const url = `${API_EVENTS}?${params}`;
+  try {
+    const resp = await fetch(url);
+    const data = await resp.json();
+    totalEvents = data.count || 0;
+    document.getElementById('eventCount').textContent = `${totalEvents.toLocaleString()} eventos`;
+    renderTable(data.results || []);
+    renderPagination(data.count, data.next, data.previous);
+  } catch (e) {
+    document.getElementById('eventsBody').innerHTML = '<tr><td colspan="8" class="px-3 py-12 text-center dark:text-surface-500 text-surface-400"><i class="fas fa-exclamation-triangle text-lg mb-2 block"></i>Error al cargar eventos</td></tr>';
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function getPf(event, field) {
+  return event.parsed_fields && event.parsed_fields[field] !== undefined ? event.parsed_fields[field] : null;
+}
+
+function formatTime(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return d.toLocaleDateString('es', { day: '2-digit', month: '2-digit' }) + ' ' +
+    d.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+}
+
+function severityBadge(s) {
+  const colors = {
+    critical: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+    high: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+    medium: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+    low: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+    info: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+    debug: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300',
+  };
+  const cls = colors[s] || colors.info;
+  return `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${cls}">${s}</span>`;
+}
+
+function renderTable(events) {
+  const tbody = document.getElementById('eventsBody');
+  if (!events.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="px-3 py-12 text-center dark:text-surface-500 text-surface-400"><i class="fas fa-inbox text-2xl mb-2 block"></i>No hay eventos de Suricata en este periodo</td></tr>';
+    return;
+  }
+  tbody.innerHTML = events.map(e => {
+    const sig = getPf(e, 'signature') || e.message || '-';
+    const srcIp = getPf(e, 'src_ip') || '-';
+    const srcPort = getPf(e, 'src_port');
+    const dstIp = getPf(e, 'dst_ip') || '-';
+    const dstPort = getPf(e, 'dst_port');
+    const proto = getPf(e, 'protocol') || '-';
+    const action = getPf(e, 'action') || '-';
+    const classtype = getPf(e, 'classtype') || '';
+    const alertId = getPf(e, 'alert_id') || '';
+    const priority = getPf(e, 'priority') || '';
+    const eventType = getPf(e, 'event_type') || e.event_category || '-';
+    const srcStr = srcPort ? `${srcIp}:${srcPort}` : srcIp;
+    const dstStr = dstPort ? `${dstIp}:${dstPort}` : dstIp;
+    return `
+      <tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors event-row" data-id="${e.id}" onclick="toggleDetail(${e.id})">
+        <td class="px-3 py-2"><i class="fas fa-chevron-right text-[10px] dark:text-surface-500 text-surface-400 transition-transform" id="arrow-${e.id}"></i></td>
+        <td class="px-3 py-2 whitespace-nowrap dark:text-surface-300 text-surface-600">${formatTime(e.event_time)}</td>
+        <td class="px-3 py-2">${severityBadge(e.severity)}</td>
+        <td class="px-3 py-2 dark:text-surface-300 text-surface-600 max-w-xs truncate" title="${escapeHtml(sig)}">${escapeHtml(String(sig).substring(0, 80))}</td>
+        <td class="px-3 py-2 font-mono dark:text-surface-300 text-surface-600">${escapeHtml(srcStr)}</td>
+        <td class="px-3 py-2 font-mono dark:text-surface-300 text-surface-600">${escapeHtml(dstStr)}</td>
+        <td class="px-3 py-2 dark:text-surface-300 text-surface-600">${proto}</td>
+        <td class="px-3 py-2 dark:text-surface-300 text-surface-600">${action}</td>
+      </tr>
+      <tr class="event-detail-row" id="detail-${e.id}">
+        <td colspan="8" class="detail-cell">
+          <div class="p-3 dark:bg-surface-800/50 bg-surface-50 border-t dark:border-surface-700 border-surface-200">
+            <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-2">
+              <div><span class="text-[10px] dark:text-surface-500 text-surface-400">ID</span><div class="text-xs font-mono dark:text-surface-200 text-surface-800">${e.id}</div></div>
+              <div><span class="text-[10px] dark:text-surface-500 text-surface-400">Event Type</span><div class="text-xs capitalize dark:text-surface-200 text-surface-800">${eventType}</div></div>
+              <div><span class="text-[10px] dark:text-surface-500 text-surface-400">Alert ID</span><div class="text-xs font-mono dark:text-surface-200 text-surface-800">${alertId || '-'}</div></div>
+              <div><span class="text-[10px] dark:text-surface-500 text-surface-400">Priority</span><div class="text-xs dark:text-surface-200 text-surface-800">${priority || '-'}</div></div>
+              <div><span class="text-[10px] dark:text-surface-500 text-surface-400">Classtype</span><div class="text-xs dark:text-surface-200 text-surface-800">${classtype || '-'}</div></div>
+            </div>
+            <div class="mb-2"><span class="text-[10px] dark:text-surface-500 text-surface-400">Firma completa</span>
+              <pre class="mt-0.5 text-xs font-mono dark:text-surface-200 text-surface-800 whitespace-pre-wrap break-all max-h-20 overflow-y-auto p-2 dark:bg-surface-900 bg-white rounded">${escapeHtml(sig)}</pre>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-2">
+              <div><span class="text-[10px] dark:text-surface-500 text-surface-400">Tags</span>
+                <div class="flex flex-wrap gap-1 mt-0.5">${(e.tags || []).map(t => '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] dark:bg-surface-700 bg-surface-200 dark:text-surface-300 text-surface-600">' + escapeHtml(t) + '</span>').join('') || '<span class="text-xs dark:text-surface-500 text-surface-400">-</span>'}</div>
+              </div>
+              <div><span class="text-[10px] dark:text-surface-500 text-surface-400">Host / IP</span><div class="text-xs dark:text-surface-200 text-surface-800">${e.host_name || e.host_ip || '-'}</div></div>
+            </div>
+            <div class="mt-2">
+              <a href="${API_DETAIL}${e.id}/" class="text-xs text-blue-400 hover:text-blue-300"><i class="fas fa-external-link-alt mr-1"></i>Ver detalle completo</a>
+            </div>
+          </div>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+function toggleDetail(id) {
+  const row = document.getElementById('detail-' + id);
+  const arrow = document.getElementById('arrow-' + id);
+  const visible = row.classList.toggle('visible');
+  if (arrow) arrow.style.transform = visible ? 'rotate(90deg)' : '';
+}
+
+function renderPagination(count, nextUrl, prevUrl) {
+  const div = document.getElementById('pagination');
+  const totalPages = Math.ceil(count / pageSize);
+  if (totalPages <= 1) { div.classList.add('hidden'); return; }
+  div.classList.remove('hidden');
+  let html = `<span class="text-xs dark:text-surface-400 text-surface-500">Pagina ${currentPage} de ${totalPages} (${count} total)</span><nav class="flex items-center gap-1">`;
+  if (prevUrl) html += `<button onclick="goPage(${currentPage - 1})" class="px-2 py-1 text-xs dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded hover:bg-surface-100 dark:hover:bg-surface-800"><i class="fas fa-chevron-left"></i></button>`;
+  for (let p = Math.max(1, currentPage - 2); p <= Math.min(totalPages, currentPage + 2); p++) {
+    html += p === currentPage
+      ? `<span class="px-2 py-1 text-xs font-medium bg-blue-600 text-white rounded">${p}</span>`
+      : `<button onclick="goPage(${p})" class="px-2 py-1 text-xs dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded hover:bg-surface-100 dark:hover:bg-surface-800">${p}</button>`;
+  }
+  if (nextUrl) html += `<button onclick="goPage(${currentPage + 1})" class="px-2 py-1 text-xs dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded hover:bg-surface-100 dark:hover:bg-surface-800"><i class="fas fa-chevron-right"></i></button>`;
+  html += '</nav>';
+  div.innerHTML = html;
+}
+
+function goPage(page) {
+  currentPage = page;
+  fetchEvents(page);
+}
+
+async function fetchHistogram() {
+  const params = getHistogramParams();
+  const url = `${API_HISTOGRAM}?${params}`;
+  try {
+    const resp = await fetch(url);
+    const data = await resp.json();
+    renderHistogram(data.timeline || []);
+  } catch (e) {}
+}
+
+function renderHistogram(timeline) {
+  const isDark = document.documentElement.classList.contains('dark');
+  const textColor = isDark ? '#94a3b8' : '#64748b';
+  const gridColor = isDark ? 'rgba(51,65,85,0.3)' : 'rgba(226,232,240,0.8)';
+  const labels = timeline.map(t => t.time);
+  const values = timeline.map(t => t.count);
+  const ctx = document.getElementById('histogramChart').getContext('2d');
+  if (histogramChart) histogramChart.destroy();
+  histogramChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: 'rgba(245,158,11,0.5)',
+        borderColor: 'rgba(245,158,11,1)',
+        borderWidth: 1,
+        borderRadius: 2,
+        barPercentage: 0.9,
+        categoryPercentage: 1,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 300 },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { title: items => items[0].label, label: item => 'Eventos: ' + item.raw } } },
+      scales: {
+        x: { display: true, ticks: { color: textColor, maxTicksLimit: 15, font: { size: 9 } }, grid: { display: false } },
+        y: { display: true, beginAtZero: true, ticks: { color: textColor, font: { size: 9 }, maxTicksLimit: 5 }, grid: { color: gridColor } },
+      },
+    },
+  });
+}
+
+function renderDoughnut(canvasId, labels, values, colors, label) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return null;
+  const isDark = document.documentElement.classList.contains('dark');
+  const ctx = canvas.getContext('2d');
+  const existing = { severityChart, eventTypeChart, protoChart, actionChart, portsChart }[canvasId.replace('Chart', '')];
+  if (canvasId === 'severityChart' && severityChart) severityChart.destroy();
+  if (canvasId === 'eventTypeChart' && eventTypeChart) eventTypeChart.destroy();
+  if (canvasId === 'protoChart' && protoChart) protoChart.destroy();
+  if (canvasId === 'actionChart' && actionChart) actionChart.destroy();
+  if (canvasId === 'portsChart' && portsChart) portsChart.destroy();
+  const chart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{ data: values, backgroundColor: colors, borderWidth: 0 }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '60%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: item => item.label + ': ' + item.raw } },
+      },
+    },
+  });
+  return chart;
+}
+
+const CHART_COLORS = [
+  '#3b82f6', '#ef4444', '#22c55e', '#f59e0b', '#8b5cf6',
+  '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16',
+];
+
+function renderCharts() {
+  // Severity doughnut
+  const sevData = {{ severity_dist|safe }};
+  if (sevData.length) {
+    const labels = sevData.map(s => s.severity);
+    const values = sevData.map(s => s.count);
+    const colors = labels.map(l => SEVERITY_COLORS[l] || '#6b7280');
+    const canvas = document.getElementById('severityChart');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (severityChart) severityChart.destroy();
+      severityChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: 'transparent' }] },
+        options: {
+          responsive: true, maintainAspectRatio: false, cutout: '65%',
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: item => item.label + ': ' + item.raw } } },
+        },
+      });
+      const legend = document.getElementById('severityLegend');
+      const total = values.reduce((a, b) => a + b, 0);
+      legend.innerHTML = labels.map((l, i) =>
+        `<div class="flex items-center justify-between text-xs"><span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background:${colors[i]}"></span>${l}</span><span class="dark:text-surface-400 text-surface-500">${values[i]} (${Math.round(values[i]/total*100)}%)</span></div>`
+      ).join('');
+    }
+  }
+
+  // Event type doughnut
+  const etData = {{ event_type_dist|safe }};
+  if (etData.length) {
+    const labels = etData.map(e => e.parsed_fields__event_type);
+    const values = etData.map(e => e.count);
+    const canvas = document.getElementById('eventTypeChart');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (eventTypeChart) eventTypeChart.destroy();
+      eventTypeChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data: values, backgroundColor: CHART_COLORS.slice(0, labels.length), borderWidth: 0 }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, padding: 8, font: { size: 9 } } }, tooltip: { callbacks: { label: item => item.label + ': ' + item.raw } } } },
+      });
+    }
+  }
+
+  // Protocol doughnut
+  const protoData = {{ proto_dist|safe }};
+  if (protoData.length) {
+    const labels = protoData.map(p => p.parsed_fields__protocol);
+    const values = protoData.map(p => p.count);
+    const canvas = document.getElementById('protoChart');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (protoChart) protoChart.destroy();
+      protoChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data: values, backgroundColor: CHART_COLORS.slice(0, labels.length), borderWidth: 0 }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, padding: 8, font: { size: 9 } } }, tooltip: { callbacks: { label: item => item.label + ': ' + item.raw } } } },
+      });
+    }
+  }
+
+  // Action doughnut
+  const actData = {{ action_dist|safe }};
+  if (actData.length) {
+    const labels = actData.map(a => a.parsed_fields__action);
+    const values = actData.map(a => a.count);
+    const canvas = document.getElementById('actionChart');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (actionChart) actionChart.destroy();
+      actionChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data: values, backgroundColor: CHART_COLORS.slice(0, labels.length), borderWidth: 0 }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, padding: 8, font: { size: 9 } } }, tooltip: { callbacks: { label: item => item.label + ': ' + item.raw } } } },
+      });
+    }
+  }
+
+  // Top ports doughnut
+  const portsData = {{ top_ports|safe }};
+  if (portsData.length) {
+    const labels = portsData.map(p => String(p.parsed_fields__dst_port));
+    const values = portsData.map(p => p.count);
+    const canvas = document.getElementById('portsChart');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (portsChart) portsChart.destroy();
+      portsChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data: values, backgroundColor: CHART_COLORS.slice(0, labels.length), borderWidth: 0 }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, padding: 8, font: { size: 9 } } }, tooltip: { callbacks: { label: item => 'Puerto ' + item.label + ': ' + item.raw } } } },
+      });
+    }
+  }
+
+  // Top signatures horizontal bar
+  const sigData = {{ top_signatures|safe }};
+  if (sigData.length) {
+    const labels = sigData.map(s => String(s.parsed_fields__signature).substring(0, 50));
+    const values = sigData.map(s => s.count);
+    const canvas = document.getElementById('signaturesChart');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (signaturesChart) signaturesChart.destroy();
+      signaturesChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels.map(l => l.length > 40 ? l.substring(0, 38) + '..' : l),
+          datasets: [{ data: values, backgroundColor: 'rgba(139,92,246,0.6)', borderColor: 'rgba(139,92,246,1)', borderWidth: 1, borderRadius: 3 }],
+        },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: item => item.raw + ' eventos' } } },
+          scales: {
+            x: { beginAtZero: true, ticks: { font: { size: 9 } } },
+            y: { ticks: { font: { size: 8 } } },
+          },
+        },
+      });
+    }
+  }
+
+  // Classtype bar
+  const ctData = {{ classtype_dist|safe }};
+  if (ctData.length) {
+    const labels = ctData.map(c => String(c.parsed_fields__classtype).substring(0, 35));
+    const values = ctData.map(c => c.count);
+    const canvas = document.getElementById('classtypeChart');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (classtypeChart) classtypeChart.destroy();
+      classtypeChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels.map(l => l.length > 30 ? l.substring(0, 28) + '..' : l),
+          datasets: [{ data: values, backgroundColor: 'rgba(59,130,246,0.6)', borderColor: 'rgba(59,130,246,1)', borderWidth: 1, borderRadius: 3 }],
+        },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: item => item.raw + ' eventos' } } },
+          scales: {
+            x: { beginAtZero: true, ticks: { font: { size: 9 } } },
+            y: { ticks: { font: { size: 8 } } },
+          },
+        },
+      });
+    }
+  }
+
+  // Top src IPs horizontal bar
+  const srcData = {{ top_src_ips|safe }};
+  if (srcData.length) {
+    const labels = srcData.map(s => s.parsed_fields__src_ip);
+    const values = srcData.map(s => s.count);
+    const canvas = document.getElementById('srcIpChart');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (srcIpChart) srcIpChart.destroy();
+      srcIpChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{ data: values, backgroundColor: 'rgba(6,182,212,0.6)', borderColor: 'rgba(6,182,212,1)', borderWidth: 1, borderRadius: 3 }],
+        },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: item => item.raw + ' eventos' } } },
+          scales: {
+            x: { beginAtZero: true, ticks: { font: { size: 9 } } },
+            y: { ticks: { font: { size: 10 } } },
+          },
+        },
+      });
+    }
+  }
+
+  // Top dst IPs horizontal bar
+  const dstData = {{ top_dst_ips|safe }};
+  if (dstData.length) {
+    const labels = dstData.map(s => s.parsed_fields__dst_ip);
+    const values = dstData.map(s => s.count);
+    const canvas = document.getElementById('dstIpChart');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      if (dstIpChart) dstIpChart.destroy();
+      dstIpChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{ data: values, backgroundColor: 'rgba(251,146,60,0.6)', borderColor: 'rgba(251,146,60,1)', borderWidth: 1, borderRadius: 3 }],
+        },
+        options: {
+          indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: item => item.raw + ' eventos' } } },
+          scales: {
+            x: { beginAtZero: true, ticks: { font: { size: 9 } } },
+            y: { ticks: { font: { size: 10 } } },
+          },
+        },
+      });
+    }
+  }
+}
+
+function refresh() {
+  document.getElementById('refreshIcon').classList.add('fa-spin');
+  fetchEvents(currentPage);
+  fetchHistogram();
+  setTimeout(() => document.getElementById('refreshIcon').classList.remove('fa-spin'), 500);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  renderCharts();
+
+  document.getElementById('searchInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { currentPage = 1; refresh(); }
+  });
+
+  document.getElementById('timePreset').addEventListener('change', function() {
+    const tp = getTimeParams();
+    const h = tp.hours;
+    if (h <= 1) bucketMinutes = 1;
+    else if (h <= 6) bucketMinutes = 5;
+    else if (h <= 24) bucketMinutes = 15;
+    else bucketMinutes = 60;
+    document.querySelectorAll('.bucket-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.minutes) === bucketMinutes));
+    currentPage = 1;
+    refresh();
+  });
+
+  document.querySelectorAll('.bucket-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.bucket-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      bucketMinutes = parseInt(this.dataset.minutes);
+      currentPage = 1;
+      refresh();
+    });
+  });
+
+  document.getElementById('refreshInterval').addEventListener('change', function() {
+    if (refreshTimer) clearInterval(refreshTimer);
+    const val = parseInt(this.value);
+    if (val > 0) refreshTimer = setInterval(refresh, val);
+  });
+
+  fetchEvents(1);
+  fetchHistogram();
+  fetchConnPairs();
+});
+
+async function fetchConnPairs() {
+  const params = getTimeParams();
+  const url = `${API_EVENTS}?source_type=suricata&hours=${Math.ceil(params.hours)}&page_size=200`;
+  try {
+    const resp = await fetch(url);
+    const data = await resp.json();
+    const results = data.results || [];
+    const pairMap = {};
+    for (const e of results) {
+      const pf = e.parsed_fields || {};
+      const srcIp = pf.src_ip || '-';
+      const srcPort = pf.src_port != null ? pf.src_port : '';
+      const dstIp = pf.dst_ip || '-';
+      const dstPort = pf.dst_port != null ? pf.dst_port : '';
+      const srcKey = srcPort ? `${srcIp}:${srcPort}` : srcIp;
+      const dstKey = dstPort ? `${dstIp}:${dstPort}` : dstIp;
+      const proto = pf.protocol || '-';
+      const sig = pf.signature || e.message || '-';
+      const key = `${srcKey}|||${dstKey}|||${sig}|||${proto}`;
+      if (!pairMap[key]) {
+        pairMap[key] = { srcKey, dstKey, sig, proto, count: 0 };
+      }
+      pairMap[key].count++;
+    }
+    renderPairs(Object.values(pairMap).sort((a, b) => b.count - a.count));
+  } catch (e) {
+    document.getElementById('pairsBody').innerHTML = '<tr><td colspan="6" class="px-3 py-12 text-center dark:text-surface-500 text-surface-400"><i class="fas fa-exclamation-triangle text-lg mb-2 block"></i>Error al cargar pares</td></tr>';
+  }
+}
+
+function renderPairs(pairs) {
+  const tbody = document.getElementById('pairsBody');
+  document.getElementById('pairCount').textContent = `${pairs.length} pares`;
+  if (!pairs.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-12 text-center dark:text-surface-500 text-surface-400"><i class="fas fa-inbox text-2xl mb-2 block"></i>No hay pares de conexion</td></tr>';
+    return;
+  }
+  tbody.innerHTML = pairs.map(p => `
+    <tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors">
+      <td class="px-3 py-2 font-mono dark:text-surface-300 text-surface-600">${escapeHtml(p.srcKey)}</td>
+      <td class="px-3 py-2 text-center dark:text-surface-400 text-surface-500"><i class="fas fa-arrow-right text-xs"></i></td>
+      <td class="px-3 py-2 font-mono dark:text-surface-300 text-surface-600">${escapeHtml(p.dstKey)}</td>
+      <td class="px-3 py-2 dark:text-surface-300 text-surface-600 max-w-xs truncate" title="${escapeHtml(p.sig)}">${escapeHtml(String(p.sig).substring(0, 80))}</td>
+      <td class="px-3 py-2 dark:text-surface-300 text-surface-600">${p.proto}</td>
+      <td class="px-3 py-2 dark:text-surface-300 text-surface-600 font-medium">${p.count}</td>
+    </tr>
+  `).join('');
+}
+</script>
+{% endblock %}

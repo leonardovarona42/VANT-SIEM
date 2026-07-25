@@ -160,9 +160,9 @@
               <h4 class="text-sm font-semibold dark:text-surface-300 text-surface-700">Storage</h4>
             </div>
             <p class="text-sm font-medium dark:text-white text-surface-900">{{ hardware.disk_total_gb|floatformat:1 }} GB total</p>
-            {% for disk in hardware.disks %}
+            {% for disk in hardware.disks_parsed %}
             <p class="text-xs dark:text-surface-400 text-surface-500 mt-1">
-              {{ disk.name|default:"Disk" }}: {{ disk.size_gb|floatformat:1 }} GB {% if disk.type %}({{ disk.type }}){% endif %}
+              {{ disk.name|default:"Disk" }}: {{ disk.size_gb_numeric|floatformat:1 }} GB {% if disk.type %}({{ disk.type }}){% endif %}
             </p>
             {% endfor %}
           </div>

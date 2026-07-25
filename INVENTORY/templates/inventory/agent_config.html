@@ -1,4 +1,5 @@
 {% extends 'dashboard.html' %}
+{% load static %}
 
 {% block title %}Config - {{ agent.hostname }}{% endblock %}
 
@@ -12,7 +13,14 @@
         </div>
         Agent Configuration
       </h1>
-      <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ agent.hostname }} ({{ agent.agent_id }})</p>
+      <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">
+        {{ agent.hostname }} ({{ agent.agent_id }})
+        {% if is_linux %}
+          <span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-emerald-500/20 text-emerald-400"><i class="fab fa-linux mr-1"></i>Linux</span>
+        {% else %}
+          <span class="ml-2 px-2 py-0.5 text-xs rounded-full bg-blue-500/20 text-blue-400"><i class="fab fa-windows mr-1"></i>Windows</span>
+        {% endif %}
+      </p>
     </div>
     <div class="flex gap-2">
       <a href="{% url 'inventory-agent-detail' agent.agent_id %}" class="btn-secondary text-sm">
@@ -69,6 +77,35 @@
             </label>
           </div>
           <div class="ml-11 space-y-3">
+
+            {% if is_linux %}
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="col-journald" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
+              <label for="col-journald" class="text-xs font-medium dark:text-surface-300 text-surface-600">Systemd Journal (journald)</label>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="col-syslog" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
+              <label for="col-syslog" class="text-xs font-medium dark:text-surface-300 text-surface-600">Syslog</label>
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <input type="checkbox" id="col-file-logs" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
+                <label for="col-file-logs" class="text-xs font-medium dark:text-surface-300 text-surface-600">File Log Collector</label>
+              </div>
+              <div id="file-logs-config" class="hidden ml-6 mt-2 space-y-2">
+                <label class="text-xs dark:text-surface-400 text-surface-500">Log sources:</label>
+                <div class="flex items-center gap-2">
+                  <select id="file-source-type" class="w-20 px-2 py-1 dark:bg-surface-700 bg-surface-100 dark:text-surface-200 text-surface-800 rounded text-xs border dark:border-surface-600 border-surface-200">
+                    <option value="directory">DIR</option>
+                    <option value="file">FILE</option>
+                  </select>
+                  <input type="text" id="file-source-path" placeholder="/var/log/* or /var/log/app.log" class="flex-1 px-2 py-1 dark:bg-surface-700 bg-surface-100 dark:text-surface-200 text-surface-800 rounded text-xs border dark:border-surface-600 border-surface-200">
+                  <button id="file-source-add" class="px-2 py-1 bg-brand-500 text-white rounded text-xs hover:bg-brand-600"><i class="fas fa-plus"></i></button>
+                </div>
+                <div id="file-sources-list" class="space-y-1 max-h-32 overflow-y-auto"></div>
+              </div>
+            </div>
+            {% else %}
             <div>
               <div class="flex items-center gap-2 mb-2">
                 <input type="checkbox" id="col-win-event" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
@@ -113,22 +150,10 @@
                 <div id="win-custom-channels" class="flex flex-wrap gap-1 mt-1"></div>
               </div>
             </div>
-            <div class="flex items-center gap-2">
-              <input type="checkbox" id="col-snort" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
-              <label for="col-snort" class="text-xs dark:text-surface-300 text-surface-600">Snort IDS</label>
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="checkbox" id="col-suricata" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
-              <label for="col-suricata" class="text-xs dark:text-surface-300 text-surface-600">Suricata IDS</label>
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="checkbox" id="col-postgres" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
-              <label for="col-postgres" class="text-xs dark:text-surface-300 text-surface-600">PostgreSQL Logs</label>
-            </div>
             <div>
               <div class="flex items-center gap-2">
                 <input type="checkbox" id="col-file-logs" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
-                <label for="col-file-logs" class="text-xs dark:text-surface-300 text-surface-600">File Log Collector</label>
+                <label for="col-file-logs" class="text-xs font-medium dark:text-surface-300 text-surface-600">File Log Collector</label>
               </div>
               <div id="file-logs-config" class="hidden ml-6 mt-2 space-y-2">
                 <label class="text-xs dark:text-surface-400 text-surface-500">Log sources:</label>
@@ -142,6 +167,20 @@
                 </div>
                 <div id="file-sources-list" class="space-y-1 max-h-32 overflow-y-auto"></div>
               </div>
+            </div>
+            {% endif %}
+
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="col-snort" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
+              <label for="col-snort" class="text-xs font-medium dark:text-surface-300 text-surface-600">Snort IDS</label>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="col-suricata" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
+              <label for="col-suricata" class="text-xs font-medium dark:text-surface-300 text-surface-600">Suricata IDS</label>
+            </div>
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="col-postgres" class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
+              <label for="col-postgres" class="text-xs font-medium dark:text-surface-300 text-surface-600">PostgreSQL Logs</label>
             </div>
           </div>
         </div>
@@ -165,7 +204,7 @@
           <div class="ml-11 space-y-2">
             <div class="flex items-center gap-2">
               <label class="text-xs dark:text-surface-300 text-surface-600 w-20">Scan Paths</label>
-              <input type="text" id="dlp-paths" placeholder="C:\Users, C:\Documents" class="flex-1 px-2 py-1 dark:bg-surface-700 bg-surface-100 dark:text-surface-200 text-surface-800 rounded text-xs border dark:border-surface-600 border-surface-200">
+              <input type="text" id="dlp-paths" placeholder="{% if is_linux %}/home, /etc{% else %}C:\Users, C:\Documents{% endif %}" class="flex-1 px-2 py-1 dark:bg-surface-700 bg-surface-100 dark:text-surface-200 text-surface-800 rounded text-xs border dark:border-surface-600 border-surface-200">
             </div>
             <div class="flex items-center gap-2">
               <label class="text-xs dark:text-surface-300 text-surface-600 w-20">Keywords</label>
@@ -173,6 +212,77 @@
             </div>
           </div>
         </div>
+
+        {% if is_linux %}
+        <div class="p-4 dark:bg-surface-800/50 bg-surface-50 rounded-xl">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg dark:bg-cyan-500/20 bg-cyan-100 flex items-center justify-center">
+                <i class="fas fa-heartbeat text-cyan-500 text-sm"></i>
+              </div>
+              <div>
+                <h4 class="text-sm font-semibold dark:text-white text-surface-900">Internal Services Monitoring</h4>
+                <p class="text-xs dark:text-surface-400 text-surface-500">Monitor system services, detect failures & apt updates</p>
+              </div>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="mod-monitoring-enabled" class="sr-only peer">
+              <div class="w-9 h-5 bg-surface-300 peer-focus:outline-none rounded-full peer dark:bg-surface-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+            </label>
+          </div>
+          <div id="monitoring-config" class="hidden ml-11 space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="text-xs dark:text-surface-300 text-surface-600 font-medium">Enable service monitoring</span>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="mod-services-enabled" class="sr-only peer">
+                <div class="w-9 h-5 bg-surface-300 peer-focus:outline-none rounded-full peer dark:bg-surface-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+              </label>
+            </div>
+
+            <div id="services-panel" class="hidden">
+              <div class="flex items-center justify-between mb-3">
+                <p class="text-xs dark:text-surface-400 text-surface-500">Select services to monitor (fetched from agent):</p>
+                <button id="btn-load-services" class="px-3 py-1.5 bg-cyan-500/20 text-cyan-400 rounded-lg text-xs hover:bg-cyan-500/30 transition-colors">
+                  <i class="fas fa-sync-alt mr-1"></i>Load Services
+                </button>
+              </div>
+
+              <div id="services-loading" class="hidden text-center py-6">
+                <i class="fas fa-spinner fa-spin text-cyan-500 text-lg mb-2"></i>
+                <p class="text-xs dark:text-surface-400 text-surface-500">Requesting services from agent... This may take a few seconds.</p>
+              </div>
+
+              <div id="services-error" class="hidden p-3 rounded-lg bg-red-500/10 border border-red-500/20 mb-3">
+                <p class="text-xs text-red-400"><i class="fas fa-exclamation-triangle mr-1"></i><span id="services-error-msg"></span></p>
+              </div>
+
+              <div id="services-empty" class="hidden text-center py-6">
+                <i class="fas fa-server text-surface-400 text-lg mb-2"></i>
+                <p class="text-xs dark:text-surface-400 text-surface-500">No services found. Click "Load Services" to fetch from agent.</p>
+              </div>
+
+              <div id="services-list" class="hidden max-h-80 overflow-y-auto space-y-1 border dark:border-surface-700 border-surface-200 rounded-lg p-2">
+              </div>
+
+              <div id="services-selected-count" class="hidden mt-2 text-xs dark:text-surface-400 text-surface-500">
+                <span id="selected-count">0</span> services selected for monitoring
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 dark:border-surface-700 border-surface-200 border-t">
+              <div class="flex items-center gap-2">
+                <input type="checkbox" id="apt-check-enabled" checked class="rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600">
+                <label for="apt-check-enabled" class="text-xs dark:text-surface-300 text-surface-600">Check for available apt updates</label>
+              </div>
+              <div class="flex items-center gap-2">
+                <label class="text-xs dark:text-surface-400 text-surface-500">Every</label>
+                <input type="number" id="apt-check-interval" value="86400" min="3600" max="604800" class="w-20 px-2 py-1 dark:bg-surface-700 bg-surface-100 dark:text-surface-200 text-surface-800 rounded text-xs border dark:border-surface-600 border-surface-200">
+                <label class="text-xs dark:text-surface-400 text-surface-500">s</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -190,6 +300,10 @@
         <div class="flex justify-between">
           <span class="text-xs dark:text-surface-400 text-surface-500">Agent Status</span>
           <span class="text-xs font-medium dark:text-surface-200 text-surface-700">{{ agent.status }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-xs dark:text-surface-400 text-surface-500">OS Type</span>
+          <span class="text-xs font-medium dark:text-surface-200 text-surface-700">{{ agent.get_os_type_display }}</span>
         </div>
       </div>
       {% if pending_config_cmds %}
@@ -222,7 +336,10 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  const IS_LINUX = {{ is_linux|yesno:"true,false" }};
   let fileSources = [];
+  let discoveredServices = [];
+  let selectedServices = [];
 
   function addFileSource(path, type) {
     if (!path) return;
@@ -254,20 +371,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
   const fileLogsCheckbox = document.getElementById('col-file-logs');
   const fileLogsConfig = document.getElementById('file-logs-config');
-  fileLogsCheckbox.addEventListener('change', function() {
-    fileLogsConfig.classList.toggle('hidden', !this.checked);
-  });
+  if (fileLogsCheckbox) {
+    fileLogsCheckbox.addEventListener('change', function() {
+      fileLogsConfig.classList.toggle('hidden', !this.checked);
+    });
+  }
 
   const winEventCheckbox = document.getElementById('col-win-event');
   const winEventConfig = document.getElementById('win-event-config');
-  winEventCheckbox.addEventListener('change', function() {
-    winEventConfig.classList.toggle('hidden', !this.checked);
-  });
+  if (winEventCheckbox) {
+    winEventCheckbox.addEventListener('change', function() {
+      winEventConfig.classList.toggle('hidden', !this.checked);
+    });
+  }
 
   let winCustomChannels = [];
 
   function renderWinCustomChannels() {
     const container = document.getElementById('win-custom-channels');
+    if (!container) return;
     container.innerHTML = winCustomChannels.map((ch, i) => `
       <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-brand-500/20 text-brand-400 rounded text-xs">
         <i class="fas fa-tag text-[10px]"></i>${ch}
@@ -282,41 +404,186 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  document.getElementById('win-channel-add').addEventListener('click', function() {
-    const ch = document.getElementById('win-custom-channel').value.trim();
-    if (!ch) return;
-    if (!winCustomChannels.includes(ch)) {
-      winCustomChannels.push(ch);
-      renderWinCustomChannels();
-    }
-    document.getElementById('win-custom-channel').value = '';
-  });
+  const winChannelAdd = document.getElementById('win-channel-add');
+  if (winChannelAdd) {
+    winChannelAdd.addEventListener('click', function() {
+      const ch = document.getElementById('win-custom-channel').value.trim();
+      if (!ch) return;
+      if (!winCustomChannels.includes(ch)) {
+        winCustomChannels.push(ch);
+        renderWinCustomChannels();
+      }
+      document.getElementById('win-custom-channel').value = '';
+    });
+  }
 
-  document.getElementById('win-custom-channel').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      document.getElementById('win-channel-add').click();
-    }
-  });
+  const winCustomChannel = document.getElementById('win-custom-channel');
+  if (winCustomChannel) {
+    winCustomChannel.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('win-channel-add').click();
+      }
+    });
+  }
 
-  document.getElementById('file-source-add').addEventListener('click', function() {
-    const path = document.getElementById('file-source-path').value.trim();
-    const type = document.getElementById('file-source-type').value;
-    if (!path) {
-      showToast('Enter a valid path', 'error');
-      return;
-    }
-    addFileSource(path, type);
-    document.getElementById('file-source-path').value = '';
-  });
+  const fileSourceAdd = document.getElementById('file-source-add');
+  if (fileSourceAdd) {
+    fileSourceAdd.addEventListener('click', function() {
+      const path = document.getElementById('file-source-path').value.trim();
+      const type = document.getElementById('file-source-type').value;
+      if (!path) { showToast('Enter a valid path', 'error'); return; }
+      addFileSource(path, type);
+      document.getElementById('file-source-path').value = '';
+    });
+  }
 
-  document.getElementById('file-source-path').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      document.getElementById('file-source-add').click();
-    }
-  });
+  const fileSourcePath = document.getElementById('file-source-path');
+  if (fileSourcePath) {
+    fileSourcePath.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); document.getElementById('file-source-add').click(); }
+    });
+  }
 
+  // === Monitoring toggle ===
+  const monitoringEnabled = document.getElementById('mod-monitoring-enabled');
+  const monitoringConfig = document.getElementById('monitoring-config');
+  if (monitoringEnabled) {
+    monitoringEnabled.addEventListener('change', function() {
+      monitoringConfig.classList.toggle('hidden', !this.checked);
+    });
+  }
+
+  const servicesEnabled = document.getElementById('mod-services-enabled');
+  const servicesPanel = document.getElementById('services-panel');
+  if (servicesEnabled) {
+    servicesEnabled.addEventListener('change', function() {
+      servicesPanel.classList.toggle('hidden', !this.checked);
+    });
+  }
+
+  // === Services list ===
+  const btnLoad = document.getElementById('btn-load-services');
+  if (btnLoad) {
+    btnLoad.addEventListener('click', loadServices);
+  }
+
+  function loadServices() {
+    const loading = document.getElementById('services-loading');
+    const error = document.getElementById('services-error');
+    const empty = document.getElementById('services-empty');
+    const list = document.getElementById('services-list');
+
+    loading.classList.remove('hidden');
+    error.classList.add('hidden');
+    empty.classList.add('hidden');
+    list.classList.add('hidden');
+    btnLoad.disabled = true;
+
+    fetch('{% url "inventory-agent-services-list" agent.agent_id %}', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'X-CSRFToken': '{{ csrf_token }}' },
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.status === 'pending' && data.command_id) {
+        pollServicesResult(data.command_id);
+      } else {
+        throw new Error(data.message || 'Failed to request services');
+      }
+    })
+    .catch(err => {
+      loading.classList.add('hidden');
+      error.classList.remove('hidden');
+      document.getElementById('services-error-msg').textContent = err.message;
+      btnLoad.disabled = false;
+    });
+  }
+
+  function pollServicesResult(commandId) {
+    const maxAttempts = 30;
+    let attempts = 0;
+
+    function poll() {
+      attempts++;
+      if (attempts > maxAttempts) {
+        document.getElementById('services-loading').classList.add('hidden');
+        document.getElementById('services-error').classList.remove('hidden');
+        document.getElementById('services-error-msg').textContent = 'Timeout waiting for agent response. Is the agent online?';
+        btnLoad.disabled = false;
+        return;
+      }
+
+      fetch('{% url "inventory-agent-services-list" agent.agent_id %}?command_id=' + commandId, {
+        credentials: 'include',
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.status === 'completed') {
+          discoveredServices = data.services || [];
+          renderServicesList();
+          btnLoad.disabled = false;
+          document.getElementById('services-loading').classList.add('hidden');
+          if (discoveredServices.length === 0) {
+            document.getElementById('services-empty').classList.remove('hidden');
+          }
+        } else if (data.status === 'failed') {
+          document.getElementById('services-loading').classList.add('hidden');
+          document.getElementById('services-error').classList.remove('hidden');
+          document.getElementById('services-error-msg').textContent = data.error || 'Agent failed to list services';
+          btnLoad.disabled = false;
+        } else {
+          setTimeout(poll, 2000);
+        }
+      })
+      .catch(() => setTimeout(poll, 2000));
+    }
+    poll();
+  }
+
+  function renderServicesList() {
+    const list = document.getElementById('services-list');
+    const countEl = document.getElementById('services-selected-count');
+    list.classList.remove('hidden');
+    countEl.classList.remove('hidden');
+
+    const existingConfig = {{ last_config_json|safe }};
+    const prevSelected = (existingConfig.monitoring?.services?.monitored_services) || [];
+
+    list.innerHTML = discoveredServices.map((svc, i) => {
+      const isChecked = prevSelected.includes(svc.name) || selectedServices.includes(svc.name);
+      const statusColor = svc.active_state === 'active' ? 'text-emerald-400' : svc.active_state === 'failed' ? 'text-red-400' : 'text-surface-400';
+      const statusIcon = svc.active_state === 'active' ? 'fa-check-circle' : svc.active_state === 'failed' ? 'fa-times-circle' : 'fa-minus-circle';
+      const aptBadge = svc.apt_update ? '<span class="ml-1 px-1.5 py-0.5 text-[10px] rounded bg-amber-500/20 text-amber-400">UPDATE</span>' : '';
+      const uptime = svc.uptime || '';
+
+      return `
+        <label class="flex items-center gap-2 px-3 py-2 dark:bg-surface-700/30 bg-surface-100 rounded-lg cursor-pointer hover:dark:bg-surface-700/50 hover:bg-surface-200 transition-colors">
+          <input type="checkbox" value="${svc.name}" class="svc-checkbox rounded dark:bg-surface-700 border-surface-300 dark:border-surface-600" ${isChecked ? 'checked' : ''}>
+          <i class="fas ${statusIcon} ${statusColor} text-sm"></i>
+          <span class="text-xs font-medium dark:text-surface-200 text-surface-700 flex-1">${svc.name}</span>
+          <span class="text-[10px] dark:text-surface-500 text-surface-400">${svc.description || ''}</span>
+          ${aptBadge}
+          <span class="text-[10px] dark:text-surface-500 text-surface-400 font-mono">${uptime}</span>
+        </label>
+      `;
+    }).join('');
+
+    list.querySelectorAll('.svc-checkbox').forEach(cb => {
+      cb.addEventListener('change', updateSelectedServices);
+    });
+
+    updateSelectedServices();
+  }
+
+  function updateSelectedServices() {
+    selectedServices = Array.from(document.querySelectorAll('.svc-checkbox:checked')).map(cb => cb.value);
+    const countEl = document.getElementById('selected-count');
+    if (countEl) countEl.textContent = selectedServices.length;
+  }
+
+  // === Load existing config ===
   const existingConfig = {{ last_config_json|safe }};
 
   if (existingConfig.inventory) {
@@ -328,9 +595,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const cols = existingConfig.collectors;
     const anyEnabled = Object.values(cols).some(c => typeof c === 'object' && c.enabled);
     document.getElementById('mod-collectors-enabled').checked = anyEnabled;
-    if (cols.windows_eventlog) {
+
+    if (!IS_LINUX && cols.windows_eventlog) {
       document.getElementById('col-win-event').checked = cols.windows_eventlog.enabled;
-      winEventConfig.classList.toggle('hidden', !cols.windows_eventlog.enabled);
+      if (winEventConfig) winEventConfig.classList.toggle('hidden', !cols.windows_eventlog.enabled);
       if (cols.windows_eventlog.channels) {
         const knownChannels = ['Security', 'System', 'Application', 'Setup', 'ForwardedEvents', 'Microsoft-Windows-PowerShell/Operational', 'Microsoft-Windows-Sysmon/Operational'];
         cols.windows_eventlog.channels.forEach(ch => {
@@ -344,12 +612,18 @@ document.addEventListener('DOMContentLoaded', function() {
         renderWinCustomChannels();
       }
     }
+
+    if (IS_LINUX) {
+      if (cols.journald) document.getElementById('col-journald').checked = cols.journald.enabled;
+      if (cols.syslog) document.getElementById('col-syslog').checked = cols.syslog.enabled;
+    }
+
     if (cols.snort) document.getElementById('col-snort').checked = cols.snort.enabled;
     if (cols.suricata) document.getElementById('col-suricata').checked = cols.suricata.enabled;
     if (cols.postgres) document.getElementById('col-postgres').checked = cols.postgres.enabled;
     if (cols.file_logs) {
       document.getElementById('col-file-logs').checked = cols.file_logs.enabled;
-      fileLogsConfig.classList.toggle('hidden', !cols.file_logs.enabled);
+      if (fileLogsConfig) fileLogsConfig.classList.toggle('hidden', !cols.file_logs.enabled);
       if (cols.file_logs.sources && cols.file_logs.sources.length > 0) {
         cols.file_logs.sources.forEach(src => addFileSource(src.path, src.type));
       }
@@ -362,32 +636,59 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('dlp-keywords').value = (existingConfig.dlp.keywords || []).join(', ');
   }
 
+  if (IS_LINUX && existingConfig.monitoring) {
+    const mon = existingConfig.monitoring;
+    document.getElementById('mod-monitoring-enabled').checked = mon.enabled;
+    if (mon.enabled) monitoringConfig.classList.remove('hidden');
+
+    if (mon.services) {
+      document.getElementById('mod-services-enabled').checked = mon.services.enabled;
+      if (mon.services.enabled) servicesPanel.classList.remove('hidden');
+      if (mon.services.check_apt_updates !== undefined) {
+        document.getElementById('apt-check-enabled').checked = mon.services.check_apt_updates;
+      }
+      if (mon.services.apt_check_interval) {
+        document.getElementById('apt-check-interval').value = mon.services.apt_check_interval;
+      }
+      if (mon.services.monitored_services && mon.services.monitored_services.length > 0) {
+        selectedServices = [...mon.services.monitored_services];
+      }
+    }
+  }
+
+  // === Push config ===
   document.getElementById('save-config').addEventListener('click', function() {
     const btn = this;
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Pushing...';
 
-    const winChannels = Array.from(document.querySelectorAll('.win-channel:checked')).map(cb => cb.value);
-    const allWinChannels = [...winChannels, ...winCustomChannels];
+    const collectorsConfig = {};
+
+    if (IS_LINUX) {
+      collectorsConfig.journald = { enabled: document.getElementById('col-journald')?.checked || false };
+      collectorsConfig.syslog = { enabled: document.getElementById('col-syslog')?.checked || false };
+    } else {
+      const winChannels = Array.from(document.querySelectorAll('.win-channel:checked')).map(cb => cb.value);
+      collectorsConfig.windows_eventlog = {
+        enabled: document.getElementById('col-win-event')?.checked || false,
+        channels: [...winChannels, ...winCustomChannels],
+      };
+    }
+
+    collectorsConfig.snort = { enabled: document.getElementById('col-snort')?.checked || false };
+    collectorsConfig.suricata = { enabled: document.getElementById('col-suricata')?.checked || false };
+    collectorsConfig.postgres = { enabled: document.getElementById('col-postgres')?.checked || false };
+    collectorsConfig.file_logs = {
+      enabled: document.getElementById('col-file-logs')?.checked || false,
+      sources: fileSources,
+    };
 
     const config = {
       inventory: {
         enabled: document.getElementById('mod-inventory-enabled').checked,
         interval: parseInt(document.getElementById('mod-inventory-interval').value) || 300,
       },
-      collectors: {
-        windows_eventlog: {
-          enabled: document.getElementById('col-win-event').checked,
-          channels: allWinChannels,
-        },
-        snort: { enabled: document.getElementById('col-snort').checked },
-        suricata: { enabled: document.getElementById('col-suricata').checked },
-        postgres: { enabled: document.getElementById('col-postgres').checked },
-        file_logs: {
-          enabled: document.getElementById('col-file-logs').checked,
-          sources: fileSources,
-        },
-      },
+      collectors: collectorsConfig,
       dlp: {
         enabled: document.getElementById('mod-dlp-enabled').checked,
         scan_paths: document.getElementById('dlp-paths').value.split(',').map(s => s.trim()).filter(Boolean),
@@ -395,6 +696,18 @@ document.addEventListener('DOMContentLoaded', function() {
         keywords: document.getElementById('dlp-keywords').value.split(',').map(s => s.trim()).filter(Boolean),
       },
     };
+
+    if (IS_LINUX) {
+      config.monitoring = {
+        enabled: document.getElementById('mod-monitoring-enabled').checked,
+        services: {
+          enabled: document.getElementById('mod-services-enabled')?.checked || false,
+          monitored_services: selectedServices,
+          check_apt_updates: document.getElementById('apt-check-enabled')?.checked || false,
+          apt_check_interval: parseInt(document.getElementById('apt-check-interval')?.value) || 86400,
+        },
+      };
+    }
 
     fetch('{% url "inventory-agent-config" agent.agent_id %}', {
       method: 'POST',

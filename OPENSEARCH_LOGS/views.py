@@ -8,6 +8,7 @@ from rest_framework import generics, status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
 
 from .models import LogSource, LogEvent, LogRetentionPolicy
 from .serializers import (
@@ -43,9 +44,16 @@ class LogSourceViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
 
+class LogEventPagination(PageNumberPagination):
+    page_size = 50
+    page_size_query_param = 'page_size'
+    max_page_size = 200
+
+
 class LogEventListView(generics.ListAPIView):
     serializer_class = LogEventListSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = LogEventPagination
 
     def get_queryset(self):
         qs = LogEvent.objects.all()
@@ -143,7 +151,7 @@ def ingest_log(request):
 
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def ingest_bulk(request):
     data = request.data
 
@@ -172,15 +180,22 @@ def ingest_bulk(request):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        source_type = source.source_type
-
         source.touch()
         events_to_create = []
         alerts = []
         now = timezone.now()
 
+        from .parsers import get_parser
+
         for event in events:
-            raw = json.dumps(event) if isinstance(event, dict) else str(event)
+            raw_payload = event.get('raw_payload', {})
+            if isinstance(raw_payload, dict):
+                raw_str = json.dumps(raw_payload)
+            elif isinstance(raw_payload, str):
+                raw_str = raw_payload
+            else:
+                raw_str = str(raw_payload)
+
             event_time_str = event.get('event_time')
             if event_time_str and isinstance(event_time_str, str):
                 try:
@@ -190,34 +205,50 @@ def ingest_bulk(request):
             else:
                 event_time = now
 
-            parsed = {
-                'event_category': event.get('event_category', 'generic'),
-                'severity': event.get('severity', 'info'),
-                'host_ip': event.get('host_ip', ''),
-                'host_name': event.get('host_name', ''),
-                'message': event.get('message', ''),
-            }
+            event_source_type = event.get('source_type') or source.source_type
 
-            log_event = LogEvent(
-                source=source,
-                source_type=source_type,
-                raw_payload=json.loads(raw) if isinstance(raw, str) else raw,
-                event_time=event_time,
-                event_category=parsed['event_category'],
-                severity=parsed['severity'],
-                host_ip=parsed['host_ip'],
-                host_name=parsed['host_name'],
-                message=parsed['message'][:512],
-                tags=event.get('tags', []),
-            )
+            try:
+                parser = get_parser(event_source_type)
+                parsed = parser.parse(raw_str)
+            except Exception:
+                parsed = None
+
+            if parsed and isinstance(parsed, dict):
+                log_event = LogEvent(
+                    source=source,
+                    source_type=event_source_type,
+                    raw_payload=raw_payload,
+                    event_time=parsed.get('event_time_dt', event_time),
+                    event_category=parsed.get('event_category', event.get('event_category', 'generic')),
+                    severity=parsed.get('severity', event.get('severity', 'info')),
+                    host_ip=parsed.get('host_ip', '') or event.get('host_ip', ''),
+                    host_name=parsed.get('host_name', '') or event.get('host_name', ''),
+                    message=parsed.get('message', event.get('message', ''))[:512],
+                    parsed_fields=parsed.get('parsed_fields', {}),
+                    tags=parsed.get('tags', []) or event.get('tags', []),
+                )
+            else:
+                log_event = LogEvent(
+                    source=source,
+                    source_type=event_source_type,
+                    raw_payload=raw_payload,
+                    event_time=event_time,
+                    event_category=event.get('event_category', 'generic'),
+                    severity=event.get('severity', 'info'),
+                    host_ip=event.get('host_ip', ''),
+                    host_name=event.get('host_name', ''),
+                    message=event.get('message', '')[:512],
+                    parsed_fields=event.get('parsed_fields', {}),
+                    tags=event.get('tags', []),
+                )
             events_to_create.append(log_event)
 
-            if parsed['severity'] in ('critical', 'high'):
+            if log_event.severity in ('critical', 'high'):
                 alerts.append({
-                    'source_type': source_type,
-                    'severity': parsed['severity'],
-                    'category': parsed['event_category'],
-                    'host_ip': parsed['host_ip'],
+                    'source_type': event_source_type,
+                    'severity': log_event.severity,
+                    'category': log_event.event_category,
+                    'host_ip': log_event.host_ip,
                 })
 
         created = LogEvent.bulk_create_events(events_to_create)
@@ -335,19 +366,65 @@ def ingest_syslog(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+def log_histogram(request):
+    hours = int(request.query_params.get('hours', 24))
+    bucket_minutes = int(request.query_params.get('bucket_minutes', 60))
+    source_type = request.query_params.get('source_type', '')
+    severity = request.query_params.get('severity', '')
+    category = request.query_params.get('category', '')
+    search = request.query_params.get('q', '')
+
+    cutoff = timezone.now() - timedelta(hours=hours)
+    qs = LogEvent.objects.filter(event_time__gte=cutoff)
+
+    if source_type:
+        qs = qs.filter(source_type=source_type)
+    if severity:
+        qs = qs.filter(severity=severity)
+    if category:
+        qs = qs.filter(event_category=category)
+    if search:
+        qs = qs.filter(Q(message__icontains=search) | Q(host_name__icontains=search) | Q(host_ip__icontains=search))
+
+    from django.db.models.expressions import RawSQL
+    bucket_seconds = bucket_minutes * 60
+    qs_agg = qs.annotate(
+        time_bucket=RawSQL(
+            "to_timestamp(floor(extract(epoch from event_time) / %s) * %s)",
+            [bucket_seconds, bucket_seconds]
+        )
+    ).values('time_bucket').annotate(count=Count('id')).order_by('time_bucket')
+
+    return Response({
+        'timeline': [{'time': str(r['time_bucket']), 'count': r['count']} for r in qs_agg],
+        'total': qs.count(),
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def log_statistics(request):
     hours = int(request.query_params.get('hours', 24))
-    cutoff = timezone.now() - timedelta(hours=hours)
+    source_type = request.query_params.get('source_type', '')
+    severity = request.query_params.get('severity', '')
+    category = request.query_params.get('category', '')
+    search = request.query_params.get('q', '')
 
+    cutoff = timezone.now() - timedelta(hours=hours)
     qs = LogEvent.objects.filter(event_time__gte=cutoff)
+
+    if source_type:
+        qs = qs.filter(source_type=source_type)
+    if severity:
+        qs = qs.filter(severity=severity)
+    if category:
+        qs = qs.filter(event_category=category)
+    if search:
+        qs = qs.filter(Q(message__icontains=search) | Q(host_name__icontains=search) | Q(host_ip__icontains=search))
 
     severity_dist = list(qs.values('severity').annotate(count=Count('id')).order_by('-count'))
     source_dist = list(qs.values('source_type').annotate(count=Count('id')).order_by('-count'))
     category_dist = list(qs.values('event_category').annotate(count=Count('id')).order_by('-count'))
-
-    timeline = list(qs.extra(
-        select={'time_bucket': "date_trunc('hour', event_time)"}
-    ).values('time_bucket').annotate(count=Count('id')).order_by('time_bucket'))
 
     top_hosts = list(qs.values('host_ip').annotate(count=Count('id')).filter(host_ip__isnull=False).order_by('-count')[:20])
 
@@ -356,7 +433,6 @@ def log_statistics(request):
         'severity_distribution': severity_dist,
         'source_distribution': source_dist,
         'category_distribution': category_dist,
-        'timeline': [{'time': str(r['time_bucket']), 'count': r['count']} for r in timeline],
         'top_hosts': top_hosts,
     })
 

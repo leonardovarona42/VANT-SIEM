@@ -1,4 +1,4 @@
-﻿{% load static %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="en" class="dark">
  <head>
@@ -19,7 +19,7 @@
  }
  })();
  </script>
- <script src="https://cdn.tailwindcss.com"></script>
+  <script src="{% static 'js/tailwind.min.js' %}"></script>
  <script>
  tailwind.config = {
  darkMode: "class",
@@ -65,16 +65,8 @@
  },
  };
  </script>
- <link rel="preconnect" href="https://fonts.googleapis.com" />
- <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
- <link
- href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
- rel="stylesheet"
- />
- <link
- rel="stylesheet"
- href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
- />
+  <link rel="stylesheet" href="{% static 'css/inter.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/fontawesome-all.min.css' %}" />
  <style type="text/tailwindcss">
  @layer base {
  html {
@@ -289,10 +281,13 @@
   {% endif %}
   </div>
   <a href="{% url 'logs-dashboard' %}" class="nav-link">
-  <i class="fas fa-chart-line w-4"></i>Dashboard
+  <i class="fas fa-compass w-4"></i>Discovery
+  </a>
+  <a href="{% url 'logs-suricata' %}" class="nav-link">
+  <i class="fas fa-shield-halved w-4 text-amber-400"></i>Suricata IDS
   </a>
   <a href="{% url 'logs-list' %}" class="nav-link">
-  <i class="fas fa-list w-4"></i>Todos los Eventos
+  <i class="fas fa-list w-4"></i>Lista Clasica
   </a>
   <div class="border-t dark:border-surface-800 border-surface-200 my-1"></div>
   <div class="px-3 py-2 text-xs font-semibold dark:text-accent-400 text-brand-600 uppercase tracking-wider">Administracion</div>

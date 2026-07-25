@@ -99,7 +99,7 @@ DATABASES = {
         'USER': os.getenv('SIEM_DB_USER', 'vantsiem'),
         'PASSWORD': os.getenv('SIEM_DB_PASSWORD'),
         'HOST': os.getenv('SIEM_DB_HOST', 'localhost'),
-        'PORT': os.getenv('SIEM_DB_PORT', '5432'),
+        'PORT': os.getenv('SIEM_DB_PORT', '5433'),
     },
     'vant_logs': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -107,7 +107,7 @@ DATABASES = {
         'USER': os.getenv('LOGS_DB_USER', 'vantsiem'),
         'PASSWORD': os.getenv('LOGS_DB_PASSWORD'),
         'HOST': os.getenv('LOGS_DB_HOST', 'localhost'),
-        'PORT': os.getenv('LOGS_DB_PORT', '5432'),
+        'PORT': os.getenv('LOGS_DB_PORT', '5433'),
     },
     'vant_inventory': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -115,7 +115,7 @@ DATABASES = {
         'USER': os.getenv('INVENTORY_DB_USER', 'vantsiem'),
         'PASSWORD': os.getenv('INVENTORY_DB_PASSWORD'),
         'HOST': os.getenv('INVENTORY_DB_HOST', 'localhost'),
-        'PORT': os.getenv('INVENTORY_DB_PORT', '5432'),
+        'PORT': os.getenv('INVENTORY_DB_PORT', '5433'),
     },
     'vant_dlp': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -123,7 +123,7 @@ DATABASES = {
         'USER': os.getenv('DLP_DB_USER', 'vantsiem'),
         'PASSWORD': os.getenv('DLP_DB_PASSWORD'),
         'HOST': os.getenv('DLP_DB_HOST', 'localhost'),
-        'PORT': os.getenv('DLP_DB_PORT', '5432'),
+        'PORT': os.getenv('DLP_DB_PORT', '5433'),
         'TEST': {
             'DEPENDENCIES': [],
         },
