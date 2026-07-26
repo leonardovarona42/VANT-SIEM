@@ -1,0 +1,71 @@
+{% extends "web_app/base.html" %}
+{% block title %}Software | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-cube text-purple-400 mr-2"></i>Software Inventory</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total|default:"0" }} paquetes instalados</p>
+  </div>
+  <a href="{% url 'web:agents-list' %}" class="btn-secondary text-sm"><i class="fas fa-desktop mr-2"></i>Agentes</a>
+</div>
+
+<div class="glass-card p-4 mb-6">
+  <form method="get" class="flex flex-wrap gap-3 items-end">
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Buscar</label>
+      <input type="text" name="search" value="{{ search }}" class="px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 rounded-lg" placeholder="Nombre, editor...">
+    </div>
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Tipo</label>
+      <select name="software_type" class="px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 rounded-lg">
+        <option value="">Todos</option>
+        <option value="application" {% if type_filter == "application" %}selected{% endif %}>Aplicación</option>
+        <option value="package" {% if type_filter == "package" %}selected{% endif %}>Paquete</option>
+        <option value="update" {% if type_filter == "update" %}selected{% endif %}>Actualización</option>
+      </select>
+    </div>
+    <button type="submit" class="btn-primary text-sm"><i class="fas fa-search mr-1"></i>Filtrar</button>
+  </form>
+</div>
+
+<div class="glass-card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Nombre</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Versión</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Editor</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Tipo</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Agente</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sw in software %}
+        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors">
+          <td class="px-4 py-3 dark:text-surface-200 text-surface-700">{{ sw.name }}</td>
+          <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-xs">{{ sw.version|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs">{{ sw.publisher|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs">{{ sw.software_type|default:"-" }}</td>
+          <td class="px-4 py-3">
+            {% if sw.agent %}
+            <a href="{% url 'web:agent-detail' sw.agent %}" class="text-xs text-brand-400 hover:text-brand-300 font-mono">{{ sw.agent|truncatechars:8 }}</a>
+            {% else %}
+            <span class="text-xs dark:text-surface-500 text-surface-400">-</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400">
+            <i class="fas fa-cube text-4xl mb-3 block opacity-50"></i>
+            No se encontró software
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

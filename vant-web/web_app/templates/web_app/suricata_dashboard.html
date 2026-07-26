@@ -1,0 +1,149 @@
+{% extends "web_app/base.html" %}
+{% block title %}Suricata IDS | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-shield-halved text-amber-400 mr-2"></i>Suricata IDS Dashboard</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Monitoreo de intrusiones en tiempo real (últimas {{ hours }}h)</p>
+  </div>
+  <form method="get" class="flex gap-2">
+    {% for h in "6,24,72,168" %}
+    <button type="submit" name="hours" value="{{ h }}" class="btn-secondary text-xs px-3 py-1.5 {% if hours == h|add:0 %}ring-2 ring-brand-500{% endif %}">{{ h }}h</button>
+    {% endfor %}
+  </form>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+  <div class="stat-card">
+    <div class="w-12 h-12 rounded-xl dark:bg-amber-500/20 bg-amber-100 flex items-center justify-center mb-4">
+      <i class="fas fa-bolt text-amber-500 text-xl"></i>
+    </div>
+    <h3 class="text-3xl font-bold dark:text-white text-surface-900">{{ total_events|default:"0" }}</h3>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Total Eventos</p>
+  </div>
+  <div class="stat-card">
+    <div class="w-12 h-12 rounded-xl dark:bg-red-500/20 bg-red-100 flex items-center justify-center mb-4">
+      <i class="fas fa-fingerprint text-red-500 text-xl"></i>
+    </div>
+    <h3 class="text-3xl font-bold dark:text-white text-surface-900">{{ total_signatures|default:"0" }}</h3>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Firmas Únicas</p>
+  </div>
+  <div class="stat-card">
+    <div class="w-12 h-12 rounded-xl dark:bg-brand-500/20 bg-brand-100 flex items-center justify-center mb-4">
+      <i class="fas fa-globe text-brand-500 text-xl"></i>
+    </div>
+    <h3 class="text-3xl font-bold dark:text-white text-surface-900">{{ top_src_ips|length|default:"0" }}</h3>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Top IPs Origen</p>
+  </div>
+  <div class="stat-card">
+    <div class="w-12 h-12 rounded-xl dark:bg-emerald-500/20 bg-emerald-100 flex items-center justify-center mb-4">
+      <i class="fas fa-plug text-emerald-500 text-xl"></i>
+    </div>
+    <h3 class="text-3xl font-bold dark:text-white text-surface-900">{{ top_ports|length|default:"0" }}</h3>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Top Puertos</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  <div class="glass-card p-6">
+    <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4"><i class="fas fa-file-signature text-amber-400 mr-2"></i>Top Firmas</h3>
+    <div class="space-y-2">
+      {% for sig in top_signatures %}
+      <div class="flex items-center justify-between p-2 rounded-lg dark:bg-surface-800/50 bg-surface-100/50">
+        <span class="text-sm dark:text-surface-300 text-surface-600 truncate flex-1">{{ sig.parsed_fields__signature|default:"-" }}</span>
+        <span class="text-xs dark:text-surface-500 text-surface-400 ml-2">{{ sig.count }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="glass-card p-6">
+    <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4"><i class="fas fa-network-wired text-brand-400 mr-2"></i>Top IPs Origen</h3>
+    <div class="space-y-2">
+      {% for ip in top_src_ips %}
+      <div class="flex items-center justify-between p-2 rounded-lg dark:bg-surface-800/50 bg-surface-100/50">
+        <span class="text-sm dark:text-surface-300 text-surface-600 font-mono">{{ ip.parsed_fields__src_ip|default:"-" }}</span>
+        <span class="text-xs dark:text-surface-500 text-surface-400 ml-2">{{ ip.count }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="glass-card p-6">
+    <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4"><i class="fas fa-map-marker-alt text-red-400 mr-2"></i>Top IPs Destino</h3>
+    <div class="space-y-2">
+      {% for ip in top_dst_ips %}
+      <div class="flex items-center justify-between p-2 rounded-lg dark:bg-surface-800/50 bg-surface-100/50">
+        <span class="text-sm dark:text-surface-300 text-surface-600 font-mono">{{ ip.parsed_fields__dst_ip|default:"-" }}</span>
+        <span class="text-xs dark:text-surface-500 text-surface-400 ml-2">{{ ip.count }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="glass-card p-6">
+    <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4"><i class="fas fa-plug text-emerald-400 mr-2"></i>Top Puertos Destino</h3>
+    <div class="space-y-2">
+      {% for port in top_ports %}
+      <div class="flex items-center justify-between p-2 rounded-lg dark:bg-surface-800/50 bg-surface-100/50">
+        <span class="text-sm dark:text-surface-300 text-surface-600 font-mono">{{ port.parsed_fields__dst_port|default:"-" }}</span>
+        <span class="text-xs dark:text-surface-500 text-surface-400 ml-2">{{ port.count }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="glass-card p-6">
+    <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Por Severidad</h3>
+    <div class="space-y-2">
+      {% for sev in severity_dist %}
+      <div class="flex items-center justify-between p-2 rounded-lg dark:bg-surface-800/50 bg-surface-100/50">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if sev.severity == 'critical' %}bg-red-500/20 text-red-300{% elif sev.severity == 'high' %}bg-orange-500/20 text-orange-300{% elif sev.severity == 'medium' %}bg-yellow-500/20 text-yellow-300{% else %}bg-blue-500/20 text-blue-300{% endif %}">{{ sev.severity|default:"info" }}</span>
+        <span class="text-sm dark:text-surface-300 text-surface-600">{{ sev.count }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="glass-card p-6">
+    <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Por Protocolo</h3>
+    <div class="space-y-2">
+      {% for proto in proto_dist %}
+      <div class="flex items-center justify-between p-2 rounded-lg dark:bg-surface-800/50 bg-surface-100/50">
+        <span class="text-sm dark:text-surface-300 text-surface-600">{{ proto.parsed_fields__protocol|default:"-" }}</span>
+        <span class="text-sm dark:text-surface-300 text-surface-600">{{ proto.count }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="glass-card p-6">
+    <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Por Acción</h3>
+    <div class="space-y-2">
+      {% for act in action_dist %}
+      <div class="flex items-center justify-between p-2 rounded-lg dark:bg-surface-800/50 bg-surface-100/50">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if act.parsed_fields__action == 'allowed' %}bg-emerald-500/20 text-emerald-300{% else %}bg-red-500/20 text-red-300{% endif %}">{{ act.parsed_fields__action|default:"-" }}</span>
+        <span class="text-sm dark:text-surface-300 text-surface-600">{{ act.count }}</span>
+      </div>
+      {% empty %}
+      <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

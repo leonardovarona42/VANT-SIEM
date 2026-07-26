@@ -1,0 +1,78 @@
+{% extends "web_app/base.html" %}
+{% block title %}Agentes | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-desktop text-cyan-400 mr-2"></i>Agentes</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total|default:"0" }} agentes registrados</p>
+  </div>
+  <a href="{% url 'web:software-list' %}" class="btn-secondary text-sm"><i class="fas fa-cube mr-2"></i>Software</a>
+</div>
+
+<div class="glass-card p-4 mb-6">
+  <form method="get" class="flex flex-wrap gap-3 items-end">
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Buscar</label>
+      <input type="text" name="search" value="{{ search }}" class="px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 rounded-lg" placeholder="Hostname, IP, machine...">
+    </div>
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Estado</label>
+      <select name="status" class="px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 rounded-lg">
+        <option value="">Todos</option>
+        <option value="online" {% if status_filter == "online" %}selected{% endif %}>Online</option>
+        <option value="offline" {% if status_filter == "offline" %}selected{% endif %}>Offline</option>
+        <option value="pending" {% if status_filter == "pending" %}selected{% endif %}>Pendiente</option>
+      </select>
+    </div>
+    <button type="submit" class="btn-primary text-sm"><i class="fas fa-search mr-1"></i>Filtrar</button>
+  </form>
+</div>
+
+<div class="glass-card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Estado</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Hostname</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">IP</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">SO</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Máquina</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Último Heartbeat</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for agent in agents %}
+        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors">
+          <td class="px-4 py-3">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if agent.status == 'online' %}bg-emerald-500/20 text-emerald-300{% elif agent.status == 'offline' %}bg-red-500/20 text-red-300{% elif agent.status == 'pending' %}bg-yellow-500/20 text-yellow-300{% else %}bg-surface-500/20 text-surface-300{% endif %}">
+              {{ agent.status }}
+            </span>
+          </td>
+          <td class="px-4 py-3 dark:text-surface-200 text-surface-700">{{ agent.hostname|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-300 text-surface-600 font-mono text-xs">{{ agent.ip_address|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-xs">{{ agent.os_type|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-xs">{{ agent.machine_name|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs whitespace-nowrap">{{ agent.last_heartbeat|default:"-" }}</td>
+          <td class="px-4 py-3">
+            <div class="flex gap-2">
+              <a href="{% url 'web:agent-detail' agent.agent_id %}" class="text-xs text-brand-400 hover:text-brand-300"><i class="fas fa-eye"></i></a>
+              <a href="{% url 'web:agent-config' agent.agent_id %}" class="text-xs dark:text-surface-400 text-surface-500 hover:text-brand-400"><i class="fas fa-cog"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400">
+            <i class="fas fa-desktop text-4xl mb-3 block opacity-50"></i>
+            No se encontraron agentes
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

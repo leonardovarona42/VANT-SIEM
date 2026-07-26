@@ -1,0 +1,66 @@
+{% extends "web_app/base.html" %}
+{% block title %}Evento #{{ event.id }} | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <a href="{% url 'web:events-list' %}" class="text-sm dark:text-surface-400 text-surface-500 hover:text-brand-400 transition-colors"><i class="fas fa-arrow-left mr-1"></i>Volver a eventos</a>
+</div>
+
+<div class="glass-card p-6">
+  <div class="flex items-center gap-4 mb-6">
+    <div class="w-12 h-12 rounded-xl {% if event.severity == 'critical' %}bg-red-500/20{% elif event.severity == 'high' %}bg-orange-500/20{% elif event.severity == 'medium' %}bg-yellow-500/20{% else %}bg-blue-500/20{% endif %} flex items-center justify-center">
+      <i class="fas fa-file-alt {% if event.severity == 'critical' %}text-red-400{% elif event.severity == 'high' %}text-orange-400{% elif event.severity == 'medium' %}text-yellow-400{% else %}text-blue-400{% endif %} text-xl"></i>
+    </div>
+    <div>
+      <h1 class="text-xl font-bold dark:text-white text-surface-900">Evento #{{ event.id }}</h1>
+      <p class="text-sm dark:text-surface-400 text-surface-500">{{ event.source_type|default:"Desconocido" }} &middot; {{ event.event_time|default:"-" }}</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="p-4 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <span class="text-xs dark:text-surface-500 text-surface-400 uppercase tracking-wider">Severidad</span>
+      <p class="mt-1 text-sm dark:text-surface-200 text-surface-700">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if event.severity == 'critical' %}bg-red-500/20 text-red-300{% elif event.severity == 'high' %}bg-orange-500/20 text-orange-300{% elif event.severity == 'medium' %}bg-yellow-500/20 text-yellow-300{% else %}bg-blue-500/20 text-blue-300{% endif %}">
+          {{ event.severity|default:"info" }}
+        </span>
+      </p>
+    </div>
+    <div class="p-4 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <span class="text-xs dark:text-surface-500 text-surface-400 uppercase tracking-wider">Host</span>
+      <p class="mt-1 text-sm dark:text-surface-200 text-surface-700">{{ event.host_name|default:"-" }}</p>
+    </div>
+    <div class="p-4 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <span class="text-xs dark:text-surface-500 text-surface-400 uppercase tracking-wider">IP</span>
+      <p class="mt-1 text-sm dark:text-surface-200 text-surface-700 font-mono">{{ event.host_ip|default:"-" }}</p>
+    </div>
+  </div>
+
+  <div class="mb-6">
+    <h3 class="text-sm font-semibold dark:text-surface-300 text-surface-600 mb-2">Mensaje</h3>
+    <div class="p-4 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <p class="text-sm dark:text-surface-200 text-surface-700 font-mono whitespace-pre-wrap">{{ event.message|default:"Sin mensaje" }}</p>
+    </div>
+  </div>
+
+  {% if event.parsed_fields %}
+  <div class="mb-6">
+    <h3 class="text-sm font-semibold dark:text-surface-300 text-surface-600 mb-2">Campos Parseados</h3>
+    <div class="p-4 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <pre class="text-xs dark:text-surface-300 text-surface-600 font-mono whitespace-pre-wrap">{{ event.parsed_fields }}</pre>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="p-4 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <span class="text-xs dark:text-surface-500 text-surface-400 uppercase tracking-wider">Categoría</span>
+      <p class="mt-1 text-sm dark:text-surface-200 text-surface-700">{{ event.event_category|default:"-" }}</p>
+    </div>
+    <div class="p-4 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <span class="text-xs dark:text-surface-500 text-surface-400 uppercase tracking-wider">Fuente</span>
+      <p class="mt-1 text-sm dark:text-surface-200 text-surface-700">{{ event.source_type|default:"-" }}</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

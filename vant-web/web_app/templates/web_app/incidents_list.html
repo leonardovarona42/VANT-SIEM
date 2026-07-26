@@ -1,0 +1,103 @@
+{% extends "web_app/base.html" %}
+{% block title %}Incidentes DLP | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-shield-halved text-red-400 mr-2"></i>AEGIS DLP Incidents</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total|default:"0" }} incidentes encontrados</p>
+  </div>
+  <a href="{% url 'web:policies-list' %}" class="btn-secondary text-sm"><i class="fas fa-list-check mr-2"></i>Políticas</a>
+</div>
+
+<div class="glass-card p-4 mb-6">
+  <form method="get" class="flex flex-wrap gap-3 items-end">
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Buscar</label>
+      <input type="text" name="q" value="{{ search }}" class="px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 rounded-lg" placeholder="Archivo, actor, ruta...">
+    </div>
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Severidad</label>
+      <select name="severity" class="px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 rounded-lg">
+        <option value="">Todas</option>
+        <option value="critical" {% if severity == "critical" %}selected{% endif %}>Crítica</option>
+        <option value="high" {% if severity == "high" %}selected{% endif %}>Alta</option>
+        <option value="medium" {% if severity == "medium" %}selected{% endif %}>Media</option>
+        <option value="low" {% if severity == "low" %}selected{% endif %}>Baja</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Estado</label>
+      <select name="status" class="px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 rounded-lg">
+        <option value="">Todos</option>
+        <option value="open" {% if status_filter == "open" %}selected{% endif %}>Abierto</option>
+        <option value="acknowledged" {% if status_filter == "acknowledged" %}selected{% endif %}>Reconocido</option>
+        <option value="resolved" {% if status_filter == "resolved" %}selected{% endif %}>Resuelto</option>
+      </select>
+    </div>
+    <button type="submit" class="btn-primary text-sm"><i class="fas fa-search mr-1"></i>Filtrar</button>
+  </form>
+</div>
+
+<div class="glass-card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Severidad</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Estado</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Clasificación</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Archivo</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Actor</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Agente</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Canal</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Detectado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inc in incidents %}
+        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors">
+          <td class="px-4 py-3">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if inc.severity == 'critical' %}bg-red-500/20 text-red-300{% elif inc.severity == 'high' %}bg-orange-500/20 text-orange-300{% elif inc.severity == 'medium' %}bg-yellow-500/20 text-yellow-300{% else %}bg-blue-500/20 text-blue-300{% endif %}">
+              {{ inc.severity }}
+            </span>
+          </td>
+          <td class="px-4 py-3">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if inc.status == 'open' %}bg-red-500/20 text-red-300{% elif inc.status == 'acknowledged' %}bg-yellow-500/20 text-yellow-300{% else %}bg-emerald-500/20 text-emerald-300{% endif %}">
+              {{ inc.status }}
+            </span>
+          </td>
+          <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-xs">{{ inc.classification|default:"-" }}</td>
+          <td class="px-4 py-3">
+            <a href="{% url 'web:incident-detail' inc.id %}" class="text-sm dark:text-surface-200 text-surface-700 hover:text-brand-400 transition-colors truncate block max-w-[200px]">{{ inc.file_name|default:"-" }}</a>
+          </td>
+          <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-xs">{{ inc.actor|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs font-mono">{{ inc.agent_id|default:"-"|truncatechars:8 }}</td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs">{{ inc.channel|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs whitespace-nowrap">{{ inc.detected_at|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400">
+            <i class="fas fa-shield-halved text-4xl mb-3 block opacity-50"></i>
+            No se encontraron incidentes
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if total > page_size %}
+  <div class="px-4 py-3 dark:border-surface-800 border-surface-200 border-t flex items-center justify-between">
+    <span class="text-sm dark:text-surface-400 text-surface-500">Página {{ page }}</span>
+    <div class="flex gap-2">
+      {% if page > 1 %}
+      <a href="?page={{ page|add:"-1" }}" class="btn-secondary text-xs px-3 py-1.5">Anterior</a>
+      {% endif %}
+      <a href="?page={{ page|add:"1" }}" class="btn-secondary text-xs px-3 py-1.5">Siguiente</a>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

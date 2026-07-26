@@ -1,0 +1,132 @@
+{% extends "web_app/base.html" %}
+{% load static %}
+{% block title %}Dashboard | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="text-center mb-10">
+  <div class="inline-flex items-center gap-4 mb-4">
+    <div class="relative">
+      <div class="absolute inset-0 bg-accent-500/20 rounded-full blur-2xl"></div>
+      <img src="{% static 'img/logo.png' %}" alt="VANT-SIEM Logo" class="relative w-16 h-16 rounded-full object-cover" />
+    </div>
+    <h1 class="text-4xl font-bold bg-gradient-to-r from-brand-400 via-accent-400 to-brand-400 bg-clip-text text-transparent">VANT-SIEM Dashboard</h1>
+  </div>
+  <p class="text-surface-400 text-lg max-w-2xl mx-auto">Vigilance And Neutralization of Threats &mdash; Security Information & Event Management</p>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+  <div class="stat-card">
+    <div class="flex items-center justify-between mb-4">
+      <div class="w-12 h-12 rounded-xl dark:bg-brand-500/20 bg-brand-100 flex items-center justify-center">
+        <i class="fas fa-desktop text-brand-500 text-xl"></i>
+      </div>
+      <span class="badge dark:bg-brand-500/20 dark:text-brand-300 bg-brand-100 text-brand-700">Agentes</span>
+    </div>
+    <h3 class="text-3xl font-bold dark:text-white text-surface-900">{{ total_agents|default:"0" }}</h3>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Total Agentes</p>
+  </div>
+
+  <div class="stat-card">
+    <div class="flex items-center justify-between mb-4">
+      <div class="w-12 h-12 rounded-xl dark:bg-emerald-500/20 bg-emerald-100 flex items-center justify-center">
+        <i class="fas fa-check-circle text-emerald-500 text-xl"></i>
+      </div>
+      <span class="badge dark:bg-emerald-500/20 dark:text-emerald-300 bg-emerald-100 text-emerald-700">Online</span>
+    </div>
+    <h3 class="text-3xl font-bold dark:text-white text-surface-900">{{ online_agents|default:"0" }}</h3>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Agentes Activos</p>
+  </div>
+
+  <div class="stat-card">
+    <div class="flex items-center justify-between mb-4">
+      <div class="w-12 h-12 rounded-xl dark:bg-purple-500/20 bg-purple-100 flex items-center justify-center">
+        <i class="fas fa-stream text-purple-500 text-xl"></i>
+      </div>
+      <span class="badge dark:bg-purple-500/20 dark:text-purple-300 bg-purple-100 text-purple-700">Logs</span>
+    </div>
+    <h3 class="text-3xl font-bold dark:text-white text-surface-900">{{ total_events|default:"0" }}</h3>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Total Eventos</p>
+  </div>
+
+  <div class="stat-card">
+    <div class="flex items-center justify-between mb-4">
+      <div class="w-12 h-12 rounded-xl dark:bg-red-500/20 bg-red-100 flex items-center justify-center">
+        <i class="fas fa-shield-halved text-red-500 text-xl"></i>
+      </div>
+      <span class="badge dark:bg-red-500/20 dark:text-red-300 bg-red-100 text-red-700">DLP</span>
+    </div>
+    <h3 class="text-3xl font-bold dark:text-white text-surface-900">{{ total_incidents|default:"0" }}</h3>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Incidentes DLP</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  <div class="glass-card p-6">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-lg font-semibold dark:text-white text-surface-900">Eventos Recientes</h3>
+      <a href="{% url 'web:events-list' %}" class="text-sm text-brand-400 hover:text-brand-300">Ver todos</a>
+    </div>
+    {% if recent_events %}
+    <div class="space-y-3">
+      {% for ev in recent_events %}
+      <div class="flex items-center gap-3 p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+        <div class="w-2 h-2 rounded-full {% if ev.severity == 'critical' %}bg-red-500{% elif ev.severity == 'high' %}bg-orange-500{% elif ev.severity == 'medium' %}bg-yellow-500{% else %}bg-blue-500{% endif %}"></div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm dark:text-surface-200 text-surface-700 truncate">{{ ev.message|default:ev.source_type }}</p>
+          <p class="text-xs dark:text-surface-500 text-surface-400">{{ ev.host_ip|default:"-" }} &middot; {{ ev.source_type|default:"-" }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-8">No hay eventos recientes</p>
+    {% endif %}
+  </div>
+
+  <div class="glass-card p-6">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-lg font-semibold dark:text-white text-surface-900">Incidentes DLP Recientes</h3>
+      <a href="{% url 'web:incidents-list' %}" class="text-sm text-brand-400 hover:text-brand-300">Ver todos</a>
+    </div>
+    {% if recent_incidents %}
+    <div class="space-y-3">
+      {% for inc in recent_incidents %}
+      <a href="{% url 'web:incident-detail' inc.id %}" class="flex items-center gap-3 p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50 hover:dark:bg-surface-800 hover:bg-surface-100 transition-all">
+        <div class="w-2 h-2 rounded-full {% if inc.severity == 'critical' %}bg-red-500{% elif inc.severity == 'high' %}bg-orange-500{% elif inc.severity == 'medium' %}bg-yellow-500{% else %}bg-blue-500{% endif %}"></div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm dark:text-surface-200 text-surface-700 truncate">{{ inc.file_name|default:inc.rule_name }}</p>
+          <p class="text-xs dark:text-surface-500 text-surface-400">{{ inc.classification|default:"-" }} &middot; {{ inc.severity|default:"-" }}</p>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-8">No hay incidentes recientes</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="glass-card p-6 mb-8">
+  <div class="flex items-center justify-between mb-6">
+    <h3 class="text-lg font-semibold dark:text-white text-surface-900">Accesos Rápidos</h3>
+  </div>
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <a href="{% url 'web:logs-discovery' %}" class="flex flex-col items-center gap-2 p-4 rounded-xl dark:bg-surface-800/50 bg-surface-100/50 hover:dark:bg-surface-800 hover:bg-surface-100 transition-all">
+      <i class="fas fa-compass text-2xl text-brand-400"></i>
+      <span class="text-sm dark:text-surface-300 text-surface-600">Log Discovery</span>
+    </a>
+    <a href="{% url 'web:suricata-dashboard' %}" class="flex flex-col items-center gap-2 p-4 rounded-xl dark:bg-surface-800/50 bg-surface-100/50 hover:dark:bg-surface-800 hover:bg-surface-100 transition-all">
+      <i class="fas fa-shield-halved text-2xl text-amber-400"></i>
+      <span class="text-sm dark:text-surface-300 text-surface-600">Suricata IDS</span>
+    </a>
+    <a href="{% url 'web:inventory-dashboard' %}" class="flex flex-col items-center gap-2 p-4 rounded-xl dark:bg-surface-800/50 bg-surface-100/50 hover:dark:bg-surface-800 hover:bg-surface-100 transition-all">
+      <i class="fas fa-laptop text-2xl text-cyan-400"></i>
+      <span class="text-sm dark:text-surface-300 text-surface-600">Inventario</span>
+    </a>
+    <a href="{% url 'web:incidents-list' %}" class="flex flex-col items-center gap-2 p-4 rounded-xl dark:bg-surface-800/50 bg-surface-100/50 hover:dark:bg-surface-800 hover:bg-surface-100 transition-all">
+      <i class="fas fa-shield-halved text-2xl text-red-400"></i>
+      <span class="text-sm dark:text-surface-300 text-surface-600">DLP Incidents</span>
+    </a>
+  </div>
+</div>
+{% endblock %}

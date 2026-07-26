@@ -1,0 +1,107 @@
+{% extends "web_app/base.html" %}
+{% block title %}Eventos | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900">Log Events</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total|default:"0" }} eventos encontrados</p>
+  </div>
+  <a href="{% url 'web:logs-discovery' %}" class="btn-secondary text-sm"><i class="fas fa-compass mr-2"></i>Discovery</a>
+</div>
+
+<div class="glass-card p-4 mb-6">
+  <form method="get" class="flex flex-wrap gap-3 items-end">
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Buscar</label>
+      <input type="text" name="q" value="{{ filters.search }}" class="px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg" placeholder="Mensaje, host, IP...">
+    </div>
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Tipo</label>
+      <select name="source_type" class="px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 rounded-lg">
+        <option value="">Todos</option>
+        <option value="syslog">Syslog</option>
+        <option value="suricata">Suricata</option>
+        <option value="windows">Windows</option>
+        <option value="agent">Agent</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Severidad</label>
+      <select name="severity" class="px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 rounded-lg">
+        <option value="">Todas</option>
+        <option value="critical">Crítica</option>
+        <option value="high">Alta</option>
+        <option value="medium">Media</option>
+        <option value="low">Baja</option>
+        <option value="info">Info</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Horas</label>
+      <select name="hours" class="px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 rounded-lg">
+        <option value="1" {% if filters.hours == "1" %}selected{% endif %}>1h</option>
+        <option value="6" {% if filters.hours == "6" %}selected{% endif %}>6h</option>
+        <option value="24" {% if filters.hours == "24" %}selected{% endif %}>24h</option>
+        <option value="72" {% if filters.hours == "72" %}selected{% endif %}>3 días</option>
+        <option value="168" {% if filters.hours == "168" %}selected{% endif %}>7 días</option>
+      </select>
+    </div>
+    <button type="submit" class="btn-primary text-sm"><i class="fas fa-search mr-1"></i>Filtrar</button>
+  </form>
+</div>
+
+<div class="glass-card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Severidad</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Fuente</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Host</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">IP</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Mensaje</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Tiempo</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for event in events %}
+        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors">
+          <td class="px-4 py-3">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if event.severity == 'critical' %}bg-red-500/20 text-red-300{% elif event.severity == 'high' %}bg-orange-500/20 text-orange-300{% elif event.severity == 'medium' %}bg-yellow-500/20 text-yellow-300{% elif event.severity == 'low' %}bg-blue-500/20 text-blue-300{% else %}bg-surface-500/20 text-surface-300{% endif %}">
+              {{ event.severity|default:"info" }}
+            </span>
+          </td>
+          <td class="px-4 py-3 dark:text-surface-300 text-surface-600">{{ event.source_type|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-300 text-surface-600">{{ event.host_name|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-300 text-surface-600 font-mono text-xs">{{ event.host_ip|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-300 text-surface-600 max-w-xs truncate">
+            <a href="{% url 'web:event-detail' event.id %}" class="hover:text-brand-400 transition-colors">{{ event.message|default:"-"|truncatewords:12 }}</a>
+          </td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs whitespace-nowrap">{{ event.event_time|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400">
+            <i class="fas fa-inbox text-4xl mb-3 block opacity-50"></i>
+            No se encontraron eventos
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if total > page_size %}
+  <div class="px-4 py-3 dark:border-surface-800 border-surface-200 border-t flex items-center justify-between">
+    <span class="text-sm dark:text-surface-400 text-surface-500">Página {{ page }}</span>
+    <div class="flex gap-2">
+      {% if page > 1 %}
+      <a href="?page={{ page|add:"-1" }}&{{ request.GET.urlencode }}" class="btn-secondary text-xs px-3 py-1.5">Anterior</a>
+      {% endif %}
+      <a href="?page={{ page|add:"1" }}&{{ request.GET.urlencode }}" class="btn-secondary text-xs px-3 py-1.5">Siguiente</a>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

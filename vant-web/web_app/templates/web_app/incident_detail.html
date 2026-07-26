@@ -1,0 +1,122 @@
+{% extends "web_app/base.html" %}
+{% block title %}Incidente #{{ incident.id }} | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <a href="{% url 'web:incidents-list' %}" class="text-sm dark:text-surface-400 text-surface-500 hover:text-brand-400 transition-colors"><i class="fas fa-arrow-left mr-1"></i>Volver a incidentes</a>
+</div>
+
+<div class="glass-card p-6 mb-6">
+  <div class="flex items-center gap-4 mb-6">
+    <div class="w-12 h-12 rounded-xl {% if incident.severity == 'critical' %}bg-red-500/20{% elif incident.severity == 'high' %}bg-orange-500/20{% else %}bg-yellow-500/20{% endif %} flex items-center justify-center">
+      <i class="fas fa-shield-halved {% if incident.severity == 'critical' %}text-red-400{% elif incident.severity == 'high' %}text-orange-400{% else %}text-yellow-400{% endif %} text-xl"></i>
+    </div>
+    <div class="flex-1">
+      <h1 class="text-xl font-bold dark:text-white text-surface-900">{{ incident.file_name|default:"Incidente DLP" }}</h1>
+      <p class="text-sm dark:text-surface-400 text-surface-500">ID: {{ incident.id }} &middot; {{ incident.detected_at|default:"-" }}</p>
+    </div>
+    <div class="flex gap-2">
+      {% if incident.status == 'open' %}
+      <form method="post" action="{% url 'web:incident-acknowledge' incident.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-secondary text-sm"><i class="fas fa-check mr-1"></i>Reconocer</button>
+      </form>
+      {% endif %}
+      <form method="post" action="{% url 'web:incident-resolve' incident.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="status" value="resolved">
+        <button type="submit" class="btn-primary text-sm"><i class="fas fa-check-double mr-1"></i>Resolver</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="p-4 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <span class="text-xs dark:text-surface-500 text-surface-400 uppercase tracking-wider">Severidad</span>
+      <p class="mt-1 text-sm dark:text-surface-200 text-surface-700">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if incident.severity == 'critical' %}bg-red-500/20 text-red-300{% elif incident.severity == 'high' %}bg-orange-500/20 text-orange-300{% elif incident.severity == 'medium' %}bg-yellow-500/20 text-yellow-300{% else %}bg-blue-500/20 text-blue-300{% endif %}">{{ incident.severity }}</span>
+      </p>
+    </div>
+    <div class="p-4 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <span class="text-xs dark:text-surface-500 text-surface-400 uppercase tracking-wider">Estado</span>
+      <p class="mt-1 text-sm dark:text-surface-200 text-surface-700">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if incident.status == 'open' %}bg-red-500/20 text-red-300{% elif incident.status == 'acknowledged' %}bg-yellow-500/20 text-yellow-300{% else %}bg-emerald-500/20 text-emerald-300{% endif %}">{{ incident.status }}</span>
+      </p>
+    </div>
+    <div class="p-4 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <span class="text-xs dark:text-surface-500 text-surface-400 uppercase tracking-wider">Clasificación</span>
+      <p class="mt-1 text-sm dark:text-surface-200 text-surface-700">{{ incident.classification|default:"-" }}</p>
+    </div>
+    <div class="p-4 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <span class="text-xs dark:text-surface-500 text-surface-400 uppercase tracking-wider">Canal</span>
+      <p class="mt-1 text-sm dark:text-surface-200 text-surface-700">{{ incident.channel|default:"-" }}</p>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div>
+      <h3 class="text-sm font-semibold dark:text-surface-300 text-surface-600 mb-3">Información del Archivo</h3>
+      <div class="space-y-3">
+        <div class="p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+          <span class="text-xs dark:text-surface-500 text-surface-400">Nombre</span>
+          <p class="text-sm dark:text-surface-200 text-surface-700">{{ incident.file_name|default:"-" }}</p>
+        </div>
+        <div class="p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+          <span class="text-xs dark:text-surface-500 text-surface-400">Ruta</span>
+          <p class="text-sm dark:text-surface-200 text-surface-700 font-mono text-xs">{{ incident.file_path|default:"-" }}</p>
+        </div>
+        <div class="p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+          <span class="text-xs dark:text-surface-500 text-surface-400">Hash</span>
+          <p class="text-sm dark:text-surface-200 text-surface-700 font-mono text-xs break-all">{{ incident.file_hash|default:"-" }}</p>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3 class="text-sm font-semibold dark:text-surface-300 text-surface-600 mb-3">Información del Agente</h3>
+      <div class="space-y-3">
+        <div class="p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+          <span class="text-xs dark:text-surface-500 text-surface-400">Agent ID</span>
+          <p class="text-sm dark:text-surface-200 text-surface-700 font-mono text-xs">{{ incident.agent_id|default:"-" }}</p>
+        </div>
+        <div class="p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+          <span class="text-xs dark:text-surface-500 text-surface-400">Hostname</span>
+          <p class="text-sm dark:text-surface-200 text-surface-700">{{ incident.agent_hostname|default:"-" }}</p>
+        </div>
+        <div class="p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+          <span class="text-xs dark:text-surface-500 text-surface-400">Actor</span>
+          <p class="text-sm dark:text-surface-200 text-surface-700">{{ incident.actor|default:"-" }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if incident.summary %}
+  <div class="mt-6">
+    <h3 class="text-sm font-semibold dark:text-surface-300 text-surface-600 mb-3">Resumen</h3>
+    <div class="p-4 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <p class="text-sm dark:text-surface-200 text-surface-700">{{ incident.summary }}</p>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if incident.matched_keywords %}
+  <div class="mt-6">
+    <h3 class="text-sm font-semibold dark:text-surface-300 text-surface-600 mb-3">Palabras Clave Detectadas</h3>
+    <div class="flex flex-wrap gap-2">
+      {% for kw in incident.matched_keywords %}
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-300">{{ kw }}</span>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if incident.resolution_notes %}
+  <div class="mt-6">
+    <h3 class="text-sm font-semibold dark:text-surface-300 text-surface-600 mb-3">Notas de Resolución</h3>
+    <div class="p-4 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <p class="text-sm dark:text-surface-200 text-surface-700">{{ incident.resolution_notes }}</p>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

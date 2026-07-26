@@ -1,0 +1,99 @@
+{% extends "web_app/base.html" %}
+{% block title %}Inventario | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+  <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-laptop text-cyan-400 mr-2"></i>Inventory Dashboard</h1>
+  <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Vista general de agentes e inventario</p>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+  <div class="stat-card">
+    <div class="w-12 h-12 rounded-xl dark:bg-brand-500/20 bg-brand-100 flex items-center justify-center mb-4">
+      <i class="fas fa-desktop text-brand-500 text-xl"></i>
+    </div>
+    <h3 class="text-3xl font-bold dark:text-white text-surface-900">{{ total|default:"0" }}</h3>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Total Agentes</p>
+  </div>
+
+  <div class="stat-card">
+    <div class="w-12 h-12 rounded-xl dark:bg-emerald-500/20 bg-emerald-100 flex items-center justify-center mb-4">
+      <i class="fas fa-check-circle text-emerald-500 text-xl"></i>
+    </div>
+    <h3 class="text-3xl font-bold dark:text-white text-surface-900">{{ online|default:"0" }}</h3>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Online</p>
+  </div>
+
+  <div class="stat-card">
+    <div class="w-12 h-12 rounded-xl dark:bg-red-500/20 bg-red-100 flex items-center justify-center mb-4">
+      <i class="fas fa-times-circle text-red-500 text-xl"></i>
+    </div>
+    <h3 class="text-3xl font-bold dark:text-white text-surface-900">{{ offline|default:"0" }}</h3>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Offline</p>
+  </div>
+
+  <div class="stat-card">
+    <div class="w-12 h-12 rounded-xl dark:bg-yellow-500/20 bg-yellow-100 flex items-center justify-center mb-4">
+      <i class="fas fa-clock text-yellow-500 text-xl"></i>
+    </div>
+    <h3 class="text-3xl font-bold dark:text-white text-surface-900">{{ pending|default:"0" }}</h3>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Pendientes</p>
+  </div>
+</div>
+
+<div class="glass-card p-6 mb-8">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-lg font-semibold dark:text-white text-surface-900">Salud del Fleet</h3>
+    <span class="text-sm dark:text-surface-400 text-surface-500">{{ health_pct|default:"0" }}% online</span>
+  </div>
+  <div class="w-full h-4 dark:bg-surface-800 bg-surface-200 rounded-full overflow-hidden">
+    <div class="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500" style="width: {{ health_pct|default:'0' }}%"></div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+  <div class="glass-card p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold dark:text-white text-surface-900">Agentes Recientes</h3>
+      <a href="{% url 'web:agents-list' %}" class="text-sm text-brand-400 hover:text-brand-300">Ver todos</a>
+    </div>
+    <div class="space-y-3">
+      {% for agent in recent_agents %}
+      <a href="{% url 'web:agent-detail' agent.agent_id %}" class="flex items-center gap-3 p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50 hover:dark:bg-surface-800 hover:bg-surface-100 transition-all">
+        <div class="w-2 h-2 rounded-full {% if agent.status == 'online' %}bg-emerald-500{% elif agent.status == 'offline' %}bg-red-500{% else %}bg-yellow-500{% endif %}"></div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm dark:text-surface-200 text-surface-700">{{ agent.hostname|default:agent.agent_id }}</p>
+          <p class="text-xs dark:text-surface-500 text-surface-400">{{ agent.ip_address|default:"-" }} &middot; {{ agent.os_type|default:"-" }}</p>
+        </div>
+        <span class="text-xs dark:text-surface-500 text-surface-400">{{ agent.status }}</span>
+      </a>
+      {% empty %}
+      <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-6">No hay agentes registrados</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="glass-card p-6">
+    <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Distribución por SO</h3>
+    {% if os_dist %}
+    <div class="space-y-3">
+      {% for os in os_dist %}
+      <div class="flex items-center gap-3">
+        <div class="flex-1">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-sm dark:text-surface-300 text-surface-600">{{ os.name|default:"-" }}</span>
+            <span class="text-xs dark:text-surface-500 text-surface-400">{{ os.count }} ({{ os.pct }}%)</span>
+          </div>
+          <div class="w-full h-2 dark:bg-surface-800 bg-surface-200 rounded-full overflow-hidden">
+            <div class="h-full bg-brand-500 rounded-full" style="width: {{ os.pct }}%"></div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-6">Sin datos de distribución</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

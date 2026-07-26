@@ -1,0 +1,93 @@
+{% extends "web_app/base.html" %}
+{% block title %}Agente {{ agent.hostname|default:agent.agent_id }} | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <a href="{% url 'web:agents-list' %}" class="text-sm dark:text-surface-400 text-surface-500 hover:text-brand-400 transition-colors"><i class="fas fa-arrow-left mr-1"></i>Volver a agentes</a>
+</div>
+
+<div class="glass-card p-6 mb-6">
+  <div class="flex items-center gap-4 mb-6">
+    <div class="w-12 h-12 rounded-xl {% if agent.status == 'online' %}bg-emerald-500/20{% elif agent.status == 'offline' %}bg-red-500/20{% else %}bg-yellow-500/20{% endif %} flex items-center justify-center">
+      <i class="fas fa-desktop {% if agent.status == 'online' %}text-emerald-400{% elif agent.status == 'offline' %}text-red-400{% else %}text-yellow-400{% endif %} text-xl"></i>
+    </div>
+    <div class="flex-1">
+      <h1 class="text-xl font-bold dark:text-white text-surface-900">{{ agent.hostname|default:agent.agent_id }}</h1>
+      <p class="text-sm dark:text-surface-400 text-surface-500">{{ agent.ip_address|default:"-" }} &middot; {{ agent.os_type|default:"-" }}</p>
+    </div>
+    <a href="{% url 'web:agent-config' agent.agent_id %}" class="btn-primary text-sm"><i class="fas fa-cog mr-2"></i>Configurar</a>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="p-4 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <span class="text-xs dark:text-surface-500 text-surface-400 uppercase tracking-wider">Estado</span>
+      <p class="mt-1 text-sm dark:text-surface-200 text-surface-700">
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if agent.status == 'online' %}bg-emerald-500/20 text-emerald-300{% elif agent.status == 'offline' %}bg-red-500/20 text-red-300{% else %}bg-yellow-500/20 text-yellow-300{% endif %}">{{ agent.status }}</span>
+      </p>
+    </div>
+    <div class="p-4 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <span class="text-xs dark:text-surface-500 text-surface-400 uppercase tracking-wider">Agent ID</span>
+      <p class="mt-1 text-sm dark:text-surface-200 text-surface-700 font-mono text-xs">{{ agent.agent_id }}</p>
+    </div>
+    <div class="p-4 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <span class="text-xs dark:text-surface-500 text-surface-400 uppercase tracking-wider">Máquina</span>
+      <p class="mt-1 text-sm dark:text-surface-200 text-surface-700">{{ agent.machine_name|default:"-" }}</p>
+    </div>
+    <div class="p-4 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <span class="text-xs dark:text-surface-500 text-surface-400 uppercase tracking-wider">Último Heartbeat</span>
+      <p class="mt-1 text-sm dark:text-surface-200 text-surface-700">{{ agent.last_heartbeat|default:"-" }}</p>
+    </div>
+  </div>
+</div>
+
+{% if hardware %}
+<div class="glass-card p-6 mb-6">
+  <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4"><i class="fas fa-microchip text-cyan-400 mr-2"></i>Hardware</h3>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <span class="text-xs dark:text-surface-500 text-surface-400">CPU</span>
+      <p class="text-sm dark:text-surface-200 text-surface-700">{{ hardware.cpu_model|default:"-" }}</p>
+    </div>
+    <div class="p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <span class="text-xs dark:text-surface-500 text-surface-400">RAM</span>
+      <p class="text-sm dark:text-surface-200 text-surface-700">{{ hardware.ram_total|default:"-" }}</p>
+    </div>
+    <div class="p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <span class="text-xs dark:text-surface-500 text-surface-400">Disco</span>
+      <p class="text-sm dark:text-surface-200 text-surface-700">{{ hardware.disk_total|default:"-" }}</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="glass-card p-6">
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-lg font-semibold dark:text-white text-surface-900"><i class="fas fa-cube text-purple-400 mr-2"></i>Software Instalado</h3>
+    <a href="{% url 'web:software-list' %}?agent_id={{ agent.agent_id }}" class="text-sm text-brand-400 hover:text-brand-300">Ver todos</a>
+  </div>
+  {% if software %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-3 py-2 text-left dark:text-surface-400 text-surface-500 font-medium">Nombre</th>
+          <th class="px-3 py-2 text-left dark:text-surface-400 text-surface-500 font-medium">Versión</th>
+          <th class="px-3 py-2 text-left dark:text-surface-400 text-surface-500 font-medium">Editor</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sw in software %}
+        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b">
+          <td class="px-3 py-2 dark:text-surface-200 text-surface-700">{{ sw.name }}</td>
+          <td class="px-3 py-2 dark:text-surface-300 text-surface-600 text-xs">{{ sw.version|default:"-" }}</td>
+          <td class="px-3 py-2 dark:text-surface-400 text-surface-500 text-xs">{{ sw.publisher|default:"-" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-6">No hay software registrado para este agente</p>
+  {% endif %}
+</div>
+{% endblock %}

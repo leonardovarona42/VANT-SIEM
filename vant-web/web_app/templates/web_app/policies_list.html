@@ -1,0 +1,46 @@
+{% extends "web_app/base.html" %}
+{% block title %}Políticas DLP | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-list-check text-brand-400 mr-2"></i>Políticas DLP</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total|default:"0" }} políticas configuradas</p>
+  </div>
+  <a href="{% url 'web:policy-create' %}" class="btn-primary text-sm"><i class="fas fa-plus mr-2"></i>Nueva Política</a>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  {% for policy in policies %}
+  <div class="glass-card p-6 glass-card-hover">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-lg font-semibold dark:text-white text-surface-900">{{ policy.name }}</h3>
+      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if policy.is_active %}bg-emerald-500/20 text-emerald-300{% else %}bg-surface-500/20 text-surface-400{% endif %}">
+        {% if policy.is_active %}Activa{% else %}Inactiva{% endif %}
+      </span>
+    </div>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mb-4">{{ policy.description|default:"Sin descripción"|truncatewords:20 }}</p>
+    <div class="flex items-center gap-2 mb-4">
+      <span class="text-xs dark:text-surface-500 text-surface-400">Código:</span>
+      <code class="text-xs dark:text-accent-400 text-brand-600 bg-surface-800/50 px-2 py-0.5 rounded">{{ policy.code }}</code>
+    </div>
+    <div class="flex gap-2">
+      <a href="{% url 'web:policy-edit' policy.code %}" class="btn-secondary text-xs px-3 py-1.5"><i class="fas fa-edit mr-1"></i>Editar</a>
+      <form method="post" action="{% url 'web:policy-delete' policy.code %}" onsubmit="return confirm('¿Eliminar esta política?')">
+        {% csrf_token %}
+        <button type="submit" class="px-3 py-1.5 text-xs font-medium text-red-400 dark:bg-red-500/10 bg-red-50 rounded-lg hover:dark:bg-red-500/20 hover:bg-red-100 transition-all"><i class="fas fa-trash mr-1"></i>Eliminar</button>
+      </form>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-span-full">
+    <div class="glass-card p-12 text-center">
+      <i class="fas fa-shield text-4xl dark:text-surface-600 text-surface-300 mb-4 block"></i>
+      <h3 class="text-lg font-semibold dark:text-surface-300 text-surface-600 mb-2">No hay políticas</h3>
+      <p class="text-sm dark:text-surface-500 text-surface-400 mb-4">Crea tu primera política DLP para comenzar a proteger datos.</p>
+      <a href="{% url 'web:policy-create' %}" class="btn-primary text-sm"><i class="fas fa-plus mr-2"></i>Crear Política</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
