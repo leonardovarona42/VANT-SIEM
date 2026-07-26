@@ -1,0 +1,19 @@
+[Unit]
+Description=VANT-SIEM SOC Service (:8500)
+After=network.target postgresql.service redis-server.service vantsiem-auth.service
+Requires=postgresql.service redis-server.service
+
+[Service]
+Type=simple
+User=leonardo
+WorkingDirectory=/opt/vant-siem/services/vant-soc
+Environment=PATH=/opt/vant-siem/venv/bin:/usr/bin:/bin
+EnvironmentFile=/opt/vant-siem/.env
+ExecStart=/opt/vant-siem/venv/bin/gunicorn --config /opt/vant-siem/services/vant-soc/gunicorn.conf.py
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/vant/soc.log
+StandardError=append:/var/log/vant/soc.log
+
+[Install]
+WantedBy=multi-user.target

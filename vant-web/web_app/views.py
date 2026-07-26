@@ -109,7 +109,7 @@ def dashboard_view(request):
         ctx["total_incidents"] = 0
 
     try:
-        aegis_stats = http_client.get_aegis_stats(request)
+        aegis_stats = http_client.get_soc_stats(request)
         ctx["open_incidents"] = aegis_stats.get("today", 0)
     except Exception:
         ctx["open_incidents"] = 0
@@ -568,10 +568,10 @@ def dashboard_metrics(request):
         pass
 
     try:
-        aegis = http_client.get_aegis_stats(request)
-        ctx["metricas"]["totales"]["incidentes"] = aegis.get("total", 0)
-        ctx["metricas"]["ultimas_24h"]["incidentes"] = aegis.get("today", 0)
-        ctx["metricas"]["incidentes_por_estado"] = aegis.get("by_status", [])
+        soc_stats = http_client.get_soc_stats(request)
+        ctx["metricas"]["totales"]["incidentes"] = soc_stats.get("incidentes", {}).get("total", 0)
+        ctx["metricas"]["ultimas_24h"]["incidentes"] = soc_stats.get("incidentes", {}).get("today", 0)
+        ctx["metricas"]["incidentes_por_estado"] = soc_stats.get("incidentes", {}).get("by_estado", [])
     except Exception:
         pass
 
@@ -586,5 +586,5 @@ def service_health_api(request):
     return JsonResponse({
         "inventory": http_client.inventory_health(),
         "logs": http_client.logs_health(),
-        "aegis": http_client.aegis_health(),
+        "soc": http_client.soc_health(),
     })

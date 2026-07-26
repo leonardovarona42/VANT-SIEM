@@ -207,12 +207,12 @@ def logs_health():
     return resp is not None and resp.ok
 
 
-# ── Aegis DLP Service ────────────────────────────────────────────────
+# ── SOC Service (DLP + Bitacora) ─────────────────────────────────────
 
 def get_incidents(request=None, **params):
     resp = _service_call(
         "get",
-        f"{settings.AEGIS_SERVICE_URL}/api/incidents/",
+        f"{settings.SOC_SERVICE_URL}/soc/api/threats/dlp/",
         request=request,
         params=params,
     )
@@ -224,7 +224,7 @@ def get_incidents(request=None, **params):
 def get_incident(incident_id, request=None):
     resp = _service_call(
         "get",
-        f"{settings.AEGIS_SERVICE_URL}/api/incidents/{incident_id}/",
+        f"{settings.SOC_SERVICE_URL}/soc/api/threats/dlp/{incident_id}/",
         request=request,
     )
     if resp and resp.ok:
@@ -235,7 +235,7 @@ def get_incident(incident_id, request=None):
 def acknowledge_incident(incident_id, request=None):
     resp = _service_call(
         "patch",
-        f"{settings.AEGIS_SERVICE_URL}/api/incidents/{incident_id}/acknowledge/",
+        f"{settings.SOC_SERVICE_URL}/soc/api/threats/dlp/{incident_id}/acknowledge/",
         request=request,
     )
     return resp is not None and resp.ok
@@ -244,7 +244,7 @@ def acknowledge_incident(incident_id, request=None):
 def resolve_incident(incident_id, data, request=None):
     resp = _service_call(
         "patch",
-        f"{settings.AEGIS_SERVICE_URL}/api/incidents/{incident_id}/resolve/",
+        f"{settings.SOC_SERVICE_URL}/soc/api/threats/dlp/{incident_id}/resolve/",
         request=request,
         json=data,
     )
@@ -254,7 +254,7 @@ def resolve_incident(incident_id, data, request=None):
 def get_policies(request=None, **params):
     resp = _service_call(
         "get",
-        f"{settings.AEGIS_SERVICE_URL}/api/policies/",
+        f"{settings.SOC_SERVICE_URL}/soc/api/policies/",
         request=request,
         params=params,
     )
@@ -266,7 +266,7 @@ def get_policies(request=None, **params):
 def get_policy(code, request=None):
     resp = _service_call(
         "get",
-        f"{settings.AEGIS_SERVICE_URL}/api/policies/{code}/",
+        f"{settings.SOC_SERVICE_URL}/soc/api/policies/{code}/",
         request=request,
     )
     if resp and resp.ok:
@@ -277,7 +277,7 @@ def get_policy(code, request=None):
 def create_policy(data, request=None):
     resp = _service_call(
         "post",
-        f"{settings.AEGIS_SERVICE_URL}/api/policies/",
+        f"{settings.SOC_SERVICE_URL}/soc/api/policies/",
         request=request,
         json=data,
     )
@@ -289,7 +289,7 @@ def create_policy(data, request=None):
 def update_policy(code, data, request=None):
     resp = _service_call(
         "put",
-        f"{settings.AEGIS_SERVICE_URL}/api/policies/{code}/",
+        f"{settings.SOC_SERVICE_URL}/soc/api/policies/{code}/",
         request=request,
         json=data,
     )
@@ -301,16 +301,16 @@ def update_policy(code, data, request=None):
 def delete_policy(code, request=None):
     resp = _service_call(
         "delete",
-        f"{settings.AEGIS_SERVICE_URL}/api/policies/{code}/",
+        f"{settings.SOC_SERVICE_URL}/soc/api/policies/{code}/",
         request=request,
     )
     return resp is not None and resp.ok
 
 
-def get_aegis_stats(request=None, **params):
+def get_soc_stats(request=None, **params):
     resp = _service_call(
         "get",
-        f"{settings.AEGIS_SERVICE_URL}/api/stats/",
+        f"{settings.SOC_SERVICE_URL}/soc/api/stats/",
         request=request,
         params=params,
     )
@@ -319,10 +319,10 @@ def get_aegis_stats(request=None, **params):
     return {}
 
 
-def aegis_health():
+def soc_health():
     resp = _service_call(
         "get",
-        f"{settings.AEGIS_SERVICE_URL}/api/health/",
+        f"{settings.SOC_SERVICE_URL}/soc/api/health/",
     )
     return resp is not None and resp.ok
 
@@ -330,7 +330,7 @@ def aegis_health():
 def get_scan_summaries(request=None, **params):
     resp = _service_call(
         "get",
-        f"{settings.AEGIS_SERVICE_URL}/api/scans/",
+        f"{settings.SOC_SERVICE_URL}/soc/api/scans/",
         request=request,
         params=params,
     )

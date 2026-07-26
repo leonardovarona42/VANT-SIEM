@@ -14,9 +14,9 @@ def service_status(request):
     except Exception:
         ctx["logs_service_healthy"] = False
     try:
-        ctx["aegis_service_healthy"] = http_client.aegis_health()
+        ctx["soc_service_healthy"] = http_client.soc_health()
     except Exception:
-        ctx["aegis_service_healthy"] = False
+        ctx["soc_service_healthy"] = False
     return ctx
 
 

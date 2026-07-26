@@ -98,7 +98,7 @@ SERVICE_URLS = {
     "AUTH_SERVICE_URL": os.getenv("AUTH_SERVICE_URL", "http://127.0.0.1:8100"),
     "INVENTORY_SERVICE_URL": os.getenv("INVENTORY_SERVICE_URL", "http://127.0.0.1:8300"),
     "LOGS_SERVICE_URL": os.getenv("LOGS_SERVICE_URL", "http://127.0.0.1:8400"),
-    "AEGIS_SERVICE_URL": os.getenv("AEGIS_SERVICE_URL", "http://127.0.0.1:8500"),
+    "SOC_SERVICE_URL": os.getenv("SOC_SERVICE_URL", "http://127.0.0.1:8500"),
     "BUS_SERVICE_URL": os.getenv("BUS_SERVICE_URL", "http://127.0.0.1:8600"),
 }
 

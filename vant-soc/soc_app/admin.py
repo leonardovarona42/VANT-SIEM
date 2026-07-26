@@ -1,0 +1,23 @@
+from django.contrib import admin
+from .models import *
+
+admin.site.register(Categoria)
+admin.site.register(Subcategoria)
+admin.site.register(Responsable)
+admin.site.register(Area)
+admin.site.register(Medida)
+admin.site.register(Reporte)
+admin.site.register(Incidente)
+admin.site.register(MedidaIncidente)
+admin.site.register(Involucrado)
+admin.site.register(InvolucradoIncidente)
+admin.site.register(Servicio)
+admin.site.register(ServicioIP)
+admin.site.register(PuertoDispositivo)
+admin.site.register(ConexionTopologica)
+admin.site.register(MonitoreoServicio)
+admin.site.register(ConfiguracionMonitoreo)
+admin.site.register(DlpPolicy)
+admin.site.register(DlpRule)
+admin.site.register(DlpThreat)
+admin.site.register(DlpScanSummary)
