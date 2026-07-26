@@ -1,13 +1,6 @@
 #!/usr/bin/env python
 """Seed data for vant-soc: categories, subcategories, measures."""
-import os
-import sys
-import django
-
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "shared"))
-sys.path.insert(0, os.path.dirname(__file__))
-django.setup()
+from django.core.management.base import BaseCommand
 
 from soc_app.models import Categoria, Subcategoria, Medida
 
@@ -139,35 +132,38 @@ MEDIDAS_DATA = [
 ]
 
 
-def seed():
-    print("Seeding categorias...")
-    for cat_data in CATEGORIAS_DATA:
-        cat, created = Categoria.objects.get_or_create(
-            nombre=cat_data["nombre"],
-            defaults={"descripcion": cat_data["descripcion"]},
-        )
-        if created:
-            print(f"  + {cat.nombre}")
-        for sub_name, nivel in cat_data["subcategorias"]:
-            sub, created = Subcategoria.objects.get_or_create(
-                categoria=cat,
-                nombre=sub_name,
-                defaults={"nivel_peligrosidad": nivel, "descripcion": ""},
+class Command(BaseCommand):
+    help = "Seed SOC data: categorias, subcategorias, medidas"
+
+    def handle(self, *args, **options):
+        self._seed_categorias()
+        self._seed_medidas()
+        self.stdout.write(self.style.SUCCESS("Done!"))
+
+    def _seed_categorias(self):
+        self.stdout.write("Seeding categorias...")
+        for cat_data in CATEGORIAS_DATA:
+            cat, created = Categoria.objects.get_or_create(
+                nombre=cat_data["nombre"],
+                defaults={"descripcion": cat_data["descripcion"]},
             )
             if created:
-                print(f"    + {sub.nombre} (peligro: {nivel})")
+                self.stdout.write(f"  + {cat.nombre}")
+            for sub_name, nivel in cat_data["subcategorias"]:
+                sub, created = Subcategoria.objects.get_or_create(
+                    categoria=cat,
+                    nombre=sub_name,
+                    defaults={"nivel_peligrosidad": nivel, "descripcion": ""},
+                )
+                if created:
+                    self.stdout.write(f"    + {sub.nombre} (peligro: {nivel})")
 
-    print("\nSeeding medidas...")
-    for nombre, desc in MEDIDAS_DATA:
-        med, created = Medida.objects.get_or_create(
-            nombre=nombre,
-            defaults={"descripcion": desc},
-        )
-        if created:
-            print(f"  + {med.nombre}")
-
-    print("\nDone!")
-
-
-if __name__ == "__main__":
-    seed()
+    def _seed_medidas(self):
+        self.stdout.write("\nSeeding medidas...")
+        for nombre, desc in MEDIDAS_DATA:
+            med, created = Medida.objects.get_or_create(
+                nombre=nombre,
+                defaults={"descripcion": desc},
+            )
+            if created:
+                self.stdout.write(f"  + {med.nombre}")

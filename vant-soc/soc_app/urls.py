@@ -26,7 +26,7 @@ router.register(r"incidentes", views.IncidenteViewSet, basename="incidente")
 router.register(r"servicios", views.ServicioViewSet, basename="servicio")
 router.register(r"servicio-ips", views.ServicioIPViewSet, basename="servicio-ip")
 router.register(r"puertos", views.PuertoDispositivoViewSet, basename="puerto")
-router.register(r"conexiones", views ConexionTopologicaViewSet, basename="conexion")
+router.register(r"conexiones", views.ConexionTopologicaViewSet, basename="conexion")
 router.register(r"monitoreo", views.MonitoreoServicioViewSet, basename="monitoreo")
 
 urlpatterns = [
@@ -36,5 +36,5 @@ urlpatterns = [
     path("api/agent/dlp/threats/", views.ingest_dlp_threats, name="soc-agent-ingest"),
     path("api/agent/dlp/threats/upload/", views.ingest_dlp_threats_multipart, name="soc-agent-ingest-upload"),
     path("api/evidence/<int:pk>/download/", views.evidence_download, name="soc-evidence-download"),
-    path("", include(router.urls)),
+    path("api/", include(router.urls)),
 ]
