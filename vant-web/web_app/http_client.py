@@ -337,3 +337,176 @@ def get_scan_summaries(request=None, **params):
     if resp and resp.ok:
         return resp.json()
     return {"results": [], "count": 0}
+
+
+# ── SOC: Bitacora (Incidentes reales) ──────────────────────────────
+
+def get_soc_incidents(request=None, **params):
+    resp = _service_call(
+        "get",
+        f"{settings.SOC_SERVICE_URL}/soc/api/incidentes/",
+        request=request,
+        params=params,
+    )
+    if resp and resp.ok:
+        return resp.json()
+    return {"results": [], "count": 0}
+
+
+def get_soc_incident(incident_id, request=None):
+    resp = _service_call(
+        "get",
+        f"{settings.SOC_SERVICE_URL}/soc/api/incidentes/{incident_id}/",
+        request=request,
+    )
+    if resp and resp.ok:
+        return resp.json()
+    return None
+
+
+def transition_soc_incident(incident_id, action, data=None, request=None):
+    resp = _service_call(
+        "post",
+        f"{settings.SOC_SERVICE_URL}/soc/api/incidentes/{incident_id}/{action}/",
+        request=request,
+        json=data or {},
+    )
+    return resp is not None and resp.ok
+
+
+def get_reportes(request=None, **params):
+    resp = _service_call(
+        "get",
+        f"{settings.SOC_SERVICE_URL}/soc/api/reportes/",
+        request=request,
+        params=params,
+    )
+    if resp and resp.ok:
+        return resp.json()
+    return {"results": [], "count": 0}
+
+
+# ── SOC: Categorias / Subcategorias ────────────────────────────────
+
+def get_categorias(request=None, **params):
+    resp = _service_call(
+        "get",
+        f"{settings.SOC_SERVICE_URL}/soc/api/categorias/",
+        request=request,
+        params=params,
+    )
+    if resp and resp.ok:
+        return resp.json()
+    return {"results": [], "count": 0}
+
+
+def get_subcategorias(request=None, **params):
+    resp = _service_call(
+        "get",
+        f"{settings.SOC_SERVICE_URL}/soc/api/subcategorias/",
+        request=request,
+        params=params,
+    )
+    if resp and resp.ok:
+        return resp.json()
+    return {"results": [], "count": 0}
+
+
+# ── SOC: Responsables / Areas ──────────────────────────────────────
+
+def get_responsables(request=None, **params):
+    resp = _service_call(
+        "get",
+        f"{settings.SOC_SERVICE_URL}/soc/api/responsables/",
+        request=request,
+        params=params,
+    )
+    if resp and resp.ok:
+        return resp.json()
+    return {"results": [], "count": 0}
+
+
+def get_areas(request=None, **params):
+    resp = _service_call(
+        "get",
+        f"{settings.SOC_SERVICE_URL}/soc/api/areas/",
+        request=request,
+        params=params,
+    )
+    if resp and resp.ok:
+        return resp.json()
+    return {"results": [], "count": 0}
+
+
+# ── SOC: Medidas ───────────────────────────────────────────────────
+
+def get_medidas(request=None, **params):
+    resp = _service_call(
+        "get",
+        f"{settings.SOC_SERVICE_URL}/soc/api/medidas/",
+        request=request,
+        params=params,
+    )
+    if resp and resp.ok:
+        return resp.json()
+    return {"results": [], "count": 0}
+
+
+# ── SOC: Infraestructura / CMDB ────────────────────────────────────
+
+def get_servicios(request=None, **params):
+    resp = _service_call(
+        "get",
+        f"{settings.SOC_SERVICE_URL}/soc/api/servicios/",
+        request=request,
+        params=params,
+    )
+    if resp and resp.ok:
+        return resp.json()
+    return {"results": [], "count": 0}
+
+
+def get_servicio(servicio_id, request=None):
+    resp = _service_call(
+        "get",
+        f"{settings.SOC_SERVICE_URL}/soc/api/servicios/{servicio_id}/",
+        request=request,
+    )
+    if resp and resp.ok:
+        return resp.json()
+    return None
+
+
+def get_servicio_ips(servicio_id, request=None):
+    resp = _service_call(
+        "get",
+        f"{settings.SOC_SERVICE_URL}/soc/api/servicio-ips/?servicio={servicio_id}",
+        request=request,
+    )
+    if resp and resp.ok:
+        return resp.json()
+    return {"results": [], "count": 0}
+
+
+def get_puertos(request=None, **params):
+    resp = _service_call(
+        "get",
+        f"{settings.SOC_SERVICE_URL}/soc/api/puertos/",
+        request=request,
+        params=params,
+    )
+    if resp and resp.ok:
+        return resp.json()
+    return {"results": [], "count": 0}
+
+
+def get_conexiones(request=None, **params):
+    resp = _service_call(
+        "get",
+        f"{settings.SOC_SERVICE_URL}/soc/api/conexiones/",
+        request=request,
+        params=params,
+    )
+    if resp and resp.ok:
+        return resp.json()
+    return {"results": [], "count": 0}

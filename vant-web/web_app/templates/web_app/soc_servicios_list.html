@@ -1,0 +1,78 @@
+{% extends "web_app/base.html" %}
+{% block title %}Infraestructura / CMDB | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-server text-brand-400 mr-2"></i>Infraestructura / CMDB</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total|default:"0" }} servicios registrados</p>
+  </div>
+</div>
+
+<div class="glass-card p-4 mb-6">
+  <form method="get" class="flex flex-wrap gap-3 items-end">
+    <div class="flex-1 min-w-[200px]">
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Buscar servicio</label>
+      <input type="text" name="q" value="{{ search }}" class="w-full px-4 py-2.5 rounded-xl dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border-surface-200 text-surface-800 focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all text-sm" placeholder="Nombre, host, red, responsable...">
+    </div>
+    <button type="submit" class="btn-primary text-sm"><i class="fas fa-search mr-1"></i>Buscar</button>
+    {% if search %}
+    <a href="{% url 'web:soc-servicios-list' %}" class="btn-secondary text-sm"><i class="fas fa-times mr-1"></i>Limpiar</a>
+    {% endif %}
+  </form>
+</div>
+
+<div class="glass-card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Nombre</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Tipo</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Host</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Red</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">IPs</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Responsable</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in servicios %}
+        <tr class="border-t dark:border-surface-800/50 border-surface-200/50 hover:dark:bg-white/[0.02] hover:bg-surface-50 transition-colors">
+          <td class="px-4 py-3 text-sm font-medium">
+            <a href="{% url 'web:soc-servicio-detail' s.id %}" class="text-brand-400 hover:text-brand-300 transition-colors">{{ s.nombre|default:"-" }}</a>
+          </td>
+          <td class="px-4 py-3 text-sm">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+              {% if s.tipo == 'rsi' %}bg-blue-500/20 text-blue-300
+              {% elif s.tipo == 'firewall' %}bg-red-500/20 text-red-300
+              {% elif s.tipo == 'switch' %}bg-emerald-500/20 text-emerald-300
+              {% elif s.tipo == 'servidor' %}bg-purple-500/20 text-purple-300
+              {% elif s.tipo == 'nube' %}bg-cyan-500/20 text-cyan-300
+              {% else %}bg-surface-500/20 text-surface-400{% endif %}">
+              {{ s.tipo_display|default:s.tipo }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600 font-mono text-xs">{{ s.host|default:"-" }}</td>
+          <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600">{{ s.network|default:"-" }}</td>
+          <td class="px-4 py-3 text-sm dark:text-surface-400 text-surface-500 text-center">{{ s.ip_count|default:"0" }}</td>
+          <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600">{{ s.responsable_nombre|default:"-" }}</td>
+          <td class="px-4 py-3 text-sm">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if s.activo %}bg-emerald-500/20 text-emerald-300{% else %}bg-red-500/20 text-red-300{% endif %}">
+              {% if s.activo %}Activo{% else %}Inactivo{% endif %}
+            </span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="px-4 py-16 text-center dark:text-surface-500 text-surface-400">
+            <i class="fas fa-server text-4xl mb-3 block opacity-50"></i>
+            <p class="text-sm">No hay servicios registrados</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

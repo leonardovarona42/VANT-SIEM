@@ -1,0 +1,68 @@
+{% extends "web_app/base.html" %}
+{% block title %}Subcategorías | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-tags text-brand-400 mr-2"></i>Subcategorías</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total|default:"0" }} subcategorías registradas</p>
+  </div>
+</div>
+
+<div class="glass-card p-4 mb-6">
+  <form method="get" class="flex flex-wrap gap-3 items-end">
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Categoría</label>
+      <select name="categoria" class="px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 rounded-lg">
+        <option value="">Todas</option>
+        {% for cat in categorias %}
+        <option value="{{ cat.id }}" {% if categoria_filter == cat.id|stringformat:"d" %}selected{% endif %}>{{ cat.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn-primary text-sm"><i class="fas fa-search mr-1"></i>Filtrar</button>
+  </form>
+</div>
+
+<div class="glass-card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Nombre</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Categoría</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Nivel Peligrosidad</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Descripción</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in subcategorias %}
+        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors">
+          <td class="px-4 py-3 dark:text-surface-200 text-surface-700">{{ s.nombre }}</td>
+          <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-xs">{{ s.categoria_nombre|default:"-" }}</td>
+          <td class="px-4 py-3">
+            {% with nivel=s.nivel_peligrosidad %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+              {% if nivel <= 3 %}bg-emerald-500/20 text-emerald-300
+              {% elif nivel <= 6 %}bg-yellow-500/20 text-yellow-300
+              {% elif nivel <= 8 %}bg-orange-500/20 text-orange-300
+              {% else %}bg-red-500/20 text-red-300{% endif %}">
+              {{ nivel|default:"-" }}
+            </span>
+            {% endwith %}
+          </td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs">{{ s.descripcion|truncatewords:10|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400">
+            <i class="fas fa-tags text-4xl mb-3 block opacity-50"></i>
+            No se encontraron subcategorías
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

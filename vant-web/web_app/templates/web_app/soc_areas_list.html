@@ -1,0 +1,45 @@
+{% extends "web_app/base.html" %}
+{% block title %}Áreas | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-sitemap text-brand-400 mr-2"></i>Áreas</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total|default:"0" }} áreas configuradas</p>
+  </div>
+</div>
+
+<div class="glass-card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Nombre</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Acrónimo</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Cuadro Centro</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">RSI</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Admin</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in areas %}
+        <tr class="border-t dark:border-surface-800/50 border-surface-200/50 hover:dark:bg-white/[0.02] hover:bg-surface-50 transition-colors">
+          <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-700 font-medium">{{ a.nombre|default:"-" }}</td>
+          <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600 font-mono">{{ a.acronimo|default:"-" }}</td>
+          <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600">{{ a.cuadro_centro_nombre|default:"-" }}</td>
+          <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600">{{ a.rsi_nombre|default:"-" }}</td>
+          <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600">{{ a.admin_nombre|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="px-4 py-16 text-center dark:text-surface-500 text-surface-400">
+            <i class="fas fa-sitemap text-4xl mb-3 block opacity-50"></i>
+            <p class="text-sm">No hay áreas registradas</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

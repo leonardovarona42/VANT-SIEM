@@ -1,0 +1,80 @@
+{% extends "web_app/base.html" %}
+{% block title %}Bitácora de Incidentes | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-bug text-brand-400 mr-2"></i>Bitácora de Incidentes</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total|default:"0" }} incidentes registrados</p>
+  </div>
+</div>
+
+<div class="glass-card p-4 mb-6">
+  <form method="get" class="flex flex-wrap gap-3 items-end">
+    <div class="flex-1 min-w-[200px]">
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Buscar</label>
+      <input type="text" name="q" value="{{ search }}" class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 rounded-lg" placeholder="Código, nombre, descripción...">
+    </div>
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Estado</label>
+      <select name="estado" class="px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 rounded-lg">
+        <option value="">Todos</option>
+        <option value="nuevo" {% if estado_filter == "nuevo" %}selected{% endif %}>Nuevo</option>
+        <option value="abierto" {% if estado_filter == "abierto" %}selected{% endif %}>Abierto</option>
+        <option value="investigacion" {% if estado_filter == "investigacion" %}selected{% endif %}>Investigación</option>
+        <option value="mitigacion" {% if estado_filter == "mitigacion" %}selected{% endif %}>Mitigación</option>
+        <option value="cerrado" {% if estado_filter == "cerrado" %}selected{% endif %}>Cerrado</option>
+      </select>
+    </div>
+    <button type="submit" class="btn-primary text-sm"><i class="fas fa-search mr-1"></i>Filtrar</button>
+  </form>
+</div>
+
+<div class="glass-card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Código</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Nombre</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Estado</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Fecha</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Medidas</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Involucrados</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for i in incidents %}
+        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors">
+          <td class="px-4 py-3">
+            <a href="{% url 'web:soc-incident-detail' i.codigo_incidente %}" class="text-sm dark:text-accent-400 text-brand-600 hover:underline font-mono">{{ i.codigo_incidente }}</a>
+          </td>
+          <td class="px-4 py-3 dark:text-surface-200 text-surface-700">{{ i.nombre_incidente }}</td>
+          <td class="px-4 py-3">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+              {% if i.estado == 'nuevo' %}bg-blue-500/20 text-blue-300
+              {% elif i.estado == 'abierto' %}bg-amber-500/20 text-amber-300
+              {% elif i.estado == 'investigacion' %}bg-purple-500/20 text-purple-300
+              {% elif i.estado == 'mitigacion' %}bg-orange-500/20 text-orange-300
+              {% elif i.estado == 'cerrado' %}bg-emerald-500/20 text-emerald-300
+              {% else %}bg-surface-500/20 text-surface-400{% endif %}">
+              {{ i.estado_display|default:i.estado }}
+            </span>
+          </td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs whitespace-nowrap">{{ i.fecha_hora|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs">{{ i.medidas_count|default:"0" }}</td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs">{{ i.involucrados_count|default:"0" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400">
+            <i class="fas fa-bug text-4xl mb-3 block opacity-50"></i>
+            No se encontraron incidentes en la bitácora
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "web_app/base.html" %}
+{% block title %}Categorías | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-folder-tree text-brand-400 mr-2"></i>Categorías</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total|default:"0" }} categorías configuradas</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  {% for c in categorias %}
+  <div class="glass-card p-6 glass-card-hover">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-lg font-semibold dark:text-white text-surface-900">{{ c.nombre }}</h3>
+      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-brand-500/20 text-brand-300">
+        {{ c.subcategoria_count|default:"0" }} subcategorías
+      </span>
+    </div>
+    <p class="text-sm dark:text-surface-400 text-surface-500">{{ c.descripcion|default:"Sin descripción"|truncatewords:20 }}</p>
+  </div>
+  {% empty %}
+  <div class="col-span-full">
+    <div class="glass-card p-12 text-center">
+      <i class="fas fa-folder-tree text-4xl dark:text-surface-600 text-surface-300 mb-4 block"></i>
+      <h3 class="text-lg font-semibold dark:text-surface-300 text-surface-600 mb-2">No hay categorías</h3>
+      <p class="text-sm dark:text-surface-500 text-surface-400">No se encontraron categorías registradas.</p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

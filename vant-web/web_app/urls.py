@@ -31,6 +31,29 @@ urlpatterns = [
     path("soc/incidents/<str:incident_id>/acknowledge/", views.incident_acknowledge, name="incident-acknowledge"),
     path("soc/incidents/<str:incident_id>/resolve/", views.incident_resolve, name="incident-resolve"),
 
+    # SOC: Bitacora de Incidentes
+    path("soc/incidentes/", views.soc_incidents_list, name="soc-incidents-list"),
+    path("soc/incidentes/<str:incident_id>/", views.soc_incident_detail, name="soc-incident-detail"),
+    path("soc/incidentes/<str:incident_id>/<str:action>/", views.soc_incident_transition, name="soc-incident-transition"),
+
+    # SOC: Reportes
+    path("soc/reportes/", views.reportes_list, name="soc-reportes-list"),
+
+    # SOC: Categorias / Subcategorias
+    path("soc/categorias/", views.categorias_list, name="soc-categorias-list"),
+    path("soc/subcategorias/", views.subcategorias_list, name="soc-subcategorias-list"),
+
+    # SOC: Responsables / Areas
+    path("soc/responsables/", views.responsables_list, name="soc-responsables-list"),
+    path("soc/areas/", views.areas_list, name="soc-areas-list"),
+
+    # SOC: Medidas
+    path("soc/medidas/", views.medidas_list, name="soc-medidas-list"),
+
+    # SOC: Infraestructura / CMDB
+    path("soc/servicios/", views.servicios_list, name="soc-servicios-list"),
+    path("soc/servicios/<str:servicio_id>/", views.servicio_detail, name="soc-servicio-detail"),
+
     # Inventory
     path("inventory/", views.inventory_dashboard, name="inventory-dashboard"),
     path("inventory/agents/", views.agents_list, name="agents-list"),

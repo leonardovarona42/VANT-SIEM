@@ -1,0 +1,205 @@
+{% extends "web_app/base.html" %}
+{% block title %}Servicio | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-server text-brand-400 mr-2"></i>{{ servicio.nombre|default:"Servicio" }}</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ servicio.tipo_display|default:servicio.tipo|default:"-" }}</p>
+  </div>
+  <a href="{% url 'web:soc-servicios-list' %}" class="btn-secondary text-sm"><i class="fas fa-arrow-left mr-2"></i>Volver</a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+  <div class="glass-card p-6">
+    <h2 class="text-lg font-semibold dark:text-white text-surface-900 mb-4"><i class="fas fa-info-circle text-brand-400 mr-2"></i>Información General</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Nombre</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700 font-medium">{{ servicio.nombre|default:"-" }}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Tipo</p>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+          {% if servicio.tipo == 'rsi' %}bg-blue-500/20 text-blue-300
+          {% elif servicio.tipo == 'firewall' %}bg-red-500/20 text-red-300
+          {% elif servicio.tipo == 'switch' %}bg-emerald-500/20 text-emerald-300
+          {% elif servicio.tipo == 'servidor' %}bg-purple-500/20 text-purple-300
+          {% elif servicio.tipo == 'nube' %}bg-cyan-500/20 text-cyan-300
+          {% else %}bg-surface-500/20 text-surface-400{% endif %}">
+          {{ servicio.tipo_display|default:servicio.tipo }}
+        </span>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Estado</p>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if servicio.activo %}bg-emerald-500/20 text-emerald-300{% else %}bg-red-500/20 text-red-300{% endif %}">
+          {% if servicio.activo %}Activo{% else %}Inactivo{% endif %}
+        </span>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Responsable</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700">{{ servicio.responsable_nombre|default:"-" }}</p>
+      </div>
+      <div class="sm:col-span-2">
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Descripción</p>
+        <p class="text-sm dark:text-surface-300 text-surface-600">{{ servicio.descripcion|default:"Sin descripción" }}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Plataforma</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700">{{ servicio.plataforma|default:"-" }}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">URL Servicio</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700 font-mono text-xs">{{ servicio.url_servicio|default:"-" }}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Puerto Servicio</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700 font-mono text-xs">{{ servicio.puerto_servicio|default:"-" }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="glass-card p-6">
+    <h2 class="text-lg font-semibold dark:text-white text-surface-900 mb-4"><i class="fas fa-network-wired text-brand-400 mr-2"></i>Red</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Host</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700 font-mono">{{ servicio.host|default:"-" }}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Red</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700 font-mono">{{ servicio.network|default:"-" }}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Máscara de Subred</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700 font-mono">{{ servicio.subnet_mask|default:"-" }}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Gateway</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700 font-mono">{{ servicio.gateway|default:"-" }}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Tipo de Red</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700">{{ servicio.red_tipo|default:"-" }}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">VLAN ID</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700">{{ servicio.vlan_id|default:"-" }}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">DNS Primario</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700 font-mono">{{ servicio.dns_primario|default:"-" }}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">DNS Secundario</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700 font-mono">{{ servicio.dns_secundario|default:"-" }}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">DHCP Activo</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700">{% if servicio.dhcp_activo %}Sí{% else %}No{% endif %}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Nivel de Red</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700">{{ servicio.nivel_red|default:"-" }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="glass-card p-6">
+    <h2 class="text-lg font-semibold dark:text-white text-surface-900 mb-4"><i class="fas fa-location-dot text-brand-400 mr-2"></i>Ubicación Física</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="sm:col-span-2">
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Ubicación</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700">{{ servicio.ubicacion_fisica|default:"-" }}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Edificio</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700">{{ servicio.edificio|default:"-" }}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Piso</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700">{{ servicio.piso|default:"-" }}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Rack</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700">{{ servicio.rack|default:"-" }}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Posición Rack</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700">{{ servicio.posicion_rack|default:"-" }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="glass-card p-6">
+    <h2 class="text-lg font-semibold dark:text-white text-surface-900 mb-4"><i class="fas fa-microchip text-brand-400 mr-2"></i>Hardware</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Fabricante</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700">{{ servicio.fabricante|default:"-" }}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Modelo</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700">{{ servicio.modelo|default:"-" }}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Número de Serie</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700 font-mono text-xs">{{ servicio.numero_serie|default:"-" }}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Firmware</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700 font-mono text-xs">{{ servicio.firmware|default:"-" }}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Número de Puertos</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700">{{ servicio.num_puertos|default:"-" }}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">IPs Asignadas</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700">{{ servicio.ip_count|default:"0" }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="glass-card overflow-hidden">
+  <div class="px-6 py-4 dark:border-surface-800 border-surface-200 border-b">
+    <h2 class="text-lg font-semibold dark:text-white text-surface-900"><i class="fas fa-network-wired text-brand-400 mr-2"></i>Direcciones IP</h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">IP Address</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">MAC Address</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Tipo</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Principal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ip in ips %}
+        <tr class="border-t dark:border-surface-800/50 border-surface-200/50 hover:dark:bg-white/[0.02] hover:bg-surface-50 transition-colors">
+          <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-700 font-mono">{{ ip.ip_address|default:"-" }}</td>
+          <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600 font-mono text-xs">{{ ip.mac_address|default:"-" }}</td>
+          <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600">{{ ip.tipo|default:"-" }}</td>
+          <td class="px-4 py-3 text-sm">
+            {% if ip.es_principal %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-brand-500/20 text-brand-300"><i class="fas fa-star mr-1"></i>Principal</span>
+            {% else %}
+            <span class="dark:text-surface-500 text-surface-400 text-xs">Secundaria</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400">
+            <i class="fas fa-network-wired text-4xl mb-3 block opacity-50"></i>
+            <p class="text-sm">No hay direcciones IP registradas</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

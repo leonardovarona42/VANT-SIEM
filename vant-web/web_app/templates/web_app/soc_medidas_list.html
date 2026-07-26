@@ -1,0 +1,39 @@
+{% extends "web_app/base.html" %}
+{% block title %}Medidas de Seguridad | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-tools text-brand-400 mr-2"></i>Medidas de Seguridad</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total|default:"0" }} medidas registradas</p>
+  </div>
+</div>
+
+<div class="glass-card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Nombre</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Descripción</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in medidas %}
+        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors">
+          <td class="px-4 py-3 dark:text-surface-200 text-surface-700">{{ m.nombre }}</td>
+          <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-xs">{{ m.descripcion|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="2" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400">
+            <i class="fas fa-tools text-4xl mb-3 block opacity-50"></i>
+            No se encontraron medidas de seguridad
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

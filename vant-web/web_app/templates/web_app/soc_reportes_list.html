@@ -1,0 +1,65 @@
+{% extends "web_app/base.html" %}
+{% block title %}Reportes | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-clipboard-list text-brand-400 mr-2"></i>Reportes</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total|default:"0" }} reportes registrados</p>
+  </div>
+</div>
+
+<div class="glass-card p-4 mb-6">
+  <form method="get" class="flex flex-wrap gap-3 items-end">
+    <div class="flex-1 min-w-[200px]">
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Buscar</label>
+      <input type="text" name="q" value="{{ search }}" class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 rounded-lg" placeholder="Informante, área, descripción...">
+    </div>
+    <button type="submit" class="btn-primary text-sm"><i class="fas fa-search mr-1"></i>Filtrar</button>
+  </form>
+</div>
+
+<div class="glass-card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">ID</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Informante</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Área</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Descripción</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Estado</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Fecha</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in reportes %}
+        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors">
+          <td class="px-4 py-3 dark:text-accent-400 text-brand-600 font-mono text-xs">{{ r.id }}</td>
+          <td class="px-4 py-3 dark:text-surface-200 text-surface-700">{{ r.informante|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-xs">{{ r.area|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-xs">{{ r.descripcion|truncatewords:10|default:"-" }}</td>
+          <td class="px-4 py-3">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+              {% if r.estado == 'nuevo' %}bg-blue-500/20 text-blue-300
+              {% elif r.estado == 'atendido' %}bg-amber-500/20 text-amber-300
+              {% elif r.estado == 'resuelto' %}bg-emerald-500/20 text-emerald-300
+              {% else %}bg-surface-500/20 text-surface-400{% endif %}">
+              {{ r.estado|default:"-" }}
+            </span>
+          </td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs whitespace-nowrap">{{ r.fecha|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400">
+            <i class="fas fa-clipboard-list text-4xl mb-3 block opacity-50"></i>
+            No se encontraron reportes
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

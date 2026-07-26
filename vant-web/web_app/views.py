@@ -588,3 +588,233 @@ def service_health_api(request):
         "logs": http_client.logs_health(),
         "soc": http_client.soc_health(),
     })
+
+
+# ── SOC: Bitacora de Incidentes ─────────────────────────────────────
+
+def soc_incidents_list(request):
+    if not _require_auth(request):
+        return _redirect_login(request)
+
+    params = {}
+    for key in ("estado", "nivel_peligrosidad", "categoria", "q", "page", "page_size"):
+        val = request.GET.get(key)
+        if val:
+            params[key] = val
+
+    try:
+        data = http_client.get_soc_incidents(request, **params)
+    except Exception:
+        data = {"results": [], "count": 0}
+        messages.error(request, "Error al conectar con el servicio SOC.")
+
+    return render(request, "web_app/soc_incidents_list.html", {
+        "incidents": data.get("results", []),
+        "total": data.get("count", 0),
+        "search": request.GET.get("q", ""),
+        "estado_filter": request.GET.get("estado", ""),
+    })
+
+
+def soc_incident_detail(request, incident_id):
+    if not _require_auth(request):
+        return _redirect_login(request)
+
+    try:
+        incident = http_client.get_soc_incident(incident_id, request)
+    except Exception:
+        incident = None
+
+    if not incident:
+        messages.error(request, "Incidente no encontrado.")
+        return redirect("web:soc-incidents-list")
+
+    return render(request, "web_app/soc_incident_detail.html", {"incident": incident})
+
+
+@csrf_protect
+@require_POST
+def soc_incident_transition(request, incident_id, action):
+    if not _require_auth(request):
+        return _redirect_login(request)
+
+    data = {}
+    for key in ("responsable_id", "notas", "nivel_peligrosidad"):
+        val = request.POST.get(key)
+        if val:
+            data[key] = val
+
+    try:
+        ok = http_client.transition_soc_incident(incident_id, action, data, request)
+        if ok:
+            messages.success(request, f"Incidente actualizado: {action}.")
+        else:
+            messages.error(request, f"Error al ejecutar: {action}.")
+    except Exception:
+        messages.error(request, "Servicio no disponible.")
+
+    return redirect("web:soc-incident-detail", incident_id=incident_id)
+
+
+def reportes_list(request):
+    if not _require_auth(request):
+        return _redirect_login(request)
+
+    params = {}
+    for key in ("estado", "canal", "q", "page", "page_size"):
+        val = request.GET.get(key)
+        if val:
+            params[key] = val
+
+    try:
+        data = http_client.get_reportes(request, **params)
+    except Exception:
+        data = {"results": [], "count": 0}
+        messages.error(request, "Error al conectar con el servicio SOC.")
+
+    return render(request, "web_app/soc_reportes_list.html", {
+        "reportes": data.get("results", []),
+        "total": data.get("count", 0),
+        "search": request.GET.get("q", ""),
+    })
+
+
+# ── SOC: Categorias / Subcategorias ─────────────────────────────────
+
+def categorias_list(request):
+    if not _require_auth(request):
+        return _redirect_login(request)
+
+    try:
+        data = http_client.get_categorias(request)
+    except Exception:
+        data = {"results": [], "count": 0}
+        messages.error(request, "Error al conectar con el servicio SOC.")
+
+    return render(request, "web_app/soc_categorias_list.html", {
+        "categorias": data.get("results", []),
+        "total": data.get("count", 0),
+    })
+
+
+def subcategorias_list(request):
+    if not _require_auth(request):
+        return _redirect_login(request)
+
+    params = {}
+    if request.GET.get("categoria"):
+        params["categoria"] = request.GET["categoria"]
+
+    try:
+        data = http_client.get_subcategorias(request, **params)
+    except Exception:
+        data = {"results": [], "count": 0}
+        messages.error(request, "Error al conectar con el servicio SOC.")
+
+    return render(request, "web_app/soc_subcategorias_list.html", {
+        "subcategorias": data.get("results", []),
+        "total": data.get("count", 0),
+        "categoria_filter": request.GET.get("categoria", ""),
+    })
+
+
+# ── SOC: Responsables / Areas ───────────────────────────────────────
+
+def responsables_list(request):
+    if not _require_auth(request):
+        return _redirect_login(request)
+
+    try:
+        data = http_client.get_responsables(request)
+    except Exception:
+        data = {"results": [], "count": 0}
+        messages.error(request, "Error al conectar con el servicio SOC.")
+
+    return render(request, "web_app/soc_responsables_list.html", {
+        "responsables": data.get("results", []),
+        "total": data.get("count", 0),
+    })
+
+
+def areas_list(request):
+    if not _require_auth(request):
+        return _redirect_login(request)
+
+    try:
+        data = http_client.get_areas(request)
+    except Exception:
+        data = {"results": [], "count": 0}
+        messages.error(request, "Error al conectar con el servicio SOC.")
+
+    return render(request, "web_app/soc_areas_list.html", {
+        "areas": data.get("results", []),
+        "total": data.get("count", 0),
+    })
+
+
+# ── SOC: Medidas ────────────────────────────────────────────────────
+
+def medidas_list(request):
+    if not _require_auth(request):
+        return _redirect_login(request)
+
+    try:
+        data = http_client.get_medidas(request)
+    except Exception:
+        data = {"results": [], "count": 0}
+        messages.error(request, "Error al conectar con el servicio SOC.")
+
+    return render(request, "web_app/soc_medidas_list.html", {
+        "medidas": data.get("results", []),
+        "total": data.get("count", 0),
+    })
+
+
+# ── SOC: Infraestructura / CMDB ─────────────────────────────────────
+
+def servicios_list(request):
+    if not _require_auth(request):
+        return _redirect_login(request)
+
+    params = {}
+    for key in ("estado", "tipo", "q", "page", "page_size"):
+        val = request.GET.get(key)
+        if val:
+            params[key] = val
+
+    try:
+        data = http_client.get_servicios(request, **params)
+    except Exception:
+        data = {"results": [], "count": 0}
+        messages.error(request, "Error al conectar con el servicio SOC.")
+
+    return render(request, "web_app/soc_servicios_list.html", {
+        "servicios": data.get("results", []),
+        "total": data.get("count", 0),
+        "search": request.GET.get("q", ""),
+    })
+
+
+def servicio_detail(request, servicio_id):
+    if not _require_auth(request):
+        return _redirect_login(request)
+
+    try:
+        servicio = http_client.get_servicio(servicio_id, request)
+    except Exception:
+        servicio = None
+
+    if not servicio:
+        messages.error(request, "Servicio no encontrado.")
+        return redirect("web:soc-servicios-list")
+
+    try:
+        ips_data = http_client.get_servicio_ips(servicio_id, request)
+        ips = ips_data.get("results", []) if isinstance(ips_data, dict) else ips_data
+    except Exception:
+        ips = []
+
+    return render(request, "web_app/soc_servicio_detail.html", {
+        "servicio": servicio,
+        "ips": ips,
+    })
