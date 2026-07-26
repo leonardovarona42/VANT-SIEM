@@ -7,6 +7,7 @@
     <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-sitemap text-brand-400 mr-2"></i>Áreas</h1>
     <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total|default:"0" }} áreas configuradas</p>
   </div>
+  <a href="{% url 'web:soc-area-create' %}" class="btn-primary text-sm"><i class="fas fa-plus mr-2"></i>Nuevo</a>
 </div>
 
 <div class="glass-card overflow-hidden">
@@ -19,6 +20,7 @@
           <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Cuadro Centro</th>
           <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">RSI</th>
           <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Admin</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -29,10 +31,53 @@
           <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600">{{ a.cuadro_centro_nombre|default:"-" }}</td>
           <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600">{{ a.rsi_nombre|default:"-" }}</td>
           <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600">{{ a.admin_nombre|default:"-" }}</td>
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2">
+              <button onclick="document.getElementById('edit-{{ a.id }}').classList.toggle('hidden')" class="text-brand-400 hover:text-brand-300 text-xs"><i class="fas fa-edit"></i> Editar</button>
+              <form method="post" action="{% url 'web:soc-area-delete' a.id %}" onsubmit="return confirm('¿Eliminar esta área?')">
+                {% csrf_token %}
+                <button class="text-red-400 hover:text-red-300 text-xs"><i class="fas fa-trash"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        <tr id="edit-{{ a.id }}" class="hidden">
+          <td colspan="6" class="px-4 py-3">
+            <form method="post" action="{% url 'web:soc-area-edit' a.id %}" class="flex flex-wrap gap-3 items-end">
+              {% csrf_token %}
+              <input name="nombre" value="{{ a.nombre }}" placeholder="Nombre" class="flex-1 min-w-[130px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm" required>
+              <input name="acronimo" value="{{ a.acronimo }}" placeholder="Acrónimo" class="flex-1 min-w-[80px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm font-mono">
+              {% if responsables %}
+              <select name="cuadro_centro" class="flex-1 min-w-[130px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+                <option value="">-- Cuadro Centro --</option>
+                {% for resp in responsables %}
+                <option value="{{ resp.id }}" {% if a.cuadro_centro == resp.id %}selected{% endif %}>{{ resp.nombre }}</option>
+                {% endfor %}
+              </select>
+              <select name="rsi" class="flex-1 min-w-[130px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+                <option value="">-- RSI --</option>
+                {% for resp in responsables %}
+                <option value="{{ resp.id }}" {% if a.rsi == resp.id %}selected{% endif %}>{{ resp.nombre }}</option>
+                {% endfor %}
+              </select>
+              <select name="admin" class="flex-1 min-w-[130px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+                <option value="">-- Admin --</option>
+                {% for resp in responsables %}
+                <option value="{{ resp.id }}" {% if a.admin == resp.id %}selected{% endif %}>{{ resp.nombre }}</option>
+                {% endfor %}
+              </select>
+              {% else %}
+              <input name="cuadro_centro" value="{{ a.cuadro_centro }}" type="number" placeholder="Cuadro Centro ID" class="flex-1 min-w-[110px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+              <input name="rsi" value="{{ a.rsi }}" type="number" placeholder="RSI ID" class="flex-1 min-w-[80px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+              <input name="admin" value="{{ a.admin }}" type="number" placeholder="Admin ID" class="flex-1 min-w-[80px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+              {% endif %}
+              <button class="btn-primary text-xs px-3 py-1.5"><i class="fas fa-save mr-1"></i>Guardar</button>
+            </form>
+          </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="5" class="px-4 py-16 text-center dark:text-surface-500 text-surface-400">
+          <td colspan="6" class="px-4 py-16 text-center dark:text-surface-500 text-surface-400">
             <i class="fas fa-sitemap text-4xl mb-3 block opacity-50"></i>
             <p class="text-sm">No hay áreas registradas</p>
           </td>

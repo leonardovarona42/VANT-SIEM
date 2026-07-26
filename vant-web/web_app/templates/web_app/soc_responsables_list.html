@@ -7,6 +7,7 @@
     <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-user-tie text-brand-400 mr-2"></i>Responsables</h1>
     <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total|default:"0" }} responsables registrados</p>
   </div>
+  <a href="{% url 'web:soc-responsable-create' %}" class="btn-primary text-sm"><i class="fas fa-plus mr-2"></i>Nuevo</a>
 </div>
 
 <div class="glass-card overflow-hidden">
@@ -18,6 +19,7 @@
           <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Cargo</th>
           <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Email</th>
           <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Teléfono</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -27,10 +29,34 @@
           <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600">{{ r.cargo|default:"-" }}</td>
           <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600">{{ r.email|default:"-" }}</td>
           <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600">{{ r.telefono|default:"-" }}</td>
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2">
+              <button onclick="document.getElementById('edit-{{ r.id }}').classList.toggle('hidden')" class="text-brand-400 hover:text-brand-300 text-xs"><i class="fas fa-edit"></i> Editar</button>
+              <form method="post" action="{% url 'web:soc-responsable-delete' r.id %}" onsubmit="return confirm('¿Eliminar este responsable?')">
+                {% csrf_token %}
+                <button class="text-red-400 hover:text-red-300 text-xs"><i class="fas fa-trash"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        <tr id="edit-{{ r.id }}" class="hidden">
+          <td colspan="5" class="px-4 py-3">
+            <form method="post" action="{% url 'web:soc-responsable-edit' r.id %}" class="flex flex-wrap gap-3 items-end">
+              {% csrf_token %}
+              <input name="nombres" value="{{ r.nombres }}" placeholder="Nombres" class="flex-1 min-w-[120px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm" required>
+              <input name="apellidos" value="{{ r.apellidos }}" placeholder="Apellidos" class="flex-1 min-w-[120px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+              <input name="email" value="{{ r.email }}" type="email" placeholder="Email" class="flex-1 min-w-[140px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+              <input name="telefono_particular" value="{{ r.telefono_particular }}" placeholder="Tel. Particular" class="flex-1 min-w-[110px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+              <input name="telefono_corp" value="{{ r.telefono_corp }}" placeholder="Tel. Corp" class="flex-1 min-w-[110px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+              <input name="tipo" value="{{ r.tipo }}" placeholder="Tipo" class="flex-1 min-w-[100px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+              <input name="descripcion" value="{{ r.descripcion }}" placeholder="Descripción" class="flex-1 min-w-[120px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+              <button class="btn-primary text-xs px-3 py-1.5"><i class="fas fa-save mr-1"></i>Guardar</button>
+            </form>
+          </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="4" class="px-4 py-16 text-center dark:text-surface-500 text-surface-400">
+          <td colspan="5" class="px-4 py-16 text-center dark:text-surface-500 text-surface-400">
             <i class="fas fa-user-tie text-4xl mb-3 block opacity-50"></i>
             <p class="text-sm">No hay responsables registrados</p>
           </td>

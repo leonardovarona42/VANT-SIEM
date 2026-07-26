@@ -7,6 +7,7 @@
     <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-tools text-brand-400 mr-2"></i>Medidas de Seguridad</h1>
     <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total|default:"0" }} medidas registradas</p>
   </div>
+  <a href="{% url 'web:soc-medida-create' %}" class="btn-primary text-sm"><i class="fas fa-plus mr-2"></i>Nuevo</a>
 </div>
 
 <div class="glass-card overflow-hidden">
@@ -16,6 +17,7 @@
         <tr class="dark:border-surface-800 border-surface-200 border-b">
           <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Nombre</th>
           <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Descripción</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -23,10 +25,29 @@
         <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors">
           <td class="px-4 py-3 dark:text-surface-200 text-surface-700">{{ m.nombre }}</td>
           <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-xs">{{ m.descripcion|default:"-" }}</td>
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2">
+              <button onclick="document.getElementById('edit-{{ m.id }}').classList.toggle('hidden')" class="text-brand-400 hover:text-brand-300 text-xs"><i class="fas fa-edit"></i> Editar</button>
+              <form method="post" action="{% url 'web:soc-medida-delete' m.id %}" onsubmit="return confirm('¿Eliminar esta medida?')">
+                {% csrf_token %}
+                <button class="text-red-400 hover:text-red-300 text-xs"><i class="fas fa-trash"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        <tr id="edit-{{ m.id }}" class="hidden">
+          <td colspan="3" class="px-4 py-3">
+            <form method="post" action="{% url 'web:soc-medida-edit' m.id %}" class="flex gap-3 items-end">
+              {% csrf_token %}
+              <input name="nombre" value="{{ m.nombre }}" class="flex-1 px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm" required>
+              <input name="descripcion" value="{{ m.descripcion }}" class="flex-1 px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+              <button class="btn-primary text-xs px-3 py-1.5"><i class="fas fa-save mr-1"></i>Guardar</button>
+            </form>
+          </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="2" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400">
+          <td colspan="3" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400">
             <i class="fas fa-tools text-4xl mb-3 block opacity-50"></i>
             No se encontraron medidas de seguridad
           </td>

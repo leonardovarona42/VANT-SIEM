@@ -510,3 +510,120 @@ def get_conexiones(request=None, **params):
     if resp and resp.ok:
         return resp.json()
     return {"results": [], "count": 0}
+
+
+# ── SOC: CRUD helpers ───────────────────────────────────────────────
+
+def create_responsable(data, request=None):
+    resp = _service_call("post", f"{settings.SOC_SERVICE_URL}/soc/api/responsables/", request=request, json=data)
+    if resp and resp.ok:
+        return resp.json()
+    return None
+
+def update_responsable(pk, data, request=None):
+    resp = _service_call("put", f"{settings.SOC_SERVICE_URL}/soc/api/responsables/{pk}/", request=request, json=data)
+    if resp and resp.ok:
+        return resp.json()
+    return None
+
+def delete_responsable(pk, request=None):
+    resp = _service_call("delete", f"{settings.SOC_SERVICE_URL}/soc/api/responsables/{pk}/", request=request)
+    return resp is not None and resp.ok
+
+
+def create_area(data, request=None):
+    resp = _service_call("post", f"{settings.SOC_SERVICE_URL}/soc/api/areas/", request=request, json=data)
+    if resp and resp.ok:
+        return resp.json()
+    return None
+
+def update_area(pk, data, request=None):
+    resp = _service_call("put", f"{settings.SOC_SERVICE_URL}/soc/api/areas/{pk}/", request=request, json=data)
+    if resp and resp.ok:
+        return resp.json()
+    return None
+
+def delete_area(pk, request=None):
+    resp = _service_call("delete", f"{settings.SOC_SERVICE_URL}/soc/api/areas/{pk}/", request=request)
+    return resp is not None and resp.ok
+
+
+def create_categoria(data, request=None):
+    resp = _service_call("post", f"{settings.SOC_SERVICE_URL}/soc/api/categorias/", request=request, json=data)
+    if resp and resp.ok:
+        return resp.json()
+    return None
+
+def update_categoria(pk, data, request=None):
+    resp = _service_call("put", f"{settings.SOC_SERVICE_URL}/soc/api/categorias/{pk}/", request=request, json=data)
+    if resp and resp.ok:
+        return resp.json()
+    return None
+
+def delete_categoria(pk, request=None):
+    resp = _service_call("delete", f"{settings.SOC_SERVICE_URL}/soc/api/categorias/{pk}/", request=request)
+    return resp is not None and resp.ok
+
+
+def create_subcategoria(data, request=None):
+    resp = _service_call("post", f"{settings.SOC_SERVICE_URL}/soc/api/subcategorias/", request=request, json=data)
+    if resp and resp.ok:
+        return resp.json()
+    return None
+
+def update_subcategoria(pk, data, request=None):
+    resp = _service_call("put", f"{settings.SOC_SERVICE_URL}/soc/api/subcategorias/{pk}/", request=request, json=data)
+    if resp and resp.ok:
+        return resp.json()
+    return None
+
+def delete_subcategoria(pk, request=None):
+    resp = _service_call("delete", f"{settings.SOC_SERVICE_URL}/soc/api/subcategorias/{pk}/", request=request)
+    return resp is not None and resp.ok
+
+
+def create_medida(data, request=None):
+    resp = _service_call("post", f"{settings.SOC_SERVICE_URL}/soc/api/medidas/", request=request, json=data)
+    if resp and resp.ok:
+        return resp.json()
+    return None
+
+def update_medida(pk, data, request=None):
+    resp = _service_call("put", f"{settings.SOC_SERVICE_URL}/soc/api/medidas/{pk}/", request=request, json=data)
+    if resp and resp.ok:
+        return resp.json()
+    return None
+
+def delete_medida(pk, request=None):
+    resp = _service_call("delete", f"{settings.SOC_SERVICE_URL}/soc/api/medidas/{pk}/", request=request)
+    return resp is not None and resp.ok
+
+
+def get_involucrado(pk, request=None):
+    resp = _service_call("get", f"{settings.SOC_SERVICE_URL}/soc/api/involucrados/{pk}/", request=request)
+    if resp and resp.ok:
+        return resp.json()
+    return None
+
+def create_involucrado(data, request=None):
+    resp = _service_call("post", f"{settings.SOC_SERVICE_URL}/soc/api/involucrados/", request=request, json=data)
+    if resp and resp.ok:
+        return resp.json()
+    return None
+
+def update_involucrado(pk, data, request=None):
+    resp = _service_call("put", f"{settings.SOC_SERVICE_URL}/soc/api/involucrados/{pk}/", request=request, json=data)
+    if resp and resp.ok:
+        return resp.json()
+    return None
+
+def delete_involucrado(pk, request=None):
+    resp = _service_call("delete", f"{settings.SOC_SERVICE_URL}/soc/api/involucrados/{pk}/", request=request)
+    return resp is not None and resp.ok
+
+
+def get_involucrados(request=None, **params):
+    resp = _service_call("get", f"{settings.SOC_SERVICE_URL}/soc/api/involucrados/", request=request, params=params)
+    if resp and resp.ok:
+        return resp.json()
+    return {"results": [], "count": 0}

@@ -41,14 +41,36 @@ urlpatterns = [
 
     # SOC: Categorias / Subcategorias
     path("soc/categorias/", views.categorias_list, name="soc-categorias-list"),
+    path("soc/categorias/create/", views.soc_categoria_create, name="soc-categoria-create"),
+    path("soc/categorias/<int:pk>/edit/", views.soc_categoria_edit, name="soc-categoria-edit"),
+    path("soc/categorias/<int:pk>/delete/", views.soc_categoria_delete, name="soc-categoria-delete"),
     path("soc/subcategorias/", views.subcategorias_list, name="soc-subcategorias-list"),
+    path("soc/subcategorias/create/", views.soc_subcategoria_create, name="soc-subcategoria-create"),
+    path("soc/subcategorias/<int:pk>/edit/", views.soc_subcategoria_edit, name="soc-subcategoria-edit"),
+    path("soc/subcategorias/<int:pk>/delete/", views.soc_subcategoria_delete, name="soc-subcategoria-delete"),
 
     # SOC: Responsables / Areas
     path("soc/responsables/", views.responsables_list, name="soc-responsables-list"),
+    path("soc/responsables/create/", views.soc_responsable_create, name="soc-responsable-create"),
+    path("soc/responsables/<int:pk>/edit/", views.soc_responsable_edit, name="soc-responsable-edit"),
+    path("soc/responsables/<int:pk>/delete/", views.soc_responsable_delete, name="soc-responsable-delete"),
     path("soc/areas/", views.areas_list, name="soc-areas-list"),
+    path("soc/areas/create/", views.soc_area_create, name="soc-area-create"),
+    path("soc/areas/<int:pk>/edit/", views.soc_area_edit, name="soc-area-edit"),
+    path("soc/areas/<int:pk>/delete/", views.soc_area_delete, name="soc-area-delete"),
 
     # SOC: Medidas
     path("soc/medidas/", views.medidas_list, name="soc-medidas-list"),
+    path("soc/medidas/create/", views.soc_medida_create, name="soc-medida-create"),
+    path("soc/medidas/<int:pk>/edit/", views.soc_medida_edit, name="soc-medida-edit"),
+    path("soc/medidas/<int:pk>/delete/", views.soc_medida_delete, name="soc-medida-delete"),
+
+    # SOC: Involucrados
+    path("soc/involucrados/", views.involucrados_list, name="soc-involucrados-list"),
+    path("soc/involucrados/create/", views.soc_involucrado_create, name="soc-involucrado-create"),
+    path("soc/involucrados/<int:pk>/", views.involucrado_detail, name="soc-involucrado-detail"),
+    path("soc/involucrados/<int:pk>/edit/", views.soc_involucrado_edit, name="soc-involucrado-edit"),
+    path("soc/involucrados/<int:pk>/delete/", views.soc_involucrado_delete, name="soc-involucrado-delete"),
 
     # SOC: Infraestructura / CMDB
     path("soc/servicios/", views.servicios_list, name="soc-servicios-list"),

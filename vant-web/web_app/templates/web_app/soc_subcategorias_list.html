@@ -7,6 +7,7 @@
     <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-tags text-brand-400 mr-2"></i>Subcategorías</h1>
     <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total|default:"0" }} subcategorías registradas</p>
   </div>
+  <a href="{% url 'web:soc-subcategoria-create' %}" class="btn-primary text-sm"><i class="fas fa-plus mr-2"></i>Nuevo</a>
 </div>
 
 <div class="glass-card p-4 mb-6">
@@ -33,6 +34,7 @@
           <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Categoría</th>
           <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Nivel Peligrosidad</th>
           <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Descripción</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -52,10 +54,31 @@
             {% endwith %}
           </td>
           <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs">{{ s.descripcion|truncatewords:10|default:"-" }}</td>
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2">
+              <button onclick="document.getElementById('edit-{{ s.id }}').classList.toggle('hidden')" class="text-brand-400 hover:text-brand-300 text-xs"><i class="fas fa-edit"></i> Editar</button>
+              <form method="post" action="{% url 'web:soc-subcategoria-delete' s.id %}" onsubmit="return confirm('¿Eliminar esta subcategoría?')">
+                {% csrf_token %}
+                <button class="text-red-400 hover:text-red-300 text-xs"><i class="fas fa-trash"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        <tr id="edit-{{ s.id }}" class="hidden">
+          <td colspan="5" class="px-4 py-3">
+            <form method="post" action="{% url 'web:soc-subcategoria-edit' s.id %}" class="flex flex-wrap gap-3 items-end">
+              {% csrf_token %}
+              <input name="nombre" value="{{ s.nombre }}" placeholder="Nombre" class="flex-1 min-w-[140px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm" required>
+              <input type="hidden" name="categoria" value="{{ s.categoria }}">
+              <input name="nivel_peligrosidad" value="{{ s.nivel_peligrosidad }}" type="number" min="1" max="10" placeholder="Nivel" class="w-20 px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm" required>
+              <input name="descripcion" value="{{ s.descripcion }}" placeholder="Descripción" class="flex-1 min-w-[140px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+              <button class="btn-primary text-xs px-3 py-1.5"><i class="fas fa-save mr-1"></i>Guardar</button>
+            </form>
+          </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="4" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400">
+          <td colspan="5" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400">
             <i class="fas fa-tags text-4xl mb-3 block opacity-50"></i>
             No se encontraron subcategorías
           </td>

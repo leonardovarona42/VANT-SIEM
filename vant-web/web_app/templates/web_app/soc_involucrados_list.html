@@ -1,0 +1,85 @@
+{% extends "web_app/base.html" %}
+{% block title %}Involucrados | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-users text-brand-400 mr-2"></i>Involucrados</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total|default:"0" }} involucrados registrados</p>
+  </div>
+  <a href="{% url 'web:soc-involucrado-create' %}" class="btn-primary text-sm"><i class="fas fa-plus mr-2"></i>Nuevo</a>
+</div>
+
+<div class="glass-card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Nombre</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Apellidos</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Usuario</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">IP</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">MAC</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Tipo</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for i in involucrados %}
+        <tr class="border-t dark:border-surface-800/50 border-surface-200/50 hover:dark:bg-white/[0.02] hover:bg-surface-50 transition-colors">
+          <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-700 font-medium">{{ i.nombre|default:"-" }}</td>
+          <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600">{{ i.apellidos|default:"-" }}</td>
+          <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600 font-mono">{{ i.usuario|default:"-" }}</td>
+          <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600 font-mono">{{ i.ip|default:"-" }}</td>
+          <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600 font-mono">{{ i.mac|default:"-" }}</td>
+          <td class="px-4 py-3">
+            {% with tipo=i.tipo %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+              {% if tipo == 'interno' %}bg-emerald-500/20 text-emerald-300
+              {% elif tipo == 'externo' %}bg-amber-500/20 text-amber-300
+              {% else %}bg-surface-500/20 text-surface-400{% endif %}">
+              {{ tipo|default:"desconocido" }}
+            </span>
+            {% endwith %}
+          </td>
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2">
+              <button onclick="document.getElementById('edit-{{ i.id }}').classList.toggle('hidden')" class="text-brand-400 hover:text-brand-300 text-xs"><i class="fas fa-edit"></i> Editar</button>
+              <form method="post" action="{% url 'web:soc-involucrado-delete' i.id %}" onsubmit="return confirm('¿Eliminar este involucrado?')">
+                {% csrf_token %}
+                <button class="text-red-400 hover:text-red-300 text-xs"><i class="fas fa-trash"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        <tr id="edit-{{ i.id }}" class="hidden">
+          <td colspan="7" class="px-4 py-3">
+            <form method="post" action="{% url 'web:soc-involucrado-edit' i.id %}" class="flex flex-wrap gap-3 items-end">
+              {% csrf_token %}
+              <input name="nombre" value="{{ i.nombre }}" placeholder="Nombre" class="flex-1 min-w-[120px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm" required>
+              <input name="apellidos" value="{{ i.apellidos }}" placeholder="Apellidos" class="flex-1 min-w-[120px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+              <input name="usuario" value="{{ i.usuario }}" placeholder="Usuario" class="flex-1 min-w-[100px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+              <input name="ip" value="{{ i.ip }}" placeholder="IP" class="flex-1 min-w-[100px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm font-mono">
+              <input name="mac" value="{{ i.mac }}" placeholder="MAC" class="flex-1 min-w-[120px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm font-mono">
+              <select name="tipo" class="px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+                <option value="interno" {% if i.tipo == 'interno' %}selected{% endif %}>Interno</option>
+                <option value="externo" {% if i.tipo == 'externo' %}selected{% endif %}>Externo</option>
+                <option value="desconocido" {% if i.tipo == 'desconocido' %}selected{% endif %}>Desconocido</option>
+              </select>
+              <button class="btn-primary text-xs px-3 py-1.5"><i class="fas fa-save mr-1"></i>Guardar</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="px-4 py-16 text-center dark:text-surface-500 text-surface-400">
+            <i class="fas fa-users text-4xl mb-3 block opacity-50"></i>
+            <p class="text-sm">No hay involucrados registrados</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "web_app/base.html" %}
+{% block title %}Involucrado - {{ involucrado.nombre }} | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-2xl font-bold dark:text-white text-surface-900">
+        <i class="fas fa-user text-brand-400 mr-2"></i>{{ involucrado.nombre }} {{ involucrado.apellidos }}
+      </h1>
+      <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Detalle del involucrado</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <a href="{% url 'web:soc-involucrado-edit' involucrado.id %}" class="btn-primary text-sm"><i class="fas fa-edit mr-2"></i>Editar</a>
+      <form method="post" action="{% url 'web:soc-involucrado-delete' involucrado.id %}" onsubmit="return confirm('¿Eliminar este involucrado?')">
+        {% csrf_token %}
+        <button class="btn-secondary text-sm dark:text-red-400 dark:hover:bg-red-500/10"><i class="fas fa-trash mr-2"></i>Eliminar</button>
+      </form>
+      <a href="{% url 'web:soc-involucrados-list' %}" class="btn-secondary text-sm"><i class="fas fa-arrow-left mr-2"></i>Volver</a>
+    </div>
+  </div>
+
+  <div class="glass-card p-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div>
+        <label class="block text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1.5">Nombre</label>
+        <p class="text-sm dark:text-surface-200 text-surface-700">{{ involucrado.nombre|default:"-" }}</p>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1.5">Apellidos</label>
+        <p class="text-sm dark:text-surface-200 text-surface-700">{{ involucrado.apellidos|default:"-" }}</p>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1.5">Usuario</label>
+        <p class="text-sm dark:text-surface-200 text-surface-700 font-mono">{{ involucrado.usuario|default:"-" }}</p>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1.5">Tipo</label>
+        {% with tipo=involucrado.tipo %}
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
+          {% if tipo == 'interno' %}bg-emerald-500/20 text-emerald-300
+          {% elif tipo == 'externo' %}bg-amber-500/20 text-amber-300
+          {% else %}bg-surface-500/20 text-surface-400{% endif %}">
+          {{ tipo|default:"desconocido" }}
+        </span>
+        {% endwith %}
+      </div>
+      <div>
+        <label class="block text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1.5">Dirección IP</label>
+        <p class="text-sm dark:text-surface-200 text-surface-700 font-mono">{{ involucrado.ip|default:"-" }}</p>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1.5">Dirección MAC</label>
+        <p class="text-sm dark:text-surface-200 text-surface-700 font-mono">{{ involucrado.mac|default:"-" }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

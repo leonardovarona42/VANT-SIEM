@@ -546,6 +546,416 @@ def software_list(request):
     })
 
 
+# ── SOC: CRUD - Categorias ──────────────────────────────────────────
+
+@csrf_protect
+@require_POST
+def soc_categoria_create(request):
+    if not _require_auth(request):
+        return _redirect_login(request)
+    data = {"nombre": request.POST.get("nombre", "").strip(), "descripcion": request.POST.get("descripcion", "").strip()}
+    if not data["nombre"]:
+        messages.error(request, "El nombre es obligatorio.")
+        return redirect("web:soc-categorias-list")
+    try:
+        result = http_client.create_categoria(data, request)
+        if result:
+            messages.success(request, "Categoría creada.")
+        else:
+            messages.error(request, "Error al crear la categoría.")
+    except Exception:
+        messages.error(request, "Servicio no disponible.")
+    return redirect("web:soc-categorias-list")
+
+
+@csrf_protect
+@require_POST
+def soc_categoria_edit(request, pk):
+    if not _require_auth(request):
+        return _redirect_login(request)
+    data = {"nombre": request.POST.get("nombre", "").strip(), "descripcion": request.POST.get("descripcion", "").strip()}
+    try:
+        result = http_client.update_categoria(pk, data, request)
+        if result:
+            messages.success(request, "Categoría actualizada.")
+        else:
+            messages.error(request, "Error al actualizar.")
+    except Exception:
+        messages.error(request, "Servicio no disponible.")
+    return redirect("web:soc-categorias-list")
+
+
+@csrf_protect
+@require_POST
+def soc_categoria_delete(request, pk):
+    if not _require_auth(request):
+        return _redirect_login(request)
+    try:
+        if http_client.delete_categoria(pk, request):
+            messages.success(request, "Categoría eliminada.")
+        else:
+            messages.error(request, "Error al eliminar.")
+    except Exception:
+        messages.error(request, "Servicio no disponible.")
+    return redirect("web:soc-categorias-list")
+
+
+# ── SOC: CRUD - Subcategorias ───────────────────────────────────────
+
+@csrf_protect
+@require_POST
+def soc_subcategoria_create(request):
+    if not _require_auth(request):
+        return _redirect_login(request)
+    data = {
+        "nombre": request.POST.get("nombre", "").strip(),
+        "descripcion": request.POST.get("descripcion", "").strip(),
+        "nivel_peligrosidad": request.POST.get("nivel_peligrosidad", "5"),
+        "categoria": request.POST.get("categoria", ""),
+    }
+    if not data["nombre"] or not data["categoria"]:
+        messages.error(request, "Nombre y categoría son obligatorios.")
+        return redirect("web:soc-subcategorias-list")
+    try:
+        result = http_client.create_subcategoria(data, request)
+        if result:
+            messages.success(request, "Subcategoría creada.")
+        else:
+            messages.error(request, "Error al crear la subcategoría.")
+    except Exception:
+        messages.error(request, "Servicio no disponible.")
+    return redirect("web:soc-subcategorias-list")
+
+
+@csrf_protect
+@require_POST
+def soc_subcategoria_edit(request, pk):
+    if not _require_auth(request):
+        return _redirect_login(request)
+    data = {
+        "nombre": request.POST.get("nombre", "").strip(),
+        "descripcion": request.POST.get("descripcion", "").strip(),
+        "nivel_peligrosidad": request.POST.get("nivel_peligrosidad", "5"),
+        "categoria": request.POST.get("categoria", ""),
+    }
+    try:
+        result = http_client.update_subcategoria(pk, data, request)
+        if result:
+            messages.success(request, "Subcategoría actualizada.")
+        else:
+            messages.error(request, "Error al actualizar.")
+    except Exception:
+        messages.error(request, "Servicio no disponible.")
+    return redirect("web:soc-subcategorias-list")
+
+
+@csrf_protect
+@require_POST
+def soc_subcategoria_delete(request, pk):
+    if not _require_auth(request):
+        return _redirect_login(request)
+    try:
+        if http_client.delete_subcategoria(pk, request):
+            messages.success(request, "Subcategoría eliminada.")
+        else:
+            messages.error(request, "Error al eliminar.")
+    except Exception:
+        messages.error(request, "Servicio no disponible.")
+    return redirect("web:soc-subcategorias-list")
+
+
+# ── SOC: CRUD - Medidas ────────────────────────────────────────────
+
+@csrf_protect
+@require_POST
+def soc_medida_create(request):
+    if not _require_auth(request):
+        return _redirect_login(request)
+    data = {"nombre": request.POST.get("nombre", "").strip(), "descripcion": request.POST.get("descripcion", "").strip()}
+    if not data["nombre"]:
+        messages.error(request, "El nombre es obligatorio.")
+        return redirect("web:soc-medidas-list")
+    try:
+        result = http_client.create_medida(data, request)
+        if result:
+            messages.success(request, "Medida creada.")
+        else:
+            messages.error(request, "Error al crear la medida.")
+    except Exception:
+        messages.error(request, "Servicio no disponible.")
+    return redirect("web:soc-medidas-list")
+
+
+@csrf_protect
+@require_POST
+def soc_medida_edit(request, pk):
+    if not _require_auth(request):
+        return _redirect_login(request)
+    data = {"nombre": request.POST.get("nombre", "").strip(), "descripcion": request.POST.get("descripcion", "").strip()}
+    try:
+        result = http_client.update_medida(pk, data, request)
+        if result:
+            messages.success(request, "Medida actualizada.")
+        else:
+            messages.error(request, "Error al actualizar.")
+    except Exception:
+        messages.error(request, "Servicio no disponible.")
+    return redirect("web:soc-medidas-list")
+
+
+@csrf_protect
+@require_POST
+def soc_medida_delete(request, pk):
+    if not _require_auth(request):
+        return _redirect_login(request)
+    try:
+        if http_client.delete_medida(pk, request):
+            messages.success(request, "Medida eliminada.")
+        else:
+            messages.error(request, "Error al eliminar.")
+    except Exception:
+        messages.error(request, "Servicio no disponible.")
+    return redirect("web:soc-medidas-list")
+
+
+# ── SOC: CRUD - Responsables ────────────────────────────────────────
+
+@csrf_protect
+@require_POST
+def soc_responsable_create(request):
+    if not _require_auth(request):
+        return _redirect_login(request)
+    data = {
+        "nombres": request.POST.get("nombres", "").strip(),
+        "apellidos": request.POST.get("apellidos", "").strip(),
+        "email": request.POST.get("email", "").strip(),
+        "telefono_particular": request.POST.get("telefono_particular", "").strip(),
+        "telefono_corp": request.POST.get("telefono_corp", "").strip(),
+        "tipo": request.POST.get("tipo", "rsi"),
+        "descripcion": request.POST.get("descripcion", "").strip(),
+    }
+    if not data["nombres"] or not data["apellidos"]:
+        messages.error(request, "Nombres y apellidos son obligatorios.")
+        return redirect("web:soc-responsables-list")
+    try:
+        result = http_client.create_responsable(data, request)
+        if result:
+            messages.success(request, "Responsable creado.")
+        else:
+            messages.error(request, "Error al crear el responsable.")
+    except Exception:
+        messages.error(request, "Servicio no disponible.")
+    return redirect("web:soc-responsables-list")
+
+
+@csrf_protect
+@require_POST
+def soc_responsable_edit(request, pk):
+    if not _require_auth(request):
+        return _redirect_login(request)
+    data = {
+        "nombres": request.POST.get("nombres", "").strip(),
+        "apellidos": request.POST.get("apellidos", "").strip(),
+        "email": request.POST.get("email", "").strip(),
+        "telefono_particular": request.POST.get("telefono_particular", "").strip(),
+        "telefono_corp": request.POST.get("telefono_corp", "").strip(),
+        "tipo": request.POST.get("tipo", "rsi"),
+        "descripcion": request.POST.get("descripcion", "").strip(),
+    }
+    try:
+        result = http_client.update_responsable(pk, data, request)
+        if result:
+            messages.success(request, "Responsable actualizado.")
+        else:
+            messages.error(request, "Error al actualizar.")
+    except Exception:
+        messages.error(request, "Servicio no disponible.")
+    return redirect("web:soc-responsables-list")
+
+
+@csrf_protect
+@require_POST
+def soc_responsable_delete(request, pk):
+    if not _require_auth(request):
+        return _redirect_login(request)
+    try:
+        if http_client.delete_responsable(pk, request):
+            messages.success(request, "Responsable eliminado.")
+        else:
+            messages.error(request, "Error al eliminar.")
+    except Exception:
+        messages.error(request, "Servicio no disponible.")
+    return redirect("web:soc-responsables-list")
+
+
+# ── SOC: CRUD - Areas ──────────────────────────────────────────────
+
+@csrf_protect
+@require_POST
+def soc_area_create(request):
+    if not _require_auth(request):
+        return _redirect_login(request)
+    data = {
+        "nombre": request.POST.get("nombre", "").strip(),
+        "acronimo": request.POST.get("acronimo", "").strip(),
+    }
+    for fk in ("cuadro_centro", "rsi", "admin"):
+        val = request.POST.get(fk, "")
+        if val:
+            data[fk] = val
+    if not data["nombre"] or not data["acronimo"]:
+        messages.error(request, "Nombre y acrónimo son obligatorios.")
+        return redirect("web:soc-areas-list")
+    try:
+        result = http_client.create_area(data, request)
+        if result:
+            messages.success(request, "Área creada.")
+        else:
+            messages.error(request, "Error al crear el área.")
+    except Exception:
+        messages.error(request, "Servicio no disponible.")
+    return redirect("web:soc-areas-list")
+
+
+@csrf_protect
+@require_POST
+def soc_area_edit(request, pk):
+    if not _require_auth(request):
+        return _redirect_login(request)
+    data = {
+        "nombre": request.POST.get("nombre", "").strip(),
+        "acronimo": request.POST.get("acronimo", "").strip(),
+    }
+    for fk in ("cuadro_centro", "rsi", "admin"):
+        val = request.POST.get(fk, "")
+        data[fk] = val if val else None
+    try:
+        result = http_client.update_area(pk, data, request)
+        if result:
+            messages.success(request, "Área actualizada.")
+        else:
+            messages.error(request, "Error al actualizar.")
+    except Exception:
+        messages.error(request, "Servicio no disponible.")
+    return redirect("web:soc-areas-list")
+
+
+@csrf_protect
+@require_POST
+def soc_area_delete(request, pk):
+    if not _require_auth(request):
+        return _redirect_login(request)
+    try:
+        if http_client.delete_area(pk, request):
+            messages.success(request, "Área eliminada.")
+        else:
+            messages.error(request, "Error al eliminar.")
+    except Exception:
+        messages.error(request, "Servicio no disponible.")
+    return redirect("web:soc-areas-list")
+
+
+# ── SOC: CRUD - Involucrados ────────────────────────────────────────
+
+def involucrados_list(request):
+    if not _require_auth(request):
+        return _redirect_login(request)
+    params = {}
+    for key in ("q", "page", "page_size"):
+        val = request.GET.get(key)
+        if val:
+            params[key] = val
+    try:
+        data = http_client.get_involucrados(request, **params)
+    except Exception:
+        data = {"results": [], "count": 0}
+        messages.error(request, "Error al conectar con el servicio SOC.")
+    return render(request, "web_app/soc_involucrados_list.html", {
+        "involucrados": data.get("results", []),
+        "total": data.get("count", 0),
+        "search": request.GET.get("q", ""),
+    })
+
+
+def involucrado_detail(request, pk):
+    if not _require_auth(request):
+        return _redirect_login(request)
+    try:
+        involucrado = http_client.get_involucrado(pk, request)
+    except Exception:
+        involucrado = None
+    if not involucrado:
+        messages.error(request, "Involucrado no encontrado.")
+        return redirect("web:soc-involucrados-list")
+    return render(request, "web_app/soc_involucrado_detail.html", {"involucrado": involucrado})
+
+
+@csrf_protect
+@require_POST
+def soc_involucrado_create(request):
+    if not _require_auth(request):
+        return _redirect_login(request)
+    data = {
+        "nombres": request.POST.get("nombres", "").strip(),
+        "apellidos": request.POST.get("apellidos", "").strip(),
+        "usuario": request.POST.get("usuario", "").strip(),
+        "ip": request.POST.get("ip", "").strip() or None,
+        "mac": request.POST.get("mac", "").strip(),
+        "tipo": request.POST.get("tipo", "interno"),
+    }
+    if not data["nombres"]:
+        messages.error(request, "El nombre es obligatorio.")
+        return redirect("web:soc-involucrados-list")
+    try:
+        result = http_client.create_involucrado(data, request)
+        if result:
+            messages.success(request, "Involucrado creado.")
+        else:
+            messages.error(request, "Error al crear el involucrado.")
+    except Exception:
+        messages.error(request, "Servicio no disponible.")
+    return redirect("web:soc-involucrados-list")
+
+
+@csrf_protect
+@require_POST
+def soc_involucrado_edit(request, pk):
+    if not _require_auth(request):
+        return _redirect_login(request)
+    data = {
+        "nombres": request.POST.get("nombres", "").strip(),
+        "apellidos": request.POST.get("apellidos", "").strip(),
+        "usuario": request.POST.get("usuario", "").strip(),
+        "ip": request.POST.get("ip", "").strip() or None,
+        "mac": request.POST.get("mac", "").strip(),
+        "tipo": request.POST.get("tipo", "interno"),
+    }
+    try:
+        result = http_client.update_involucrado(pk, data, request)
+        if result:
+            messages.success(request, "Involucrado actualizado.")
+        else:
+            messages.error(request, "Error al actualizar.")
+    except Exception:
+        messages.error(request, "Servicio no disponible.")
+    return redirect("web:soc-involucrado-detail", pk=pk)
+
+
+@csrf_protect
+@require_POST
+def soc_involucrado_delete(request, pk):
+    if not _require_auth(request):
+        return _redirect_login(request)
+    try:
+        if http_client.delete_involucrado(pk, request):
+            messages.success(request, "Involucrado eliminado.")
+        else:
+            messages.error(request, "Error al eliminar.")
+    except Exception:
+        messages.error(request, "Servicio no disponible.")
+    return redirect("web:soc-involucrados-list")
+
+
 # ── JSON API endpoints for dashboard ─────────────────────────────────
 
 def dashboard_metrics(request):
@@ -746,9 +1156,15 @@ def areas_list(request):
         data = {"results": [], "count": 0}
         messages.error(request, "Error al conectar con el servicio SOC.")
 
+    try:
+        resp_data = http_client.get_responsables(request)
+    except Exception:
+        resp_data = {"results": [], "count": 0}
+
     return render(request, "web_app/soc_areas_list.html", {
         "areas": data.get("results", []),
         "total": data.get("count", 0),
+        "responsables": resp_data.get("results", []),
     })
 
 
