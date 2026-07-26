@@ -41,11 +41,13 @@ def login_view(request):
             return render(request, "web_app/login.html")
 
         result = http_client.auth_login(username, password)
-        if result and result.get("token"):
-            request.session["jwt_token"] = result["token"]
-            request.session["username"] = result.get("username", username)
-            request.session["is_superuser"] = result.get("is_superuser", False)
-            request.session["user_id"] = result.get("user_id")
+        if result and result.get("access"):
+            request.session["jwt_token"] = result["access"]
+            request.session["refresh_token"] = result.get("refresh", "")
+            user_info = result.get("user", {})
+            request.session["username"] = user_info.get("username", username)
+            request.session["is_superuser"] = user_info.get("is_superuser", user_info.get("role") == "admin")
+            request.session["user_id"] = user_info.get("id")
             request.session.save()
             return redirect("web:dashboard")
         elif result:
@@ -87,8 +89,9 @@ def dashboard_view(request):
 
     try:
         inv_stats = http_client.get_inventory_stats(request)
-        ctx["online_agents"] = inv_stats.get("online", 0)
-        ctx["offline_agents"] = inv_stats.get("offline", 0)
+        ctx["online_agents"] = inv_stats.get("online_agents", 0)
+        total_agents = inv_stats.get("total_agents", 0)
+        ctx["offline_agents"] = max(0, total_agents - ctx["online_agents"])
     except Exception:
         ctx["online_agents"] = 0
         ctx["offline_agents"] = 0

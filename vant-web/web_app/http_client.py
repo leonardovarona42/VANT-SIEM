@@ -46,7 +46,7 @@ def _service_call(method, url, request=None, **kwargs):
 def auth_login(username, password):
     resp = _service_call(
         "post",
-        f"{settings.AUTH_SERVICE_URL}/api/auth/login/",
+        f"{settings.AUTH_SERVICE_URL}/auth/api/login/",
         json={"username": username, "password": password},
     )
     if resp and resp.ok:
@@ -57,7 +57,7 @@ def auth_login(username, password):
 def auth_logout(request):
     resp = _service_call(
         "post",
-        f"{settings.AUTH_SERVICE_URL}/api/auth/logout/",
+        f"{settings.AUTH_SERVICE_URL}/auth/api/logout/",
         request=request,
     )
     return resp is not None and resp.ok
@@ -66,11 +66,12 @@ def auth_logout(request):
 def auth_me(request):
     resp = _service_call(
         "get",
-        f"{settings.AUTH_SERVICE_URL}/api/auth/me/",
+        f"{settings.AUTH_SERVICE_URL}/auth/api/users/me/",
         request=request,
     )
     if resp and resp.ok:
-        return resp.json()
+        data = resp.json()
+        return data.get("user", data)
     return None
 
 
@@ -100,20 +101,17 @@ def get_agent(agent_id, request=None):
 
 
 def get_agent_hardware(agent_id, request=None):
-    resp = _service_call(
-        "get",
-        f"{settings.INVENTORY_SERVICE_URL}/api/agents/{agent_id}/hardware/",
-        request=request,
-    )
-    if resp and resp.ok:
-        return resp.json()
+    agent = get_agent(agent_id, request)
+    if agent and agent.get("hardware"):
+        return agent["hardware"]
     return None
 
 
 def get_agent_software(agent_id, request=None, **params):
+    params["agent_id"] = agent_id
     resp = _service_call(
         "get",
-        f"{settings.INVENTORY_SERVICE_URL}/api/agents/{agent_id}/software/",
+        f"{settings.INVENTORY_SERVICE_URL}/api/software/",
         request=request,
         params=params,
     )
@@ -137,7 +135,7 @@ def get_software_inventory(request=None, **params):
 def get_inventory_stats(request=None):
     resp = _service_call(
         "get",
-        f"{settings.INVENTORY_SERVICE_URL}/api/stats/",
+        f"{settings.INVENTORY_SERVICE_URL}/api/health/",
         request=request,
     )
     if resp and resp.ok:
@@ -148,7 +146,7 @@ def get_inventory_stats(request=None):
 def inventory_health():
     resp = _service_call(
         "get",
-        f"{settings.INVENTORY_SERVICE_URL}/health/",
+        f"{settings.INVENTORY_SERVICE_URL}/api/health/",
     )
     return resp is not None and resp.ok
 
@@ -192,7 +190,7 @@ def get_log_sources(request=None):
 def get_logs_stats(request=None, **params):
     resp = _service_call(
         "get",
-        f"{settings.LOGS_SERVICE_URL}/api/stats/",
+        f"{settings.LOGS_SERVICE_URL}/api/statistics/",
         request=request,
         params=params,
     )
@@ -204,7 +202,7 @@ def get_logs_stats(request=None, **params):
 def logs_health():
     resp = _service_call(
         "get",
-        f"{settings.LOGS_SERVICE_URL}/health/",
+        f"{settings.LOGS_SERVICE_URL}/api/health/",
     )
     return resp is not None and resp.ok
 
@@ -324,7 +322,7 @@ def get_aegis_stats(request=None, **params):
 def aegis_health():
     resp = _service_call(
         "get",
-        f"{settings.AEGIS_SERVICE_URL}/health/",
+        f"{settings.AEGIS_SERVICE_URL}/api/health/",
     )
     return resp is not None and resp.ok
 

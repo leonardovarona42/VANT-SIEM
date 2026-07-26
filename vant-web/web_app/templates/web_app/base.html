@@ -47,6 +47,7 @@
 </head>
 <body class="min-h-screen flex flex-col">
   {% csrf_token %}
+
   <nav class="sticky top-0 z-50 dark:bg-surface-950/80 dark:border-surface-800/50 bg-white/80 border-surface-200/50 backdrop-blur-xl border-b">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
@@ -54,32 +55,81 @@
           <img src="{% static 'img/logo.png' %}" alt="Logo" class="w-10 h-10 rounded-full object-cover shrink-0" />
           <span class="text-lg font-bold bg-gradient-to-r from-brand-400 to-accent-400 bg-clip-text text-transparent tracking-tight">VANT-SIEM</span>
         </a>
+
         {% if is_authenticated %}
         <div class="hidden xl:flex items-center gap-1">
           <a href="{% url 'web:dashboard' %}" class="nav-link"><i class="fas fa-chart-pie w-4"></i>Dashboard</a>
-          <a href="{% url 'web:events-list' %}" class="nav-link"><i class="fas fa-stream w-4"></i>Logs</a>
-          <a href="{% url 'web:logs-discovery' %}" class="nav-link"><i class="fas fa-compass w-4"></i>Discovery</a>
-          <a href="{% url 'web:suricata-dashboard' %}" class="nav-link"><i class="fas fa-shield-halved w-4"></i>Suricata</a>
-          <a href="{% url 'web:inventory-dashboard' %}" class="nav-link"><i class="fas fa-laptop w-4"></i>Inventario</a>
-          <a href="{% url 'web:agents-list' %}" class="nav-link"><i class="fas fa-desktop w-4"></i>Agentes</a>
-          <a href="{% url 'web:software-list' %}" class="nav-link"><i class="fas fa-cube w-4"></i>Software</a>
-          <a href="{% url 'web:incidents-list' %}" class="nav-link"><i class="fas fa-shield-halved w-4"></i>DLP</a>
-          <a href="{% url 'web:policies-list' %}" class="nav-link"><i class="fas fa-list-check w-4"></i>Políticas</a>
+
+          <div class="relative" data-dropdown>
+            <button onclick="toggleDropdown(this)" class="nav-link cursor-pointer">
+              <i class="fas fa-stream w-4"></i>Logs & Seguridad<i class="fas fa-chevron-down text-[10px] ml-1 opacity-50"></i>
+            </button>
+            <div class="dropdown-menu absolute left-0 mt-1 w-56 opacity-0 invisible scale-95 transition-all duration-150 z-50">
+              <div class="glass-card p-2 mt-1">
+                <a href="{% url 'web:events-list' %}" class="nav-link text-sm">
+                  <i class="fas fa-stream w-4 text-brand-400"></i>Eventos / Logs
+                </a>
+                <a href="{% url 'web:logs-discovery' %}" class="nav-link text-sm">
+                  <i class="fas fa-compass w-4 text-cyan-400"></i>Log Discovery
+                </a>
+                <a href="{% url 'web:suricata-dashboard' %}" class="nav-link text-sm">
+                  <i class="fas fa-shield-halved w-4 text-amber-400"></i>Suricata IDS
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="relative" data-dropdown>
+            <button onclick="toggleDropdown(this)" class="nav-link cursor-pointer">
+              <i class="fas fa-laptop w-4"></i>Inventario<i class="fas fa-chevron-down text-[10px] ml-1 opacity-50"></i>
+            </button>
+            <div class="dropdown-menu absolute left-0 mt-1 w-56 opacity-0 invisible scale-95 transition-all duration-150 z-50">
+              <div class="glass-card p-2 mt-1">
+                <a href="{% url 'web:inventory-dashboard' %}" class="nav-link text-sm">
+                  <i class="fas fa-gauge-high w-4 text-cyan-400"></i>Dashboard Inventario
+                </a>
+                <a href="{% url 'web:agents-list' %}" class="nav-link text-sm">
+                  <i class="fas fa-desktop w-4 text-brand-400"></i>Agentes
+                </a>
+                <a href="{% url 'web:software-list' %}" class="nav-link text-sm">
+                  <i class="fas fa-cube w-4 text-purple-400"></i>Software
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="relative" data-dropdown>
+            <button onclick="toggleDropdown(this)" class="nav-link cursor-pointer">
+              <i class="fas fa-shield-halved w-4"></i>DLP / Aegis<i class="fas fa-chevron-down text-[10px] ml-1 opacity-50"></i>
+            </button>
+            <div class="dropdown-menu absolute left-0 mt-1 w-56 opacity-0 invisible scale-95 transition-all duration-150 z-50">
+              <div class="glass-card p-2 mt-1">
+                <a href="{% url 'web:incidents-list' %}" class="nav-link text-sm">
+                  <i class="fas fa-triangle-exclamation w-4 text-red-400"></i>Incidentes DLP
+                </a>
+                <a href="{% url 'web:policies-list' %}" class="nav-link text-sm">
+                  <i class="fas fa-list-check w-4 text-emerald-400"></i>Políticas y Reglas
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
+
         <div class="flex items-center gap-3">
           <button id="theme-toggle" class="nav-link" title="Cambiar tema" onclick="toggleTheme()">
             <i class="fas fa-sun text-amber-400 dark:hidden"></i>
             <i class="fas fa-moon text-brand-400 hidden dark:inline"></i>
           </button>
-          <div class="relative group">
-            <button class="flex items-center gap-2 px-3 py-2 rounded-xl dark:hover:bg-white/5 hover:bg-surface-100 transition-all">
+          <div class="relative" data-dropdown>
+            <button onclick="toggleDropdown(this)" class="flex items-center gap-2 px-3 py-2 rounded-xl dark:hover:bg-white/5 hover:bg-surface-100 transition-all cursor-pointer">
               <div class="w-8 h-8 rounded-full bg-gradient-to-br from-brand-500 to-accent-500 flex items-center justify-center text-white text-sm font-semibold">
                 {{ username|make_list|first|upper }}
               </div>
               <span class="hidden sm:inline text-sm font-medium dark:text-surface-200 text-surface-700">{{ username }}</span>
+              <i class="fas fa-chevron-down text-[10px] opacity-50"></i>
             </button>
-            <div class="absolute right-0 mt-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-              <div class="glass-card p-2 space-y-1">
+            <div class="dropdown-menu absolute right-0 mt-1 w-48 opacity-0 invisible scale-95 transition-all duration-150 z-50">
+              <div class="glass-card p-2 mt-1">
                 <a href="{% url 'web:logout' %}" class="nav-link dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-500/10 text-red-600 hover:text-red-500 hover:bg-red-50">
                   <i class="fas fa-sign-out-alt w-4"></i>Cerrar Sesión
                 </a>
@@ -87,11 +137,36 @@
             </div>
           </div>
         </div>
+
         {% else %}
         <a href="{% url 'web:login' %}" class="btn-primary text-sm">Iniciar Sesión</a>
         {% endif %}
       </div>
     </div>
+
+    {% if is_authenticated %}
+    <div class="xl:hidden border-t dark:border-surface-800/50 border-surface-200/50 px-4 py-3 space-y-1" id="mobile-nav">
+      <a href="{% url 'web:dashboard' %}" class="nav-link"><i class="fas fa-chart-pie w-4"></i>Dashboard</a>
+
+      <p class="px-4 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wider dark:text-surface-500 text-surface-400">Logs & Seguridad</p>
+      <a href="{% url 'web:events-list' %}" class="nav-link pl-8 text-sm"><i class="fas fa-stream w-4 text-brand-400"></i>Eventos / Logs</a>
+      <a href="{% url 'web:logs-discovery' %}" class="nav-link pl-8 text-sm"><i class="fas fa-compass w-4 text-cyan-400"></i>Log Discovery</a>
+      <a href="{% url 'web:suricata-dashboard' %}" class="nav-link pl-8 text-sm"><i class="fas fa-shield-halved w-4 text-amber-400"></i>Suricata IDS</a>
+
+      <p class="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider dark:text-surface-500 text-surface-400">Inventario</p>
+      <a href="{% url 'web:inventory-dashboard' %}" class="nav-link pl-8 text-sm"><i class="fas fa-gauge-high w-4 text-cyan-400"></i>Dashboard Inventario</a>
+      <a href="{% url 'web:agents-list' %}" class="nav-link pl-8 text-sm"><i class="fas fa-desktop w-4 text-brand-400"></i>Agentes</a>
+      <a href="{% url 'web:software-list' %}" class="nav-link pl-8 text-sm"><i class="fas fa-cube w-4 text-purple-400"></i>Software</a>
+
+      <p class="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider dark:text-surface-500 text-surface-400">DLP / Aegis</p>
+      <a href="{% url 'web:incidents-list' %}" class="nav-link pl-8 text-sm"><i class="fas fa-triangle-exclamation w-4 text-red-400"></i>Incidentes DLP</a>
+      <a href="{% url 'web:policies-list' %}" class="nav-link pl-8 text-sm"><i class="fas fa-list-check w-4 text-emerald-400"></i>Políticas y Reglas</a>
+
+      <div class="border-t dark:border-surface-800/50 border-surface-200/50 mt-2 pt-2">
+        <a href="{% url 'web:logout' %}" class="nav-link dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-500/10 text-red-600 hover:text-red-500 hover:bg-red-50"><i class="fas fa-sign-out-alt w-4"></i>Cerrar Sesión</a>
+      </div>
+    </div>
+    {% endif %}
   </nav>
 
   <main class="flex-1 flex flex-col pb-16">
@@ -128,6 +203,32 @@
       const isDark = html.classList.toggle("dark");
       localStorage.setItem("vant-theme", isDark ? "dark" : "light");
     }
+
+    function toggleDropdown(btn) {
+      const container = btn.closest("[data-dropdown]");
+      const menu = container.querySelector(".dropdown-menu");
+      const isOpen = !menu.classList.contains("invisible");
+
+      document.querySelectorAll("[data-dropdown] .dropdown-menu").forEach(function(m) {
+        m.classList.add("invisible", "opacity-0", "scale-95");
+        m.classList.remove("visible", "opacity-100", "scale-100");
+      });
+
+      if (!isOpen) {
+        menu.classList.remove("invisible", "opacity-0", "scale-95");
+        menu.classList.add("visible", "opacity-100", "scale-100");
+      }
+    }
+
+    document.addEventListener("click", function(e) {
+      if (!e.target.closest("[data-dropdown]")) {
+        document.querySelectorAll("[data-dropdown] .dropdown-menu").forEach(function(m) {
+          m.classList.add("invisible", "opacity-0", "scale-95");
+          m.classList.remove("visible", "opacity-100", "scale-100");
+        });
+      }
+    });
+
     document.addEventListener('DOMContentLoaded', function() {
       setTimeout(function() {
         document.querySelectorAll('[role="alert"]').forEach(function(alert) {

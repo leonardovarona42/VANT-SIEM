@@ -305,6 +305,22 @@ class UserDeleteView(View):
 
 
 @method_decorator(csrf_exempt, name="dispatch")
+class UserMeView(View):
+    def get(self, request):
+        token = extract_token(request)
+        if not token:
+            return json_error("unauthorized", 401)
+        claims = decode_jwt(token)
+        if not claims or claims.get("type") != "access":
+            return json_error("unauthorized", 401)
+        try:
+            user = AuthUser.objects.get(id=claims["sub"])
+        except AuthUser.DoesNotExist:
+            return json_error("User not found", 404)
+        return JsonResponse({"user": UserSerializer(user).data})
+
+
+@method_decorator(csrf_exempt, name="dispatch")
 class HealthView(View):
     def get(self, request):
         return JsonResponse({"status": "healthy", "service": "vant-auth"})
