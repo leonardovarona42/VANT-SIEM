@@ -12,7 +12,7 @@ from django.core.paginator import Paginator
 from django.core.files.base import ContentFile
 from django.conf import settings
 from rest_framework import status, viewsets
-from rest_framework.decorators import action, api_view, permission_classes, parser_classes
+from rest_framework.decorators import action, api_view, permission_classes, parser_classes, authentication_classes
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
@@ -25,6 +25,7 @@ from .serializers import (
     DlpAgentConfigSerializer, DlpThreatIngestMultipartSerializer,
 )
 from .forms import DlpPolicyForm, DlpRuleForm
+from .authentication import AgentTokenAuthentication
 
 logger = logging.getLogger(__name__)
 
@@ -61,16 +62,26 @@ def health_check(request):
 # =========================================================================
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@authentication_classes([AgentTokenAuthentication])
+@permission_classes([AllowAny])
 def agent_dlp_config(request):
+    from INVENTORY.models import Agent as AgentModel
+    if not isinstance(request.user, AgentModel):
+        from rest_framework.exceptions import NotAuthenticated
+        raise NotAuthenticated("Valid agent token required")
     policies = DlpPolicy.objects.filter(is_active=True).prefetch_related("rules")
     serializer = DlpAgentConfigSerializer({"policies": policies, "fetched_at": timezone.now()})
     return Response(serializer.data)
 
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@authentication_classes([AgentTokenAuthentication])
+@permission_classes([AllowAny])
 def ingest_dlp_threats(request):
+    from INVENTORY.models import Agent as AgentModel
+    if not isinstance(request.user, AgentModel):
+        from rest_framework.exceptions import NotAuthenticated
+        raise NotAuthenticated("Valid agent token required")
     serializer = DlpThreatIngestSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

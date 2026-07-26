@@ -5,18 +5,87 @@
     <a href="{% url 'aegis-policies' %}" class="text-sm text-blue-400 hover:text-blue-300 mb-2 inline-block">
         <i class="fas fa-arrow-left mr-1"></i>Volver a politicas
     </a>
-    <h2 class="text-2xl font-bold dark:text-white text-surface-900">
-        <i class="fas fa-edit mr-2 text-amber-400"></i>{{ title }}
-    </h2>
+    <div class="flex items-center gap-3">
+        <h2 class="text-2xl font-bold dark:text-white text-surface-900">
+            <i class="fas fa-shield-alt mr-2 text-amber-400"></i>{{ title }}
+        </h2>
+        <button type="button" onclick="document.getElementById('help-modal').classList.remove('hidden')" class="w-7 h-7 rounded-full bg-surface-700 hover:bg-surface-600 text-surface-300 hover:text-white flex items-center justify-center text-sm font-bold transition" title="Ayuda con ejemplos de uso">
+            <i class="fas fa-question"></i>
+        </button>
+    </div>
 </div>
 
-<div class="glass-card p-6 max-w-2xl">
-    <form method="post">
-        {% csrf_token %}
+<form method="post">
+{% csrf_token %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl">
+
+    <div class="glass-card p-6">
+        <h3 class="text-lg font-semibold dark:text-white mb-4">
+            <i class="fas fa-info-circle mr-2 text-blue-400"></i>General
+        </h3>
         <div class="space-y-4">
             {% for field in form %}
+            {% if field.name == 'code' or field.name == 'name' or field.name == 'description' or field.name == 'is_active' or field.name == 'severity' %}
             <div>
-                <label class="text-sm font-medium dark:text-white text-surface-900">{{ field.label }}</label>
+                {% if field.field.widget.input_type == 'checkbox' %}
+                <div class="flex items-center gap-2">
+                    {{ field }}
+                    <label class="text-sm font-medium dark:text-white text-surface-900">{{ field.label }}</label>
+                </div>
+                {% else %}
+                <label class="block text-sm font-medium dark:text-white text-surface-900 mb-1">{{ field.label }}</label>
+                {{ field }}
+                {% endif %}
+                {% if field.errors %}
+                <div class="text-xs text-red-400 mt-1">{{ field.errors.0 }}</div>
+                {% endif %}
+                {% if field.help_text %}
+                <div class="text-xs dark:text-surface-400 text-surface-500 mt-1">{{ field.help_text }}</div>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="glass-card p-6">
+        <h3 class="text-lg font-semibold dark:text-white mb-4">
+            <i class="fas fa-desktop mr-2 text-purple-400"></i>Objetivo
+        </h3>
+        <div class="space-y-4">
+            {% for field in form %}
+            {% if field.name == 'target_os' or field.name == 'realtime_enabled' %}
+            <div>
+                {% if field.field.widget.input_type == 'checkbox' %}
+                <div class="flex items-center gap-2">
+                    {{ field }}
+                    <label class="text-sm font-medium dark:text-white text-surface-900">{{ field.label }}</label>
+                </div>
+                {% else %}
+                <label class="block text-sm font-medium dark:text-white text-surface-900 mb-1">{{ field.label }}</label>
+                {{ field }}
+                {% endif %}
+                {% if field.errors %}
+                <div class="text-xs text-red-400 mt-1">{{ field.errors.0 }}</div>
+                {% endif %}
+                {% if field.help_text %}
+                <div class="text-xs dark:text-surface-400 text-surface-500 mt-1">{{ field.help_text }}</div>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="glass-card p-6">
+        <h3 class="text-lg font-semibold dark:text-white mb-4">
+            <i class="fas fa-folder-open mr-2 text-green-400"></i>Almacenamiento
+        </h3>
+        <div class="space-y-4">
+            {% for field in form %}
+            {% if field.name == 'scan_mode' or field.name == 'scan_paths' %}
+            <div id="field-{{ field.name }}">
+                <label class="block text-sm font-medium dark:text-white text-surface-900 mb-1">{{ field.label }}</label>
                 {{ field }}
                 {% if field.errors %}
                 <div class="text-xs text-red-400 mt-1">{{ field.errors.0 }}</div>
@@ -25,12 +94,182 @@
                 <div class="text-xs dark:text-surface-400 text-surface-500 mt-1">{{ field.help_text }}</div>
                 {% endif %}
             </div>
+            {% endif %}
+            {% endfor %}
+            <div id="scan-paths-hint" class="hidden text-xs dark:text-surface-400 text-surface-500 bg-surface-800/50 p-3 rounded-lg border border-surface-600">
+                <i class="fas fa-info-circle mr-1 text-green-400"></i>
+                <strong>Modo All:</strong> El agente escanea todo el almacenamiento automaticamente, incluyendo discos duros, SSD, USB conectados y puntos de montaje. Los USB nuevos se detectan y escanean al conectar.
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card p-6">
+        <h3 class="text-lg font-semibold dark:text-white mb-4">
+            <i class="fas fa-file-alt mr-2 text-amber-400"></i>Filtros
+        </h3>
+        <div class="space-y-4">
+            {% for field in form %}
+            {% if field.name == 'monitored_extensions' or field.name == 'max_file_size_mb' or field.name == 'max_scan_seconds' %}
+            <div>
+                <label class="block text-sm font-medium dark:text-white text-surface-900 mb-1">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                <div class="text-xs text-red-400 mt-1">{{ field.errors.0 }}</div>
+                {% endif %}
+                {% if field.help_text %}
+                <div class="text-xs dark:text-surface-400 text-surface-500 mt-1">{{ field.help_text }}</div>
+                {% endif %}
+            </div>
+            {% endif %}
             {% endfor %}
         </div>
-        <div class="flex gap-3 mt-6">
-            <button type="submit" class="px-6 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded">Guardar</button>
-            <a href="{% url 'aegis-policies' %}" class="px-6 py-2 bg-surface-200 dark:bg-surface-700 hover:bg-surface-300 dark:hover:bg-surface-600 rounded dark:text-white">Cancelar</a>
+    </div>
+
+</div>
+
+<div class="flex gap-3 mt-6">
+    <button type="submit" class="px-6 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded font-medium">
+        <i class="fas fa-save mr-1"></i>Guardar
+    </button>
+    <a href="{% url 'aegis-policies' %}" class="px-6 py-2 bg-surface-200 dark:bg-surface-700 hover:bg-surface-300 dark:hover:bg-surface-600 rounded dark:text-white">Cancelar</a>
+</div>
+</form>
+
+<script>
+(function() {
+    const scanMode = document.getElementById('id_scan_mode');
+    const scanPathsField = document.getElementById('field-scan_paths');
+    const scanPathsHint = document.getElementById('scan-paths-hint');
+
+    function toggleScanPaths() {
+        if (!scanMode || !scanPathsField) return;
+        if (scanMode.value === 'all') {
+            scanPathsField.classList.add('hidden');
+            scanPathsHint.classList.remove('hidden');
+        } else {
+            scanPathsField.classList.remove('hidden');
+            scanPathsHint.classList.add('hidden');
+        }
+    }
+
+    if (scanMode) {
+        scanMode.addEventListener('change', toggleScanPaths);
+        toggleScanPaths();
+    }
+})();
+</script>
+
+<div id="help-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onclick="if(event.target===this)this.classList.add('hidden')">
+    <div class="bg-surface-900 border border-surface-600 rounded-2xl shadow-2xl max-w-2xl w-full mx-4 max-h-[85vh] overflow-y-auto">
+        <div class="sticky top-0 bg-surface-900 border-b border-surface-700 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+            <h3 class="text-lg font-bold text-white"><i class="fas fa-question-circle mr-2 text-amber-400"></i>Guia de Politicas DLP</h3>
+            <button onclick="document.getElementById('help-modal').classList.add('hidden')" class="text-surface-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
         </div>
-    </form>
+        <div class="px-6 py-5 space-y-6 text-sm">
+
+            <div>
+                <h4 class="text-white font-semibold mb-2 flex items-center gap-2">
+                    <i class="fas fa-linux text-blue-400"></i> Linux - Modo "Todo el almacenamiento"
+                </h4>
+                <div class="bg-surface-800 rounded-lg p-4 border border-surface-700 space-y-2 text-surface-300">
+                    <p>El agente escanea <strong class="text-white">todo el filesystem</strong> excluyendo directorios del sistema:</p>
+                    <ul class="list-disc list-inside space-y-1 text-xs">
+                        <li><code class="text-amber-400">/</code> - Raiz completa (home, opt, srv, var, tmp, etc.)</li>
+                        <li><code class="text-amber-400">/media/*, /mnt/*</code> - USBs y discos externos montados</li>
+                        <li><code class="text-amber-400">/home/leonardo/Documents/informe.pdf</code> - Detecta clasificado</li>
+                        <li><code class="text-amber-400">/opt/datos/reporte_confidencial.xlsx</code> - Detecta confidential</li>
+                        <li><code class="text-amber-400">/mnt/usb/datosSecretos.docx</code> - USB nuevo escaneado al conectar</li>
+                    </ul>
+                    <p class="text-xs text-green-400 mt-2"><i class="fas fa-bolt mr-1"></i><strong>Tiempo real:</strong> inotify detecta archivos nuevos/modificados al instante. Si alguien crea un doc clasificado, se alerta en segundos.</p>
+                </div>
+            </div>
+
+            <div>
+                <h4 class="text-white font-semibold mb-2 flex items-center gap-2">
+                    <i class="fab fa-windows text-blue-400"></i> Windows - Modo "Todo el almacenamiento"
+                </h4>
+                <div class="bg-surface-800 rounded-lg p-4 border border-surface-700 space-y-2 text-surface-300">
+                    <p>El agente escanea <strong class="text-white">todos los discos fijos</strong> (C:\, D:\, etc.):</p>
+                    <ul class="list-disc list-inside space-y-1 text-xs">
+                        <li><code class="text-amber-400">C:\Users\*\Desktop\*</code> - Escritorios de todos los usuarios</li>
+                        <li><code class="text-amber-400">C:\Users\*\Documents\*</code> - Documentos de todos los perfiles</li>
+                        <li><code class="text-amber-400">C:\Users\*\Downloads\*</code> - Descargas</li>
+                        <li><code class="text-amber-400">D:\archivos\*</code> - Discos adicionales</li>
+                        <li><code class="text-amber-400">E:\ (USB)</code> - Pen drives se detectan automaticamente</li>
+                    </ul>
+                    <p class="text-xs text-green-400 mt-2"><i class="fas fa-bolt mr-1"></i><strong>Tiempo real:</strong> Monitoreo cada 10 segundos + deteccion de nuevos drives. Si se conecta un USB, se escanea inmediatamente.</p>
+                </div>
+            </div>
+
+            <div>
+                <h4 class="text-white font-semibold mb-2 flex items-center gap-2">
+                    <i class="fas fa-folder-open text-green-400"></i> Modo "Rutas especificas"
+                </h4>
+                <div class="bg-surface-800 rounded-lg p-4 border border-surface-700 space-y-2 text-surface-300">
+                    <p>Escribe una ruta por linea. Ejemplos:</p>
+                    <div class="grid grid-cols-2 gap-3 mt-2">
+                        <div>
+                            <p class="text-xs font-bold text-blue-400 mb-1">Linux:</p>
+                            <ul class="text-xs space-y-1">
+                                <li><code class="text-amber-400">/home</code></li>
+                                <li><code class="text-amber-400">/opt/datos</code></li>
+                                <li><code class="text-amber-400">/srv/compartido</code></li>
+                                <li><code class="text-amber-400">/mnt/nas</code></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-blue-400 mb-1">Windows:</p>
+                            <ul class="text-xs space-y-1">
+                                <li><code class="text-amber-400">C:\Users</code></li>
+                                <li><code class="text-amber-400">D:\archivos</code></li>
+                                <li><code class="text-amber-400">\\server\compartido</code></li>
+                                <li><code class="text-amber-400">E:\</code></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h4 class="text-white font-semibold mb-2 flex items-center gap-2">
+                    <i class="fas fa-shield-alt text-amber-400"></i> Ejemplo completo
+                </h4>
+                <div class="bg-surface-800 rounded-lg p-4 border border-surface-700 text-surface-300 text-xs">
+                    <p class="mb-2"><strong class="text-white">Caso:</strong> Proteger informacion clasificada en servidores Linux</p>
+                    <ul class="space-y-1">
+                        <li><strong class="text-blue-400">Target OS:</strong> Linux</li>
+                        <li><strong class="text-blue-400">Modo:</strong> Todo el almacenamiento</li>
+                        <li><strong class="text-blue-400">Realtime:</strong> Activado</li>
+                        <li><strong class="text-blue-400">Regla:</strong> Keyword "informacion clasificada" (severity: critical)</li>
+                        <li><strong class="text-blue-400">Regla:</strong> Regex <code class="text-amber-400">\b(confidential|classified|secret)\b</code></li>
+                    </ul>
+                    <p class="mt-2 text-green-400"><i class="fas fa-check mr-1"></i> Cubre: discos internos, USBs, NAS montado, todos los usuarios, en tiempo real.</p>
+                </div>
+            </div>
+
+            <div>
+                <h4 class="text-white font-semibold mb-2 flex items-center gap-2">
+                    <i class="fas fa-ban text-red-400"></i> Exclusiones automaticas
+                </h4>
+                <div class="bg-surface-800 rounded-lg p-4 border border-surface-700 text-surface-300 text-xs">
+                    <p class="mb-1">El agente <strong class="text-white">NO escanea</strong> estos directorios (rendimiento y seguridad):</p>
+                    <div class="grid grid-cols-2 gap-2 mt-2">
+                        <div>
+                            <p class="font-bold text-blue-400">Linux:</p>
+                            <code class="text-amber-400">/proc /sys /dev /run</code>
+                        </div>
+                        <div>
+                            <p class="font-bold text-blue-400">Windows:</p>
+                            <code class="text-amber-400">$Recycle.bin / Windows / WinSxS</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="sticky bottom-0 bg-surface-900 border-t border-surface-700 px-6 py-3 rounded-b-2xl flex justify-end">
+            <button onclick="document.getElementById('help-modal').classList.add('hidden')" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded text-sm font-medium">Entendido</button>
+        </div>
+    </div>
 </div>
 {% endblock %}

@@ -18,8 +18,8 @@ class DlpPolicySerializer(serializers.ModelSerializer):
         model = DlpPolicy
         fields = [
             "code", "name", "description", "is_active", "severity",
-            "scan_paths", "monitored_extensions", "max_file_size_mb",
-            "max_scan_seconds", "target_os", "rules", "updated_at",
+            "scan_mode", "scan_paths", "monitored_extensions", "max_file_size_mb",
+            "max_scan_seconds", "target_os", "realtime_enabled", "rules", "updated_at",
         ]
 
 

@@ -44,7 +44,7 @@ class LoggingMiddleware(MiddlewareMixin):
         """Procesar response y crear log si es necesario"""
 
         # Solo logear para usuarios autenticados
-        if not getattr(request, 'user', None) or not request.user.is_authenticated:
+        if not getattr(request, 'user', None) or not getattr(request.user, 'is_authenticated', False):
             return response
 
         # Obtener información del request

@@ -144,6 +144,12 @@ def register_agent(request):
         agent.heartbeat()
         agent.save(update_fields=['hostname', 'os_type', 'os_version', 'agent_version', 'ip_address', 'mac_address', 'domain', 'status'])
 
+    auth_token = str(uuid.uuid4())
+    meta = dict(agent.meta or {})
+    meta['auth_token'] = auth_token
+    agent.meta = meta
+    agent.save(update_fields=['meta', 'updated_at'])
+
     LogSource.objects.update_or_create(
         source_id=str(agent.agent_id),
         defaults={
@@ -169,6 +175,7 @@ def register_agent(request):
         'hostname': agent.hostname,
         'status': agent.status,
         'created': created,
+        'auth_token': auth_token,
     }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
 

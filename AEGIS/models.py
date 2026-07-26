@@ -23,6 +23,16 @@ MATCH_TYPE_CHOICES = [
     ("metadata", "Metadata"),
 ]
 
+TARGET_OS_CHOICES = [
+    ("linux", "Linux"),
+    ("windows", "Windows"),
+]
+
+SCAN_MODE_CHOICES = [
+    ("all", "Todo el almacenamiento"),
+    ("paths", "Rutas especificas"),
+]
+
 CHANNEL_CHOICES = [
     ("filesystem", "Filesystem"),
     ("downloads", "Downloads"),
@@ -44,11 +54,15 @@ class DlpPolicy(models.Model):
     description = models.TextField(blank=True, default="")
     is_active = models.BooleanField(default=True, db_index=True)
     severity = models.CharField(max_length=16, choices=SEVERITY_CHOICES, default="high")
+    scan_mode = models.CharField(max_length=16, choices=SCAN_MODE_CHOICES, default="all",
+                                  help_text="'all' escanea todo el almacenamiento disponible incluyendo USBs")
     scan_paths = models.JSONField(default=list, blank=True)
     monitored_extensions = models.JSONField(default=list, blank=True)
     max_file_size_mb = models.IntegerField(default=25)
-    max_scan_seconds = models.IntegerField(default=20)
-    target_os = models.CharField(max_length=32, blank=True, default="")
+    max_scan_seconds = models.IntegerField(default=0, help_text="0 = sin limite de tiempo")
+    target_os = models.CharField(max_length=32, choices=TARGET_OS_CHOICES, default="linux")
+    realtime_enabled = models.BooleanField(default=True,
+                                            help_text="Monitorear cambios en tiempo real (inotify/ReadDirectoryChangesW)")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

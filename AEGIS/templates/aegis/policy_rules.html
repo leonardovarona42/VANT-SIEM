@@ -50,8 +50,8 @@
                             </span>
                         </td>
                         <td class="py-3 px-4">
-                            <span class="px-2 py-0.5 rounded text-xs {% if rule.enabled %}bg-green-500/20 text-green-400{% else %}bg-gray-500/20 text-gray-400{% endif %}">
-                                {{ rule.enabled|yesno:"Activa,Inactiva" }}
+                            <span class="px-2 py-0.5 rounded text-xs {% if rule.is_active %}bg-green-500/20 text-green-400{% else %}bg-gray-500/20 text-gray-400{% endif %}">
+                                {{ rule.is_active|yesno:"Activa,Inactiva" }}
                             </span>
                         </td>
                         <td class="py-3 px-4">
@@ -80,7 +80,7 @@
                     {% for field in form %}
                     {% if field.name != 'policy' %}
                     <div>
-                        <label class="text-xs dark:text-surface-400 text-surface-500">{{ field.label }}</label>
+                        <label class="block text-xs font-medium dark:text-surface-400 text-surface-500 mb-1">{{ field.label }}</label>
                         {{ field }}
                         {% if field.errors %}
                         <div class="text-xs text-red-400 mt-1">{{ field.errors.0 }}</div>
