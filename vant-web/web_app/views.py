@@ -3097,8 +3097,12 @@ def intelligence_geo_live(request):
     if request.headers.get("x-requested-with") == "XMLHttpRequest" or "since" in request.GET:
         try:
             import urllib.request
-            params = urllib.parse.urlencode(request.GET)
-            url = f"{settings.INTELLIGENCE_SERVICE_URL}/api/analytics/geo/live/?{params}"
+            params = dict(request.GET)
+            if "lat" in params and "lon" in params:
+                params["user_lat"] = params.pop("lat")
+                params["user_lon"] = params.pop("lon")
+            qs = urllib.parse.urlencode(params)
+            url = f"{settings.INTELLIGENCE_SERVICE_URL}/api/analytics/geo/live/?{qs}"
             req = urllib.request.Request(url)
             with urllib.request.urlopen(req, timeout=5) as resp:
                 data = json.loads(resp.read().decode())
