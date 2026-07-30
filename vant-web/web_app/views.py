@@ -1,5 +1,6 @@
 import json
 import logging
+import urllib.parse
 from datetime import datetime, timedelta
 
 from django.shortcuts import render, redirect
@@ -3093,24 +3094,64 @@ def intelligence_geo(request):
 def intelligence_geo_live(request):
     if not _require_auth(request):
         return _redirect_login(request)
+    if request.headers.get("x-requested-with") == "XMLHttpRequest" or "since" in request.GET:
+        try:
+            import urllib.request
+            params = urllib.parse.urlencode(request.GET)
+            url = f"{settings.INTELLIGENCE_SERVICE_URL}/api/analytics/geo/live/?{params}"
+            req = urllib.request.Request(url)
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read().decode())
+            return JsonResponse(data)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=502)
+    try:
+        import urllib.request
+        req = urllib.request.Request(f"{settings.INTELLIGENCE_SERVICE_URL}/api/analytics/geo/")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            raw = json.loads(resp.read().decode())
+        geo_data = raw
+        for c in geo_data.get("countries", []):
+            c["total"] = c.get("events", 0)
+            c["src_count"] = c.get("events", 0)
+            c["dst_count"] = 0
+    except Exception:
+        geo_data = {"countries": [], "flows": [], "stats": {}}
     return render(request, "web_app/intelligence_geo.html", {
         "hours": 1,
-        "geo_data": "{}",
+        "geo_data": json.dumps(geo_data),
     })
 
 
 def intelligence_geo_report(request):
     if not _require_auth(request):
         return _redirect_login(request)
-    return render(request, "web_app/intelligence_geo_report.html")
+    try:
+        import urllib.request
+        req = urllib.request.Request(f"{settings.INTELLIGENCE_SERVICE_URL}/api/analytics/geo/report/")
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            report_data = json.loads(resp.read().decode())
+    except Exception:
+        report_data = {"countries": [], "flows": [], "stats": {}}
+    return render(request, "web_app/intelligence_geo_report.html", {
+        "report_data": json.dumps(report_data),
+    })
 
 
 def intelligence_geo_report_api(request):
     if not _require_auth(request):
         return JsonResponse({"error": "Unauthorized"}, status=401)
     period = request.GET.get("period", "week")
-    data = http_client.intel_analytics_geo_report(request, period=period)
-    return JsonResponse(data)
+    try:
+        import urllib.request
+        params = urllib.parse.urlencode({"period": period})
+        url = f"{settings.INTELLIGENCE_SERVICE_URL}/api/analytics/geo/report/?{params}"
+        req = urllib.request.Request(url)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+        return JsonResponse(data)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=502)
 
 
 @require_POST
