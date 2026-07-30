@@ -3094,7 +3094,7 @@ def intelligence_geo(request):
 def intelligence_geo_live(request):
     if not _require_auth(request):
         return _redirect_login(request)
-    if request.headers.get("x-requested-with") == "XMLHttpRequest" or "since" in request.GET:
+    if "since" in request.GET or "lat" in request.GET or request.GET.get("_ajax") == "1":
         try:
             import urllib.request
             params = dict(request.GET)

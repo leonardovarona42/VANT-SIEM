@@ -49,7 +49,19 @@
   </div>
 
   <div class="glass-card p-2">
-    <div id="map" style="height:600px; border-radius: 12px; overflow: hidden;"></div>
+    <div id="mapContainer" style="position:relative; height:600px; border-radius: 12px; overflow: hidden; cursor: grab;">
+      <canvas id="mapCanvas" style="width:100%; height:100%; display:block;"></canvas>
+      <div id="mapTooltip" style="position:absolute; display:none; pointer-events:none; z-index:20; background:rgba(0,0,0,0.75); color:#fff; padding:4px 10px; border-radius:6px; font-size:13px; font-weight:600; white-space:nowrap; transform:translate(-50%,-110%);"></div>
+      <div id="mapLoading" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:inherit; z-index:10;">
+        <div class="flex items-center gap-2 text-sm dark:text-surface-400 text-surface-500">
+          <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          <span>Cargando mapa...</span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -84,11 +96,11 @@
         </div>
         <div class="flex items-center gap-3">
           <span class="w-3 h-3 rounded-full bg-red-500"></span>
-          <span class="dark:text-surface-300 text-surface-600">Pa&iacute;s malicioso</span>
+          <span class="dark:text-surface-300 text-surface-600">Origen malicioso</span>
         </div>
         <div class="flex items-center gap-3">
           <span class="w-3 h-3 rounded-full bg-emerald-700"></span>
-          <span class="dark:text-surface-300 text-surface-600">Pa&iacute;s seguro</span>
+          <span class="dark:text-surface-300 text-surface-600">Origen seguro</span>
         </div>
       </div>
     </div>
@@ -109,257 +121,373 @@
 {% endblock %}
 
 {% block extra_js %}
-<link rel="stylesheet" href="{% static 'web_app/css/leaflet.css' %}" />
-<script src="{% static 'web_app/js/leaflet.js' %}"></script>
+<style>
+  #mapContainer.dragging { cursor: grabbing !important; }
+</style>
 <script>
+const GEOJSON_URL = '{% static "web_app/js/world-countries.json" %}';
 const POLL_INTERVAL = 5000;
-const MAX_THREADS = 200;
 const THREAD_LIFETIME = 30000;
 const MAX_LIST_ITEMS = 50;
 
-let mapInstance = null;
+let canvas, ctx;
+let mapReady = false;
+
+let panX = 0, panY = 0, zoom = 1;
+let isDragging = false, dragMoved = false, dragStartX, dragStartY, dragOrigPanX, dragOrigPanY;
+
 let threadLines = [];
-let pollTimer = null;
 let lastEventTime = null;
 let connCountInWindow = 0;
 let countryActivity = {};
 let activeThreadsCount = 0;
-let inboundCount = 0;
-let outboundCount = 0;
-
+let inboundCount = 0, outboundCount = 0;
 let isSettingLocation = false;
 let userLocation = JSON.parse(localStorage.getItem('vantUserGeoLocation') || 'null');
-let locationMarker = null;
+
+function lonToX(lon) { return (lon + 180) / 360 * 2000; }
+function latToY(lat) { return (90 - lat) / 180 * 1000; }
+function xyToLonLat(x, y) { return { lon: x / 2000 * 360 - 180, lat: 90 - y / 1000 * 180 }; }
+function screenToLogical(sx, sy) { return { x: sx / zoom - panX, y: sy / zoom - panY }; }
 
 function isDark() { return document.documentElement.classList.contains('dark'); }
-
-const TILE_URL = isDark()
-  ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-  : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+function colors() {
+    const d = isDark();
+    return { bg: d ? '#1e293b' : '#e8f4f8', land: d ? '#334155' : '#c8dce6', border: d ? '#475569' : '#a0b8c8', text: d ? '#e2e8f0' : '#1e293b' };
+}
+function typeColor(t) { return t === 'malicious' ? '#ef4444' : t === 'suspicious' ? '#f97316' : '#3b82f6'; }
 
 function updateLocationDisplay() {
-  const el = document.getElementById('locationDisplay');
-  if (userLocation) {
-    el.innerHTML = `<i class="fas fa-location-dot mr-1 text-emerald-400"></i>${userLocation.lat.toFixed(2)}, ${userLocation.lon.toFixed(2)}`;
-  } else {
-    el.innerHTML = '<i class="fas fa-question-circle mr-1 text-amber-400"></i>Sin ubicaci&oacute;n';
-  }
-}
-
-function updateLocationMarker() {
-  if (locationMarker) { mapInstance.removeLayer(locationMarker); locationMarker = null; }
-  if (!userLocation || !mapInstance) return;
-  const icon = L.divIcon({
-    html: '<div style="width:16px;height:16px;border-radius:50%;background:#22c55e;border:3px solid white;box-shadow:0 0 12px rgba(34,197,94,0.6);"></div>',
-    iconSize: [16, 16],
-    className: '',
-  });
-  locationMarker = L.marker([userLocation.lat, userLocation.lon], { icon, zIndexOffset: 1000 }).addTo(mapInstance)
-    .bindTooltip('<b>Mi ubicaci&oacute;n</b>');
-}
-
-function cleanOldThreads() {
-  const now = Date.now();
-  threadLines = threadLines.filter(t => {
-    if (now - t.created > THREAD_LIFETIME) {
-      if (t.layer && mapInstance) mapInstance.removeLayer(t.layer);
-      if (t.marker && mapInstance) mapInstance.removeLayer(t.marker);
-      return false;
-    }
-    return true;
-  });
-  activeThreadsCount = threadLines.length;
-  document.getElementById('statActiveThreads').textContent = activeThreadsCount;
-}
-
-function getTypeColor(type) {
-  if (type === 'malicious') return '#ef4444';
-  if (type === 'suspicious') return '#f97316';
-  return '#3b82f6';
+    document.getElementById('locationDisplay').innerHTML = userLocation
+        ? `<i class="fas fa-location-dot mr-1 text-emerald-400"></i>${userLocation.lat.toFixed(2)}, ${userLocation.lon.toFixed(2)}`
+        : '<i class="fas fa-question-circle mr-1 text-amber-400"></i>Sin ubicaci&oacute;n';
 }
 
 function updateStats() {
-  document.getElementById('statMalicious').textContent = countryActivity.malicious?.count || 0;
-  document.getElementById('statSuspicious').textContent = countryActivity.suspicious?.count || 0;
-  document.getElementById('statNormal').textContent = countryActivity.normal?.count || 0;
-  document.getElementById('statCountries').textContent = (countryActivity.malicious?.countries || 0) + (countryActivity.suspicious?.countries || 0) + (countryActivity.normal?.countries || 0);
-  document.getElementById('inOutStats').innerHTML = `<i class="fas fa-sign-in-alt mr-1 text-purple-400"></i>${inboundCount} <i class="fas fa-sign-out-alt mr-1 ml-2 text-cyan-400"></i>${outboundCount}`;
+    document.getElementById('statMalicious').textContent = countryActivity.malicious?.count || 0;
+    document.getElementById('statSuspicious').textContent = countryActivity.suspicious?.count || 0;
+    document.getElementById('statNormal').textContent = countryActivity.normal?.count || 0;
+    document.getElementById('statCountries').textContent = (countryActivity.malicious?.countries||0)+(countryActivity.suspicious?.countries||0)+(countryActivity.normal?.countries||0);
+    document.getElementById('inOutStats').innerHTML = `<i class="fas fa-sign-in-alt mr-1 text-purple-400"></i>${inboundCount} <i class="fas fa-sign-out-alt mr-1 ml-2 text-cyan-400"></i>${outboundCount}`;
+}
+
+let countryPath2D = null;
+let countryLabels = [];
+
+function buildPaths() {
+    if (!mapData) return;
+    countryPath2D = new Path2D();
+    countryLabels = [];
+    for (const f of mapData.features) {
+        const g = f.geometry;
+        if (!g) continue;
+        const name = f.properties.ADMIN || f.properties.NAME || '';
+        let sumLon = 0, sumLat = 0, cnt = 0;
+        const all = g.type === 'Polygon' ? [g.coordinates] : g.coordinates;
+        for (const poly of all) {
+            for (const ring of poly) {
+                countryPath2D.moveTo(lonToX(ring[0][0]), latToY(ring[0][1]));
+                for (let i = 1; i < ring.length; i++) {
+                    countryPath2D.lineTo(lonToX(ring[i][0]), latToY(ring[i][1]));
+                    sumLon += ring[i][0]; sumLat += ring[i][1]; cnt++;
+                }
+                countryPath2D.closePath();
+            }
+        }
+        if (name && cnt > 0) countryLabels.push({ name, x: lonToX(sumLon/cnt), y: latToY(sumLat/cnt) });
+    }
+}
+
+function render() {
+    if (!canvas || !mapReady) return;
+    const r = canvas.getBoundingClientRect();
+    const w = r.width | 0, h = r.height | 0;
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+
+    const c = colors();
+    ctx.fillStyle = c.bg;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.save();
+    ctx.translate(panX * zoom, panY * zoom);
+    ctx.scale(zoom, zoom);
+
+    if (countryPath2D) {
+        ctx.fillStyle = c.land;
+        ctx.fill(countryPath2D);
+        ctx.strokeStyle = c.border;
+        ctx.lineWidth = 0.5 / zoom;
+        ctx.stroke(countryPath2D);
+    }
+
+    for (const t of threadLines) {
+        const io = t.direction === 'outbound';
+        ctx.beginPath();
+        ctx.moveTo(t.fx, t.fy);
+        ctx.quadraticCurveTo(t.cx, t.cy, t.tx, t.ty);
+        ctx.strokeStyle = io ? '#22d3ee' : '#a855f7';
+        ctx.lineWidth = 1.5 / zoom;
+        ctx.globalAlpha = Math.max(0.3, 1 - (Date.now() - t.created) / THREAD_LIFETIME);
+        ctx.setLineDash(io ? [6/zoom, 4/zoom] : []);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+
+        const r2 = 4 / zoom;
+        ctx.beginPath();
+        ctx.arc(t.fx, t.fy, r2, 0, Math.PI * 2);
+        ctx.fillStyle = typeColor(t.type);
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 1.5 / zoom;
+        ctx.fill();
+        ctx.stroke();
+    }
+
+    if (userLocation) {
+        const ux = lonToX(userLocation.lon), uy = latToY(userLocation.lat);
+        const r3 = 8 / zoom;
+        ctx.beginPath(); ctx.arc(ux, uy, r3, 0, Math.PI * 2);
+        ctx.fillStyle = '#22c55e'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2 / zoom;
+        ctx.fill(); ctx.stroke();
+        const pulse = (14 + 6 * Math.sin(Date.now() / 500)) / zoom;
+        ctx.beginPath(); ctx.arc(ux, uy, pulse, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(34,197,94,0.2)'; ctx.lineWidth = 2 / zoom;
+        ctx.stroke();
+    }
+
+    ctx.restore();
 }
 
 function addThread(conn) {
-  const src = conn.src_country;
-  const dst = conn.dst_country;
-  if (!src) return;
+    const src = conn.src_country, dst = conn.dst_country;
+    if (!src) return;
+    const type = conn.type || 'normal', dir = conn.direction || 'inbound';
+    let fx, fy, tx, ty;
+    if (dir === 'inbound' && userLocation) {
+        fx = lonToX(src.lon + (Math.random() - 0.5) * 0.5); fy = latToY(src.lat + (Math.random() - 0.5) * 0.5);
+        tx = lonToX(userLocation.lon + (Math.random() - 0.5) * 0.2); ty = latToY(userLocation.lat + (Math.random() - 0.5) * 0.2);
+        inboundCount++;
+    } else if (dir === 'outbound' && userLocation && dst) {
+        fx = lonToX(userLocation.lon + (Math.random() - 0.5) * 0.2); fy = latToY(userLocation.lat + (Math.random() - 0.5) * 0.2);
+        tx = lonToX(dst.lon + (Math.random() - 0.5) * 0.5); ty = latToY(dst.lat + (Math.random() - 0.5) * 0.5);
+        outboundCount++;
+    } else {
+        fx = lonToX(src.lon + (Math.random() - 0.5) * 0.5); fy = latToY(src.lat + (Math.random() - 0.5) * 0.5);
+        const dl = dst ? dst.lat + (Math.random() - 0.5) * 0.5 : src.lat + (Math.random() - 0.5) * 5;
+        const dn = dst ? dst.lon + (Math.random() - 0.5) * 0.5 : src.lon + (Math.random() - 0.5) * 5;
+        tx = lonToX(dn); ty = latToY(dl);
+        dir === 'inbound' ? inboundCount++ : outboundCount++;
+    }
+    if (Math.abs(fx - tx) < 2 && Math.abs(fy - ty) < 2) return;
+    const mx = (fx + tx) / 2, my = (fy + ty) / 2;
+    const io = dir === 'outbound';
+    threadLines.push({
+        fx, fy, tx, ty,
+        cx: mx + (io ? -60 : 60) * (0.5 + Math.random()),
+        cy: my + (io ? -60 : 60) * (0.5 + Math.random()),
+        type, direction: dir, created: Date.now(),
+        label: `${src.name||src.code||'?'} → ${dst?.name||dst?.code||'?'} (${conn.port||'-'}/${conn.protocol||'-'}) [${type}]`
+    });
+    connCountInWindow++;
+    activeThreadsCount = threadLines.length;
+    if (!countryActivity[type]) countryActivity[type] = { count: 0, countries: 0, seen: {} };
+    countryActivity[type].count++;
+    const srcId = src.name || src.code || (src.lon+','+src.lat) || '??';
+    if (!countryActivity[type].seen[srcId]) {
+        countryActivity[type].seen[srcId] = true;
+        countryActivity[type].countries++;
+    }
+    document.getElementById('statActiveThreads').textContent = activeThreadsCount;
+}
 
-  const type = conn.type || 'normal';
-  const color = getTypeColor(type);
-  const direction = conn.direction || 'inbound';
-
-  let fromLat, fromLon, toLat, toLon, fromName, toName;
-
-  if (direction === 'inbound' && userLocation) {
-    fromLat = src.lat + (Math.random() - 0.5) * 2;
-    fromLon = src.lon + (Math.random() - 0.5) * 2;
-    toLat = userLocation.lat + (Math.random() - 0.5) * 1;
-    toLon = userLocation.lon + (Math.random() - 0.5) * 1;
-    fromName = src.name || src.code || '?';
-    toName = 'Mi ubicaci&oacute;n';
-    inboundCount++;
-  } else if (direction === 'outbound' && userLocation && dst) {
-    fromLat = userLocation.lat + (Math.random() - 0.5) * 1;
-    fromLon = userLocation.lon + (Math.random() - 0.5) * 1;
-    toLat = dst.lat + (Math.random() - 0.5) * 2;
-    toLon = dst.lon + (Math.random() - 0.5) * 2;
-    fromName = 'Mi ubicaci&oacute;n';
-    toName = dst.name || dst.code || '?';
-    outboundCount++;
-  } else {
-    fromLat = src.lat + (Math.random() - 0.5) * 2;
-    fromLon = src.lon + (Math.random() - 0.5) * 2;
-    toLat = (dst?.lat || 0) + (Math.random() - 0.5) * 2 || fromLat + (Math.random() - 0.5) * 30;
-    toLon = (dst?.lon || 0) + (Math.random() - 0.5) * 2 || fromLon + (Math.random() - 0.5) * 30;
-    fromName = src.name || src.code || '?';
-    toName = dst?.name || dst?.code || '?';
-    direction === 'inbound' ? inboundCount++ : outboundCount++;
-  }
-
-  if (fromLat === 0 && fromLon === 0) return;
-  if (toLat === 0 && toLon === 0) return;
-
-  const midLat = (fromLat + toLat) / 2;
-  const midLon = (fromLon + toLon) / 2;
-  const offset = Math.random() * 10 + 3;
-  const isOutbound = direction === 'outbound';
-  const controlLat = midLat + (isOutbound ? -offset : offset);
-  const controlLon = midLon + (isOutbound ? -offset : offset);
-
-  const weight = 1.5;
-  const opacity = 0.7;
-  const lineColor = isOutbound ? '#22d3ee' : '#a855f7';
-  const dashArray = isOutbound ? '6, 4' : null;
-
-  const line = L.polyline([[fromLat, fromLon], [controlLat, controlLon], [toLat, toLon]], {
-    color: lineColor, weight, opacity, smoothFactor: 1, dashArray,
-  }).addTo(mapInstance);
-
-  const marker = L.circleMarker([fromLat, fromLon], {
-    radius: 3, fillColor: color, color: '#fff', weight: 1, fillOpacity: 0.9,
-  }).addTo(mapInstance);
-
-  const dirIcon = isOutbound ? '&rarr;' : '&larr;';
-  const label = `${dirIcon} ${fromName} → ${toName} (${conn.port || '-'}/${conn.protocol || '-'}) [${type}]`;
-  line.bindTooltip(label);
-  marker.bindTooltip(label);
-
-  threadLines.push({ layer: line, marker, created: Date.now() });
-  connCountInWindow++;
-  activeThreadsCount = threadLines.length;
-
-  const srcCode = src.code || 'unknown';
-  if (!countryActivity[type]) countryActivity[type] = { count: 0, countries: 0 };
-  countryActivity[type].count++;
+function cleanOldThreads() {
+    const now = Date.now();
+    threadLines = threadLines.filter(t => now - t.created <= THREAD_LIFETIME);
+    activeThreadsCount = threadLines.length;
+    document.getElementById('statActiveThreads').textContent = activeThreadsCount;
 }
 
 function updateThreadList() {
-  const list = document.getElementById('threadList');
-  const items = threadLines.slice(-MAX_LIST_ITEMS).reverse();
-  if (items.length === 0) {
-    list.innerHTML = '<div class="text-center dark:text-surface-500 text-surface-400 py-4">Esperando datos...</div>';
-    return;
-  }
-  list.innerHTML = items.map(t => {
-    const tooltip = t.layer.getTooltip();
-    const label = tooltip ? tooltip.getContent() : 'conexion';
-    return `<div class="flex items-center gap-2 py-1 border-b dark:border-surface-800 border-surface-100">
-      <span class="w-2 h-2 rounded-full" style="background:${t.layer.options.color}"></span>
-      <span class="dark:text-surface-300 text-surface-600 truncate">${label}</span>
-    </div>`;
-  }).join('');
-}
-
-function initMap() {
-  if (mapInstance) return;
-  mapInstance = L.map('map', { zoomControl: true }).setView([20, 0], 2);
-  L.tileLayer(TILE_URL, {
-    maxZoom: 18, attribution: '&copy; <a href="https://carto.com/">CARTO</a>', subdomains: 'abcd',
-  }).addTo(mapInstance);
-
-  mapInstance.on('click', (e) => {
-    if (!isSettingLocation) return;
-    userLocation = { lat: e.latlng.lat, lon: e.latlng.lng };
-    localStorage.setItem('vantUserGeoLocation', JSON.stringify(userLocation));
-    updateLocationDisplay();
-    updateLocationMarker();
-    isSettingLocation = false;
-    document.getElementById('setLocationBtn').innerHTML = '<i class="fas fa-crosshairs mr-2"></i>Fijar Ubicaci&oacute;n';
-    document.getElementById('setLocationBtn').classList.remove('btn-accent');
-    mapInstance.getContainer().style.cursor = '';
-  });
-
-  updateLocationDisplay();
-  updateLocationMarker();
+    const list = document.getElementById('threadList');
+    const items = threadLines.slice(-MAX_LIST_ITEMS).reverse();
+    if (!items.length) { list.innerHTML = '<div class="text-center dark:text-surface-500 text-surface-400 py-4">Esperando datos...</div>'; return; }
+    list.innerHTML = items.map(t =>
+        `<div class="flex items-center gap-2 py-1 border-b dark:border-surface-800 border-surface-100"><span class="w-2 h-2 rounded-full" style="background:${typeColor(t.type)}"></span><span class="dark:text-surface-300 text-surface-600 truncate">${t.direction === 'outbound' ? '&rarr;' : '&larr;'} ${t.label}</span></div>`
+    ).join('');
 }
 
 async function pollConnections() {
-  try {
-    const params = new URLSearchParams();
-    if (lastEventTime) params.set('since', lastEventTime);
-    if (userLocation) {
-      params.set('lat', userLocation.lat);
-      params.set('lon', userLocation.lon);
+    try {
+        const p = new URLSearchParams();
+        p.set('since', lastEventTime || '');
+        if (userLocation) { p.set('lat', userLocation.lat); p.set('lon', userLocation.lon); }
+        const resp = await fetch('/siem/dashboard/inteligencia/geo/live/?' + p.toString());
+        const data = await resp.json();
+        const ind = document.getElementById('liveIndicator');
+        if (!ind) return;
+        if (data.error) { ind.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-400"></span> Error: ' + data.error; return; }
+        if (data.connections && data.connections.length) {
+            data.connections.forEach(c => addThread(c));
+            if (data.last_event_time) lastEventTime = data.last_event_time;
+            ind.innerHTML = '<span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span> En vivo (' + data.connections.length + ' nuevas)';
+        } else {
+            ind.innerHTML = '<span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span> En vivo (0 nuevas)';
+        }
+        document.getElementById('connRate').textContent = Math.round(connCountInWindow / (POLL_INTERVAL / 1000)) + ' conexiones/s';
+        connCountInWindow = 0;
+        cleanOldThreads(); updateStats(); updateThreadList();
+        render();
+    } catch (e) {
+        const el = document.getElementById('liveIndicator');
+        if (el) el.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-400"></span> Sin conexi&oacute;n';
     }
-    const url = '/siem/dashboard/inteligencia/geo/live/?' + params.toString();
-    const resp = await fetch(url);
-    const data = await resp.json();
+}
 
-    const indicator = document.getElementById('liveIndicator');
-    if (!indicator) return;
-
-    if (data.error) {
-      indicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-400"></span> Error: ' + data.error;
-      return;
+function setupMouse() {
+    const el = document.getElementById('mapContainer');
+    el.addEventListener('mousedown', e => {
+        if (isSettingLocation) return;
+        isDragging = true; dragMoved = false;
+        dragStartX = e.clientX; dragStartY = e.clientY;
+        dragOrigPanX = panX; dragOrigPanY = panY;
+        el.classList.add('dragging');
+    });
+    window.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+        const dx = e.clientX - dragStartX, dy = e.clientY - dragStartY;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragMoved = true;
+        panX = dragOrigPanX + dx / zoom; panY = dragOrigPanY + dy / zoom;
+        render();
+    });
+    window.addEventListener('mouseup', () => { isDragging = false; el.classList.remove('dragging'); });
+    el.addEventListener('wheel', e => {
+        e.preventDefault();
+        const r = canvas.getBoundingClientRect();
+        const lb = screenToLogical(e.clientX - r.left, e.clientY - r.top);
+        const nz = Math.max(0.3, Math.min(20, zoom * (e.deltaY > 0 ? 0.85 : 1.18)));
+        panX = (e.clientX - r.left) / nz - lb.x; panY = (e.clientY - r.top) / nz - lb.y;
+        zoom = nz; render();
+    }, { passive: false });
+    function findCountry(lx, ly) {
+        let best = null, bestD = 40 / zoom;
+        for (const lbl of countryLabels) {
+            const d = Math.hypot(lbl.x - lx, lbl.y - ly);
+            if (d < bestD) { bestD = d; best = lbl; }
+        }
+        return best;
     }
 
-    if (data.connections && data.connections.length > 0) {
-      data.connections.forEach(conn => addThread(conn));
-      if (data.last_event_time) lastEventTime = data.last_event_time;
-      indicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span> En vivo (' + data.connections.length + ' nuevas)';
-    } else {
-      indicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span> En vivo (0 nuevas)';
+    function showTooltip(name, cx, cy) {
+        const tt = document.getElementById('mapTooltip');
+        if (!name) { tt.style.display = 'none'; return; }
+        tt.textContent = name;
+        const r = canvas.getBoundingClientRect();
+        const sp = { x: (cx + panX) * zoom, y: (cy + panY) * zoom };
+        tt.style.left = sp.x + 'px';
+        tt.style.top = sp.y + 'px';
+        tt.style.display = 'block';
     }
 
-    document.getElementById('connRate').textContent = Math.round(connCountInWindow / (POLL_INTERVAL / 1000)) + ' conexiones/s';
-    connCountInWindow = 0;
-    cleanOldThreads();
-    updateStats();
-    updateThreadList();
-  } catch (err) {
-    const indicator = document.getElementById('liveIndicator');
-    if (indicator) {
-      indicator.innerHTML = '<span class="w-2 h-2 rounded-full bg-red-400"></span> Sin conexi&oacute;n';
+    el.addEventListener('click', e => {
+        if (dragMoved || !mapReady) return;
+        const r = canvas.getBoundingClientRect();
+        const l = screenToLogical(e.clientX - r.left, e.clientY - r.top);
+        if (isSettingLocation) {
+            const ll = xyToLonLat(l.x, l.y);
+            userLocation = { lat: ll.lat, lon: ll.lon };
+            localStorage.setItem('vantUserGeoLocation', JSON.stringify(userLocation));
+            updateLocationDisplay();
+            isSettingLocation = false;
+            document.getElementById('setLocationBtn').innerHTML = '<i class="fas fa-crosshairs mr-2"></i>Fijar Ubicaci&oacute;n';
+            document.getElementById('setLocationBtn').classList.remove('btn-accent');
+            el.style.cursor = 'grab';
+            render();
+            return;
+        }
+        const hit = findCountry(l.x, l.y);
+        if (hit) showTooltip(hit.name, hit.x, hit.y);
+        else showTooltip(null);
+    });
+
+    el.addEventListener('dblclick', () => showTooltip(null));
+
+    let touchStartT = 0, touchStartX = 0, touchStartY = 0;
+    el.addEventListener('touchstart', e => {
+        const t = e.touches[0];
+        touchStartT = Date.now(); touchStartX = t.clientX; touchStartY = t.clientY;
+        if (isSettingLocation) return;
+        isDragging = true; dragMoved = false;
+        dragStartX = t.clientX; dragStartY = t.clientY;
+        dragOrigPanX = panX; dragOrigPanY = panY;
+    }, { passive: true });
+    el.addEventListener('touchmove', e => {
+        if (!isDragging || e.touches.length !== 1) return;
+        e.preventDefault();
+        const t = e.touches[0];
+        const dx = t.clientX - dragStartX, dy = t.clientY - dragStartY;
+        if (Math.abs(dx) > 5 || Math.abs(dy) > 5) dragMoved = true;
+        panX = dragOrigPanX + dx / zoom; panY = dragOrigPanY + dy / zoom;
+        render();
+    }, { passive: false });
+    el.addEventListener('touchend', e => {
+        isDragging = false;
+        if (dragMoved || Date.now() - touchStartT > 300) return;
+        const r = canvas.getBoundingClientRect();
+        const l = screenToLogical(touchStartX - r.left, touchStartY - r.top);
+        if (isSettingLocation) {
+            const ll = xyToLonLat(l.x, l.y);
+            userLocation = { lat: ll.lat, lon: ll.lon };
+            localStorage.setItem('vantUserGeoLocation', JSON.stringify(userLocation));
+            updateLocationDisplay();
+            isSettingLocation = false;
+            document.getElementById('setLocationBtn').innerHTML = '<i class="fas fa-crosshairs mr-2"></i>Fijar Ubicaci&oacute;n';
+            document.getElementById('setLocationBtn').classList.remove('btn-accent');
+            el.style.cursor = 'grab';
+            render();
+            return;
+        }
+        const hit = findCountry(l.x, l.y);
+        if (hit) showTooltip(hit.name, hit.x, hit.y);
+    }, { passive: true });
+}
+
+let mapData = null;
+
+async function initMap() {
+    canvas = document.getElementById('mapCanvas');
+    ctx = canvas.getContext('2d');
+    setupMouse();
+    updateLocationDisplay();
+    try {
+        const resp = await fetch(GEOJSON_URL);
+        mapData = await resp.json();
+        buildPaths();
+    } catch (e) {
+        document.getElementById('mapLoading').innerHTML = '<span class="text-red-400">Error al cargar mapa</span>';
+        return;
     }
-  }
+    document.getElementById('mapLoading').style.display = 'none';
+    mapReady = true;
+    render();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('setLocationBtn').addEventListener('click', () => {
-    isSettingLocation = !isSettingLocation;
-    if (isSettingLocation) {
-      document.getElementById('setLocationBtn').innerHTML = '<i class="fas fa-check mr-2"></i>Haz clic en el mapa';
-      document.getElementById('setLocationBtn').classList.add('btn-accent');
-      mapInstance.getContainer().style.cursor = 'crosshair';
-    } else {
-      document.getElementById('setLocationBtn').innerHTML = '<i class="fas fa-crosshairs mr-2"></i>Fijar Ubicaci&oacute;n';
-      document.getElementById('setLocationBtn').classList.remove('btn-accent');
-      mapInstance.getContainer().style.cursor = '';
-    }
-  });
-
-  initMap();
-  setTimeout(() => {
-    pollConnections();
-    pollTimer = setInterval(pollConnections, POLL_INTERVAL);
-  }, 1000);
+    document.getElementById('setLocationBtn').addEventListener('click', () => {
+        isSettingLocation = !isSettingLocation;
+        const el = document.getElementById('mapContainer');
+        if (isSettingLocation) {
+            document.getElementById('setLocationBtn').innerHTML = '<i class="fas fa-check mr-2"></i>Haz clic en el mapa';
+            document.getElementById('setLocationBtn').classList.add('btn-accent');
+            el.style.cursor = 'crosshair';
+        } else {
+            document.getElementById('setLocationBtn').innerHTML = '<i class="fas fa-crosshairs mr-2"></i>Fijar Ubicaci&oacute;n';
+            document.getElementById('setLocationBtn').classList.remove('btn-accent');
+            el.style.cursor = 'grab';
+        }
+    });
+    window.addEventListener('resize', render);
+    initMap();
+    setTimeout(() => { pollConnections(); setInterval(pollConnections, POLL_INTERVAL); }, 1000);
 });
 </script>
 {% endblock %}
