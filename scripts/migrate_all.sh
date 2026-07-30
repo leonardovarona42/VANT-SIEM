@@ -7,7 +7,7 @@ VENV="/opt/vant-siem/venv"
 
 echo "=== Running Migrations ==="
 
-for svc in vant-auth vant-inventory vant-logs vant-aegis vant-web; do
+for svc in vant-auth vant-inventory vant-logs vant-aegis vant-intelligence vant-web; do
     echo "Migrating $svc..."
     cd "$SERVICES_DIR/$svc"
     "$VENV/bin/python" manage.py migrate --noinput 2>&1

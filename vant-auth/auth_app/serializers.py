@@ -11,10 +11,10 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = AuthUser
         fields = (
-            "id", "username", "email", "first_name", "last_name",
-            "role", "is_active", "last_login", "created_at", "updated_at",
+            "id", "username", "email", "first_name", "last_name", "phone",
+            "role", "is_active", "failed_login_attempts", "last_login", "created_at", "updated_at",
         )
-        read_only_fields = fields
+        read_only_fields = ("id", "last_login", "created_at", "updated_at")
 
 
 class UserCreateSerializer(serializers.Serializer):
@@ -23,6 +23,7 @@ class UserCreateSerializer(serializers.Serializer):
     password = serializers.CharField(max_length=128, write_only=True)
     first_name = serializers.CharField(max_length=150, required=False, default="")
     last_name = serializers.CharField(max_length=150, required=False, default="")
+    phone = serializers.CharField(max_length=20, required=False, default="")
     role = serializers.ChoiceField(choices=AuthUser.ROLE_CHOICES, default="viewer")
 
     def validate_username(self, value):

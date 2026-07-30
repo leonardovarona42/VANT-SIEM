@@ -38,9 +38,8 @@
           <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Hostname</th>
           <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">IP</th>
           <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">SO</th>
-          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Máquina</th>
           <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Último Heartbeat</th>
-          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Acciones</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium w-12"></th>
         </tr>
       </thead>
       <tbody>
@@ -51,21 +50,19 @@
               {{ agent.status }}
             </span>
           </td>
-          <td class="px-4 py-3 dark:text-surface-200 text-surface-700">{{ agent.hostname|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-200 text-surface-700 font-medium">{{ agent.hostname|default:"-" }}</td>
           <td class="px-4 py-3 dark:text-surface-300 text-surface-600 font-mono text-xs">{{ agent.ip_address|default:"-" }}</td>
           <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-xs">{{ agent.os_type|default:"-" }}</td>
-          <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-xs">{{ agent.machine_name|default:"-" }}</td>
           <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs whitespace-nowrap">{{ agent.last_heartbeat|default:"-" }}</td>
           <td class="px-4 py-3">
-            <div class="flex gap-2">
-              <a href="{% url 'web:agent-detail' agent.agent_id %}" class="text-xs text-brand-400 hover:text-brand-300"><i class="fas fa-eye"></i></a>
-              <a href="{% url 'web:agent-config' agent.agent_id %}" class="text-xs dark:text-surface-400 text-surface-500 hover:text-brand-400"><i class="fas fa-cog"></i></a>
-            </div>
+            <button onclick="event.stopPropagation(); openMenu(this, '{{ agent.agent_id }}')" class="w-8 h-8 flex items-center justify-center rounded-lg dark:text-surface-400 text-surface-500 hover:dark:bg-white/10 hover:bg-surface-200 transition-colors">
+              <i class="fas fa-ellipsis-v"></i>
+            </button>
           </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="7" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400">
+          <td colspan="6" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400">
             <i class="fas fa-desktop text-4xl mb-3 block opacity-50"></i>
             No se encontraron agentes
           </td>
@@ -75,4 +72,83 @@
     </table>
   </div>
 </div>
+
+<div id="agent-dropdown" class="agent-menu hidden fixed z-[9999] w-56 py-2 rounded-xl shadow-2xl border dark:bg-surface-900 dark:border-surface-700 bg-white border-surface-200 backdrop-blur-xl">
+</div>
+
+<script>
+const MENUS = {
+{% for agent in agents %}
+  "{{ agent.agent_id }}": {
+    hw: "{% url 'web:agent-detail' agent.agent_id %}",
+    sw: "{% url 'web:agent-detail' agent.agent_id %}#software",
+    proc: "{% url 'web:agent-processes' agent.agent_id %}",
+    restart: "{% url 'web:agent-restart' agent.agent_id %}",
+    del: "{% url 'web:agent-delete' agent.agent_id %}",
+    hostname: "{{ agent.hostname|default:agent.agent_id }}",
+    csrf: "{{ csrf_token }}"
+  }{% if not forloop.last %},{% endif %}
+{% endfor %}
+};
+
+function openMenu(btn, agentId) {
+  const dd = document.getElementById('agent-dropdown');
+  const data = MENUS[agentId];
+  if (!data) return;
+
+  const isOpen = dd.dataset.agent === agentId && !dd.classList.contains('hidden');
+  closeMenu();
+  if (isOpen) return;
+
+  dd.innerHTML = `
+    <a href="${data.hw}" class="flex items-center gap-3 px-4 py-2.5 text-sm dark:text-surface-200 text-surface-700 hover:dark:bg-white/10 hover:bg-surface-100 transition-colors">
+      <i class="fas fa-microchip w-4 text-center text-cyan-400"></i>Propiedades (HW)
+    </a>
+    <a href="${data.sw}" class="flex items-center gap-3 px-4 py-2.5 text-sm dark:text-surface-200 text-surface-700 hover:dark:bg-white/10 hover:bg-surface-100 transition-colors">
+      <i class="fas fa-cube w-4 text-center text-purple-400"></i>Software
+    </a>
+    <a href="${data.proc}" class="flex items-center gap-3 px-4 py-2.5 text-sm dark:text-surface-200 text-surface-700 hover:dark:bg-white/10 hover:bg-surface-100 transition-colors">
+      <i class="fas fa-cogs w-4 text-center text-orange-400"></i>Procesos y Puertos
+    </a>
+    <div class="my-1 dark:border-surface-700 border-surface-200 border-t"></div>
+    <form method="post" action="${data.restart}" onsubmit="return confirm('¿Reiniciar el agente ${data.hostname}?')">
+      <input type="hidden" name="csrfmiddlewaretoken" value="${data.csrf}">
+      <button type="submit" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm dark:text-surface-200 text-surface-700 hover:dark:bg-white/10 hover:bg-surface-100 transition-colors">
+        <i class="fas fa-redo w-4 text-center text-yellow-400"></i>Reiniciar Agente
+      </button>
+    </form>
+    <div class="my-1 dark:border-surface-700 border-surface-200 border-t"></div>
+    <form method="post" action="${data.del}" onsubmit="return confirm('¿Eliminar el agente ${data.hostname}? Esta acción no se puede deshacer.')">
+      <input type="hidden" name="csrfmiddlewaretoken" value="${data.csrf}">
+      <button type="submit" class="w-full flex items-center gap-3 px-4 py-2.5 text-sm dark:text-red-400 text-red-600 hover:dark:bg-red-500/10 hover:bg-red-50 transition-colors">
+        <i class="fas fa-trash w-4 text-center"></i>Eliminar Agente
+      </button>
+    </form>
+  `;
+
+  const rect = btn.getBoundingClientRect();
+  let top = rect.bottom + 4;
+  let left = rect.left - 200;
+  if (left < 8) left = 8;
+  if (left + 224 > window.innerWidth) left = window.innerWidth - 232;
+  if (top + 260 > window.innerHeight) top = rect.top - 260;
+
+  dd.style.top = top + 'px';
+  dd.style.left = left + 'px';
+  dd.dataset.agent = agentId;
+  dd.classList.remove('hidden');
+}
+
+function closeMenu() {
+  const dd = document.getElementById('agent-dropdown');
+  dd.classList.add('hidden');
+  dd.dataset.agent = '';
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#agent-dropdown') && !e.target.closest('.fa-ellipsis-v')) {
+    closeMenu();
+  }
+});
+</script>
 {% endblock %}

@@ -1,0 +1,597 @@
+{% extends "web_app/base.html" %}
+{% block title %}Editar {{ incident.codigo_incidente }} | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="flex justify-center">
+    <div class="w-full max-w-3xl">
+        <div class="glass-card">
+            <div class="px-6 py-4 border-b dark:border-surface-700 border-surface-200 flex items-center justify-between">
+                <span class="text-brand-400 font-bold"><i class="fas fa-edit mr-2"></i>Editar Incidente {{ incident.codigo_incidente }}</span>
+                <a href="{% url 'web:soc-incident-detail' incident.codigo_incidente %}" class="text-sm dark:text-surface-400 text-surface-500 hover:text-brand-400 transition-colors"><i class="fas fa-times"></i></a>
+            </div>
+            <div class="p-6">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="p-4 rounded-lg mb-4 {% if message.tags == 'success' %}bg-green-100 border border-green-400 text-green-700 dark:bg-green-900 dark:border-green-700 dark:text-green-300{% elif message.tags == 'error' %}bg-red-100 border border-red-400 text-red-700 dark:bg-red-900 dark:border-red-700 dark:text-red-300{% else %}bg-blue-100 border border-blue-400 text-blue-700 dark:bg-blue-900 dark:border-blue-700 dark:text-blue-300{% endif %} flex items-center justify-between" role="alert">
+                            <span>{{ message }}</span>
+                            <button type="button" class="ml-4 text-current opacity-70 hover:opacity-100" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                <form method="post" action="{% url 'web:soc-incidente-edit-submit' incident.codigo_incidente %}" enctype="multipart/form-data" id="incidente-form">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="nombre_incidente" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                            <i class="fas fa-heading mr-1"></i>Nombre del Incidente
+                        </label>
+                        <input type="text" name="nombre_incidente" id="nombre_incidente" value="{{ incident.nombre_incidente }}" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="descripcion" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                            <i class="fas fa-align-left mr-1"></i>Descripción
+                        </label>
+                        <textarea name="descripcion" id="descripcion" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" rows="4" required>{{ incident.descripcion }}</textarea>
+                    </div>
+
+                    <!-- Reportes Asociados -->
+                    <div class="mb-3">
+                        <label class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                            <i class="fas fa-file-alt mr-1"></i>Reportes Asociados
+                        </label>
+                        <div class="dark:bg-surface-800 bg-white border dark:border-surface-700 border-surface-200 rounded-lg overflow-hidden">
+                            <div class="p-2 border-b dark:border-surface-700 border-surface-200">
+                                <input type="text" id="reporte-search" class="w-full px-3 py-2 text-sm dark:bg-surface-900 dark:text-surface-200 bg-surface-50 border-surface-200 dark:border-surface-700 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none" placeholder="Buscar reportes...">
+                            </div>
+                            <div id="reportes-list" class="max-h-48 overflow-y-auto p-2 space-y-1">
+                                {% for rep in reportes %}
+                                <label class="flex items-center gap-2 p-2 rounded-lg hover:dark:bg-surface-700 hover:bg-surface-100 cursor-pointer transition-colors reporte-option" data-reporte-id="{{ rep.id }}">
+                                    <input type="checkbox" name="reportes" value="{{ rep.id }}" class="w-4 h-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500" {% if rep.id|slugify in selected_reportes %}checked{% endif %}>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-sm font-medium dark:text-white text-surface-900 truncate">{{ rep.nombre_informante }}</div>
+                                        <div class="text-xs dark:text-surface-400 text-surface-500 truncate">{{ rep.descripcion|truncatechars:60 }}</div>
+                                    </div>
+                                </label>
+                                {% endfor %}
+                            </div>
+                            <div class="px-3 py-2 border-t dark:border-surface-700 border-surface-200">
+                                <span id="reportes-count" class="text-xs dark:text-surface-400 text-surface-500">{{ selected_reportes|length }} reporte(s) seleccionado(s)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Servicios Afectados -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                            <i class="fas fa-server mr-1"></i>Servicios Afectados
+                        </label>
+                        <div class="dark:bg-surface-800 bg-white border dark:border-surface-700 border-surface-200 rounded-lg overflow-hidden">
+                            <div class="p-2 border-b dark:border-surface-700 border-surface-200">
+                                <input type="text" class="multi-search w-full px-3 py-2 text-sm dark:bg-surface-900 dark:text-surface-200 bg-surface-50 border-surface-200 dark:border-surface-700 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none" data-target="servicios-list" placeholder="Buscar servicios...">
+                            </div>
+                            <div id="servicios-list" class="max-h-48 overflow-y-auto p-2 space-y-1">
+                                {% for servicio in servicios %}
+                                <label class="flex items-center gap-2 p-2 rounded-lg hover:dark:bg-surface-700 hover:bg-surface-100 cursor-pointer transition-colors multi-option" data-name="{{ servicio.nombre|lower }}">
+                                    <input type="checkbox" name="servicios" value="{{ servicio.id }}" class="w-4 h-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500" {% if servicio.id|slugify in selected_servicios %}checked{% endif %}>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-sm font-medium dark:text-white text-surface-900">{{ servicio.nombre }}</div>
+                                    </div>
+                                </label>
+                                {% endfor %}
+                            </div>
+                            <div class="px-3 py-2 border-t dark:border-surface-700 border-surface-200">
+                                <span class="multi-count text-xs dark:text-surface-400 text-surface-500">{{ selected_servicios|length }} servicio(s) seleccionado(s)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Áreas Involucradas -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                            <i class="fas fa-building mr-1"></i>Áreas Involucradas
+                        </label>
+                        <div class="dark:bg-surface-800 bg-white border dark:border-surface-700 border-surface-200 rounded-lg overflow-hidden">
+                            <div class="p-2 border-b dark:border-surface-700 border-surface-200">
+                                <input type="text" class="multi-search w-full px-3 py-2 text-sm dark:bg-surface-900 dark:text-surface-200 bg-surface-50 border-surface-200 dark:border-surface-700 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none" data-target="areas-list" placeholder="Buscar áreas...">
+                            </div>
+                            <div id="areas-list" class="max-h-48 overflow-y-auto p-2 space-y-1">
+                                {% for area in areas %}
+                                <label class="flex items-center gap-2 p-2 rounded-lg hover:dark:bg-surface-700 hover:bg-surface-100 cursor-pointer transition-colors multi-option" data-name="{{ area.nombre|lower }}">
+                                    <input type="checkbox" name="areas" value="{{ area.id }}" class="w-4 h-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500" {% if area.id|slugify in selected_areas %}checked{% endif %}>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-sm font-medium dark:text-white text-surface-900">{{ area.nombre }}</div>
+                                    </div>
+                                </label>
+                                {% endfor %}
+                            </div>
+                            <div class="px-3 py-2 border-t dark:border-surface-700 border-surface-200">
+                                <span class="multi-count text-xs dark:text-surface-400 text-surface-500">{{ selected_areas|length }} área(s) seleccionada(s)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Subcategorías -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                            <i class="fas fa-tag mr-1"></i>Subcategorías
+                        </label>
+                        <div class="dark:bg-surface-800 bg-white border dark:border-surface-700 border-surface-200 rounded-lg overflow-hidden">
+                            <div class="p-2 border-b dark:border-surface-700 border-surface-200">
+                                <input type="text" class="multi-search w-full px-3 py-2 text-sm dark:bg-surface-900 dark:text-surface-200 bg-surface-50 border-surface-200 dark:border-surface-700 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none" data-target="subcategorias-list" placeholder="Buscar subcategorías...">
+                            </div>
+                            <div id="subcategorias-list" class="max-h-48 overflow-y-auto p-2 space-y-1">
+                                {% for subcategoria in subcategorias %}
+                                <label class="flex items-center gap-2 p-2 rounded-lg hover:dark:bg-surface-700 hover:bg-surface-100 cursor-pointer transition-colors multi-option" data-name="{{ subcategoria.nombre|lower }}">
+                                    <input type="checkbox" name="subcategorias" value="{{ subcategoria.id }}" class="w-4 h-4 rounded border-surface-300 text-brand-600 focus:ring-brand-500" {% if subcategoria.id|slugify in selected_subcategorias %}checked{% endif %}>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-sm font-medium dark:text-white text-surface-900">{{ subcategoria.nombre }}</div>
+                                    </div>
+                                </label>
+                                {% endfor %}
+                            </div>
+                            <div class="px-3 py-2 border-t dark:border-surface-700 border-surface-200">
+                                <span class="multi-count text-xs dark:text-surface-400 text-surface-500">{{ selected_subcategorias|length }} subcategoría(s) seleccionada(s)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Evidencia -->
+                    <div class="mb-3">
+                        <label for="evidencia" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                            <i class="fas fa-paperclip mr-1"></i>Evidencia
+                        </label>
+                        {% if incident.evidencia %}
+                        <div class="flex items-center gap-2 mb-2">
+                            <a href="{{ incident.evidencia }}" target="_blank" class="text-sm dark:text-accent-400 text-brand-600 hover:underline"><i class="fas fa-file mr-1"></i>Archivo actual</a>
+                        </div>
+                        {% endif %}
+                        <input type="file" id="evidencia" name="evidencia" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" accept="image/*,.pdf,.doc,.docx">
+                    </div>
+
+                    <!-- Estado de Solución -->
+                    <div class="mb-3">
+                        <label for="estado_solucion" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                            <i class="fas fa-tasks mr-1"></i>Estado de Solución
+                        </label>
+                        <select id="estado_solucion" name="estado_solucion" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" required>
+                            <option value="nuevo" {% if incident.estado_solucion == 'nuevo' %}selected{% endif %}>Nuevo</option>
+                            <option value="abierto" {% if incident.estado_solucion == 'abierto' %}selected{% endif %}>Abierto</option>
+                            <option value="investigacion" {% if incident.estado_solucion == 'investigacion' %}selected{% endif %}>Investigación</option>
+                            <option value="mitigacion" {% if incident.estado_solucion == 'mitigacion' %}selected{% endif %}>Mitigación</option>
+                            <option value="cerrado" {% if incident.estado_solucion == 'cerrado' %}selected{% endif %}>Cerrado</option>
+                        </select>
+                    </div>
+
+                    <!-- Notificado OSRI -->
+                    <div class="mb-3">
+                        <label for="notificado_osri" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                            <i class="fas fa-bell mr-1"></i>Notificado a OSRI
+                        </label>
+                        <select id="notificado_osri" name="notificado_osri" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" required>
+                            <option value="si" {% if incident.notificado_osri == 'si' %}selected{% endif %}>Sí</option>
+                            <option value="no" {% if incident.notificado_osri == 'no' %}selected{% endif %}>No</option>
+                        </select>
+                    </div>
+
+                    <!-- Involucrados Section -->
+                    <div class="mb-4 p-4 dark:bg-surface-800/50 bg-surface-100 rounded-xl border dark:border-surface-700 border-surface-200">
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="text-sm font-semibold dark:text-white text-surface-900">
+                                <i class="fas fa-users mr-2 text-brand-500"></i>Personas Involucradas
+                            </label>
+                            <button type="button" onclick="openNewInvModal()" class="px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-lg hover:from-emerald-500 hover:to-emerald-400 transition-all shadow-sm">
+                                <i class="fas fa-user-plus mr-1"></i>Agregar Nuevo
+                            </button>
+                        </div>
+
+                        <div class="flex gap-2 mb-3">
+                            <select id="inv-search" class="flex-1 px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+                                <option value="">Buscar involucrado existente...</option>
+                                {% for inv in involucrados_list %}
+                                <option value="{{ inv.id }}">{{ inv.nombres }} {{ inv.apellidos }} ({{ inv.ip }})</option>
+                                {% endfor %}
+                            </select>
+                            <button type="button" onclick="addInvFromSelect()" class="px-3 py-2 text-sm bg-brand-600 hover:bg-brand-500 text-white rounded-lg transition-colors">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+
+                        <div id="selected-inv-list" class="space-y-2">
+                            {% for inv in selected_involucrados %}
+                            <div class="inv-item p-3 dark:bg-surface-900/50 bg-white rounded-lg border dark:border-surface-700 border-surface-200" data-inv-id="{{ inv.involucrado }}">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center">
+                                            <i class="fas fa-user text-brand-500 text-xs"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-sm font-medium dark:text-white text-surface-900">{{ inv.involucrado_nombre }}</div>
+                                        </div>
+                                    </div>
+                                    <button type="button" onclick="removeInv(this)" class="text-red-500 hover:text-red-400 p-1">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="ml-10">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs dark:text-surface-400 text-surface-500 whitespace-nowrap">Medida impuesta:</span>
+                                        <select class="inv-medida flex-1 px-2 py-1.5 text-xs dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border-surface-200 text-surface-800 rounded focus:ring-1 focus:ring-brand-500">
+                                            <option value="">Seleccionar medida...</option>
+                                            {% for med in medidas_list %}
+                                            <option value="{{ med.id }}" {% if inv.medida_impuesta|slugify == med.id|slugify %}selected{% endif %}>{{ med.nombre }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <button type="button" onclick="openNewMedidaModal(this)" class="px-2 py-1.5 text-xs bg-amber-600 hover:bg-amber-500 text-white rounded transition-colors" title="Crear nueva medida">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <input type="hidden" name="involucrados" value="{{ inv.involucrado }}">
+                                <input type="hidden" class="inv-medida-hidden" name="inv_medida" value="{{ inv.medida_impuesta|default:'' }}">
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Medidas al Incidente Section -->
+                    <div class="mb-4 p-4 dark:bg-surface-800/50 bg-surface-100 rounded-xl border dark:border-surface-700 border-surface-200">
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="text-sm font-semibold dark:text-white text-surface-900">
+                                <i class="fas fa-shield-alt mr-2 text-emerald-500"></i>Medidas Aplicadas al Incidente
+                            </label>
+                            <button type="button" onclick="openNewMedidaGlobalModal()" class="px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-amber-600 to-amber-500 text-white rounded-lg hover:from-amber-500 hover:to-amber-400 transition-all shadow-sm">
+                                <i class="fas fa-plus-circle mr-1"></i>Crear Nueva Medida
+                            </button>
+                        </div>
+
+                        <div class="flex gap-2 mb-3">
+                            <select id="medida-search" class="flex-1 px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+                                <option value="">Buscar medida existente...</option>
+                                {% for med in medidas_list %}
+                                <option value="{{ med.id }}">{{ med.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="button" onclick="addMedidaFromSelect()" class="px-3 py-2 text-sm bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+
+                        <div id="selected-medida-list" class="space-y-2">
+                            {% for med in selected_medidas_incidente %}
+                            <div class="medida-item flex items-center justify-between p-2 dark:bg-surface-900/50 bg-white rounded-lg border dark:border-surface-700 border-surface-200" data-medida-id="{{ med.medida }}">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                                        <i class="fas fa-shield-alt text-emerald-500 text-xs"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-sm font-medium dark:text-white text-surface-900">{{ med.medida_nombre }}</div>
+                                    </div>
+                                </div>
+                                <button type="button" onclick="removeMedida(this)" class="text-red-500 hover:text-red-400 p-1">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                <input type="hidden" name="medidas_incidente" value="{{ med.medida }}">
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 mt-4">
+                        <a href="{% url 'web:soc-incident-detail' incident.codigo_incidente %}" class="flex-1 px-4 py-2.5 dark:bg-surface-800 dark:text-surface-200 bg-surface-100 text-surface-800 rounded-xl font-medium text-center hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors">Cancelar</a>
+                        <button type="submit" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 text-white rounded-xl font-medium">
+                            <i class="fas fa-save mr-2"></i>Guardar Cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Involucrado Modal -->
+<div id="new-inv-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="w-full max-w-md dark:bg-surface-900 bg-white rounded-2xl shadow-2xl border dark:border-surface-700 border-surface-200 overflow-hidden">
+        <div class="px-6 py-4 border-b dark:border-surface-700 border-surface-200 flex items-center justify-between bg-gradient-to-r from-brand-600/10 to-accent-500/10">
+            <h3 class="text-lg font-semibold dark:text-white text-surface-900"><i class="fas fa-user-plus mr-2 text-brand-500"></i>Nuevo Involucrado</h3>
+            <button type="button" onclick="closeNewInvModal()" class="dark:text-surface-400 text-surface-500 hover:text-red-500 transition-colors"><i class="fas fa-times text-lg"></i></button>
+        </div>
+        <form id="new-inv-form" class="p-6 space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-medium dark:text-surface-400 text-surface-600 mb-1">Nombres</label>
+                    <input type="text" id="new-inv-nombres" required class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium dark:text-surface-400 text-surface-600 mb-1">Apellidos</label>
+                    <input type="text" id="new-inv-apellidos" required class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-medium dark:text-surface-400 text-surface-600 mb-1">IP</label>
+                    <input type="text" id="new-inv-ip" required pattern="^(\d{1,3}\.){3}\d{1,3}$" placeholder="192.168.x.x" class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium dark:text-surface-400 text-surface-600 mb-1">MAC</label>
+                    <input type="text" id="new-inv-mac" required pattern="^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$" placeholder="AA:BB:CC:DD:EE:FF" class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-medium dark:text-surface-400 text-surface-600 mb-1">Usuario</label>
+                <input type="text" id="new-inv-usuario" class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+            </div>
+            <div>
+                <label class="block text-xs font-medium dark:text-surface-400 text-surface-600 mb-1">Tipo</label>
+                <select id="new-inv-tipo" class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+                    <option value="interno">Interno</option>
+                    <option value="externo">Externo</option>
+                    <option value="desconocido">Desconocido</option>
+                </select>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button type="button" onclick="closeNewInvModal()" class="flex-1 px-4 py-2.5 dark:bg-surface-800 dark:text-surface-200 bg-surface-100 text-surface-800 rounded-lg text-sm font-medium hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors">Cancelar</button>
+                <button type="button" onclick="createAndAddInv()" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-lg text-sm font-medium shadow-lg hover:shadow-emerald-500/30 transition-all">Crear y Agregar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- New Medida Modal (for Involucrado medida impuesta) -->
+<div id="new-medida-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="w-full max-w-md dark:bg-surface-900 bg-white rounded-2xl shadow-2xl border dark:border-surface-700 border-surface-200 overflow-hidden">
+        <div class="px-6 py-4 border-b dark:border-surface-700 border-surface-200 flex items-center justify-between bg-gradient-to-r from-amber-600/10 to-orange-500/10">
+            <h3 class="text-lg font-semibold dark:text-white text-surface-900"><i class="fas fa-shield-alt mr-2 text-amber-500"></i>Nueva Medida</h3>
+            <button type="button" onclick="closeNewMedidaModal()" class="dark:text-surface-400 text-surface-500 hover:text-red-500 transition-colors"><i class="fas fa-times text-lg"></i></button>
+        </div>
+        <form id="new-medida-form" class="p-6 space-y-3">
+            <div>
+                <label class="block text-xs font-medium dark:text-surface-400 text-surface-600 mb-1">Nombre</label>
+                <input type="text" id="new-medida-nombre" required class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+            </div>
+            <div>
+                <label class="block text-xs font-medium dark:text-surface-400 text-surface-600 mb-1">Descripción</label>
+                <textarea id="new-medida-desc" required rows="3" class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"></textarea>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button type="button" onclick="closeNewMedidaModal()" class="flex-1 px-4 py-2.5 dark:bg-surface-800 dark:text-surface-200 bg-surface-100 text-surface-800 rounded-lg text-sm font-medium hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors">Cancelar</button>
+                <button type="button" id="create-medida-btn" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-amber-600 to-amber-500 text-white rounded-lg text-sm font-medium shadow-lg hover:shadow-amber-500/30 transition-all">Crear y Asignar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- New Medida Global Modal -->
+<div id="new-medida-global-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="w-full max-w-md dark:bg-surface-900 bg-white rounded-2xl shadow-2xl border dark:border-surface-700 border-surface-200 overflow-hidden">
+        <div class="px-6 py-4 border-b dark:border-surface-700 border-surface-200 flex items-center justify-between bg-gradient-to-r from-emerald-600/10 to-emerald-500/10">
+            <h3 class="text-lg font-semibold dark:text-white text-surface-900"><i class="fas fa-plus-circle mr-2 text-emerald-500"></i>Nueva Medida para el Incidente</h3>
+            <button type="button" onclick="closeNewMedidaGlobalModal()" class="dark:text-surface-400 text-surface-500 hover:text-red-500 transition-colors"><i class="fas fa-times text-lg"></i></button>
+        </div>
+        <form id="new-medida-global-form" class="p-6 space-y-3">
+            <div>
+                <label class="block text-xs font-medium dark:text-surface-400 text-surface-600 mb-1">Nombre</label>
+                <input type="text" id="new-medida-global-nombre" required class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+            </div>
+            <div>
+                <label class="block text-xs font-medium dark:text-surface-400 text-surface-600 mb-1">Descripción</label>
+                <textarea id="new-medida-global-desc" required rows="3" class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"></textarea>
+            </div>
+            <div class="flex gap-3 pt-2">
+                <button type="button" onclick="closeNewMedidaGlobalModal()" class="flex-1 px-4 py-2.5 dark:bg-surface-800 dark:text-surface-200 bg-surface-100 text-surface-800 rounded-lg text-sm font-medium hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors">Cancelar</button>
+                <button type="button" onclick="createAndAddMedidaGlobal()" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-500 text-white rounded-lg text-sm font-medium shadow-lg hover:shadow-emerald-500/30 transition-all">Crear y Agregar</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+let currentInvForMedida = null;
+const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '';
+
+function getCookie(name) {
+    const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+    return v ? v.pop() : '';
+}
+
+/* ===== MULTI-SELECT FUNCTIONS ===== */
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.multi-search').forEach(function(searchInput) {
+        const targetId = searchInput.dataset.target;
+        const list = document.getElementById(targetId);
+        if (!list) return;
+        searchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase();
+            list.querySelectorAll('.multi-option').forEach(opt => {
+                const text = opt.dataset.name || opt.textContent.toLowerCase();
+                opt.style.display = text.includes(query) ? '' : 'none';
+            });
+        });
+    });
+
+    ['reportes-list', 'servicios-list', 'areas-list', 'subcategorias-list'].forEach(function(listId) {
+        const list = document.getElementById(listId);
+        if (!list) return;
+        list.addEventListener('change', function() {
+            const checked = list.querySelectorAll('input[type="checkbox"]:checked');
+            const countEl = list.parentElement.querySelector('.multi-count');
+            if (countEl) {
+                let label = 'item(s)';
+                if (listId.includes('reporte')) label = 'reporte(s)';
+                else if (listId.includes('servicio')) label = 'servicio(s)';
+                else if (listId.includes('area')) label = 'área(s)';
+                else if (listId.includes('subcategoria')) label = 'subcategoría(s)';
+                countEl.textContent = checked.length + ' ' + label + ' seleccionado(s)';
+            }
+        });
+    });
+
+    document.getElementById('reporte-search').addEventListener('input', function() {
+        const q = this.value.toLowerCase();
+        document.querySelectorAll('#reportes-list .reporte-option').forEach(opt => {
+            opt.style.display = opt.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+    });
+});
+
+/* ===== INVOLUCRADO FUNCTIONS ===== */
+function openNewInvModal() { document.getElementById('new-inv-modal').classList.remove('hidden'); }
+function closeNewInvModal() { document.getElementById('new-inv-modal').classList.add('hidden'); document.getElementById('new-inv-form').reset(); }
+
+function addInvFromSelect() {
+    const sel = document.getElementById('inv-search');
+    const id = sel.value;
+    if (!id) return;
+    if (document.querySelector('.inv-item[data-inv-id="' + id + '"]')) { sel.value = ''; return; }
+    const opt = sel.options[sel.selectedIndex];
+    const name = opt.text.split(' (')[0];
+    appendInvItem(id, name, '', '');
+    sel.value = '';
+}
+
+function createAndAddInv() {
+    const nombres = document.getElementById('new-inv-nombres').value.trim();
+    const apellidos = document.getElementById('new-inv-apellidos').value.trim();
+    const ip = document.getElementById('new-inv-ip').value.trim();
+    const mac = document.getElementById('new-inv-mac').value.trim();
+    const usuario = document.getElementById('new-inv-usuario').value.trim();
+    const tipo = document.getElementById('new-inv-tipo').value;
+    if (!nombres || !apellidos || !ip || !mac) return alert('Complete los campos obligatorios');
+    fetch('/siem/dashboard/api/involucrados/create/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') || csrfToken },
+        body: JSON.stringify({ nombres, apellidos, ip, mac, usuario, tipo })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            appendInvItem(data.id, nombres + ' ' + apellidos, ip, mac);
+            closeNewInvModal();
+            var sel = document.getElementById('inv-search');
+            sel.appendChild(new Option(nombres + ' ' + apellidos + ' (' + ip + ')', data.id));
+        } else { alert(data.error || 'Error al crear involucrado'); }
+    })
+    .catch(function() { alert('Error de conexión'); });
+}
+
+function appendInvItem(id, name, ip, mac) {
+    var list = document.getElementById('selected-inv-list');
+    var div = document.createElement('div');
+    div.className = 'inv-item p-3 dark:bg-surface-900/50 bg-white rounded-lg border dark:border-surface-700 border-surface-200';
+    div.dataset.invId = id;
+    div.innerHTML = '<div class="flex items-center justify-between mb-2"><div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-brand-500/20 flex items-center justify-center"><i class="fas fa-user text-brand-500 text-xs"></i></div><div><div class="text-sm font-medium dark:text-white text-surface-900">' + name + '</div><div class="text-xs dark:text-surface-400 text-surface-500">' + (ip || '') + ' | ' + (mac || '') + '</div></div></div><button type="button" onclick="removeInv(this)" class="text-red-500 hover:text-red-400 p-1"><i class="fas fa-times"></i></button></div><div class="ml-10"><div class="flex items-center gap-2"><span class="text-xs dark:text-surface-400 text-surface-500 whitespace-nowrap">Medida impuesta:</span><select class="inv-medida flex-1 px-2 py-1.5 text-xs dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border-surface-200 text-surface-800 rounded focus:ring-1 focus:ring-brand-500"><option value="">Seleccionar medida...</option>' + medidaOptionsHTML() + '</select><button type="button" onclick="openNewMedidaModal(this)" class="px-2 py-1.5 text-xs bg-amber-600 hover:bg-amber-500 text-white rounded transition-colors" title="Crear nueva medida"><i class="fas fa-plus"></i></button></div></div><input type="hidden" name="involucrados" value="' + id + '"><input type="hidden" class="inv-medida-hidden" name="inv_medida" value="">';
+    list.appendChild(div);
+}
+
+function removeInv(btn) { btn.closest('.inv-item').remove(); }
+
+/* ===== MEDIDA FUNCTIONS ===== */
+function openNewMedidaModal(btn) {
+    currentInvForMedida = btn.closest('.inv-item');
+    document.getElementById('new-medida-modal').classList.remove('hidden');
+}
+function closeNewMedidaModal() { document.getElementById('new-medida-modal').classList.add('hidden'); document.getElementById('new-medida-form').reset(); }
+
+document.getElementById('create-medida-btn').addEventListener('click', function() {
+    var nombre = document.getElementById('new-medida-nombre').value.trim();
+    var desc = document.getElementById('new-medida-desc').value.trim();
+    if (!nombre || !desc) return alert('Complete los campos');
+    fetch('/siem/dashboard/api/medidas/create/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') || csrfToken },
+        body: JSON.stringify({ nombre: nombre, descripcion: desc })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            var select = currentInvForMedida.querySelector('.inv-medida');
+            select.value = data.id;
+            syncMedidaSelects(currentInvForMedida);
+            closeNewMedidaModal();
+            refreshAllMedidaDropdowns();
+        } else { alert(data.error || 'Error'); }
+    })
+    .catch(function() { alert('Error de conexión'); });
+});
+
+function medidaOptionsHTML() {
+    var sel = document.getElementById('medida-search');
+    if (!sel) return '<option value="">Seleccionar medida...</option>';
+    var opts = '<option value="">Seleccionar medida...</option>';
+    for (var i = 1; i < sel.options.length; i++) {
+        opts += '<option value="' + sel.options[i].value + '">' + sel.options[i].text + '</option>';
+    }
+    return opts;
+}
+
+function refreshAllMedidaDropdowns() {
+    document.querySelectorAll('.inv-medida').forEach(function(sel) {
+        var currentVal = sel.value;
+        sel.innerHTML = '<option value="">Seleccionar medida...</option>';
+        var src = document.getElementById('medida-search');
+        if (src) {
+            for (var i = 1; i < src.options.length; i++) {
+                sel.appendChild(new Option(src.options[i].text, src.options[i].value));
+            }
+        }
+        sel.value = currentVal;
+    });
+}
+
+function syncMedidaSelects(item) {
+    var sel = item.querySelector('.inv-medida');
+    var hidden = item.querySelector('.inv-medida-hidden');
+    if (hidden) hidden.value = sel ? sel.value : '';
+}
+
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('inv-medida')) {
+        syncMedidaSelects(e.target.closest('.inv-item'));
+    }
+});
+
+/* ===== MEDIDA GLOBAL FUNCTIONS ===== */
+function openNewMedidaGlobalModal() { document.getElementById('new-medida-global-modal').classList.remove('hidden'); }
+function closeNewMedidaGlobalModal() { document.getElementById('new-medida-global-modal').classList.add('hidden'); document.getElementById('new-medida-global-form').reset(); }
+
+function addMedidaFromSelect() {
+    var sel = document.getElementById('medida-search');
+    var id = sel.value;
+    if (!id) return;
+    if (document.querySelector('.medida-item[data-medida-id="' + id + '"]')) { sel.value = ''; return; }
+    var opt = sel.options[sel.selectedIndex];
+    appendMedidaItem(id, opt.text, '');
+    sel.value = '';
+}
+
+function createAndAddMedidaGlobal() {
+    var nombre = document.getElementById('new-medida-global-nombre').value.trim();
+    var desc = document.getElementById('new-medida-global-desc').value.trim();
+    if (!nombre || !desc) return alert('Complete los campos');
+    fetch('/siem/dashboard/api/medidas/create/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') || csrfToken },
+        body: JSON.stringify({ nombre: nombre, descripcion: desc })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            appendMedidaItem(data.id, nombre, desc);
+            closeNewMedidaGlobalModal();
+            var sel = document.getElementById('medida-search');
+            sel.appendChild(new Option(nombre, data.id));
+            refreshAllMedidaDropdowns();
+        } else { alert(data.error || 'Error'); }
+    })
+    .catch(function() { alert('Error de conexión'); });
+}
+
+function appendMedidaItem(id, name, desc) {
+    var list = document.getElementById('selected-medida-list');
+    var div = document.createElement('div');
+    div.className = 'medida-item flex items-center justify-between p-2 dark:bg-surface-900/50 bg-white rounded-lg border dark:border-surface-700 border-surface-200';
+    div.dataset.medidaId = id;
+    div.innerHTML = '<div class="flex items-center gap-2"><div class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center"><i class="fas fa-shield-alt text-emerald-500 text-xs"></i></div><div><div class="text-sm font-medium dark:text-white text-surface-900">' + name + '</div><div class="text-xs dark:text-surface-400 text-surface-500">' + (desc ? desc.substring(0, 60) : '') + '</div></div></div><button type="button" onclick="removeMedida(this)" class="text-red-500 hover:text-red-400 p-1"><i class="fas fa-times"></i></button><input type="hidden" name="medidas_incidente" value="' + id + '">';
+    list.appendChild(div);
+}
+
+function removeMedida(btn) { btn.closest('.medida-item').remove(); }
+</script>
+{% endblock %}

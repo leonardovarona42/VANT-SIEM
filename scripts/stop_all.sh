@@ -4,7 +4,7 @@ set -e
 
 echo "=== VANT-SIEM Microservices Stopping ==="
 
-for svc in auth web inventory logs aegis bus; do
+for svc in auth web inventory logs aegis bus intelligence; do
     echo "Stopping vantsiem-$svc..."
     systemctl stop "vantsiem-$svc" 2>/dev/null || true
     PIDFILE="/run/vantsiem-${svc}.pid"

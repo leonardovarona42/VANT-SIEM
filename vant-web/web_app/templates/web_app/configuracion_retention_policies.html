@@ -1,0 +1,133 @@
+{% extends "web_app/base.html" %}
+{% block title %}Politicas de Retencion | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-clock text-brand-400 mr-2"></i>Politicas de Retencion</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Define cuanto tiempo se conservan los datos</p>
+  </div>
+  <div class="flex gap-2">
+    <a href="{% url 'web:configuracion-db-dashboard' %}" class="btn-secondary text-sm"><i class="fas fa-arrow-left mr-1"></i>Volver</a>
+  </div>
+</div>
+
+<div class="glass-card p-4 mb-6">
+  <h2 class="text-sm font-semibold dark:text-white text-surface-900 mb-3"><i class="fas fa-plus text-brand-400 mr-1"></i>Nueva Politica</h2>
+  <form method="post" action="{% url 'web:configuracion-db-retention-create' %}" class="flex flex-wrap gap-3 items-end">
+    {% csrf_token %}
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Entidad</label>
+      <select name="entity_type" class="px-3 py-2 text-sm rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border" required>
+        <option value="">Seleccione...</option>
+        <option value="logs_events">Eventos de Log</option>
+        <option value="dlp_threats">Amenazas DLP</option>
+        <option value="suricata_alerts">Alertas Suricata</option>
+        <option value="audit_logs">Logs de Auditoria</option>
+        <option value="incidentes">Incidentes</option>
+        <option value="backups">Respaldos</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Dias de retencion</label>
+      <input name="retention_days" type="number" value="90" min="1" class="w-24 px-3 py-2 text-sm rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border">
+    </div>
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Accion</label>
+      <select name="action" class="px-3 py-2 text-sm rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border">
+        <option value="delete">Eliminar</option>
+        <option value="archive">Archivar</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Activa</label>
+      <input name="is_active" type="checkbox" checked class="w-4 h-4 rounded dark:bg-surface-800 border-surface-300">
+    </div>
+    <input name="description" placeholder="Descripcion (opcional)" class="flex-1 min-w-[200px] px-3 py-2 text-sm rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border">
+    <button class="btn-primary text-sm"><i class="fas fa-save mr-1"></i>Guardar</button>
+  </form>
+</div>
+
+<div id="tbl-retention" class="glass-card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase">Entidad</th>
+          <th class="px-4 py-3 text-right text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase">Dias</th>
+          <th class="px-4 py-3 text-center text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase">Accion</th>
+          <th class="px-4 py-3 text-center text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase">Activa</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase">Descripcion</th>
+          <th class="px-4 py-3 text-center text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in policies %}
+        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors">
+          <td class="px-4 py-3 dark:text-surface-200 text-surface-700 font-medium">{{ p.entity_type_display }}</td>
+          <td class="px-4 py-3 text-right dark:text-surface-300 text-surface-600">{{ p.retention_days }}</td>
+          <td class="px-4 py-3 text-center">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {% if p.action == 'delete' %}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300{% else %}bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300{% endif %}">
+              {{ p.action_display }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-center">
+            {% if p.is_active %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Si</span>
+            {% else %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300">No</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs">{{ p.description|default:"-" }}</td>
+          <td class="px-4 py-3 text-center">
+            <div class="flex items-center justify-center gap-2">
+              <button onclick="document.getElementById('edit-{{ p.id }}').classList.toggle('hidden')" class="text-brand-400 hover:text-brand-300 text-xs"><i class="fas fa-edit"></i></button>
+              <form method="post" action="{% url 'web:configuracion-db-retention-delete' p.id %}" onsubmit="return confirm('Eliminar esta politica?')">
+                {% csrf_token %}
+                <button class="text-red-400 hover:text-red-300 text-xs"><i class="fas fa-trash"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        <tr id="edit-{{ p.id }}" class="hidden">
+          <td colspan="6" class="px-4 py-3">
+            <form method="post" action="{% url 'web:configuracion-db-retention-edit' p.id %}" class="flex flex-wrap gap-3 items-end">
+              {% csrf_token %}
+              <select name="entity_type" class="px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+                <option value="logs_events" {% if p.entity_type == 'logs_events' %}selected{% endif %}>Eventos de Log</option>
+                <option value="dlp_threats" {% if p.entity_type == 'dlp_threats' %}selected{% endif %}>Amenazas DLP</option>
+                <option value="suricata_alerts" {% if p.entity_type == 'suricata_alerts' %}selected{% endif %}>Alertas Suricata</option>
+                <option value="audit_logs" {% if p.entity_type == 'audit_logs' %}selected{% endif %}>Logs de Auditoria</option>
+                <option value="incidentes" {% if p.entity_type == 'incidentes' %}selected{% endif %}>Incidentes</option>
+                <option value="backups" {% if p.entity_type == 'backups' %}selected{% endif %}>Respaldos</option>
+              </select>
+              <input name="retention_days" type="number" value="{{ p.retention_days }}" class="w-20 px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+              <select name="action" class="px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+                <option value="delete" {% if p.action == 'delete' %}selected{% endif %}>Eliminar</option>
+                <option value="archive" {% if p.action == 'archive' %}selected{% endif %}>Archivar</option>
+              </select>
+              <label class="flex items-center gap-1 text-xs dark:text-surface-400">
+                <input name="is_active" type="checkbox" value="true" {% if p.is_active %}checked{% endif %} class="w-3.5 h-3.5 rounded dark:bg-surface-800">
+                Activa
+              </label>
+              <input name="description" value="{{ p.description }}" placeholder="Descripcion" class="flex-1 min-w-[150px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+              <button class="btn-primary text-xs px-3 py-1.5"><i class="fas fa-save mr-1"></i>Guardar</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400">
+            <i class="fas fa-clock text-4xl mb-3 block opacity-50"></i>
+            No hay politicas de retencion configuradas
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="/static/web_app/js/table-features.js"></script>
+<script>VANTTable.init('tbl-retention');</script>
+{% endblock %}

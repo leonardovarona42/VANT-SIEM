@@ -1,0 +1,71 @@
+{% extends "web_app/base.html" %}
+{% block title %}Redes | VANT-SIEM Web{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-8">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-network-wired text-brand-400 mr-2"></i>Gestion de Redes</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total_redes }} redes &middot; {{ total_dispositivos }} dispositivos</p>
+  </div>
+  <div class="flex gap-2">
+    <a href="{% url 'web:soc-esquema-fisico' %}" class="btn-secondary text-xs"><i class="fas fa-project-diagram mr-1"></i>Esquema Fisico</a>
+    <a href="{% url 'web:soc-esquema-logico' %}" class="btn-secondary text-xs"><i class="fas fa-sitemap mr-1"></i>Esquema Logico</a>
+    <a href="{% url 'web:soc-servicios-list' %}" class="btn-secondary text-xs"><i class="fas fa-arrow-left mr-1"></i>Volver</a>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+  <div class="glass-card p-3 text-center"><p class="text-xl font-bold dark:text-white text-surface-900">{{ total_redes }}</p><p class="text-[10px] dark:text-surface-400 text-surface-500 uppercase">Redes</p></div>
+  <div class="glass-card p-3 text-center"><p class="text-xl font-bold dark:text-white text-surface-900">{{ total_dispositivos }}</p><p class="text-[10px] dark:text-surface-400 text-surface-500 uppercase">Dispositivos</p></div>
+</div>
+
+<div class="space-y-3">
+  {% for item in redes_tree %}
+  <div class="glass-card p-4">
+    <div class="flex items-center justify-between cursor-pointer" onclick="toggleTree(this)">
+      <div class="flex items-center gap-3">
+        <i class="fas fa-chevron-right text-xs dark:text-surface-400 text-surface-500 transition-transform duration-200"></i>
+        <span class="font-semibold dark:text-white text-surface-900">{{ item.red.nombre }}</span>
+        <span class="text-xs dark:text-surface-500 text-surface-400">{{ item.red.tipo }}</span>
+        {% if item.red.host %}<span class="text-xs dark:text-surface-500 text-surface-400">{{ item.red.host }}</span>{% endif %}
+        {% if item.red.vlan_id %}<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-pink-500/20 text-pink-300">VLAN {{ item.red.vlan_id }}</span>{% endif %}
+      </div>
+      <span class="text-xs dark:text-surface-500 text-surface-400">{{ item.children|length }} hijos</span>
+    </div>
+    <div class="tree-children hidden mt-3 pt-3 border-t dark:border-surface-700 border-surface-200">
+      {% for child in item.children %}
+      <div class="flex items-center justify-between py-2 px-3 rounded-lg hover:dark:bg-surface-800/50 hover:bg-surface-50">
+        <div class="flex items-center gap-3">
+          <span class="w-2 h-2 rounded-full {% if child.monitorear %}bg-emerald-400{% else %}bg-surface-500{% endif %}"></span>
+          <span class="text-sm dark:text-surface-200 text-surface-700">{{ child.nombre }}</span>
+          <span class="text-xs dark:text-surface-500 text-surface-400">{{ child.tipo }}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          {% if child.host %}<span class="text-xs dark:text-surface-500 text-surface-400">{{ child.host }}</span>{% endif %}
+          {% if child.monitorear %}<span class="text-[10px] text-emerald-400"><i class="fas fa-circle"></i></span>{% endif %}
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-xs dark:text-surface-500 text-surface-400 px-3 py-2">Sin dispositivos hijos</p>
+      {% endfor %}
+    </div>
+  </div>
+  {% empty %}
+  <div class="glass-card p-12 text-center">
+    <i class="fas fa-network-wired text-4xl dark:text-surface-600 text-surface-300 mb-4 block"></i>
+    <h3 class="text-lg font-semibold dark:text-surface-300 text-surface-600 mb-2">No hay redes</h3>
+    <p class="text-sm dark:text-surface-500 text-surface-400">No se encontraron redes registradas en la CMDB.</p>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleTree(el) {
+  var children = el.nextElementSibling;
+  var icon = el.querySelector('.fa-chevron-right');
+  children.classList.toggle('hidden');
+  icon.classList.toggle('rotate-90');
+}
+</script>
+{% endblock %}

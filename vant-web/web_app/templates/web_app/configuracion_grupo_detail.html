@@ -1,0 +1,141 @@
+{% extends "web_app/base.html" %}
+{% block title %}{{ group.name }} | VANT-SIEM Web{% endblock %}
+{% block content %}
+<div class="flex items-center gap-3 mb-6">
+  <a href="{% url 'web:configuracion-grupos' %}" class="dark:text-surface-400 text-surface-500 hover:text-brand-400"><i class="fas fa-arrow-left"></i></a>
+  <div class="flex-1">
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-users-gear text-cyan-400 mr-2"></i>{{ group.name }}</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ group.description|default:"Sin descripcion" }}</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="{% url 'web:configuracion-grupo-edit' group.id %}" class="btn-primary text-sm"><i class="fas fa-edit mr-2"></i>Editar</a>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+  <!-- Members Section -->
+  <div class="glass-card overflow-hidden">
+    <div class="px-5 py-3 dark:border-surface-800 border-surface-200 border-b flex items-center justify-between">
+      <h2 class="font-semibold dark:text-white text-surface-900"><i class="fas fa-users mr-2 dark:text-surface-400 text-surface-500"></i>Miembros ({{ members|length }})</h2>
+    </div>
+
+    <div class="p-4">
+      {% for m in members %}
+      <div class="flex items-center justify-between py-2 {% if not forloop.last %}dark:border-surface-800/50 border-surface-200/50 border-b{% endif %}">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-brand-500 to-accent-500 flex items-center justify-center text-white text-xs font-semibold">{{ m.username|make_list|first|upper }}</div>
+          <div>
+            <div class="text-sm dark:text-white text-surface-900 font-medium">{{ m.username }}</div>
+            <div class="text-xs dark:text-surface-500 text-surface-400">ID: {{ m.user_id }}</div>
+          </div>
+        </div>
+        <form method="post" action="{% url 'web:configuracion-grupo-detail' group.id %}" onsubmit="return confirm('Remover a {{ m.username }} del grupo?')" class="inline">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="remove_member">
+          <input type="hidden" name="user_id" value="{{ m.user_id }}">
+          <button class="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded-lg dark:hover:bg-red-500/10" title="Remover"><i class="fas fa-times"></i></button>
+        </form>
+      </div>
+      {% empty %}
+      <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">No hay miembros en este grupo</p>
+      {% endfor %}
+    </div>
+
+    {% if available_users %}
+    <div class="px-4 pb-4">
+      <form method="post" action="{% url 'web:configuracion-grupo-detail' group.id %}" class="flex items-end gap-2">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_member">
+        <div class="flex-1">
+          <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Agregar miembro</label>
+          <select name="user_id" id="add-member-select" onchange="var opt=this.options[this.selectedIndex];document.getElementById('add-member-name').value=opt.text;document.getElementById('add-member-email').value=opt.dataset.email||''" class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-50 border border-surface-300 rounded-lg">
+            <option value="">Seleccionar usuario...</option>
+            {% for u in available_users %}
+            <option value="{{ u.id }}" data-email="{{ u.email|default:'' }}">{{ u.username }} ({{ u.email|default:"sin email" }})</option>
+            {% endfor %}
+          </select>
+          <input type="hidden" name="username" id="add-member-name" value="">
+          <input type="hidden" name="email" id="add-member-email" value="">
+        </div>
+        <button type="submit" class="btn-primary text-sm px-4 py-2"><i class="fas fa-plus mr-1"></i>Agregar</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Subscriptions Section -->
+  <div class="glass-card overflow-hidden">
+    <div class="px-5 py-3 dark:border-surface-800 border-surface-200 border-b flex items-center justify-between">
+      <h2 class="font-semibold dark:text-white text-surface-900"><i class="fas fa-bell mr-2 dark:text-surface-400 text-surface-500"></i>Suscripciones de Alertas ({{ subscriptions|length }})</h2>
+    </div>
+
+    <div class="p-4">
+      {% for s in subscriptions %}
+      <div class="flex items-center justify-between py-2 {% if not forloop.last %}dark:border-surface-800/50 border-surface-200/50 border-b{% endif %}">
+        <div class="flex items-center gap-3">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+            {% if s.channel == 'email' %}bg-amber-500/20 text-amber-300
+            {% elif s.channel == 'dashboard' %}bg-blue-500/20 text-blue-300
+            {% elif s.channel == 'telegram' %}bg-cyan-500/20 text-cyan-300
+            {% else %}bg-surface-500/20 text-surface-400{% endif %}">
+            {% if s.channel == 'email' %}<i class="fas fa-envelope mr-1"></i>Email
+            {% elif s.channel == 'dashboard' %}<i class="fas fa-desktop mr-1"></i>Dashboard
+            {% elif s.channel == 'telegram' %}<i class="fab fa-telegram mr-1"></i>Telegram
+            {% else %}<i class="fas fa-link mr-1"></i>Webhook{% endif %}
+          </span>
+          <div>
+            <div class="text-sm dark:text-white text-surface-900">{{ s.event_type_display|default:s.event_type }}</div>
+            <div class="text-xs dark:text-surface-500 text-surface-400 font-mono">{{ s.event_type }}</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          {% if s.is_active %}
+          <span class="text-xs text-green-400"><i class="fas fa-check-circle"></i></span>
+          {% else %}
+          <span class="text-xs text-surface-500"><i class="fas fa-pause-circle"></i></span>
+          {% endif %}
+          <form method="post" action="{% url 'web:configuracion-grupo-detail' group.id %}" onsubmit="return confirm('Eliminar esta suscripcion?')" class="inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="remove_subscription">
+            <input type="hidden" name="sub_id" value="{{ s.id }}">
+            <button class="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded-lg dark:hover:bg-red-500/10" title="Eliminar"><i class="fas fa-times"></i></button>
+          </form>
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">No hay suscripciones configuradas</p>
+      {% endfor %}
+    </div>
+
+    <div class="px-4 pb-4">
+      <form method="post" action="{% url 'web:configuracion-grupo-detail' group.id %}" class="space-y-3">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_subscription">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="sm:col-span-2">
+            <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Tipo de Evento</label>
+            <select name="event_type" class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-50 border border-surface-300 rounded-lg">
+              <option value="">Seleccionar evento...</option>
+              {% for value, label in event_types %}
+              <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Canal</label>
+            <select name="channel" class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-50 border border-surface-300 rounded-lg">
+              <option value="dashboard">Dashboard</option>
+              <option value="email">Email</option>
+              <option value="telegram">Telegram</option>
+              <option value="webhook">Webhook</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn-primary text-sm px-4 py-2"><i class="fas fa-plus mr-2"></i>Agregar Suscripcion</button>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

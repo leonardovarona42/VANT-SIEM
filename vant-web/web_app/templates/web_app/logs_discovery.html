@@ -1,66 +1,653 @@
 {% extends "web_app/base.html" %}
+{% load static %}
 {% block title %}Log Discovery | VANT-SIEM Web{% endblock %}
 
 {% block content %}
-<div class="mb-8">
-  <h1 class="text-2xl font-bold dark:text-white text-surface-900">Log Discovery</h1>
-  <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Vista general de fuentes de logs y eventos</p>
-</div>
-
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-  <div class="stat-card">
-    <div class="flex items-center justify-between mb-4">
-      <div class="w-12 h-12 rounded-xl dark:bg-purple-500/20 bg-purple-100 flex items-center justify-center">
-        <i class="fas fa-stream text-purple-500 text-xl"></i>
-      </div>
-    </div>
-    <h3 class="text-3xl font-bold dark:text-white text-surface-900">{{ total_events|default:"0" }}</h3>
-    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Total Eventos</p>
+<div class="mb-4 flex items-center justify-between">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900">Log Discovery</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1"><span id="total-count">0</span> eventos &middot; Exploraci&oacute;n unificada de logs</p>
   </div>
-
-  <div class="stat-card">
-    <div class="flex items-center justify-between mb-4">
-      <div class="w-12 h-12 rounded-xl dark:bg-brand-500/20 bg-brand-100 flex items-center justify-center">
-        <i class="fas fa-server text-brand-500 text-xl"></i>
-      </div>
-    </div>
-    <h3 class="text-3xl font-bold dark:text-white text-surface-900">{{ total_sources|default:"0" }}</h3>
-    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Fuentes Activas</p>
+  <div class="flex items-center gap-3">
+    <label class="flex items-center gap-2 text-xs dark:text-surface-400 text-surface-500 cursor-pointer select-none">
+      <input type="checkbox" id="auto-refresh-toggle" checked class="accent-brand-500 w-3.5 h-3.5">
+      Auto-refresh (10s)
+    </label>
+    <span id="last-refresh" class="text-[10px] dark:text-surface-500 text-surface-400"></span>
   </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-  <div class="glass-card p-6">
-    <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Accesos Rápidos</h3>
-    <div class="space-y-3">
-      <a href="{% url 'web:suricata-dashboard' %}" class="flex items-center gap-3 p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50 hover:dark:bg-surface-800 hover:bg-surface-100 transition-all">
-        <div class="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center"><i class="fas fa-shield-halved text-amber-400"></i></div>
-        <div><p class="text-sm font-medium dark:text-surface-200 text-surface-700">Suricata IDS Dashboard</p><p class="text-xs dark:text-surface-500 text-surface-400">Análisis de tráfico y firmas</p></div>
-      </a>
-      <a href="{% url 'web:events-list' %}" class="flex items-center gap-3 p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50 hover:dark:bg-surface-800 hover:bg-surface-100 transition-all">
-        <div class="w-10 h-10 rounded-lg bg-brand-500/20 flex items-center justify-center"><i class="fas fa-list text-brand-400"></i></div>
-        <div><p class="text-sm font-medium dark:text-surface-200 text-surface-700">Lista de Eventos</p><p class="text-xs dark:text-surface-500 text-surface-400">Explorar todos los logs</p></div>
-      </a>
+<div class="glass-card p-3 mb-4" style="height:100px">
+  <canvas id="timelineChart" height="80"></canvas>
+</div>
+
+<div class="flex flex-col lg:flex-row gap-4">
+
+  <div class="w-full lg:w-52 shrink-0">
+    <div class="glass-card p-3">
+      <h3 class="text-[10px] font-bold uppercase tracking-wider dark:text-surface-400 text-surface-500 mb-2">
+        <i class="fas fa-layer-group mr-1"></i>Fuentes de Log
+      </h3>
+      <div class="space-y-0.5" id="source-list">
+        <button onclick="selectSource('')" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left source-btn {% if not source_type %}bg-brand-500/15 text-brand-400 font-semibold{% else %}dark:text-surface-300 text-surface-600 hover:dark:bg-white/5 hover:bg-surface-100{% endif %}">
+          <span><i class="fas fa-globe mr-1.5 text-[10px]"></i>Todas</span>
+        </button>
+        {% for st in source_types_list %}
+        <button onclick="selectSource('{{ st.source_type }}')" class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors text-left source-btn {% if source_type == st.source_type %}bg-brand-500/15 text-brand-400 font-semibold{% else %}dark:text-surface-300 text-surface-600 hover:dark:bg-white/5 hover:bg-surface-100{% endif %}" data-st="{{ st.source_type }}">
+          <span>
+            {% if st.source_type == "suricata" %}<i class="fas fa-shield-halved mr-1.5 text-[10px]"></i>Suricata
+            {% elif st.source_type == "file_log" %}<i class="fas fa-file-lines mr-1.5 text-[10px]"></i>File Log
+            {% elif "syslog" in st.source_type %}<i class="fas fa-server mr-1.5 text-[10px]"></i>Syslog
+            {% elif "firewall" in st.source_type %}<i class="fas fa-fire mr-1.5 text-[10px]"></i>Firewall
+            {% else %}<i class="fas fa-file-lines mr-1.5 text-[10px]"></i>{{ st.source_type }}
+            {% endif %}
+          </span>
+          <span class="text-[9px] dark:text-surface-500 text-surface-400 bg-surface-800/50 dark:bg-surface-800/80 px-1.5 py-0.5 rounded-full">{{ st.event_count }}</span>
+        </button>
+        {% endfor %}
+        {% if not source_types_list %}
+        <p class="text-[10px] dark:text-surface-500 text-surface-400 text-center py-3">Sin datos</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div id="field-filters-panel" class="glass-card p-3 mt-3 hidden">
+      <h3 class="text-[10px] font-bold uppercase tracking-wider dark:text-surface-400 text-surface-500 mb-2">
+        <i class="fas fa-filter mr-1"></i>Filtros de Campos
+      </h3>
+      <div id="field-filters-content" class="space-y-3"></div>
     </div>
   </div>
 
-  <div class="glass-card p-6">
-    <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Fuentes de Logs</h3>
-    {% if sources %}
-    <div class="space-y-3">
-      {% for source in sources %}
-      <div class="flex items-center gap-3 p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
-        <div class="w-2 h-2 rounded-full {% if source.enabled %}bg-emerald-500{% else %}bg-red-500{% endif %}"></div>
-        <div class="flex-1">
-          <p class="text-sm dark:text-surface-200 text-surface-700">{{ source.source_id }}</p>
-          <p class="text-xs dark:text-surface-500 text-surface-400">{{ source.source_type|default:"-" }}</p>
+  <div class="flex-1 min-w-0">
+
+    <div class="glass-card p-3 mb-3">
+      <form method="get" class="flex flex-wrap gap-2 items-end" id="filter-form">
+        <div class="flex flex-col gap-0.5">
+          <label class="text-[10px] uppercase tracking-wider dark:text-surface-500 text-surface-400 font-medium">Desde</label>
+          <input type="datetime-local" name="from" id="filter-from" value="{{ from_str }}"
+                 class="px-2.5 py-1.5 text-xs dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-50 border border-surface-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
         </div>
+        <div class="flex flex-col gap-0.5">
+          <label class="text-[10px] uppercase tracking-wider dark:text-surface-500 text-surface-400 font-medium">Hasta</label>
+          <input type="datetime-local" name="to" id="filter-to" value="{{ to_str }}"
+                 class="px-2.5 py-1.5 text-xs dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-50 border border-surface-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+        </div>
+        <div class="flex-1 min-w-[160px]">
+          <label class="text-[10px] uppercase tracking-wider dark:text-surface-500 text-surface-400 font-medium">Buscar</label>
+          <input type="text" name="q" id="filter-q" value="{{ search }}" placeholder="Mensaje, host..."
+                 class="w-full px-2.5 py-1.5 text-xs dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-50 border border-surface-300 rounded-lg focus:ring-2 focus:ring-brand-500 outline-none">
+        </div>
+        <div>
+          <label class="text-[10px] uppercase tracking-wider dark:text-surface-500 text-surface-400 font-medium">Severidad</label>
+          <select name="severity" id="filter-severity" class="px-2.5 py-1.5 text-xs dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-50 border border-surface-300 rounded-lg">
+            <option value="">Todas</option>
+            <option value="critical" {% if severity == "critical" %}selected{% endif %}>Cr&iacute;tica</option>
+            <option value="high" {% if severity == "high" %}selected{% endif %}>Alta</option>
+            <option value="medium" {% if severity == "medium" %}selected{% endif %}>Media</option>
+            <option value="low" {% if severity == "low" %}selected{% endif %}>Baja</option>
+            <option value="info" {% if severity == "info" %}selected{% endif %}>Info</option>
+          </select>
+        </div>
+        <button type="submit" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-brand-500 text-white hover:bg-brand-600 transition-colors"><i class="fas fa-search mr-1"></i>Filtrar</button>
+        <button type="button" onclick="clearAllFilters()" class="px-3 py-1.5 text-xs font-medium rounded-lg dark:bg-surface-800 dark:hover:bg-surface-700 dark:text-surface-300 bg-surface-100 hover:bg-surface-200 text-surface-700 transition-colors"><i class="fas fa-times mr-1"></i>Limpiar</button>
+      </form>
+      <div class="flex items-center gap-1 mt-2">
+        <span class="text-[10px] uppercase tracking-wider dark:text-surface-500 text-surface-400 font-medium mr-1">R&aacute;pido:</span>
+        <button type="button" onclick="setRange(15)" class="px-2.5 py-1 text-[10px] rounded-lg font-medium transition-colors dark:text-surface-400 text-surface-500 hover:dark:bg-white/5 hover:bg-surface-100">15m</button>
+        <button type="button" onclick="setRange(60)" class="px-2.5 py-1 text-[10px] rounded-lg font-medium transition-colors dark:text-surface-400 text-surface-500 hover:dark:bg-white/5 hover:bg-surface-100">1h</button>
+        <button type="button" onclick="setRange(360)" class="px-2.5 py-1 text-[10px] rounded-lg font-medium transition-colors dark:text-surface-400 text-surface-500 hover:dark:bg-white/5 hover:bg-surface-100">6h</button>
+        <button type="button" onclick="setRange(1440)" class="px-2.5 py-1 text-[10px] rounded-lg font-medium transition-colors dark:text-surface-400 text-surface-500 hover:dark:bg-white/5 hover:bg-surface-100">24h</button>
+        <button type="button" onclick="setRange(4320)" class="px-2.5 py-1 text-[10px] rounded-lg font-medium transition-colors dark:text-surface-400 text-surface-500 hover:dark:bg-white/5 hover:bg-surface-100">3d</button>
+        <button type="button" onclick="setRange(10080)" class="px-2.5 py-1 text-[10px] rounded-lg font-medium transition-colors dark:text-surface-400 text-surface-500 hover:dark:bg-white/5 hover:bg-surface-100">7d</button>
       </div>
-      {% endfor %}
     </div>
-    {% else %}
-    <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-6">No hay fuentes configuradas</p>
-    {% endif %}
+
+    <div id="active-filters-bar" class="hidden mb-3 px-3 py-2 glass-card flex flex-wrap items-center gap-2">
+      <span class="text-[10px] uppercase tracking-wider dark:text-surface-500 text-surface-400 font-medium mr-1">Filtros activos:</span>
+      <div id="active-filters-list" class="flex flex-wrap gap-1.5"></div>
+      <button onclick="clearAllFilters()" class="ml-auto text-[10px] dark:text-surface-400 text-surface-500 hover:text-red-400"><i class="fas fa-times-circle mr-0.5"></i>Limpiar todo</button>
+    </div>
+
+    <div class="glass-card overflow-hidden">
+      <div class="overflow-x-auto" id="table-wrapper">
+        <table class="w-full text-sm" id="events-table">
+          <thead>
+            <tr class="dark:border-surface-800 border-surface-200 border-b">
+              <th class="px-2 py-2.5 w-8"></th>
+              <th class="px-3 py-2.5 text-left dark:text-surface-400 text-surface-500 font-medium text-[10px] uppercase tracking-wider col-resize" data-col="severity">Severidad<span class="resize-handle"></span></th>
+              <th class="px-3 py-2.5 text-left dark:text-surface-400 text-surface-500 font-medium text-[10px] uppercase tracking-wider col-resize" data-col="source">Fuente<span class="resize-handle"></span></th>
+              <th class="px-3 py-2.5 text-left dark:text-surface-400 text-surface-500 font-medium text-[10px] uppercase tracking-wider col-resize" data-col="category">Categor&iacute;a<span class="resize-handle"></span></th>
+              <th class="px-3 py-2.5 text-left dark:text-surface-400 text-surface-500 font-medium text-[10px] uppercase tracking-wider col-resize" data-col="host">Host<span class="resize-handle"></span></th>
+              <th class="px-3 py-2.5 text-left dark:text-surface-400 text-surface-500 font-medium text-[10px] uppercase tracking-wider col-resize" data-col="ip">IP<span class="resize-handle"></span></th>
+              <th class="px-3 py-2.5 text-left dark:text-surface-400 text-surface-500 font-medium text-[10px] uppercase tracking-wider col-resize" data-col="message">Mensaje<span class="resize-handle"></span></th>
+              <th class="px-3 py-2.5 text-left dark:text-surface-400 text-surface-500 font-medium text-[10px] uppercase tracking-wider col-resize" data-col="time">Tiempo<span class="resize-handle"></span></th>
+            </tr>
+          </thead>
+          <tbody id="events-tbody">
+            <tr id="loading-row"><td colspan="8" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400"><i class="fas fa-spinner fa-spin text-xl mr-2"></i>Cargando eventos...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="px-3 py-2.5 dark:border-surface-800 border-surface-200 border-t flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xs dark:text-surface-400 text-surface-500"><span id="page-info">0</span> eventos</span>
+          <select id="page-size-select" onchange="changePageSize(this.value)" class="px-2 py-1 text-[10px] dark:bg-surface-800 dark:border-surface-700 dark:text-surface-300 bg-surface-50 border border-surface-300 rounded-lg">
+            <option value="10">10 filas</option>
+            <option value="20">20 filas</option>
+            <option value="50" selected>50 filas</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-1" id="pagination-controls"></div>
+      </div>
+    </div>
+
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+  var BASE_URL = window.location.pathname;
+  var state = {
+    page: {{ page|default:1 }},
+    pageSize: {{ page_size|default:50 }},
+    sourceType: '{{ source_type|default:"" }}',
+    severity: '{{ severity|default:"" }}',
+    hostIp: '{{ host_ip|default:"" }}',
+    hostName: '{{ host_name|default:"" }}',
+    eventCategory: '{{ event_category|default:"" }}',
+    search: '{{ search|default:"" }}',
+    fromStr: '{{ from_str|default:"" }}',
+    toStr: '{{ to_str|default:"" }}',
+    autoRefresh: true,
+    refreshTimer: null,
+    expandedRows: {},
+    excludeFilters: {},
+    includeFilters: {},
+    chart: null,
+  };
+
+  var sevColors = {
+    critical: 'bg-red-500/20 text-red-300',
+    high: 'bg-orange-500/20 text-orange-300',
+    medium: 'bg-yellow-500/20 text-yellow-300',
+    low: 'bg-blue-500/20 text-blue-300',
+    info: 'bg-surface-500/20 text-surface-300',
+  };
+
+  function buildParams() {
+    var p = new URLSearchParams();
+    if (state.fromStr) p.set('from', state.fromStr);
+    if (state.toStr) p.set('to', state.toStr);
+    p.set('page', state.page);
+    p.set('page_size', state.pageSize);
+    if (state.sourceType) p.set('source_type', state.sourceType);
+    if (state.severity) p.set('severity', state.severity);
+    if (state.hostIp) p.set('host_ip', state.hostIp);
+    if (state.hostName) p.set('host_name', state.hostName);
+    if (state.eventCategory) p.set('event_category', state.eventCategory);
+    if (state.search) p.set('q', state.search);
+    return p;
+  }
+
+  function pushState() {
+    var params = buildParams();
+    var url = BASE_URL + '?' + params.toString();
+    history.replaceState(null, '', url);
+  }
+
+  function buildFilterTag(field, value, mode) {
+    var label = field + ': ' + value;
+    var cls = mode === 'exclude'
+      ? 'bg-red-500/15 text-red-400 border border-red-500/30'
+      : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
+    var icon = mode === 'exclude' ? 'fa-minus' : 'fa-plus';
+    return '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ' + cls + '">' +
+      '<i class="fas ' + icon + ' text-[8px]"></i>' + label +
+      '<button onclick="removeFilter(\'' + field + '\',\'' + value.replace(/'/g, "\\'") + '\',\'' + mode + '\')" class="ml-1 hover:text-white"><i class="fas fa-times text-[8px]"></i></button></span>';
+  }
+
+  function renderActiveFilters() {
+    var html = '';
+    for (var f in state.includeFilters) {
+      state.includeFilters[f].forEach(function(v) { html += buildFilterTag(f, v, 'include'); });
+    }
+    for (var f in state.excludeFilters) {
+      state.excludeFilters[f].forEach(function(v) { html += buildFilterTag(f, v, 'exclude'); });
+    }
+    var bar = document.getElementById('active-filters-bar');
+    var list = document.getElementById('active-filters-list');
+    if (html) {
+      list.innerHTML = html;
+      bar.classList.remove('hidden');
+    } else {
+      bar.classList.add('hidden');
+    }
+  }
+
+  window.removeFilter = function(field, value, mode) {
+    var arr = mode === 'exclude' ? state.excludeFilters[field] : state.includeFilters[field];
+    if (arr) {
+      var idx = arr.indexOf(value);
+      if (idx >= 0) arr.splice(idx, 1);
+      if (arr.length === 0) {
+        if (mode === 'exclude') delete state.excludeFilters[field];
+        else delete state.includeFilters[field];
+      }
+    }
+    applyFiltersFromState();
+    renderActiveFilters();
+    loadData();
+  };
+
+  function applyFiltersFromState() {
+    if (state.includeFilters.severity && state.includeFilters.severity.length === 1) {
+      state.severity = state.includeFilters.severity[0];
+    } else {
+      state.severity = '';
+      document.getElementById('filter-severity').value = '';
+    }
+  }
+
+  function escapeHtml(s) {
+    if (!s) return '';
+    var d = document.createElement('div');
+    d.appendChild(document.createTextNode(s));
+    return d.innerHTML;
+  }
+
+  function renderRow(ev) {
+    var sev = ev.severity || 'info';
+    var sevCls = sevColors[sev] || sevColors.info;
+    var srcIcon = ev.source_type === 'suricata' ? 'fa-shield-halved' :
+                  ev.source_type === 'file_log' ? 'fa-file-lines' : 'fa-file-lines';
+    var timeStr = ev.event_time ? ev.event_time.replace('T', ' ').substring(0, 19) : '-';
+    var msg = ev.message || '-';
+    if (msg.length > 120) msg = msg.substring(0, 120) + '...';
+
+    var rowHtml = '<tr class="event-row dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/3 hover:bg-surface-50 transition-colors cursor-pointer" data-id="' + ev.id + '" onclick="toggleExpand(' + ev.id + ')">';
+    rowHtml += '<td class="px-2 py-2.5 text-center"><button class="expand-btn w-5 h-5 rounded flex items-center justify-center dark:text-surface-400 text-surface-500 hover:dark:bg-white/10 hover:bg-surface-200 transition-colors text-[10px]" id="exp-' + ev.id + '"><i class="fas fa-plus"></i></button></td>';
+    rowHtml += '<td class="px-3 py-2.5"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ' + sevCls + '">' + escapeHtml(sev) + '</span></td>';
+    rowHtml += '<td class="px-3 py-2.5 dark:text-surface-300 text-surface-600 text-xs"><i class="fas ' + srcIcon + ' mr-1 text-[10px]"></i>' + escapeHtml(ev.source_type || '-') + '</td>';
+    rowHtml += '<td class="px-3 py-2.5 dark:text-surface-300 text-surface-600 text-xs">' + escapeHtml(ev.event_category || '-') + '</td>';
+    rowHtml += '<td class="px-3 py-2.5 dark:text-surface-300 text-surface-600 text-xs">' + escapeHtml(ev.host_name || '-') + '</td>';
+    rowHtml += '<td class="px-3 py-2.5 dark:text-surface-300 text-surface-600 font-mono text-[10px]">' + escapeHtml(ev.host_ip || '-') + '</td>';
+    rowHtml += '<td class="px-3 py-2.5 dark:text-surface-300 text-surface-600 text-xs max-w-xs truncate">' + escapeHtml(msg) + '</td>';
+    rowHtml += '<td class="px-3 py-2.5 dark:text-surface-400 text-surface-500 text-[10px] whitespace-nowrap">' + timeStr + '</td>';
+    rowHtml += '</tr>';
+
+    var detailHtml = '<tr class="detail-row hidden dark:border-surface-800/30 border-surface-200/30 border-b" id="detail-' + ev.id + '"><td colspan="8" class="px-4 py-3">';
+    detailHtml += '<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">';
+    var fields = {
+      'id': ev.id,
+      'source_type': ev.source_type,
+      'source_name': ev.source_name,
+      'host_name': ev.host_name,
+      'host_ip': ev.host_ip,
+      'event_time': ev.event_time,
+      'severity': ev.severity,
+      'event_category': ev.event_category,
+      'message': ev.message,
+      'ingested_at': ev.ingested_at,
+      'tags': ev.tags,
+    };
+    if (ev.parsed_fields && typeof ev.parsed_fields === 'object') {
+      for (var k in ev.parsed_fields) fields['parsed.' + k] = ev.parsed_fields[k];
+    }
+    if (ev.raw_payload && typeof ev.raw_payload === 'object') {
+      for (var k in ev.raw_payload) {
+        if (k !== 'line' && k !== 'path') fields['raw.' + k] = typeof ev.raw_payload[k] === 'object' ? JSON.stringify(ev.raw_payload[k]) : ev.raw_payload[k];
+      }
+      if (ev.raw_payload.line) fields['raw.line'] = ev.raw_payload.line;
+      if (ev.raw_payload.path) fields['raw.path'] = ev.raw_payload.path;
+    }
+    for (var k in fields) {
+      var val = fields[k];
+      if (val === null || val === undefined) val = '';
+      if (typeof val === 'object') val = JSON.stringify(val);
+      var valStr = String(val);
+      var displayVal = valStr.length > 200 ? valStr.substring(0, 200) + '...' : valStr;
+      detailHtml += '<div class="dark:bg-surface-800/50 bg-surface-100 rounded-lg px-2.5 py-2">';
+      detailHtml += '<div class="text-[9px] uppercase tracking-wider dark:text-surface-500 text-surface-400 font-medium mb-1">' + escapeHtml(k) + '</div>';
+      detailHtml += '<div class="text-xs dark:text-surface-200 text-surface-700 break-all font-mono leading-relaxed">' + escapeHtml(displayVal) + '</div>';
+      detailHtml += '<div class="flex gap-1 mt-1.5">';
+      var safeVal = valStr.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      detailHtml += '<button onclick="event.stopPropagation(); addFilter(\'' + k + '\',\'' + safeVal + '\',\'include\')" class="px-1.5 py-0.5 text-[9px] rounded font-medium bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/30 transition-colors" title="Incluir este valor"><i class="fas fa-plus mr-0.5"></i>Incluir</button>';
+      detailHtml += '<button onclick="event.stopPropagation(); addFilter(\'' + k + '\',\'' + safeVal + '\',\'exclude\')" class="px-1.5 py-0.5 text-[9px] rounded font-medium bg-red-500/15 text-red-400 hover:bg-red-500/30 transition-colors" title="Excluir este valor"><i class="fas fa-minus mr-0.5"></i>Excluir</button>';
+      detailHtml += '</div></div>';
+    }
+    detailHtml += '</div></td></tr>';
+
+    return rowHtml + detailHtml;
+  }
+
+  window.toggleExpand = function(id) {
+    var detail = document.getElementById('detail-' + id);
+    var btn = document.getElementById('exp-' + id);
+    if (!detail) return;
+    var isHidden = detail.classList.contains('hidden');
+    detail.classList.toggle('hidden');
+    btn.innerHTML = isHidden ? '<i class="fas fa-minus"></i>' : '<i class="fas fa-plus"></i>';
+    state.expandedRows[id] = isHidden;
+  };
+
+  window.addFilter = function(field, value, mode) {
+    if (!value) return;
+    var target = mode === 'exclude' ? state.excludeFilters : state.includeFilters;
+    if (!target[field]) target[field] = [];
+    if (target[field].indexOf(value) === -1) target[field].push(value);
+
+    if (field === 'severity' && mode === 'include' && target[field].length === 1) {
+      state.severity = value;
+      document.getElementById('filter-severity').value = value;
+    }
+    if (field === 'host_ip' && mode === 'include' && target[field].length === 1) {
+      state.hostIp = value;
+    }
+    if (field === 'host_name' && mode === 'include' && target[field].length === 1) {
+      state.hostName = value;
+    }
+    if (field === 'event_category' && mode === 'include' && target[field].length === 1) {
+      state.eventCategory = value;
+    }
+
+    renderActiveFilters();
+    loadData();
+  };
+
+  function loadData() {
+    pushState();
+    var tbody = document.getElementById('events-tbody');
+    tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center dark:text-surface-500 text-surface-400"><i class="fas fa-spinner fa-spin text-lg mr-2"></i></td></tr>';
+
+    var params = buildParams();
+    fetch(BASE_URL + '?' + params.toString(), {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      renderTable(data);
+      renderPagination(data);
+      document.getElementById('total-count').textContent = data.total || 0;
+      document.getElementById('page-info').textContent = data.total || 0;
+      document.getElementById('last-refresh').textContent = new Date().toLocaleTimeString();
+    })
+    .catch(function(err) {
+      tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-red-400"><i class="fas fa-exclamation-triangle mr-2"></i>Error cargando datos</td></tr>';
+    });
+  }
+
+  function renderTable(data) {
+    var tbody = document.getElementById('events-tbody');
+    if (!data.events || data.events.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-16 text-center dark:text-surface-500 text-surface-400"><i class="fas fa-inbox text-4xl mb-3 block opacity-50"></i><p>No se encontraron eventos</p><p class="text-xs mt-1">Ajuste los filtros o cambie el rango de tiempo</p></td></tr>';
+      return;
+    }
+    var html = '';
+    data.events.forEach(function(ev) { html += renderRow(ev); });
+    tbody.innerHTML = html;
+
+    Object.keys(state.expandedRows).forEach(function(id) {
+      if (state.expandedRows[id]) {
+        var detail = document.getElementById('detail-' + id);
+        var btn = document.getElementById('exp-' + id);
+        if (detail) { detail.classList.remove('hidden'); btn.innerHTML = '<i class="fas fa-minus"></i>'; }
+      }
+    });
+  }
+
+  function renderPagination(data) {
+    var el = document.getElementById('pagination-controls');
+    if (!data.total_pages || data.total_pages <= 1) { el.innerHTML = ''; return; }
+    var html = '';
+    if (data.page > 1) {
+      html += '<button onclick="goPage(' + (data.page - 1) + ')" class="px-2.5 py-1 text-[10px] font-medium rounded-lg dark:bg-surface-800 dark:hover:bg-surface-700 dark:text-surface-300 bg-surface-100 hover:bg-surface-200 text-surface-700 transition-colors"><i class="fas fa-chevron-left"></i></button>';
+    }
+    var start = Math.max(1, data.page - 3);
+    var end = Math.min(data.total_pages, data.page + 3);
+    if (start > 1) html += '<span class="px-1.5 py-1 text-[10px] dark:text-surface-500">...</span>';
+    for (var i = start; i <= end; i++) {
+      var active = i === data.page ? 'bg-brand-500/15 text-brand-400 font-bold' : 'dark:bg-surface-800 dark:hover:bg-surface-700 dark:text-surface-300 bg-surface-100 hover:bg-surface-200 text-surface-700';
+      html += '<button onclick="goPage(' + i + ')" class="px-2.5 py-1 text-[10px] font-medium rounded-lg ' + active + ' transition-colors">' + i + '</button>';
+    }
+    if (end < data.total_pages) html += '<span class="px-1.5 py-1 text-[10px] dark:text-surface-500">...</span>';
+    if (data.page < data.total_pages) {
+      html += '<button onclick="goPage(' + (data.page + 1) + ')" class="px-2.5 py-1 text-[10px] font-medium rounded-lg dark:bg-surface-800 dark:hover:bg-surface-700 dark:text-surface-300 bg-surface-100 hover:bg-surface-200 text-surface-700 transition-colors"><i class="fas fa-chevron-right"></i></button>';
+    }
+    el.innerHTML = html;
+  }
+
+  window.goPage = function(p) { state.page = p; loadData(); };
+
+  window.changePageSize = function(val) {
+    state.pageSize = parseInt(val);
+    state.page = 1;
+    loadData();
+  };
+
+  window.selectSource = function(st) {
+    state.sourceType = st;
+    state.page = 1;
+    document.querySelectorAll('.source-btn').forEach(function(btn) {
+      var isAll = !st && !btn.dataset.st;
+      var isMatch = btn.dataset.st === st;
+      if (isAll || isMatch) {
+        btn.className = btn.className.replace(/dark:text-surface-300|text-surface-600/g, '').replace(/hover:dark:bg-white\/5|hover:bg-surface-100/g, '');
+        btn.classList.add('bg-brand-500/15', 'text-brand-400', 'font-semibold');
+      } else {
+        btn.classList.remove('bg-brand-500/15', 'text-brand-400', 'font-semibold');
+        btn.classList.add('dark:text-surface-300', 'text-surface-600');
+      }
+    });
+    loadFieldFilters();
+    loadData();
+  };
+
+  function loadFieldFilters() {
+    var panel = document.getElementById('field-filters-panel');
+    var content = document.getElementById('field-filters-content');
+    if (!state.sourceType) { panel.classList.add('hidden'); return; }
+    panel.classList.remove('hidden');
+    content.innerHTML = '<div class="text-center py-2"><i class="fas fa-spinner fa-spin text-xs dark:text-surface-400"></i></div>';
+
+    var params = new URLSearchParams();
+    if (state.fromStr) params.set('from', state.fromStr);
+    if (state.toStr) params.set('to', state.toStr);
+    params.set('source_type', state.sourceType);
+
+    fetch('/logs/api/events/field-values/?' + params.toString(), {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) { renderFieldFilters(data); })
+    .catch(function() { content.innerHTML = '<p class="text-[10px] dark:text-surface-500 text-center">Error cargando filtros</p>'; });
+  }
+
+  function renderFieldFilters(data) {
+    var content = document.getElementById('field-filters-content');
+    var html = '';
+    var fieldLabels = {
+      'host_name': '<i class="fas fa-desktop mr-1"></i>Host',
+      'host_ip': '<i class="fas fa-network-wired mr-1"></i>IP',
+      'severity': '<i class="fas fa-exclamation-triangle mr-1"></i>Severidad',
+      'event_category': '<i class="fas fa-tag mr-1"></i>Categor&iacute;a',
+    };
+    for (var field in data) {
+      var vals = data[field];
+      if (!vals || !vals.length) continue;
+      html += '<div>';
+      html += '<div class="text-[10px] font-semibold uppercase tracking-wider dark:text-surface-400 text-surface-500 mb-1">' + (fieldLabels[field] || field) + '</div>';
+      html += '<div class="space-y-0.5 max-h-32 overflow-y-auto">';
+      vals.forEach(function(item) {
+        var v = item.value;
+        var c = item.count;
+        var display = v || '(vac&iacute;o)';
+        if (display.length > 25) display = display.substring(0, 25) + '...';
+        html += '<div class="flex items-center justify-between group px-1.5 py-0.5 rounded hover:dark:bg-white/5 hover:bg-surface-100 transition-colors">';
+        html += '<span class="text-[10px] dark:text-surface-300 text-surface-600 truncate flex-1" title="' + escapeHtml(v) + '">' + escapeHtml(display) + '</span>';
+        html += '<span class="text-[9px] dark:text-surface-500 text-surface-400 mr-1">' + c + '</span>';
+        html += '<div class="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">';
+        html += '<button onclick="addFilter(\'' + field + '\',\'' + v.replace(/'/g, "\\'").replace(/"/g, '&quot;') + '\',\'include\')" class="w-4 h-4 rounded flex items-center justify-center text-[8px] bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/40" title="Incluir"><i class="fas fa-plus"></i></button>';
+        html += '<button onclick="addFilter(\'' + field + '\',\'' + v.replace(/'/g, "\\'").replace(/"/g, '&quot;') + '\',\'exclude\')" class="w-4 h-4 rounded flex items-center justify-center text-[8px] bg-red-500/20 text-red-400 hover:bg-red-500/40" title="Excluir"><i class="fas fa-minus"></i></button>';
+        html += '</div></div>';
+      });
+      html += '</div></div>';
+    }
+    content.innerHTML = html;
+  }
+
+  window.clearAllFilters = function() {
+    state.severity = '';
+    state.hostIp = '';
+    state.hostName = '';
+    state.eventCategory = '';
+    state.search = '';
+    state.includeFilters = {};
+    state.excludeFilters = {};
+    state.page = 1;
+    document.getElementById('filter-severity').value = '';
+    document.getElementById('filter-q').value = '';
+    renderActiveFilters();
+    loadData();
+  };
+
+  window.setRange = function(minutes) {
+    var now = new Date();
+    var from = new Date(now.getTime() - minutes * 60000);
+    function fmt(d) {
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + 'T' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+    }
+    state.fromStr = fmt(from);
+    state.toStr = fmt(now);
+    state.page = 1;
+    document.getElementById('filter-from').value = state.fromStr;
+    document.getElementById('filter-to').value = state.toStr;
+    loadFieldFilters();
+    loadData();
+  };
+
+  document.getElementById('filter-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    state.fromStr = document.getElementById('filter-from').value;
+    state.toStr = document.getElementById('filter-to').value;
+    state.search = document.getElementById('filter-q').value;
+    state.severity = document.getElementById('filter-severity').value;
+    state.page = 1;
+    loadFieldFilters();
+    loadData();
+  });
+
+  function startAutoRefresh() {
+    if (state.refreshTimer) clearInterval(state.refreshTimer);
+    state.refreshTimer = setInterval(function() {
+      if (state.autoRefresh) loadData();
+    }, 10000);
+  }
+
+  document.getElementById('auto-refresh-toggle').addEventListener('change', function() {
+    state.autoRefresh = this.checked;
+  });
+
+  var thElements = document.querySelectorAll('.col-resize');
+  thElements.forEach(function(th) {
+    var handle = document.createElement('span');
+    handle.className = 'resize-handle';
+    handle.style.cssText = 'position:absolute;right:0;top:0;bottom:0;width:4px;cursor:col-resize;opacity:0;transition:opacity .15s';
+    th.style.position = 'relative';
+    th.style.overflow = 'visible';
+    th.appendChild(handle);
+    th.addEventListener('mouseenter', function() { handle.style.opacity = '1'; });
+    th.addEventListener('mouseleave', function() { handle.style.opacity = '0'; });
+
+    var startX, startW;
+    handle.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      startX = e.clientX;
+      startW = th.offsetWidth;
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+
+      function onMove(ev) {
+        var newW = Math.max(40, startW + ev.clientX - startX);
+        th.style.width = newW + 'px';
+        th.style.minWidth = newW + 'px';
+        th.style.maxWidth = newW + 'px';
+      }
+      function onUp() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
+
+  {% if timeline_json %}
+  (function() {
+    var timelineData = {{ timeline_json|safe }};
+    var canvas = document.getElementById('timelineChart');
+    if (!canvas || !timelineData || !timelineData.length) return;
+    var ctx = canvas.getContext('2d');
+    var labels = timelineData.map(function(d) { return d.t.substring(0, 16).replace('T', ' '); });
+    var data = timelineData.map(function(d) { return d.c; });
+    state.chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Eventos',
+          data: data,
+          borderColor: '#0ea5e9',
+          backgroundColor: 'rgba(14,165,233,0.08)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: data.length > 60 ? 0 : 2,
+          pointHoverRadius: 4,
+          borderWidth: 1.5,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { mode: 'index', intersect: false }
+        },
+        scales: {
+          x: {
+            display: true,
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { color: '#64748b', maxTicksLimit: 12, font: { size: 9 } }
+          },
+          y: {
+            display: true,
+            grid: { color: 'rgba(255,255,255,0.05)' },
+            ticks: { color: '#64748b', font: { size: 9 } },
+            beginAtZero: true
+          }
+        },
+        interaction: { mode: 'nearest', axis: 'x', intersect: false }
+      }
+    });
+  })();
+  {% endif %}
+
+  loadData();
+  startAutoRefresh();
+  renderActiveFilters();
+  {% if source_type %}loadFieldFilters();{% endif %}
+})();
+</script>
+<style>
+.col-resize { position: relative; }
+.resize-handle { position: absolute; right: 0; top: 0; bottom: 0; width: 4px; cursor: col-resize; opacity: 0; transition: opacity .15s; background: rgba(99,102,241,0.3); border-radius: 2px; }
+.resize-handle:hover { background: rgba(99,102,241,0.6); }
+</style>
 {% endblock %}

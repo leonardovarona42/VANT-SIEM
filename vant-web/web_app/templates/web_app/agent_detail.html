@@ -15,7 +15,11 @@
       <h1 class="text-xl font-bold dark:text-white text-surface-900">{{ agent.hostname|default:agent.agent_id }}</h1>
       <p class="text-sm dark:text-surface-400 text-surface-500">{{ agent.ip_address|default:"-" }} &middot; {{ agent.os_type|default:"-" }}</p>
     </div>
-    <a href="{% url 'web:agent-config' agent.agent_id %}" class="btn-primary text-sm"><i class="fas fa-cog mr-2"></i>Configurar</a>
+    <div class="flex gap-2">
+      <a href="{% url 'web:agent-processes' agent.agent_id %}" class="btn-secondary text-sm"><i class="fas fa-cogs mr-2"></i>Procesos</a>
+      <a href="{% url 'web:agent-services' agent.agent_id %}" class="btn-secondary text-sm"><i class="fas fa-heartbeat mr-2"></i>Servicios</a>
+      <a href="{% url 'web:agent-config' agent.agent_id %}" class="btn-primary text-sm"><i class="fas fa-cog mr-2"></i>Configurar</a>
+    </div>
   </div>
 
   <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -43,24 +47,111 @@
 {% if hardware %}
 <div class="glass-card p-6 mb-6">
   <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4"><i class="fas fa-microchip text-cyan-400 mr-2"></i>Hardware</h3>
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
     <div class="p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
       <span class="text-xs dark:text-surface-500 text-surface-400">CPU</span>
       <p class="text-sm dark:text-surface-200 text-surface-700">{{ hardware.cpu_model|default:"-" }}</p>
+      <p class="text-xs dark:text-surface-500 text-surface-400">{{ hardware.cpu_cores|default:"0" }} cores</p>
     </div>
     <div class="p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
       <span class="text-xs dark:text-surface-500 text-surface-400">RAM</span>
-      <p class="text-sm dark:text-surface-200 text-surface-700">{{ hardware.ram_total|default:"-" }}</p>
+      <p class="text-sm dark:text-surface-200 text-surface-700">{{ hardware.ram_total_gb|default:"-" }} GB</p>
+      <p class="text-xs dark:text-surface-500 text-surface-400">{{ hardware.ram_slots_used|default:"0" }}/{{ hardware.ram_slots_total|default:"0" }} slots</p>
     </div>
     <div class="p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
-      <span class="text-xs dark:text-surface-500 text-surface-400">Disco</span>
-      <p class="text-sm dark:text-surface-200 text-surface-700">{{ hardware.disk_total|default:"-" }}</p>
+      <span class="text-xs dark:text-surface-500 text-surface-400">Fabricante</span>
+      <p class="text-sm dark:text-surface-200 text-surface-700">{{ hardware.manufacturer|default:"-" }}</p>
+    </div>
+    <div class="p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <span class="text-xs dark:text-surface-500 text-surface-400">Producto</span>
+      <p class="text-sm dark:text-surface-200 text-surface-700">{{ hardware.product_name|default:"-" }}</p>
     </div>
   </div>
+
+  <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+    <div class="p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <span class="text-xs dark:text-surface-500 text-surface-400">Serial</span>
+      <p class="text-sm dark:text-surface-200 text-surface-700 font-mono text-xs">{{ hardware.serial_number|default:"-" }}</p>
+    </div>
+    <div class="p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <span class="text-xs dark:text-surface-500 text-surface-400">Placa Madre</span>
+      <p class="text-sm dark:text-surface-200 text-surface-700">{{ hardware.motherboard_model|default:"-" }}</p>
+    </div>
+    <div class="p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100/50">
+      <span class="text-xs dark:text-surface-500 text-surface-400">BIOS</span>
+      <p class="text-sm dark:text-surface-200 text-surface-700">{{ hardware.bios_version|default:"-" }}</p>
+    </div>
+  </div>
+
+  {% if hardware.disks %}
+  <h4 class="text-sm font-semibold dark:text-surface-300 text-surface-600 mb-2 mt-5"><i class="fas fa-hdd text-orange-400 mr-2"></i>Almacenamiento</h4>
+  <div class="overflow-x-auto mb-4">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-3 py-2 text-left dark:text-surface-400 text-surface-500 font-medium">Dispositivo</th>
+          <th class="px-3 py-2 text-left dark:text-surface-400 text-surface-500 font-medium">Tipo</th>
+          <th class="px-3 py-2 text-left dark:text-surface-400 text-surface-500 font-medium">Tamaño</th>
+          <th class="px-3 py-2 text-left dark:text-surface-400 text-surface-500 font-medium">Serial</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for disk in hardware.disks %}
+        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b">
+          <td class="px-3 py-2 dark:text-surface-200 text-surface-700">{{ disk.name|default:"-" }}</td>
+          <td class="px-3 py-2 dark:text-surface-300 text-surface-600 text-xs">
+            <span class="px-2 py-0.5 rounded text-xs {% if disk.type == 'disk' %}bg-blue-500/20 text-blue-300{% elif disk.type == 'ssd' %}bg-emerald-500/20 text-emerald-300{% else %}bg-surface-500/20 text-surface-300{% endif %}">{{ disk.type|default:"-" }}</span>
+          </td>
+          <td class="px-3 py-2 dark:text-surface-300 text-surface-600 font-mono text-xs">{{ disk.size_gb|default:"-" }}</td>
+          <td class="px-3 py-2 dark:text-surface-400 text-surface-500 font-mono text-xs">{{ disk.serial|default:"-" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if hardware.gpu_models %}
+  <h4 class="text-sm font-semibold dark:text-surface-300 text-surface-600 mb-2"><i class="fas fa-tv text-purple-400 mr-2"></i>GPU</h4>
+  <div class="flex flex-wrap gap-2 mb-4">
+    {% for gpu in hardware.gpu_models %}
+    <span class="px-3 py-1 rounded-lg text-xs dark:bg-surface-800 bg-surface-100 dark:text-surface-300 text-surface-600">{{ gpu }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if hardware.network_interfaces %}
+  <h4 class="text-sm font-semibold dark:text-surface-300 text-surface-600 mb-2"><i class="fas fa-network-wired text-cyan-400 mr-2"></i>Interfaces de Red</h4>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-3 py-2 text-left dark:text-surface-400 text-surface-500 font-medium">Nombre</th>
+          <th class="px-3 py-2 text-left dark:text-surface-400 text-surface-500 font-medium">MAC</th>
+          <th class="px-3 py-2 text-left dark:text-surface-400 text-surface-500 font-medium">IP</th>
+          <th class="px-3 py-2 text-left dark:text-surface-400 text-surface-500 font-medium">Máscara</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for iface in hardware.network_interfaces %}
+        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b">
+          <td class="px-3 py-2 dark:text-surface-200 text-surface-700 font-medium">{{ iface.name|default:"-" }}</td>
+          <td class="px-3 py-2 dark:text-surface-300 text-surface-600 font-mono text-xs">{{ iface.mac|default:iface.mac_address|default:"-" }}</td>
+          <td class="px-3 py-2 dark:text-surface-300 text-surface-600 font-mono text-xs">{{ iface.ip|default:iface.ip_address|default:"-" }}</td>
+          <td class="px-3 py-2 dark:text-surface-400 text-surface-500 font-mono text-xs">{{ iface.netmask|default:iface.mask|default:"-" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <p class="text-xs dark:text-surface-600 text-surface-400 mt-4">Última actualización: {{ hardware.last_updated|default:"-" }}</p>
 </div>
 {% endif %}
 
-<div class="glass-card p-6">
+<div id="software" class="glass-card p-6">
   <div class="flex items-center justify-between mb-4">
     <h3 class="text-lg font-semibold dark:text-white text-surface-900"><i class="fas fa-cube text-purple-400 mr-2"></i>Software Instalado</h3>
     <a href="{% url 'web:software-list' %}?agent_id={{ agent.agent_id }}" class="text-sm text-brand-400 hover:text-brand-300">Ver todos</a>

@@ -1,4 +1,5 @@
 import logging
+import os
 import uuid
 from datetime import timedelta
 
@@ -13,7 +14,7 @@ from rest_framework.response import Response
 
 from .models import (
     Agent, HardwareInventory, SoftwareInventory, AgentCommand,
-    ScreenCapture, ProcessSnapshot, COMMAND_TYPE_CHOICES,
+    ScreenCapture, ProcessSnapshot, COMMAND_TYPE_CHOICES, OS_CHOICES,
 )
 from .serializers import (
     AgentListSerializer, AgentDetailSerializer, AgentRegisterSerializer,
@@ -28,6 +29,36 @@ from vant_common.bus import EventBus
 logger = logging.getLogger(__name__)
 
 bus = EventBus("inventory")
+
+BUS_API_URL = os.getenv("BUS_API_URL", "http://127.0.0.1:8600/api/events/receive/")
+SERVICE_SECRET = os.getenv("SERVICE_SECRET", "")
+
+
+def _publish_bus_event(event_type, source_service, payload, severity="info"):
+    import requests as http_requests
+    body = {
+        "event_type": event_type,
+        "source_service": source_service,
+        "entity_type": "",
+        "entity_id": "",
+        "actor_user_id": "",
+        "actor_username": source_service,
+        "payload": payload,
+        "severity": severity,
+    }
+    try:
+        resp = http_requests.post(
+            BUS_API_URL,
+            json=body,
+            headers={"X-Service-Secret": SERVICE_SECRET},
+            timeout=5,
+        )
+        if resp.ok:
+            logger.info("bus.event published type=%s status=%d", event_type, resp.status_code)
+        else:
+            logger.warning("bus.event rejected type=%s status=%d", event_type, resp.status_code)
+    except Exception as e:
+        logger.warning("bus.event publish failed type=%s error=%s", event_type, e)
 
 
 def _resolve_agent(agent_id_str):
@@ -55,6 +86,57 @@ def health_check(request):
         'total_agents': total,
         'online_agents': online,
         'timestamp': timezone.now().isoformat(),
+    })
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def dashboard_stats(request):
+    total = Agent.objects.count()
+    online = Agent.objects.filter(status='online').count()
+    offline = Agent.objects.filter(status='offline').count()
+    pending = Agent.objects.filter(status='pending').count()
+    health_pct = round((online / total * 100), 1) if total > 0 else 0
+
+    os_dist = (
+        Agent.objects.values('os_type')
+        .annotate(count=Count('agent_id'))
+        .order_by('-count')
+    )
+    os_labels = dict(OS_CHOICES)
+    os_list = []
+    for item in os_dist:
+        os_list.append({
+            'name': os_labels.get(item['os_type'], item['os_type']),
+            'count': item['count'],
+            'pct': round((item['count'] / total * 100), 1) if total > 0 else 0,
+        })
+
+    recent = (
+        Agent.objects.order_by('-last_heartbeat')[:10]
+        .values('agent_id', 'hostname', 'ip_address', 'os_type', 'status',
+                'last_heartbeat', 'agent_version')
+    )
+    recent_list = []
+    for a in recent:
+        recent_list.append({
+            'agent_id': str(a['agent_id']),
+            'hostname': a['hostname'],
+            'ip_address': a['ip_address'] or '-',
+            'os_type': os_labels.get(a['os_type'], a['os_type']),
+            'status': a['status'],
+            'last_heartbeat': a['last_heartbeat'].isoformat() if a['last_heartbeat'] else None,
+            'agent_version': a['agent_version'],
+        })
+
+    return Response({
+        'total': total,
+        'online': online,
+        'offline': offline,
+        'pending': pending,
+        'health_pct': health_pct,
+        'os_distribution': os_list,
+        'recent_agents': recent_list,
     })
 
 
@@ -528,3 +610,166 @@ def delete_agent(request, agent_id):
     })
 
     return Response({'status': 'ok', 'message': f'Agent "{hostname}" deleted'})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def services_report(request, agent_id):
+    try:
+        agent = Agent.objects.get(agent_id=agent_id)
+    except Agent.DoesNotExist:
+        return Response({'error': 'Agent not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    services_data = request.data.get('services', [])
+    if not isinstance(services_data, list):
+        return Response({'error': 'services must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+    from .models import AgentService
+    now = timezone.now()
+    events = []
+
+    existing = {s.service_name: s for s in AgentService.objects.filter(agent=agent)}
+
+    seen_names = set()
+    for svc in services_data:
+        name = svc.get('name', '').strip()
+        if not name:
+            continue
+        seen_names.add(name)
+        display = svc.get('description', '')
+        active = svc.get('active_state', 'unknown')
+        sub = svc.get('sub_state', '')
+
+        prev = existing.get(name)
+        if prev:
+            old_state = prev.active_state
+            prev.active_state = active
+            prev.sub_state = sub
+            prev.display_name = display or prev.display_name
+            prev.last_checked = now
+            if old_state != active:
+                prev.previous_active_state = old_state
+                prev.last_state_change = now
+                events.append({
+                    'service_name': name,
+                    'display_name': display or name,
+                    'old_state': old_state,
+                    'new_state': active,
+                    'is_monitored': prev.is_monitored,
+                })
+            prev.save(update_fields=[
+                'active_state', 'sub_state', 'display_name',
+                'last_checked', 'previous_active_state', 'last_state_change',
+            ])
+        else:
+            AgentService.objects.create(
+                agent=agent,
+                service_name=name,
+                display_name=display,
+                active_state=active,
+                sub_state=sub,
+                last_checked=now,
+            )
+
+    for name, prev in existing.items():
+        if name not in seen_names:
+            old_state = prev.active_state
+            if old_state != 'inactive':
+                prev.previous_active_state = old_state
+                prev.active_state = 'inactive'
+                prev.sub_state = ''
+                prev.last_checked = now
+                prev.last_state_change = now
+                prev.save(update_fields=[
+                    'active_state', 'sub_state', 'last_checked',
+                    'previous_active_state', 'last_state_change',
+                ])
+                if prev.is_monitored:
+                    events.append({
+                        'service_name': name,
+                        'display_name': prev.display_name or name,
+                        'old_state': old_state,
+                        'new_state': 'inactive',
+                        'is_monitored': True,
+                    })
+
+    for ev in events:
+        if not ev['is_monitored']:
+            continue
+        agent_info = {
+            'agent_id': str(agent.agent_id),
+            'hostname': agent.hostname,
+            'ip_address': agent.ip_address or '',
+            'mac_address': agent.mac_address or '',
+            'os_type': agent.os_type,
+            'os_version': agent.os_version or '',
+            'agent_version': agent.agent_version or '',
+            'status': agent.status,
+        }
+        svc_info = {
+            'service_name': ev['service_name'],
+            'display_name': ev['display_name'],
+            'old_state': ev['old_state'],
+            'new_state': ev['new_state'],
+        }
+        payload = {**agent_info, **svc_info}
+
+        if ev['old_state'] == 'active' and ev['new_state'] != 'active':
+            _publish_bus_event("servicio_fallo", "inventory", payload, severity='high')
+        elif ev['old_state'] != 'active' and ev['new_state'] == 'active':
+            _publish_bus_event("servicio_recuperado", "inventory", payload, severity='info')
+
+    return Response({
+        'status': 'ok',
+        'services_count': len(seen_names),
+        'events_generated': len([e for e in events if e['is_monitored']]),
+    })
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def services_list(request, agent_id):
+    try:
+        agent = Agent.objects.get(agent_id=agent_id)
+    except Agent.DoesNotExist:
+        return Response({'error': 'Agent not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    from .models import AgentService
+    services = AgentService.objects.filter(agent=agent).order_by('service_name')
+    data = []
+    for s in services:
+        data.append({
+            'id': s.id,
+            'service_name': s.service_name,
+            'display_name': s.display_name,
+            'active_state': s.active_state,
+            'sub_state': s.sub_state,
+            'is_monitored': s.is_monitored,
+            'previous_active_state': s.previous_active_state,
+            'last_checked': s.last_checked.isoformat() if s.last_checked else None,
+            'last_state_change': s.last_state_change.isoformat() if s.last_state_change else None,
+        })
+    return Response({'services': data, 'total': len(data)})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def services_toggle(request, agent_id):
+    try:
+        agent = Agent.objects.get(agent_id=agent_id)
+    except Agent.DoesNotExist:
+        return Response({'error': 'Agent not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    from .models import AgentService
+    monitored_names = request.data.get('monitored_services', [])
+    if not isinstance(monitored_names, list):
+        return Response({'error': 'monitored_services must be a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+    AgentService.objects.filter(agent=agent).update(is_monitored=False)
+    if monitored_names:
+        AgentService.objects.filter(
+            agent=agent, service_name__in=monitored_names
+        ).update(is_monitored=True)
+
+    count = AgentService.objects.filter(agent=agent, is_monitored=True).count()
+    return Response({'status': 'ok', 'monitored_count': count})

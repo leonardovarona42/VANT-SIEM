@@ -2,9 +2,10 @@ from rest_framework import serializers
 from .models import (
     DlpPolicy, DlpRule, DlpThreat, DlpScanSummary,
     Categoria, Subcategoria, Responsable, Area, Medida,
-    Reporte, Incidente, MedidaIncidente, Involucrado, InvolucradoIncidente,
+    Reporte, Incidente, MedidaIncidente, MedidaInvolucrado, Involucrado, InvolucradoIncidente,
     Servicio, ServicioIP, PuertoDispositivo, ConexionTopologica,
     MonitoreoServicio, ConfiguracionMonitoreo,
+    RetentionPolicy, BackupRecord,
 )
 
 
@@ -151,6 +152,25 @@ class MedidaIncidenteSerializer(serializers.ModelSerializer):
         return str(obj.responsable) if obj.responsable else None
 
 
+class MedidaInvolucradoSerializer(serializers.ModelSerializer):
+    medida_nombre = serializers.CharField(source="medida.nombre", read_only=True)
+    responsable_nombre = serializers.SerializerMethodField()
+    involucrado_nombre = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MedidaInvolucrado
+        fields = [
+            "id", "involucrado", "involucrado_nombre", "medida", "medida_nombre",
+            "responsable", "responsable_nombre", "fecha_cumplimiento", "estado_cumplimiento", "observaciones",
+        ]
+
+    def get_responsable_nombre(self, obj):
+        return str(obj.responsable) if obj.responsable else None
+
+    def get_involucrado_nombre(self, obj):
+        return str(obj.involucrado) if obj.involucrado else None
+
+
 class InvolucradoSerializer(serializers.ModelSerializer):
     class Meta:
         model = Involucrado
@@ -180,6 +200,9 @@ class IncidenteListSerializer(serializers.ModelSerializer):
     estado_display = serializers.CharField(source="get_estado_solucion_display", read_only=True)
     medida_count = serializers.SerializerMethodField()
     involucrado_count = serializers.SerializerMethodField()
+    servicios_nombres = serializers.SerializerMethodField()
+    areas_nombres = serializers.SerializerMethodField()
+    reporte_informantes = serializers.SerializerMethodField()
 
     class Meta:
         model = Incidente
@@ -187,7 +210,8 @@ class IncidenteListSerializer(serializers.ModelSerializer):
             "id", "codigo_incidente", "nombre_incidente", "descripcion",
             "fecha_hora", "fecha_atencion", "fecha_solucion",
             "estado_solucion", "estado_display", "notificado_osri",
-            "medida_count", "involucrado_count",
+            "evidencia", "medida_count", "involucrado_count",
+            "servicios_nombres", "areas_nombres", "reporte_informantes",
         ]
 
     def get_medida_count(self, obj):
@@ -195,6 +219,15 @@ class IncidenteListSerializer(serializers.ModelSerializer):
 
     def get_involucrado_count(self, obj):
         return obj.involucrados.count()
+
+    def get_servicios_nombres(self, obj):
+        return [str(s) for s in obj.servicios.all()]
+
+    def get_areas_nombres(self, obj):
+        return [str(a) for a in obj.areas.all()]
+
+    def get_reporte_informantes(self, obj):
+        return [r.nombre_informante for r in obj.reportes.all()]
 
 
 class IncidenteDetailSerializer(serializers.ModelSerializer):
@@ -204,10 +237,24 @@ class IncidenteDetailSerializer(serializers.ModelSerializer):
     subcategorias_data = SubcategoriaSerializer(source="subcategorias", many=True, read_only=True)
     medidas = MedidaIncidenteSerializer(many=True, read_only=True)
     involucrados_data = InvolucradoIncidenteSerializer(source="involucrados", many=True, read_only=True)
+    servicios_data = serializers.SerializerMethodField()
 
     class Meta:
         model = Incidente
         fields = "__all__"
+
+    def get_servicios_data(self, obj):
+        return [
+            {
+                "id": s.id,
+                "nombre": s.nombre,
+                "tipo": s.tipo,
+                "tipo_display": s.get_tipo_display(),
+                "responsable_nombre": str(s.responsable) if s.responsable else None,
+                "activo": s.activo,
+            }
+            for s in obj.servicios.all()
+        ]
 
 
 # ============================================================================
@@ -218,6 +265,7 @@ class ServicioSerializer(serializers.ModelSerializer):
     tipo_display = serializers.CharField(source="get_tipo_display", read_only=True)
     responsable_nombre = serializers.SerializerMethodField()
     ip_count = serializers.SerializerMethodField()
+    hijos_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Servicio
@@ -230,8 +278,10 @@ class ServicioSerializer(serializers.ModelSerializer):
             "plataforma", "servicio_padre", "monitorear", "protocolo_monitoreo",
             "puerto_monitoreo", "intervalo_segundos", "estado_monitoreo",
             "ubicacion_fisica", "rack", "posicion_rack", "edificio", "piso",
-            "nivel_red", "responsable", "responsable_nombre",
-            "activo", "fecha_creacion", "fecha_actualizacion", "ip_count",
+            "nivel_red", "coordenadas_logicas_x", "coordenadas_logicas_y",
+            "responsable", "responsable_nombre",
+            "zona_ancho", "zona_alto", "zona_color_fondo", "zona_color_borde",
+            "activo", "fecha_creacion", "fecha_actualizacion", "ip_count", "hijos_count",
         ]
 
     def get_responsable_nombre(self, obj):
@@ -239,6 +289,9 @@ class ServicioSerializer(serializers.ModelSerializer):
 
     def get_ip_count(self, obj):
         return obj.ips.count()
+
+    def get_hijos_count(self, obj):
+        return obj.hijos.count()
 
 
 class ServicioIPSerializer(serializers.ModelSerializer):
@@ -278,3 +331,32 @@ class ConfiguracionMonitoreoSerializer(serializers.ModelSerializer):
     class Meta:
         model = ConfiguracionMonitoreo
         fields = "__all__"
+
+
+class RetentionPolicySerializer(serializers.ModelSerializer):
+    entity_type_display = serializers.CharField(source="get_entity_type_display", read_only=True)
+    action_display = serializers.CharField(source="get_action_display", read_only=True)
+
+    class Meta:
+        model = RetentionPolicy
+        fields = "__all__"
+
+
+class BackupRecordSerializer(serializers.ModelSerializer):
+    backup_type_display = serializers.CharField(source="get_backup_type_display", read_only=True)
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+    file_size_display = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BackupRecord
+        fields = "__all__"
+
+    def get_file_size_display(self, obj):
+        if obj.file_size < 1024:
+            return f"{obj.file_size} B"
+        elif obj.file_size < 1024 ** 2:
+            return f"{obj.file_size / 1024:.1f} KB"
+        elif obj.file_size < 1024 ** 3:
+            return f"{obj.file_size / 1024 ** 2:.1f} MB"
+        else:
+            return f"{obj.file_size / 1024 ** 3:.2f} GB"

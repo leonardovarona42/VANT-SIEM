@@ -1,0 +1,64 @@
+{% extends "web_app/base.html" %}
+{% block title %}{% if mode == 'create' %}Crear Configuracion SMTP{% else %}Editar Configuracion SMTP{% endif %} | VANT-SIEM Web{% endblock %}
+{% block content %}
+<div class="flex items-center gap-3 mb-6">
+  <a href="{% url 'web:configuracion-correo' %}" class="dark:text-surface-400 text-surface-500 hover:text-brand-400"><i class="fas fa-arrow-left"></i></a>
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900">
+      <i class="fas fa-{% if mode == 'create' %}plus-circle text-green-400{% else %}edit text-brand-400{% endif %} mr-2"></i>
+      {% if mode == 'create' %}Crear Configuracion SMTP{% else %}Editar: {{ config.smtp_host }}{% endif %}
+    </h1>
+  </div>
+</div>
+
+<div class="glass-card p-6 max-w-2xl">
+  <form method="post" action="{% if mode == 'create' %}{% url 'web:configuracion-correo-create' %}{% else %}{% url 'web:configuracion-correo-edit' pk %}{% endif %}" class="space-y-4">
+    {% csrf_token %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Email From</label>
+        <input name="from_address" type="email" value="{{ config.from_address|default:'vant-alerts@example.com' }}" class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-50 border border-surface-300 rounded-lg">
+      </div>
+      <div></div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div class="sm:col-span-2">
+        <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">SMTP Host *</label>
+        <input name="smtp_host" value="{{ config.smtp_host|default:'' }}" required placeholder="smtp.gmail.com" class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-50 border border-surface-300 rounded-lg">
+      </div>
+      <div>
+        <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Puerto</label>
+        <input name="smtp_port" type="number" value="{{ config.smtp_port|default:'587' }}" class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-50 border border-surface-300 rounded-lg">
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">SMTP User</label>
+        <input name="smtp_user" value="{{ config.smtp_user|default:'' }}" class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-50 border border-surface-300 rounded-lg">
+      </div>
+      <div>
+        <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">SMTP Password</label>
+        <input name="smtp_password" type="password" value="" placeholder="{% if mode == 'edit' %}Dejar vacio para no cambiar{% endif %}" class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-50 border border-surface-300 rounded-lg">
+      </div>
+    </div>
+
+    <div class="flex items-center gap-6">
+      <label class="flex items-center gap-2 text-sm dark:text-surface-300 text-surface-600 cursor-pointer">
+        <input type="checkbox" name="use_tls" {% if config.use_tls %}checked{% endif %} class="w-4 h-4 rounded dark:bg-surface-700 dark:border-surface-600">
+        Usar TLS
+      </label>
+      <label class="flex items-center gap-2 text-sm dark:text-surface-300 text-surface-600 cursor-pointer">
+        <input type="checkbox" name="is_active" {% if config.is_active %}checked{% endif %} class="w-4 h-4 rounded dark:bg-surface-700 dark:border-surface-600">
+        Activo
+      </label>
+    </div>
+
+    <div class="flex items-center gap-3 pt-2">
+      <button type="submit" class="btn-primary text-sm"><i class="fas fa-save mr-2"></i>{% if mode == 'create' %}Crear Configuracion{% else %}Guardar Cambios{% endif %}</button>
+      <a href="{% url 'web:configuracion-correo' %}" class="text-sm dark:text-surface-400 text-surface-500 hover:text-brand-400">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

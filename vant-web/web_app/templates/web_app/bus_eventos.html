@@ -1,0 +1,342 @@
+{% extends "web_app/base.html" %}
+{% block title %}Eventos del Bus | VANT-SIEM Web{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-bolt text-amber-400 mr-2"></i>Eventos del Bus en Tiempo Real</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1"><span id="ev-total">{{ total }}</span> eventos registrados &mdash; actualizaci&oacute;n autom&aacute;tica cada 5s</p>
+  </div>
+  <div class="flex items-center gap-3">
+    <div id="ev-live-dot" class="w-2 h-2 rounded-full bg-green-400 animate-pulse" title="En vivo"></div>
+    <button onclick="togglePause()" id="ev-pause-btn" class="text-xs dark:text-surface-400 text-surface-500 hover:text-brand-400 px-3 py-1.5 rounded-lg dark:hover:bg-white/5 hover:bg-surface-100 transition-colors"><i class="fas fa-pause mr-1"></i>Pausar</button>
+  </div>
+</div>
+
+<!-- Metrics Widgets -->
+<div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6" id="ev-widgets">
+  <div class="glass-card p-3 text-center">
+    <div class="text-xl font-bold dark:text-white text-surface-900" id="ev-w-total">{{ stats.total_events|default:"0" }}</div>
+    <div class="text-xs dark:text-surface-400 text-surface-500"><i class="fas fa-bolt mr-1"></i>Total</div>
+  </div>
+  <div class="glass-card p-3 text-center">
+    <div class="text-xl font-bold text-blue-400" id="ev-w-info">0</div>
+    <div class="text-xs dark:text-surface-400 text-surface-500"><i class="fas fa-info-circle mr-1"></i>Info</div>
+  </div>
+  <div class="glass-card p-3 text-center">
+    <div class="text-xl font-bold text-amber-400" id="ev-w-medium">0</div>
+    <div class="text-xs dark:text-surface-400 text-surface-500"><i class="fas fa-exclamation-triangle mr-1"></i>Medium</div>
+  </div>
+  <div class="glass-card p-3 text-center">
+    <div class="text-xl font-bold text-red-400" id="ev-w-high">0</div>
+    <div class="text-xs dark:text-surface-400 text-surface-500"><i class="fas fa-times-circle mr-1"></i>High</div>
+  </div>
+  <div class="glass-card p-3 text-center">
+    <div class="text-xl font-bold text-red-500" id="ev-w-critical">0</div>
+    <div class="text-xs dark:text-surface-400 text-surface-500"><i class="fas fa-skull-crossbones mr-1"></i>Critical</div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="glass-card p-4 mb-6">
+  <form method="get" class="flex flex-wrap items-end gap-3">
+    <div class="flex-1 min-w-[200px]">
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Buscar</label>
+      <input name="q" value="{{ search_query }}" placeholder="usuario, payload, entidad..." class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-50 border border-surface-300 rounded-lg">
+    </div>
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Hostname</label>
+      <input name="hostname" value="{{ hostname_filter }}" placeholder="sv-srv3, sv-testing..." class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-50 border border-surface-300 rounded-lg">
+    </div>
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Servicio Linux</label>
+      <input name="service_name" value="{{ service_filter }}" placeholder="ssh, apache2, cron..." class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-50 border border-surface-300 rounded-lg">
+    </div>
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Severidad</label>
+      <select name="severity" class="px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-50 border border-surface-300 rounded-lg">
+        <option value="">Todas</option>
+        <option value="info" {% if severity_filter == "info" %}selected{% endif %}>Info</option>
+        <option value="low" {% if severity_filter == "low" %}selected{% endif %}>Low</option>
+        <option value="medium" {% if severity_filter == "medium" %}selected{% endif %}>Medium</option>
+        <option value="high" {% if severity_filter == "high" %}selected{% endif %}>High</option>
+        <option value="critical" {% if severity_filter == "critical" %}selected{% endif %}>Critical</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Servicio</label>
+      <select name="source" class="px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-50 border border-surface-300 rounded-lg">
+        <option value="">Todos</option>
+        <option value="auth" {% if source_filter == "auth" %}selected{% endif %}>Auth</option>
+        <option value="web" {% if source_filter == "web" %}selected{% endif %}>Web</option>
+        <option value="soc" {% if source_filter == "soc" %}selected{% endif %}>SOC</option>
+        <option value="bus" {% if source_filter == "bus" %}selected{% endif %}>Bus</option>
+        <option value="inventory" {% if source_filter == "inventory" %}selected{% endif %}>Inventory</option>
+        <option value="logs" {% if source_filter == "logs" %}selected{% endif %}>Logs</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Tipo</label>
+      <select name="event_type" class="px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-50 border border-surface-300 rounded-lg">
+        <option value="">Todos</option>
+        <option value="login_exitoso" {% if event_type_filter == "login_exitoso" %}selected{% endif %}>Login Exitoso</option>
+        <option value="login_fallido" {% if event_type_filter == "login_fallido" %}selected{% endif %}>Login Fallido</option>
+        <option value="login_bloqueado" {% if event_type_filter == "login_bloqueado" %}selected{% endif %}>Login Bloqueado</option>
+        <option value="usuario_creado" {% if event_type_filter == "usuario_creado" %}selected{% endif %}>Usuario Creado</option>
+        <option value="usuario_desabilitado" {% if event_type_filter == "usuario_desabilitado" %}selected{% endif %}>Usuario Deshabilitado</option>
+        <option value="reporte_creado" {% if event_type_filter == "reporte_creado" %}selected{% endif %}>Reporte Creado</option>
+        <option value="reporte_editado" {% if event_type_filter == "reporte_editado" %}selected{% endif %}>Reporte Editado</option>
+        <option value="incidente_creado" {% if event_type_filter == "incidente_creado" %}selected{% endif %}>Incidente Creado</option>
+        <option value="incidente_estado_cambiado" {% if event_type_filter == "incidente_estado_cambiado" %}selected{% endif %}>Incidente Estado Cambiado</option>
+        <option value="servicio_down" {% if event_type_filter == "servicio_down" %}selected{% endif %}>Servicio Down</option>
+        <option value="servicio_up" {% if event_type_filter == "servicio_up" %}selected{% endif %}>Servicio Up</option>
+        <option value="agente_conectado" {% if event_type_filter == "agente_conectado" %}selected{% endif %}>Agente Conectado</option>
+        <option value="agente_desconectado" {% if event_type_filter == "agente_desconectado" %}selected{% endif %}>Agente Desconectado</option>
+        <option value="amenaza_dlp" {% if event_type_filter == "amenaza_dlp" %}selected{% endif %}>Amenaza DLP</option>
+        <option value="servicio_fallo" {% if event_type_filter == "servicio_fallo" %}selected{% endif %}>Servicio Caído</option>
+        <option value="servicio_recuperado" {% if event_type_filter == "servicio_recuperado" %}selected{% endif %}>Servicio Recuperado</option>
+        <option value="paquete_actualizacion" {% if event_type_filter == "paquete_actualizacion" %}selected{% endif %}>Paquete Actualización</option>
+      </select>
+    </div>
+    <button type="submit" class="btn-primary text-sm px-4 py-2"><i class="fas fa-search mr-1"></i>Filtrar</button>
+    <a href="{% url 'web:bus-eventos' %}" class="text-sm dark:text-surface-400 text-surface-500 hover:text-brand-400 px-3 py-2">Limpiar</a>
+  </form>
+</div>
+
+<!-- Events Table -->
+<div class="glass-card overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm" id="ev-table">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-3 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Hora</th>
+          <th class="px-3 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Severidad</th>
+          <th class="px-3 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Tipo</th>
+          <th class="px-3 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Servicio</th>
+          <th class="px-3 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Actor</th>
+          <th class="px-3 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Entidad</th>
+          <th class="px-3 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Payload</th>
+        </tr>
+      </thead>
+      <tbody id="ev-tbody">
+        {% for ev in events %}
+        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors cursor-pointer" onclick="showEventDetail({{ ev.id }})" data-event-id="{{ ev.id }}">
+          <td class="px-3 py-2.5 dark:text-surface-300 text-surface-600 text-xs font-mono whitespace-nowrap">{{ ev.created_at|slice:":19" }}</td>
+          <td class="px-3 py-2.5">
+            {% if ev.severity == "critical" %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-400">CRITICAL</span>
+            {% elif ev.severity == "high" %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/15 text-red-300">HIGH</span>
+            {% elif ev.severity == "medium" %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/20 text-amber-400">MEDIUM</span>
+            {% elif ev.severity == "low" %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-400">LOW</span>
+            {% else %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-surface-500/20 text-surface-400">INFO</span>
+            {% endif %}
+          </td>
+          <td class="px-3 py-2.5 dark:text-surface-200 text-surface-700 text-xs">{{ ev.event_type_display|default:ev.event_type }}</td>
+          <td class="px-3 py-2.5">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+              {% if ev.source_service == 'auth' %}bg-purple-500/20 text-purple-300
+              {% elif ev.source_service == 'web' %}bg-cyan-500/20 text-cyan-300
+              {% elif ev.source_service == 'soc' %}bg-orange-500/20 text-orange-300
+              {% elif ev.source_service == 'bus' %}bg-amber-500/20 text-amber-300
+              {% elif ev.source_service == 'inventory' %}bg-green-500/20 text-green-300
+              {% elif ev.source_service == 'logs' %}bg-blue-500/20 text-blue-300
+              {% else %}bg-surface-500/20 text-surface-400{% endif %}">{{ ev.source_service }}</span>
+          </td>
+          <td class="px-3 py-2.5 dark:text-surface-300 text-surface-600 text-xs">{{ ev.actor_username|default:"-" }}</td>
+          <td class="px-3 py-2.5 dark:text-surface-400 text-surface-500 text-xs">{{ ev.entity_type|default:"-" }}{% if ev.entity_id %} #{{ ev.entity_id }}{% endif %}</td>
+          <td class="px-3 py-2.5 dark:text-surface-400 text-surface-500 text-xs max-w-[200px] truncate font-mono">{{ ev.payload_json|default:"{}" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400">
+            <i class="fas fa-inbox text-3xl mb-3 block"></i>
+            <p>No hay eventos registrados</p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if events %}
+  <div class="px-4 py-3 dark:border-surface-800 border-surface-200 border-t flex items-center justify-between">
+    <p class="text-xs dark:text-surface-400 text-surface-500">
+      Mostrando {{ events|length }} de {{ total }} eventos
+      {% if page > 1 %}(p&aacute;gina {{ page }}){% endif %}
+    </p>
+    <div class="flex items-center gap-2">
+      {% if page > 1 %}
+      <a href="?page={{ page|add:"-1" }}&severity={{ severity_filter }}&source={{ source_filter }}&event_type={{ event_type_filter }}&q={{ search_query }}&hostname={{ hostname_filter }}&service_name={{ service_filter }}" class="text-xs dark:text-surface-400 text-surface-500 hover:text-brand-400 px-3 py-1.5 rounded-lg dark:hover:bg-white/5 hover:bg-surface-100"><i class="fas fa-chevron-left mr-1"></i>Anterior</a>
+      {% endif %}
+      {% if events|length >= page_size %}
+      <a href="?page={{ page|add:"1" }}&severity={{ severity_filter }}&source={{ source_filter }}&event_type={{ event_type_filter }}&q={{ search_query }}&hostname={{ hostname_filter }}&service_name={{ service_filter }}" class="text-xs dark:text-surface-400 text-surface-500 hover:text-brand-400 px-3 py-1.5 rounded-lg dark:hover:bg-white/5 hover:bg-surface-100">Siguiente<i class="fas fa-chevron-right ml-1"></i></a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Event Detail Modal -->
+<div id="ev-modal" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal()"></div>
+  <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl max-h-[85vh] glass-card overflow-hidden flex flex-col">
+    <div class="px-5 py-4 dark:border-surface-800 border-surface-200 border-b flex items-center justify-between">
+      <h3 class="font-semibold dark:text-white text-surface-900"><i class="fas fa-bolt text-amber-400 mr-2"></i>Detalle del Evento</h3>
+      <button onclick="closeModal()" class="dark:text-surface-400 text-surface-500 hover:text-brand-400"><i class="fas fa-times text-lg"></i></button>
+    </div>
+    <div class="p-5 overflow-y-auto flex-1" id="ev-modal-body">
+      <div class="text-center py-8 dark:text-surface-500 text-surface-400"><i class="fas fa-spinner fa-spin text-2xl"></i></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  let paused = false;
+  let timer = null;
+
+  window.togglePause = function() {
+    paused = !paused;
+    const btn = document.getElementById('ev-pause-btn');
+    const dot = document.getElementById('ev-live-dot');
+    if (paused) {
+      btn.innerHTML = '<i class="fas fa-play mr-1"></i>Reanudar';
+      dot.classList.remove('animate-pulse');
+      dot.classList.replace('bg-green-400', 'bg-yellow-400');
+      if (timer) clearInterval(timer);
+    } else {
+      btn.innerHTML = '<i class="fas fa-pause mr-1"></i>Pausar';
+      dot.classList.add('animate-pulse');
+      dot.classList.replace('bg-yellow-400', 'bg-green-400');
+      startPolling();
+    }
+  };
+
+  function startPolling() {
+    if (timer) clearInterval(timer);
+    timer = setInterval(refreshEvents, 5000);
+  }
+
+  function refreshEvents() {
+    if (paused) return;
+    const params = new URLSearchParams(window.location.search);
+    params.set('page_size', '50');
+    const url = '/siem/dashboard/api/bus/eventos/?' + params.toString();
+    fetch(url, {credentials: 'same-origin'})
+      .then(r => r.json())
+      .then(data => {
+        const evts = data.events.results || [];
+        const stats = data.stats || {};
+        updateWidgets(evts, stats);
+        updateTable(evts);
+        document.getElementById('ev-total').textContent = data.events.count || evts.length;
+      })
+      .catch(() => {});
+  }
+
+  function updateWidgets(evts, stats) {
+    document.getElementById('ev-w-total').textContent = stats.total_events || evts.length;
+    let info = 0, medium = 0, high = 0, critical = 0;
+    evts.forEach(e => {
+      if (e.severity === 'info' || e.severity === 'low') info++;
+      else if (e.severity === 'medium') medium++;
+      else if (e.severity === 'high') high++;
+      else if (e.severity === 'critical') critical++;
+    });
+    document.getElementById('ev-w-info').textContent = info;
+    document.getElementById('ev-w-medium').textContent = medium;
+    document.getElementById('ev-w-high').textContent = high;
+    document.getElementById('ev-w-critical').textContent = critical;
+  }
+
+  function updateTable(evts) {
+    const tbody = document.getElementById('ev-tbody');
+    if (!evts.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400"><i class="fas fa-inbox text-3xl mb-3 block"></i><p>No hay eventos</p></td></tr>';
+      return;
+    }
+    let html = '';
+    evts.forEach(ev => {
+      const sevClass = ev.severity === 'critical' ? 'bg-red-500/20 text-red-400'
+        : ev.severity === 'high' ? 'bg-red-500/15 text-red-300'
+        : ev.severity === 'medium' ? 'bg-amber-500/20 text-amber-400'
+        : ev.severity === 'low' ? 'bg-blue-500/20 text-blue-300'
+        : 'bg-surface-500/20 text-surface-400';
+      const svcClass = ev.source_service === 'auth' ? 'bg-purple-500/20 text-purple-300'
+        : ev.source_service === 'web' ? 'bg-cyan-500/20 text-cyan-300'
+        : ev.source_service === 'soc' ? 'bg-orange-500/20 text-orange-300'
+        : ev.source_service === 'bus' ? 'bg-amber-500/20 text-amber-300'
+        : ev.source_service === 'inventory' ? 'bg-green-500/20 text-green-300'
+        : ev.source_service === 'logs' ? 'bg-blue-500/20 text-blue-300'
+        : 'bg-surface-500/20 text-surface-400';
+      const time = (ev.created_at || '').substring(0, 19);
+      const payloadStr = JSON.stringify(ev.payload || {}).substring(0, 60);
+      const entity = ev.entity_type ? ev.entity_type + (ev.entity_id ? ' #' + ev.entity_id : '') : '-';
+      html += '<tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors cursor-pointer" onclick="showEventDetail(' + ev.id + ')" data-event-id="' + ev.id + '">'
+        + '<td class="px-3 py-2.5 dark:text-surface-300 text-surface-600 text-xs font-mono whitespace-nowrap">' + time + '</td>'
+        + '<td class="px-3 py-2.5"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' + sevClass + '">' + (ev.severity || 'info').toUpperCase() + '</span></td>'
+        + '<td class="px-3 py-2.5 dark:text-surface-200 text-surface-700 text-xs">' + (ev.event_type_display || ev.event_type) + '</td>'
+        + '<td class="px-3 py-2.5"><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ' + svcClass + '">' + ev.source_service + '</span></td>'
+        + '<td class="px-3 py-2.5 dark:text-surface-300 text-surface-600 text-xs">' + (ev.actor_username || '-') + '</td>'
+        + '<td class="px-3 py-2.5 dark:text-surface-400 text-surface-500 text-xs">' + entity + '</td>'
+        + '<td class="px-3 py-2.5 dark:text-surface-400 text-surface-500 text-xs max-w-[200px] truncate font-mono">' + payloadStr + '</td>'
+        + '</tr>';
+    });
+    tbody.innerHTML = html;
+  }
+
+  window.showEventDetail = function(eventId) {
+    const modal = document.getElementById('ev-modal');
+    const body = document.getElementById('ev-modal-body');
+    modal.classList.remove('hidden');
+    body.innerHTML = '<div class="text-center py-8 dark:text-surface-500 text-surface-400"><i class="fas fa-spinner fa-spin text-2xl"></i></div>';
+    fetch('/siem/dashboard/api/bus/eventos/' + eventId + '/', {credentials: 'same-origin'})
+      .then(r => r.json())
+      .then(ev => {
+        const sevClass = ev.severity === 'critical' ? 'bg-red-500/20 text-red-400'
+          : ev.severity === 'high' ? 'bg-red-500/15 text-red-300'
+          : ev.severity === 'medium' ? 'bg-amber-500/20 text-amber-400'
+          : ev.severity === 'low' ? 'bg-blue-500/20 text-blue-300'
+          : 'bg-surface-500/20 text-surface-400';
+        let payloadFormatted = JSON.stringify(ev.payload || {}, null, 2);
+        body.innerHTML = '<div class="space-y-4">'
+          + '<div class="grid grid-cols-2 gap-4">'
+          + '<div><span class="text-xs dark:text-surface-400 text-surface-500">ID</span><p class="text-sm dark:text-white text-surface-900 font-mono">#' + ev.id + '</p></div>'
+          + '<div><span class="text-xs dark:text-surface-400 text-surface-500">Fecha/Hora</span><p class="text-sm dark:text-white text-surface-900 font-mono">' + (ev.created_at || '') + '</p></div>'
+          + '</div>'
+          + '<div class="grid grid-cols-2 gap-4">'
+          + '<div><span class="text-xs dark:text-surface-400 text-surface-500">Severidad</span><p class="mt-1"><span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ' + sevClass + '">' + (ev.severity || 'info').toUpperCase() + '</span></p></div>'
+          + '<div><span class="text-xs dark:text-surface-400 text-surface-500">Tipo</span><p class="text-sm dark:text-white text-surface-900">' + (ev.event_type_display || ev.event_type) + '</p></div>'
+          + '</div>'
+          + '<div class="grid grid-cols-2 gap-4">'
+          + '<div><span class="text-xs dark:text-surface-400 text-surface-500">Servicio Origen</span><p class="text-sm dark:text-white text-surface-900">' + ev.source_service + '</p></div>'
+          + '<div><span class="text-xs dark:text-surface-400 text-surface-500">Tipo Entidad</span><p class="text-sm dark:text-white text-surface-900">' + (ev.entity_type || '-') + ' ' + (ev.entity_id ? '#' + ev.entity_id : '') + '</p></div>'
+          + '</div>'
+          + '<div class="grid grid-cols-2 gap-4">'
+          + '<div><span class="text-xs dark:text-surface-400 text-surface-500">Actor</span><p class="text-sm dark:text-white text-surface-900">' + (ev.actor_username || '-') + (ev.actor_user_id ? ' (ID: ' + ev.actor_user_id + ')' : '') + '</p></div>'
+          + '<div><span class="text-xs dark:text-surface-400 text-surface-500">Procesado</span><p class="text-sm dark:text-white text-surface-900">' + (ev.processed ? '<i class="fas fa-check text-green-400"></i> Si' : '<i class="fas fa-clock text-amber-400"></i> No') + '</p></div>'
+          + '</div>'
+          + '<div><span class="text-xs dark:text-surface-400 text-surface-500">Payload</span>'
+          + '<pre class="mt-1 p-3 rounded-lg text-xs font-mono dark:bg-surface-800 dark:text-surface-200 bg-surface-100 text-surface-700 overflow-x-auto max-h-[300px] overflow-y-auto">' + payloadFormatted + '</pre></div>'
+          + '</div>';
+      })
+      .catch(() => {
+        body.innerHTML = '<div class="text-center py-8 text-red-400"><i class="fas fa-exclamation-triangle text-2xl mb-2 block"></i>Error al cargar detalle</div>';
+      });
+  };
+
+  window.closeModal = function() {
+    document.getElementById('ev-modal').classList.add('hidden');
+  };
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  startPolling();
+})();
+</script>
+{% endblock %}

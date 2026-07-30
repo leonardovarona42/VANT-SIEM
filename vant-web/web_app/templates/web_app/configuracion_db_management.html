@@ -1,0 +1,239 @@
+{% extends "web_app/base.html" %}
+{% block title %}Gestion de Base de Datos | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-database text-brand-400 mr-2"></i>Gestion de Base de Datos</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Monitoreo, optimizacion y respaldos</p>
+  </div>
+  <div class="flex gap-2">
+    <a href="{% url 'web:configuracion-db-retention' %}" class="btn-primary text-sm"><i class="fas fa-clock mr-1"></i>Retencion</a>
+    <a href="{% url 'web:configuracion-db-backups' %}" class="btn-primary text-sm"><i class="fas fa-hard-drive mr-1"></i>Respaldos</a>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="glass-card p-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400"><i class="fas fa-database"></i></div>
+      <div>
+        <p class="text-xs dark:text-surface-400 text-surface-500">Tamano BD</p>
+        <p class="text-lg font-bold dark:text-white text-surface-900">
+          {% if health.database_size %}{{ health.database_size|filesizeformat }}{% else %}-{% endif %}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="glass-card p-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400"><i class="fas fa-plug"></i></div>
+      <div>
+        <p class="text-xs dark:text-surface-400 text-surface-500">Conexiones Activas</p>
+        <p class="text-lg font-bold dark:text-white text-surface-900">{{ health.active_connections|default:"-" }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="glass-card p-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400"><i class="fas fa-gauge-high"></i></div>
+      <div>
+        <p class="text-xs dark:text-surface-400 text-surface-500">Cache Hit Ratio</p>
+        <p class="text-lg font-bold dark:text-white text-surface-900">{{ health.cache_hit_ratio|default:"-" }}%</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="glass-card p-4">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400"><i class="fas fa-server"></i></div>
+      <div>
+        <p class="text-xs dark:text-surface-400 text-surface-500">PostgreSQL</p>
+        <p class="text-lg font-bold dark:text-white text-surface-900 truncate" title="{{ health.pg_version }}">{{ health.pg_version|default:"-" }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+  <div class="glass-card p-4">
+    <h2 class="text-sm font-semibold dark:text-white text-surface-900 mb-3"><i class="fas fa-table text-brand-400 mr-1"></i>Tablas mas grandes</h2>
+    {% if health.table_sizes %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="dark:border-surface-800 border-surface-200 border-b">
+            <th class="px-2 py-2 text-left text-xs font-semibold dark:text-surface-400 text-surface-500">Tabla</th>
+            <th class="px-2 py-2 text-right text-xs font-semibold dark:text-surface-400 text-surface-500">Tamano</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in health.table_sizes|slice:":10" %}
+          <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5">
+            <td class="px-2 py-1.5 dark:text-surface-200 text-surface-700 font-mono text-xs">{{ t.table }}</td>
+            <td class="px-2 py-1.5 text-right dark:text-surface-300 text-surface-600 text-xs">{{ t.size|filesizeformat }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-xs dark:text-surface-500 text-surface-400 py-4 text-center">No hay datos</p>
+    {% endif %}
+  </div>
+
+  <div class="glass-card p-4">
+    <h2 class="text-sm font-semibold dark:text-white text-surface-900 mb-3"><i class="fas fa-tachometer-alt text-brand-400 mr-1"></i>Optimizacion fisica</h2>
+    <p class="text-xs dark:text-surface-400 text-surface-500 mb-3">Ejecute operaciones de mantenimiento sobre la base de datos.</p>
+    <form method="post" action="{% url 'web:configuracion-db-optimize' %}" class="space-y-3">
+      {% csrf_token %}
+      <div class="flex gap-2">
+        <select name="action" class="flex-1 px-3 py-2 text-sm rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border">
+          <option value="vacuum">VACUUM ANALYZE</option>
+          <option value="analyze">ANALYZE</option>
+          <option value="reindex">REINDEX</option>
+        </select>
+        <input name="table" placeholder="Tabla (opcional)" class="flex-1 px-3 py-2 text-sm rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border">
+      </div>
+      <button class="btn-primary text-sm"><i class="fas fa-play mr-1"></i>Ejecutar</button>
+    </form>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+  <div class="glass-card p-4">
+    <h2 class="text-sm font-semibold dark:text-white text-surface-900 mb-3"><i class="fas fa-chart-bar text-brand-400 mr-1"></i>Bases de Datos</h2>
+    {% if health.databases %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="dark:border-surface-800 border-surface-200 border-b">
+            <th class="px-2 py-2 text-left text-xs font-semibold dark:text-surface-400 text-surface-500">Nombre</th>
+            <th class="px-2 py-2 text-right text-xs font-semibold dark:text-surface-400 text-surface-500">Tamano</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for db in health.databases %}
+          <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5">
+            <td class="px-2 py-1.5 dark:text-surface-200 text-surface-700">{{ db.name }}</td>
+            <td class="px-2 py-1.5 text-right dark:text-surface-300 text-surface-600 text-xs">{{ db.size|filesizeformat }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-xs dark:text-surface-500 text-surface-400 py-4 text-center">No hay datos</p>
+    {% endif %}
+  </div>
+
+  <div class="glass-card p-4">
+    <h2 class="text-sm font-semibold dark:text-white text-surface-900 mb-3"><i class="fas fa-heartbeat text-brand-400 mr-1"></i>Estado de tablas</h2>
+    {% if health.table_stats %}
+    <div class="overflow-x-auto max-h-64 overflow-y-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="dark:border-surface-800 border-surface-200 border-b">
+            <th class="px-2 py-2 text-left text-xs font-semibold dark:text-surface-400 text-surface-500">Tabla</th>
+            <th class="px-2 py-2 text-right text-xs font-semibold dark:text-surface-400 text-surface-500">Vivas</th>
+            <th class="px-2 py-2 text-right text-xs font-semibold dark:text-surface-400 text-surface-500">Muertas</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in health.table_stats %}
+          <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5">
+            <td class="px-2 py-1.5 dark:text-surface-200 text-surface-700 font-mono text-xs">{{ t.table }}</td>
+            <td class="px-2 py-1.5 text-right dark:text-surface-300 text-surface-600 text-xs">{{ t.live_rows }}</td>
+            <td class="px-2 py-1.5 text-right dark:text-surface-300 text-surface-600 text-xs {% if t.dead_rows > 1000 %}text-red-500 font-bold{% endif %}">{{ t.dead_rows }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="text-xs dark:text-surface-500 text-surface-400 py-4 text-center">No hay datos</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="glass-card p-4 mb-6">
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="text-sm font-semibold dark:text-white text-surface-900"><i class="fas fa-list text-brand-400 mr-1"></i>Politicas de Retencion</h2>
+    <a href="{% url 'web:configuracion-db-retention' %}" class="text-xs text-brand-400 hover:text-brand-300">Gestionar</a>
+  </div>
+  {% if policies %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-400 text-surface-500">Entidad</th>
+          <th class="px-3 py-2 text-right text-xs font-semibold dark:text-surface-400 text-surface-500">Dias</th>
+          <th class="px-3 py-2 text-center text-xs font-semibold dark:text-surface-400 text-surface-500">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in policies %}
+        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b">
+          <td class="px-3 py-1.5 dark:text-surface-200 text-surface-700">{{ p.entity_type_display }}</td>
+          <td class="px-3 py-1.5 text-right dark:text-surface-300 text-surface-600">{{ p.retention_days }}</td>
+          <td class="px-3 py-1.5 text-center">
+            {% if p.is_active %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Activa</span>
+            {% else %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300">Inactiva</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-xs dark:text-surface-500 text-surface-400 py-4 text-center">No hay politicas configuradas</p>
+  {% endif %}
+</div>
+
+<div class="glass-card p-4">
+  <div class="flex items-center justify-between mb-3">
+    <h2 class="text-sm font-semibold dark:text-white text-surface-900"><i class="fas fa-hard-drive text-brand-400 mr-1"></i>Respaldos Recientes</h2>
+    <a href="{% url 'web:configuracion-db-backups' %}" class="text-xs text-brand-400 hover:text-brand-300">Gestionar</a>
+  </div>
+  {% if backups %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-400 text-surface-500">Tipo</th>
+          <th class="px-3 py-2 text-left text-xs font-semibold dark:text-surface-400 text-surface-500">Estado</th>
+          <th class="px-3 py-2 text-right text-xs font-semibold dark:text-surface-400 text-surface-500">Tamano</th>
+          <th class="px-3 py-2 text-right text-xs font-semibold dark:text-surface-400 text-surface-500">Fecha</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in backups %}
+        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b">
+          <td class="px-3 py-1.5 dark:text-surface-200 text-surface-700">{{ b.backup_type_display }}</td>
+          <td class="px-3 py-1.5">
+            {% if b.status == 'completed' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Completado</span>
+            {% elif b.status == 'failed' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">Fallido</span>
+            {% elif b.status == 'running' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">Ejecutando</span>
+            {% else %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300">{{ b.status_display }}</span>
+            {% endif %}
+          </td>
+          <td class="px-3 py-1.5 text-right dark:text-surface-300 text-surface-600 text-xs">{{ b.file_size|filesizeformat }}</td>
+          <td class="px-3 py-1.5 text-right dark:text-surface-400 text-surface-500 text-xs">{{ b.created_at|date:"d/m/Y H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-xs dark:text-surface-500 text-surface-400 py-4 text-center">No hay respaldos</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "web_app/base.html" %}
+{% block title %}Estado del Ecosistema | VANT-SIEM Web{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-network-wired text-green-400 mr-2"></i>Estado del Ecosistema</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Monitoreo y orquestacion de servicios del ecosistema VANT-SIEM</p>
+  </div>
+  <a href="{% url 'web:bus-eventos' %}" class="btn-primary text-sm"><i class="fas fa-bolt mr-2"></i>Ver Eventos en Tiempo Real</a>
+</div>
+
+<!-- Summary Cards -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+  <div class="glass-card p-4 text-center">
+    <div class="text-2xl font-bold dark:text-white text-surface-900">{{ services|length }}</div>
+    <div class="text-xs dark:text-surface-400 text-surface-500 mt-1"><i class="fas fa-server mr-1"></i>Servicios</div>
+  </div>
+  <div class="glass-card p-4 text-center">
+    <div class="text-2xl font-bold text-green-400">{{ healthy_count }}</div>
+    <div class="text-xs dark:text-surface-400 text-surface-500 mt-1"><i class="fas fa-check-circle mr-1"></i>Saludables</div>
+  </div>
+  <div class="glass-card p-4 text-center">
+    <div class="text-2xl font-bold text-red-400">{{ unhealthy_count }}</div>
+    <div class="text-xs dark:text-surface-400 text-surface-500 mt-1"><i class="fas fa-times-circle mr-1"></i>Con problemas</div>
+  </div>
+  <div class="glass-card p-4 text-center">
+    <div class="text-2xl font-bold text-amber-400">{{ stats.total_events|default:"0" }}</div>
+    <div class="text-xs dark:text-surface-400 text-surface-500 mt-1"><i class="fas fa-bolt mr-1"></i>Eventos Totales</div>
+  </div>
+</div>
+
+<!-- Services Table -->
+<div class="glass-card overflow-hidden">
+  <div class="px-5 py-3 dark:border-surface-800 border-surface-200 border-b">
+    <h2 class="font-semibold dark:text-white text-surface-900"><i class="fas fa-cogs mr-2 dark:text-surface-400 text-surface-500"></i>Servicios Registrados</h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Nombre</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Endpoint</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Estado</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Ultimo Check</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in services %}
+        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors">
+          <td class="px-4 py-3 dark:text-surface-200 text-surface-700 font-medium">
+            <div class="flex items-center gap-2">
+              <i class="fas fa-server dark:text-surface-500 text-surface-400"></i>
+              <div>
+                <div class="font-medium">{{ s.display_name|default:s.name }}</div>
+                <div class="text-xs dark:text-surface-500 text-surface-400">{{ s.systemd_service }}</div>
+              </div>
+            </div>
+          </td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs font-mono">{{ s.host }}:{{ s.port }}{{ s.health_endpoint }}</td>
+          <td class="px-4 py-3">
+            {% if s.last_health_status == 'healthy' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-300"><i class="fas fa-check-circle mr-1"></i>Saludable</span>
+            {% elif s.last_health_status == 'unhealthy' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-300"><i class="fas fa-times-circle mr-1"></i>Caído</span>
+            {% elif s.last_health_status == 'degraded' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-500/20 text-amber-300"><i class="fas fa-exclamation-triangle mr-1"></i>Degradado</span>
+            {% else %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-surface-500/20 text-surface-400"><i class="fas fa-question-circle mr-1"></i>{{ s.last_health_status|default:"Desconocido" }}</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs">{{ s.last_health_check|default:"-" }}</td>
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-1">
+              {% if s.last_health_status != 'healthy' %}
+              <form method="post" action="{% url 'web:configuracion-ecosistema-action' s.id 'start' %}" class="inline">
+                {% csrf_token %}
+                <button class="text-green-400 hover:text-green-300 text-xs px-1" title="Iniciar"><i class="fas fa-play"></i></button>
+              </form>
+              {% endif %}
+              <form method="post" action="{% url 'web:configuracion-ecosistema-action' s.id 'stop' %}" class="inline" onsubmit="return confirm('Detener este servicio?')">
+                {% csrf_token %}
+                <button class="text-amber-400 hover:text-amber-300 text-xs px-1" title="Detener"><i class="fas fa-stop"></i></button>
+              </form>
+              <form method="post" action="{% url 'web:configuracion-ecosistema-action' s.id 'restart' %}" class="inline" onsubmit="return confirm('Reiniciar este servicio?')">
+                {% csrf_token %}
+                <button class="text-cyan-400 hover:text-cyan-300 text-xs px-1" title="Reiniciar"><i class="fas fa-rotate"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="px-4 py-8 text-center dark:text-surface-500 text-surface-400">
+            <i class="fas fa-server text-2xl mb-2 block"></i>No hay servicios registrados en el bus
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

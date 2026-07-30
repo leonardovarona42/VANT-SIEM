@@ -1,34 +1,65 @@
 {% extends "web_app/base.html" %}
 {% block title %}Medidas de Seguridad | VANT-SIEM Web{% endblock %}
-
 {% block content %}
-<div class="flex items-center justify-between mb-8">
+<div class="flex items-center justify-between mb-6">
   <div>
     <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-tools text-brand-400 mr-2"></i>Medidas de Seguridad</h1>
     <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total|default:"0" }} medidas registradas</p>
   </div>
-  <a href="{% url 'web:soc-medida-create' %}" class="btn-primary text-sm"><i class="fas fa-plus mr-2"></i>Nuevo</a>
+  <a href="{% url 'web:soc-medida-create' %}" class="btn-primary text-sm"><i class="fas fa-plus mr-2"></i>Nueva Medida</a>
 </div>
 
-<div class="glass-card overflow-hidden">
+<div class="glass-card p-4 mb-4">
+  <form method="get" class="flex flex-wrap gap-3 items-end">
+    <div class="flex-1 min-w-[200px]">
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Buscar</label>
+      <input name="q" value="{{ search|default:'' }}" placeholder="Nombre o descripcion..." class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border-surface-200 rounded-lg">
+    </div>
+    <div>
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Tipo</label>
+      <select name="tipo" class="px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border-surface-200 rounded-lg" onchange="this.form.submit()">
+        <option value="">Todos</option>
+        <option value="preventiva" {% if tipo == 'preventiva' %}selected{% endif %}>Preventiva</option>
+        <option value="reactiva" {% if tipo == 'reactiva' %}selected{% endif %}>Reactiva</option>
+        <option value="recuperacion" {% if tipo == 'recuperacion' %}selected{% endif %}>Recuperación</option>
+      </select>
+    </div>
+    <button type="submit" class="btn-primary text-sm"><i class="fas fa-search mr-1"></i>Buscar</button>
+    {% if search or tipo %}<a href="{% url 'web:soc-medidas-list' %}" class="text-xs dark:text-surface-400 text-surface-500 hover:text-brand-400">Limpiar</a>{% endif %}
+  </form>
+</div>
+
+<div id="tbl-medidas" class="glass-card overflow-hidden">
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead>
         <tr class="dark:border-surface-800 border-surface-200 border-b">
-          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Nombre</th>
-          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Descripción</th>
-          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Acciones</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Tipo</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Nombre</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Descripcion</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Acciones</th>
         </tr>
       </thead>
       <tbody>
         {% for m in medidas %}
         <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors">
-          <td class="px-4 py-3 dark:text-surface-200 text-surface-700">{{ m.nombre }}</td>
-          <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-xs">{{ m.descripcion|default:"-" }}</td>
+          <td class="px-4 py-3">
+            {% if m.tipo == 'preventiva' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">Preventiva</span>
+            {% elif m.tipo == 'reactiva' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300">Reactiva</span>
+            {% elif m.tipo == 'recuperacion' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300">Recuperación</span>
+            {% else %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300">{{ m.tipo|default:"-" }}</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 dark:text-surface-200 text-surface-700 font-medium">{{ m.nombre }}</td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs">{{ m.descripcion|default:"-" }}</td>
           <td class="px-4 py-3">
             <div class="flex items-center gap-2">
               <button onclick="document.getElementById('edit-{{ m.id }}').classList.toggle('hidden')" class="text-brand-400 hover:text-brand-300 text-xs"><i class="fas fa-edit"></i> Editar</button>
-              <form method="post" action="{% url 'web:soc-medida-delete' m.id %}" onsubmit="return confirm('¿Eliminar esta medida?')">
+              <form method="post" action="{% url 'web:soc-medida-delete' m.id %}" onsubmit="return confirm('Eliminar esta medida?')">
                 {% csrf_token %}
                 <button class="text-red-400 hover:text-red-300 text-xs"><i class="fas fa-trash"></i></button>
               </form>
@@ -36,18 +67,23 @@
           </td>
         </tr>
         <tr id="edit-{{ m.id }}" class="hidden">
-          <td colspan="3" class="px-4 py-3">
-            <form method="post" action="{% url 'web:soc-medida-edit' m.id %}" class="flex gap-3 items-end">
+          <td colspan="4" class="px-4 py-3">
+            <form method="post" action="{% url 'web:soc-medida-edit' m.id %}" class="flex gap-3 items-end flex-wrap">
               {% csrf_token %}
-              <input name="nombre" value="{{ m.nombre }}" class="flex-1 px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm" required>
-              <input name="descripcion" value="{{ m.descripcion }}" class="flex-1 px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+              <input name="nombre" value="{{ m.nombre }}" class="px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm" required>
+              <select name="tipo" class="px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+                <option value="preventiva" {% if m.tipo == 'preventiva' %}selected{% endif %}>Preventiva</option>
+                <option value="reactiva" {% if m.tipo == 'reactiva' %}selected{% endif %}>Reactiva</option>
+                <option value="recuperacion" {% if m.tipo == 'recuperacion' %}selected{% endif %}>Recuperación</option>
+              </select>
+              <input name="descripcion" value="{{ m.descripcion }}" class="flex-1 px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm" placeholder="Descripcion">
               <button class="btn-primary text-xs px-3 py-1.5"><i class="fas fa-save mr-1"></i>Guardar</button>
             </form>
           </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="3" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400">
+          <td colspan="4" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400">
             <i class="fas fa-tools text-4xl mb-3 block opacity-50"></i>
             No se encontraron medidas de seguridad
           </td>
@@ -57,4 +93,8 @@
     </table>
   </div>
 </div>
+{% endblock %}
+{% block extra_js %}
+<script src="/static/web_app/js/table-features.js"></script>
+<script>VANTTable.init('tbl-medidas');</script>
 {% endblock %}

@@ -10,7 +10,7 @@ mkdir -p "$LOG_DIR"
 
 echo "=== VANT-SIEM Microservices Starting ==="
 
-for svc in vant-auth vant-web vant-inventory vant-logs vant-aegis vant-bus; do
+for svc in vant-auth vant-web vant-inventory vant-logs vant-aegis vant-bus vant-intelligence; do
     echo "Starting $svc..."
     systemctl start "vantsiem-${svc#vant-}" 2>/dev/null || \
     sudo -u leonardo "$VENV/bin/gunicorn" \

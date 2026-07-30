@@ -1,0 +1,107 @@
+{% extends "web_app/base.html" %}
+{% block title %}Crear Servicio | VANT-SIEM Web{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-server text-indigo-400 mr-2"></i>Crear Servicio</h1>
+      <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Registrar un nuevo servicio en la CMDB</p>
+    </div>
+    <a href="{% url 'web:soc-servicios-list' %}" class="btn-secondary text-sm"><i class="fas fa-arrow-left mr-2"></i>Volver</a>
+  </div>
+  <form method="post" action="{% url 'web:soc-servicios-create-submit' %}" class="glass-card p-6 space-y-4">
+    {% csrf_token %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1.5">Nombre <span class="text-red-400">*</span></label>
+        <input name="nombre" required class="w-full px-4 py-2.5 rounded-xl dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border-surface-200 text-surface-800 focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all text-sm" placeholder="Nombre del servicio">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1.5">Tipo</label>
+        <select name="tipo" class="w-full px-4 py-2.5 rounded-xl dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border-surface-200 text-surface-800 focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all text-sm">
+          <option value="host">Host</option>
+          <option value="switch">Switch</option>
+          <option value="router">Router</option>
+          <option value="firewall">Firewall</option>
+          <option value="access_point">Access Point</option>
+          <option value="ups">UPS</option>
+          <option value="storage">Storage</option>
+          <option value="vlan">VLAN</option>
+          <option value="segmento">Segmento</option>
+          <option value="subred">Subred</option>
+          <option value="red">Red</option>
+          <option value="cluster">Cluster</option>
+          <option value="plataforma">Plataforma</option>
+          <option value="servicio_externo">Servicio Externo</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <label class="block text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1.5">Descripción</label>
+      <textarea name="descripcion" rows="3" class="w-full px-4 py-2.5 rounded-xl dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border-surface-200 text-surface-800 focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all text-sm" placeholder="Descripción del servicio..."></textarea>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1.5">Modelo</label>
+        <input name="modelo" class="w-full px-4 py-2.5 rounded-xl dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border-surface-200 text-surface-800 focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all text-sm" placeholder="Modelo del equipo">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1.5">Fabricante</label>
+        <input name="fabricante" class="w-full px-4 py-2.5 rounded-xl dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border-surface-200 text-surface-800 focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all text-sm" placeholder="Fabricante">
+      </div>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1.5">IP / Host</label>
+        <input name="host" class="w-full px-4 py-2.5 rounded-xl dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border-surface-200 text-surface-800 focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all text-sm" placeholder="192.168.1.1">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1.5">VLAN ID</label>
+        <input name="vlan_id" type="number" class="w-full px-4 py-2.5 rounded-xl dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border-surface-200 text-surface-800 focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all text-sm" placeholder="100">
+      </div>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1.5">Tipo de Red</label>
+        <select name="red_tipo" class="w-full px-4 py-2.5 rounded-xl dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border-surface-200 text-surface-800 focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all text-sm">
+          <option value="interna">Interna</option>
+          <option value="dmz">DMZ</option>
+          <option value="gestion">Gestion</option>
+          <option value="usuarios">Usuarios</option>
+          <option value="servidores">Servidores</option>
+          <option value="vpn">VPN</option>
+          <option value="iot">IoT</option>
+          <option value="guest">Guest</option>
+          <option value="backup">Backup</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1.5">Ubicación Física</label>
+        <input name="ubicacion_fisica" class="w-full px-4 py-2.5 rounded-xl dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border-surface-200 text-surface-800 focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all text-sm" placeholder="Edificio, sala, rack...">
+      </div>
+    </div>
+    <div>
+      <label class="block text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1.5">Responsable</label>
+      <select name="responsable" class="w-full px-4 py-2.5 rounded-xl dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border-surface-200 text-surface-800 focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all text-sm">
+        <option value="">-- Sin asignar --</option>
+        {% for r in responsables %}
+          <option value="{{ r.id }}">{{ r.nombres }} {{ r.apellidos }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="flex items-center gap-6">
+      <label class="flex items-center gap-2 text-sm dark:text-surface-300 text-surface-600">
+        <input type="checkbox" name="activo" checked class="rounded dark:bg-surface-700 dark:border-surface-600 text-brand-500 focus:ring-brand-500/50"> Activo
+      </label>
+      <label class="flex items-center gap-2 text-sm dark:text-surface-300 text-surface-600">
+        <input type="checkbox" name="monitorear" class="rounded dark:bg-surface-700 dark:border-surface-600 text-brand-500 focus:ring-brand-500/50"> Monitorear
+      </label>
+    </div>
+    <div class="flex gap-3 pt-4 border-t dark:border-surface-700 border-surface-200">
+      <button type="submit" class="btn-primary text-sm"><i class="fas fa-save mr-2"></i>Crear Servicio</button>
+      <a href="{% url 'web:soc-servicios-list' %}" class="btn-secondary text-sm">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

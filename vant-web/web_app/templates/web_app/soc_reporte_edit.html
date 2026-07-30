@@ -1,0 +1,72 @@
+{% extends "web_app/base.html" %}
+{% block title %}Editar Reporte #{{ reporte.id }} | VANT-SIEM{% endblock %}
+{% block content %}
+<div class="flex justify-center">
+    <div class="w-full max-w-2xl">
+        <div class="glass-card">
+            <div class="px-6 py-4 border-b dark:border-surface-700 border-surface-200 flex items-center justify-between">
+                <span class="text-brand-400 font-bold"><i class="fas fa-edit mr-2"></i>Editar Reporte #{{ reporte.id }}</span>
+                <a href="{% url 'web:soc-reporte-detail' reporte.id %}" class="dark:text-surface-400 text-surface-500 hover:text-brand-400 transition-colors"><i class="fas fa-times"></i></a>
+            </div>
+            <div class="p-6">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="p-4 rounded-lg mb-4 {% if message.tags == 'success' %}bg-green-100 border border-green-400 text-green-700 dark:bg-green-900 dark:border-green-700 dark:text-green-300{% elif message.tags == 'error' %}bg-red-100 border border-red-400 text-red-700 dark:bg-red-900 dark:border-red-700 dark:text-red-300{% else %}bg-blue-100 border border-blue-400 text-blue-700 dark:bg-blue-900 dark:border-blue-700 dark:text-blue-300{% endif %} flex items-center justify-between" role="alert">
+                            <span>{{ message }}</span>
+                            <button type="button" class="ml-4 text-current opacity-70 hover:opacity-100" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                <form method="post" action="{% url 'web:soc-reporte-edit-submit' reporte.id %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="nombre_informante" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                            <i class="fas fa-user mr-1"></i>Nombre del Informante
+                        </label>
+                        <input type="text" name="nombre_informante" id="nombre_informante" value="{{ reporte.nombre_informante }}" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email_informante" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                            <i class="fas fa-envelope mr-1"></i>Email del Informante
+                        </label>
+                        <input type="email" name="email_informante" id="email_informante" value="{{ reporte.email_informante|default:'' }}" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+                    </div>
+                    <div class="mb-3">
+                        <label for="area" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                            <i class="fas fa-building mr-1"></i>Área
+                        </label>
+                        <select name="area" id="area" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent">
+                            <option value="">-- Sin área --</option>
+                            {% for area in areas %}
+                                <option value="{{ area.id }}" {% if reporte.area|slugify == area.id|slugify %}selected{% endif %}>{{ area.acronimo }} - {{ area.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="descripcion" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                            <i class="fas fa-align-left mr-1"></i>Descripción
+                        </label>
+                        <textarea name="descripcion" id="descripcion" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" rows="4" required>{{ reporte.descripcion }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="estado_solucion" class="block text-sm font-medium dark:text-surface-300 text-surface-600 mb-2">
+                            <i class="fas fa-tasks mr-1"></i>Estado
+                        </label>
+                        <select name="estado_solucion" id="estado_solucion" class="w-full px-4 py-2.5 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-surface-100 border-surface-200 text-surface-800 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent" required>
+                            <option value="nuevo" {% if reporte.estado_solucion == 'nuevo' %}selected{% endif %}>Nuevo</option>
+                            <option value="atendido" {% if reporte.estado_solucion == 'atendido' %}selected{% endif %}>Atendido</option>
+                            <option value="rechazado" {% if reporte.estado_solucion == 'rechazado' %}selected{% endif %}>Rechazado</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-3 mt-4">
+                        <a href="{% url 'web:soc-reporte-detail' reporte.id %}" class="flex-1 px-4 py-2.5 dark:bg-surface-800 dark:text-surface-200 bg-surface-100 text-surface-800 rounded-xl font-medium text-center hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors">Cancelar</a>
+                        <button type="submit" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 text-white rounded-xl font-medium">
+                            <i class="fas fa-save mr-2"></i>Guardar Cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

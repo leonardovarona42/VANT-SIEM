@@ -1,0 +1,48 @@
+{% extends "web_app/base.html" %}
+{% block title %}Reporte #{{ reporte.id }} | VANT-SIEM Web{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-clipboard-list text-amber-400 mr-2"></i>Reporte #{{ reporte.id }}</h1>
+      <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ reporte.nombre_informante }} &middot; {{ reporte.fecha_hora }}</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="{% url 'web:soc-reporte-edit' reporte.id %}" class="btn-secondary text-sm"><i class="fas fa-edit mr-2"></i>Editar</a>
+      <a href="{% url 'web:soc-reportes-list' %}" class="btn-secondary text-sm"><i class="fas fa-arrow-left mr-2"></i>Volver</a>
+    </div>
+  </div>
+  <div class="glass-card p-6 space-y-4">
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <p class="text-xs font-semibold dark:text-surface-500 text-surface-400 uppercase tracking-wider">Informante</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700 mt-1">{{ reporte.nombre_informante }}</p>
+      </div>
+      <div>
+        <p class="text-xs font-semibold dark:text-surface-500 text-surface-400 uppercase tracking-wider">Email</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700 mt-1">{{ reporte.email_informante|default:"N/A" }}</p>
+      </div>
+      <div>
+        <p class="text-xs font-semibold dark:text-surface-500 text-surface-400 uppercase tracking-wider">Estado</p>
+        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if reporte.estado_solucion == 'nuevo' %}bg-blue-500/20 text-blue-300{% elif reporte.estado_solucion == 'atendido' %}bg-emerald-500/20 text-emerald-300{% else %}bg-red-500/20 text-red-300{% endif %} mt-1">
+          {{ reporte.get_estado_solucion_display }}
+        </span>
+      </div>
+      <div>
+        <p class="text-xs font-semibold dark:text-surface-500 text-surface-400 uppercase tracking-wider">Área</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700 mt-1">{{ reporte.area|default:"N/A" }}</p>
+      </div>
+    </div>
+    <div class="border-t dark:border-surface-700 border-surface-200 pt-4">
+      <p class="text-xs font-semibold dark:text-surface-500 text-surface-400 uppercase tracking-wider mb-2">Descripción</p>
+      <p class="text-sm dark:text-surface-200 text-surface-700 whitespace-pre-wrap">{{ reporte.descripcion }}</p>
+    </div>
+    {% if reporte.fecha_atencion %}
+    <div class="border-t dark:border-surface-700 border-surface-200 pt-4">
+      <p class="text-xs font-semibold dark:text-surface-500 text-surface-400 uppercase tracking-wider mb-2">Fecha de Atención</p>
+      <p class="text-sm dark:text-surface-200 text-surface-700">{{ reporte.fecha_atencion }}</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

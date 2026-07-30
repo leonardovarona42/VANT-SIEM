@@ -100,6 +100,7 @@ SERVICE_URLS = {
     "LOGS_SERVICE_URL": os.getenv("LOGS_SERVICE_URL", "http://127.0.0.1:8400"),
     "SOC_SERVICE_URL": os.getenv("SOC_SERVICE_URL", "http://127.0.0.1:8500"),
     "BUS_SERVICE_URL": os.getenv("BUS_SERVICE_URL", "http://127.0.0.1:8600"),
+    "INTELLIGENCE_SERVICE_URL": os.getenv("INTELLIGENCE_SERVICE_URL", "http://127.0.0.1:8700"),
 }
 
 for key, val in SERVICE_URLS.items():

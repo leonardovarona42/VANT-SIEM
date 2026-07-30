@@ -17,6 +17,7 @@ router.register(r"responsables", views.ResponsableViewSet, basename="responsable
 router.register(r"areas", views.AreaViewSet, basename="area")
 router.register(r"medidas", views.MedidaViewSet, basename="medida")
 router.register(r"medidas-incidente", views.MedidaIncidenteViewSet, basename="medida-incidente")
+router.register(r"medidas-involucrado", views.MedidaInvolucradoViewSet, basename="medida-involucrado")
 router.register(r"involucrados", views.InvolucradoViewSet, basename="involucrado")
 router.register(r"involucrado-incidente", views.InvolucradoIncidenteViewSet, basename="involucrado-incidente")
 router.register(r"reportes", views.ReporteViewSet, basename="reporte")
@@ -28,6 +29,8 @@ router.register(r"servicio-ips", views.ServicioIPViewSet, basename="servicio-ip"
 router.register(r"puertos", views.PuertoDispositivoViewSet, basename="puerto")
 router.register(r"conexiones", views.ConexionTopologicaViewSet, basename="conexion")
 router.register(r"monitoreo", views.MonitoreoServicioViewSet, basename="monitoreo")
+router.register(r"db/retention-policies", views.RetentionPolicyViewSet, basename="retention-policy")
+router.register(r"db/backups", views.BackupRecordViewSet, basename="backup-record")
 
 urlpatterns = [
     path("api/health/", views.health_check, name="soc-health"),
@@ -36,5 +39,11 @@ urlpatterns = [
     path("api/agent/dlp/threats/", views.ingest_dlp_threats, name="soc-agent-ingest"),
     path("api/agent/dlp/threats/upload/", views.ingest_dlp_threats_multipart, name="soc-agent-ingest-upload"),
     path("api/evidence/<int:pk>/download/", views.evidence_download, name="soc-evidence-download"),
+    path("api/incidentes/metrics/", views.incidentes_metrics, name="soc-incidentes-metrics"),
+    path("api/reportes/metrics/", views.reportes_metrics, name="soc-reportes-metrics"),
+    path("api/servicios/metrics/", views.servicios_metrics, name="soc-servicios-metrics"),
+    path("api/db/health/", views.db_health, name="soc-db-health"),
+    path("api/db/optimize/", views.db_optimize, name="soc-db-optimize"),
+    path("api/db/backups/<int:pk>/restore/", views.BackupRecordViewSet.as_view({"post": "restore"}), name="soc-db-backup-restore"),
     path("api/", include(router.urls)),
 ]

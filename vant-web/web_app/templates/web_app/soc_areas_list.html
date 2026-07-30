@@ -1,22 +1,32 @@
 {% extends "web_app/base.html" %}
-{% block title %}Áreas | VANT-SIEM Web{% endblock %}
-
+{% block title %}Areas | VANT-SIEM Web{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-8">
+<div class="flex items-center justify-between mb-6">
   <div>
-    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-sitemap text-brand-400 mr-2"></i>Áreas</h1>
-    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total|default:"0" }} áreas configuradas</p>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-building text-brand-400 mr-2"></i>Areas Organizacionales</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total|default:"0" }} areas registradas</p>
   </div>
-  <a href="{% url 'web:soc-area-create' %}" class="btn-primary text-sm"><i class="fas fa-plus mr-2"></i>Nuevo</a>
+  <a href="{% url 'web:soc-area-create' %}" class="btn-primary text-sm"><i class="fas fa-plus mr-2"></i>Nueva Area</a>
 </div>
 
-<div class="glass-card overflow-hidden">
+<div class="glass-card p-4 mb-4">
+  <form method="get" class="flex flex-wrap gap-3 items-end">
+    <div class="flex-1 min-w-[200px]">
+      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Buscar</label>
+      <input name="q" value="{{ search|default:'' }}" placeholder="Nombre, acronimo..." class="w-full px-3 py-2 text-sm dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border-surface-200 rounded-lg">
+    </div>
+    <button type="submit" class="btn-primary text-sm"><i class="fas fa-search mr-1"></i>Buscar</button>
+    {% if search %}<a href="{% url 'web:soc-areas-list' %}" class="text-xs dark:text-surface-400 text-surface-500 hover:text-brand-400">Limpiar</a>{% endif %}
+  </form>
+</div>
+
+<div id="tbl-areas" class="glass-card overflow-hidden">
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead>
         <tr class="dark:border-surface-800 border-surface-200 border-b">
           <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Nombre</th>
-          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Acrónimo</th>
+          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Acronimo</th>
           <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Cuadro Centro</th>
           <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">RSI</th>
           <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Admin</th>
@@ -25,16 +35,16 @@
       </thead>
       <tbody>
         {% for a in areas %}
-        <tr class="border-t dark:border-surface-800/50 border-surface-200/50 hover:dark:bg-white/[0.02] hover:bg-surface-50 transition-colors">
-          <td class="px-4 py-3 text-sm dark:text-surface-200 text-surface-700 font-medium">{{ a.nombre|default:"-" }}</td>
-          <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600 font-mono">{{ a.acronimo|default:"-" }}</td>
-          <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600">{{ a.cuadro_centro_nombre|default:"-" }}</td>
-          <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600">{{ a.rsi_nombre|default:"-" }}</td>
-          <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600">{{ a.admin_nombre|default:"-" }}</td>
+        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors">
+          <td class="px-4 py-3 dark:text-surface-200 text-surface-700 font-medium">{{ a.nombre }}</td>
+          <td class="px-4 py-3"><code class="text-xs dark:text-brand-400 text-brand-600 bg-brand-500/10 px-1.5 py-0.5 rounded">{{ a.acronimo|default:"-" }}</code></td>
+          <td class="px-4 py-3 text-xs dark:text-surface-300 text-surface-600">{{ a.cuadro_centro_nombre|default:"-" }}</td>
+          <td class="px-4 py-3 text-xs dark:text-surface-300 text-surface-600">{{ a.rsi_nombre|default:"-" }}</td>
+          <td class="px-4 py-3 text-xs dark:text-surface-300 text-surface-600">{{ a.admin_nombre|default:"-" }}</td>
           <td class="px-4 py-3">
             <div class="flex items-center gap-2">
               <button onclick="document.getElementById('edit-{{ a.id }}').classList.toggle('hidden')" class="text-brand-400 hover:text-brand-300 text-xs"><i class="fas fa-edit"></i> Editar</button>
-              <form method="post" action="{% url 'web:soc-area-delete' a.id %}" onsubmit="return confirm('¿Eliminar esta área?')">
+              <form method="post" action="{% url 'web:soc-area-delete' a.id %}" onsubmit="return confirm('Eliminar esta area?')">
                 {% csrf_token %}
                 <button class="text-red-400 hover:text-red-300 text-xs"><i class="fas fa-trash"></i></button>
               </form>
@@ -45,41 +55,29 @@
           <td colspan="6" class="px-4 py-3">
             <form method="post" action="{% url 'web:soc-area-edit' a.id %}" class="flex flex-wrap gap-3 items-end">
               {% csrf_token %}
-              <input name="nombre" value="{{ a.nombre }}" placeholder="Nombre" class="flex-1 min-w-[130px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm" required>
-              <input name="acronimo" value="{{ a.acronimo }}" placeholder="Acrónimo" class="flex-1 min-w-[80px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm font-mono">
-              {% if responsables %}
-              <select name="cuadro_centro" class="flex-1 min-w-[130px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
-                <option value="">-- Cuadro Centro --</option>
-                {% for resp in responsables %}
-                <option value="{{ resp.id }}" {% if a.cuadro_centro == resp.id %}selected{% endif %}>{{ resp.nombre }}</option>
-                {% endfor %}
+              <input name="nombre" value="{{ a.nombre }}" placeholder="Nombre" class="flex-1 min-w-[140px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm" required>
+              <input name="acronimo" value="{{ a.acronimo }}" placeholder="Acr." class="w-24 px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm" required>
+              <select name="cuadro_centro" class="flex-1 min-w-[140px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+                <option value="">CC --</option>
+                {% for r in responsables %}<option value="{{ r.id }}" {% if a.cuadro_centro == r.id %}selected{% endif %}>{{ r.nombres }} {{ r.apellidos }}</option>{% endfor %}
               </select>
-              <select name="rsi" class="flex-1 min-w-[130px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
-                <option value="">-- RSI --</option>
-                {% for resp in responsables %}
-                <option value="{{ resp.id }}" {% if a.rsi == resp.id %}selected{% endif %}>{{ resp.nombre }}</option>
-                {% endfor %}
+              <select name="rsi" class="flex-1 min-w-[140px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+                <option value="">RSI --</option>
+                {% for r in responsables %}<option value="{{ r.id }}" {% if a.rsi == r.id %}selected{% endif %}>{{ r.nombres }} {{ r.apellidos }}</option>{% endfor %}
               </select>
-              <select name="admin" class="flex-1 min-w-[130px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
-                <option value="">-- Admin --</option>
-                {% for resp in responsables %}
-                <option value="{{ resp.id }}" {% if a.admin == resp.id %}selected{% endif %}>{{ resp.nombre }}</option>
-                {% endfor %}
+              <select name="admin" class="flex-1 min-w-[140px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
+                <option value="">Admin --</option>
+                {% for r in responsables %}<option value="{{ r.id }}" {% if a.admin == r.id %}selected{% endif %}>{{ r.nombres }} {{ r.apellidos }}</option>{% endfor %}
               </select>
-              {% else %}
-              <input name="cuadro_centro" value="{{ a.cuadro_centro }}" type="number" placeholder="Cuadro Centro ID" class="flex-1 min-w-[110px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
-              <input name="rsi" value="{{ a.rsi }}" type="number" placeholder="RSI ID" class="flex-1 min-w-[80px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
-              <input name="admin" value="{{ a.admin }}" type="number" placeholder="Admin ID" class="flex-1 min-w-[80px] px-3 py-1.5 rounded-lg dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border text-sm">
-              {% endif %}
               <button class="btn-primary text-xs px-3 py-1.5"><i class="fas fa-save mr-1"></i>Guardar</button>
             </form>
           </td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="6" class="px-4 py-16 text-center dark:text-surface-500 text-surface-400">
-            <i class="fas fa-sitemap text-4xl mb-3 block opacity-50"></i>
-            <p class="text-sm">No hay áreas registradas</p>
+          <td colspan="6" class="px-4 py-12 text-center dark:text-surface-500 text-surface-400">
+            <i class="fas fa-building text-4xl mb-3 block opacity-50"></i>
+            No se encontraron areas
           </td>
         </tr>
         {% endfor %}
@@ -87,4 +85,8 @@
     </table>
   </div>
 </div>
+{% endblock %}
+{% block extra_js %}
+<script src="/static/web_app/js/table-features.js"></script>
+<script>VANTTable.init('tbl-areas');</script>
 {% endblock %}

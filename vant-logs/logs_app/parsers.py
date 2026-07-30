@@ -189,6 +189,19 @@ class SuricataParser(BaseParser):
             severity = severity_map.get(alert.get('severity', 3), 'medium')
             src_ip = data.get('src_ip', '')
             dest_ip = data.get('dest_ip', '')
+            parsed = {
+                'src_ip': src_ip,
+                'dest_ip': dest_ip,
+                'event_type': event_type,
+                'protocol': data.get('proto', ''),
+                'dst_port': data.get('dest_port', ''),
+                'src_port': data.get('src_port', ''),
+                'signature': alert.get('signature', ''),
+                'action': alert.get('action', data.get('action', '')),
+                'classtype': alert.get('category', ''),
+                'alert_id': str(alert.get('signature_id', '')),
+            }
+            parsed = {k: v for k, v in parsed.items() if v}
             return {
                 'source_type': 'suricata',
                 'severity': severity,
@@ -197,7 +210,7 @@ class SuricataParser(BaseParser):
                 'host_ip': src_ip or dest_ip,
                 'message': alert.get('signature', raw_message[:5000]),
                 'event_time_dt': data.get('timestamp'),
-                'parsed_fields': {'src_ip': src_ip, 'dest_ip': dest_ip, 'event_type': event_type},
+                'parsed_fields': parsed,
                 'tags': ['ids', 'suricata'],
             }
         except json.JSONDecodeError:

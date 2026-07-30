@@ -1,0 +1,41 @@
+{% extends "web_app/base.html" %}
+{% block title %}Grupos de Notificacion | VANT-SIEM Web{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-users-gear text-cyan-400 mr-2"></i>Grupos de Notificaci&oacute;n</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ groups|length }} grupos configurados</p>
+  </div>
+  <a href="{% url 'web:configuracion-grupo-create' %}" class="btn-primary text-sm"><i class="fas fa-plus mr-2"></i>Nuevo Grupo</a>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+  {% for g in groups %}
+  <div class="glass-card p-5">
+    <div class="flex items-start justify-between mb-3">
+      <div>
+        <h3 class="font-semibold dark:text-white text-surface-900">{{ g.name }}</h3>
+        <p class="text-xs dark:text-surface-400 text-surface-500 mt-1">{{ g.description|default:"Sin descripcion" }}</p>
+      </div>
+      <div class="flex items-center gap-1">
+        <a href="{% url 'web:configuracion-grupo-detail' g.id %}" class="text-cyan-400 hover:text-cyan-300 text-xs p-1" title="Gestionar"><i class="fas fa-users-gear"></i></a>
+        <a href="{% url 'web:configuracion-grupo-edit' g.id %}" class="text-brand-400 hover:text-brand-300 text-xs p-1" title="Editar"><i class="fas fa-edit"></i></a>
+        <form method="post" action="{% url 'web:configuracion-grupo-delete' g.id %}" onsubmit="return confirm('Eliminar este grupo?')" class="inline">
+          {% csrf_token %}
+          <button class="text-red-400 hover:text-red-300 text-xs p-1"><i class="fas fa-trash"></i></button>
+        </form>
+      </div>
+    </div>
+    <div class="flex items-center gap-4 text-xs dark:text-surface-400 text-surface-500">
+      <span><i class="fas fa-users mr-1"></i>{{ g.member_count|default:g.members_count|default:"0" }} miembros</span>
+      <span><i class="fas fa-bell mr-1"></i>{{ g.subscription_count|default:"0" }} suscripciones</span>
+    </div>
+  </div>
+  {% empty %}
+  <div class="glass-card p-8 text-center col-span-full">
+    <i class="fas fa-users-gear text-3xl dark:text-surface-600 text-surface-300 mb-3 block"></i>
+    <p class="dark:text-surface-400 text-surface-500">No hay grupos de notificacion configurados</p>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

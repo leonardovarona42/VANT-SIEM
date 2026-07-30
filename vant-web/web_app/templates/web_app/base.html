@@ -42,6 +42,11 @@
       .btn-primary { @apply px-4 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-medium rounded-xl shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 transition-all duration-300; }
       .btn-secondary { @apply px-4 py-2.5 dark:bg-surface-800 dark:hover:bg-surface-700 dark:text-surface-200 dark:border-surface-700 bg-surface-100 hover:bg-surface-200 text-surface-800 border-surface-200 font-medium rounded-xl transition-all duration-200; }
     }
+    .dropdown-scroll { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent; }
+    .dropdown-scroll::-webkit-scrollbar { width: 5px; }
+    .dropdown-scroll::-webkit-scrollbar-track { background: transparent; }
+    .dropdown-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+    .dropdown-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
   </style>
   {% block extra_css %}{% endblock %}
 </head>
@@ -65,48 +70,107 @@
               <i class="fas fa-shield-halved w-4"></i>SOC<i class="fas fa-chevron-down text-[10px] ml-1 opacity-50"></i>
             </button>
             <div class="dropdown-menu absolute left-0 mt-1 w-72 opacity-0 invisible scale-95 transition-all duration-150 z-50">
-              <div class="glass-card p-2 mt-1">
+              <div class="glass-card p-2 mt-1 max-h-[70vh] overflow-y-auto dropdown-scroll">
+
                 <p class="px-3 pt-1 pb-1 text-[10px] font-bold uppercase tracking-wider dark:text-surface-500 text-surface-400">Bitacora de Incidentes</p>
+                <a href="{% url 'web:soc-incidentes-create' %}" class="nav-link text-sm">
+                  <i class="fas fa-plus w-4 text-red-400"></i>Registrar Incidente
+                </a>
                 <a href="{% url 'web:soc-incidents-list' %}" class="nav-link text-sm">
-                  <i class="fas fa-bug w-4 text-red-400"></i>Incidentes
+                  <i class="fas fa-list w-4 text-red-400"></i>Ver Incidentes
+                </a>
+
+                <p class="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider dark:text-surface-500 text-surface-400">Gestion de Reportes</p>
+                <a href="{% url 'web:soc-reportes-create' %}" class="nav-link text-sm">
+                  <i class="fas fa-plus w-4 text-amber-400"></i>Crear Reporte
                 </a>
                 <a href="{% url 'web:soc-reportes-list' %}" class="nav-link text-sm">
-                  <i class="fas fa-clipboard-list w-4 text-amber-400"></i>Reportes
+                  <i class="fas fa-list w-4 text-amber-400"></i>Ver Reportes
+                </a>
+
+                <p class="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider dark:text-surface-500 text-surface-400">Catalogo de Clasificacion</p>
+                <a href="{% url 'web:soc-categoria-create' %}" class="nav-link text-sm">
+                  <i class="fas fa-plus w-4 text-cyan-400"></i>Nueva Categoria
+                </a>
+                <a href="{% url 'web:soc-categorias-list' %}" class="nav-link text-sm">
+                  <i class="fas fa-list w-4 text-cyan-400"></i>Gestionar Categorias
+                </a>
+                <a href="{% url 'web:soc-subcategoria-create' %}" class="nav-link text-sm">
+                  <i class="fas fa-plus w-4 text-blue-400"></i>Nueva Subcategoria
+                </a>
+                <a href="{% url 'web:soc-subcategorias-list' %}" class="nav-link text-sm">
+                  <i class="fas fa-list w-4 text-blue-400"></i>Gestionar Subcategorias
+                </a>
+                <a href="{% url 'web:soc-medida-create' %}" class="nav-link text-sm">
+                  <i class="fas fa-plus w-4 text-teal-400"></i>Nueva Medida
+                </a>
+                <a href="{% url 'web:soc-medidas-list' %}" class="nav-link text-sm">
+                  <i class="fas fa-list w-4 text-teal-400"></i>Gestionar Medidas
+                </a>
+
+                <p class="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider dark:text-surface-500 text-surface-400">Equipo de Respuesta</p>
+                <a href="{% url 'web:soc-responsable-create' %}" class="nav-link text-sm">
+                  <i class="fas fa-plus w-4 text-violet-400"></i>Nuevo Responsable
+                </a>
+                <a href="{% url 'web:soc-responsables-list' %}" class="nav-link text-sm">
+                  <i class="fas fa-list w-4 text-violet-400"></i>Equipo de Respuesta
+                </a>
+                <a href="{% url 'web:soc-area-create' %}" class="nav-link text-sm">
+                  <i class="fas fa-plus w-4 text-pink-400"></i>Nueva Area
+                </a>
+                <a href="{% url 'web:soc-areas-list' %}" class="nav-link text-sm">
+                  <i class="fas fa-list w-4 text-pink-400"></i>Gestionar Areas
+                </a>
+                <a href="{% url 'web:soc-involucrado-create' %}" class="nav-link text-sm">
+                  <i class="fas fa-plus w-4 text-yellow-400"></i>Nuevo Involucrado
+                </a>
+                <a href="{% url 'web:soc-involucrados-list' %}" class="nav-link text-sm">
+                  <i class="fas fa-list w-4 text-yellow-400"></i>Gestionar Involucrados
                 </a>
 
                 <p class="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider dark:text-surface-500 text-surface-400">DLP</p>
                 <a href="{% url 'web:policies-list' %}" class="nav-link text-sm">
-                  <i class="fas fa-list-check w-4 text-emerald-400"></i>Políticas y Reglas
+                  <i class="fas fa-list-check w-4 text-emerald-400"></i>Politicas y Reglas
                 </a>
                 <a href="{% url 'web:incidents-list' %}" class="nav-link text-sm">
                   <i class="fas fa-triangle-exclamation w-4 text-orange-400"></i>Amenazas DLP
                 </a>
 
-                <p class="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider dark:text-surface-500 text-surface-400">Clasificación</p>
-                <a href="{% url 'web:soc-categorias-list' %}" class="nav-link text-sm">
-                  <i class="fas fa-folder-tree w-4 text-cyan-400"></i>Categorías
+                <p class="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider dark:text-surface-500 text-surface-400">Infraestructura / CMDB</p>
+                <a href="{% url 'web:soc-servicios-create' %}" class="nav-link text-sm">
+                  <i class="fas fa-plus w-4 text-indigo-400"></i>Nuevo Servicio
                 </a>
-                <a href="{% url 'web:soc-subcategorias-list' %}" class="nav-link text-sm">
-                  <i class="fas fa-tags w-4 text-blue-400"></i>Subcategorías
-                </a>
-                <a href="{% url 'web:soc-medidas-list' %}" class="nav-link text-sm">
-                  <i class="fas fa-tools w-4 text-teal-400"></i>Medidas de Seguridad
-                </a>
-
-                <p class="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider dark:text-surface-500 text-surface-400">Organización</p>
-                <a href="{% url 'web:soc-responsables-list' %}" class="nav-link text-sm">
-                  <i class="fas fa-user-tie w-4 text-violet-400"></i>Responsables
-                </a>
-                <a href="{% url 'web:soc-areas-list' %}" class="nav-link text-sm">
-                  <i class="fas fa-sitemap w-4 text-pink-400"></i>Áreas
-                </a>
-                <a href="{% url 'web:soc-involucrados-list' %}" class="nav-link text-sm">
-                  <i class="fas fa-users w-4 text-yellow-400"></i>Involucrados
-                </a>
-
-                <p class="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider dark:text-surface-500 text-surface-400">Infraestructura</p>
                 <a href="{% url 'web:soc-servicios-list' %}" class="nav-link text-sm">
-                  <i class="fas fa-server w-4 text-indigo-400"></i>CMDB / Servicios
+                  <i class="fas fa-list w-4 text-indigo-400"></i>Gestionar Servicios
+                </a>
+                <a href="{% url 'web:soc-redes-list' %}" class="nav-link text-sm">
+                  <i class="fas fa-network-wired w-4 text-indigo-400"></i>Gestionar Redes
+                </a>
+                <a href="{% url 'web:soc-esquema-fisico' %}" class="nav-link text-sm">
+                  <i class="fas fa-project-diagram w-4 text-indigo-400"></i>Esquema Fisico
+                </a>
+                <a href="{% url 'web:soc-esquema-logico' %}" class="nav-link text-sm">
+                  <i class="fas fa-sitemap w-4 text-indigo-400"></i>Esquema Logico
+                </a>
+
+              </div>
+            </div>
+          </div>
+
+          <div class="relative" data-dropdown>
+            <button onclick="toggleDropdown(this)" class="nav-link cursor-pointer">
+              <i class="fas fa-stream w-4"></i>Logs & Anal&iacute;tica<i class="fas fa-chevron-down text-[10px] ml-1 opacity-50"></i>
+            </button>
+            <div class="dropdown-menu absolute left-0 mt-1 w-56 opacity-0 invisible scale-95 transition-all duration-150 z-50">
+              <div class="glass-card p-2 mt-1">
+                <a href="{% url 'web:logs-discovery' %}" class="nav-link text-sm">
+                  <i class="fas fa-compass w-4 text-cyan-400"></i>Log Discovery
+                </a>
+                <a href="{% url 'web:logs-storage-dashboard' %}" class="nav-link text-sm">
+                  <i class="fas fa-hard-drive w-4 text-emerald-400"></i>Almacenamiento
+                </a>
+                <a href="{% url 'web:suricata-dashboard' %}" class="nav-link text-sm">
+                  <i class="fas fa-shield-halved w-4 text-amber-400"></i>Suricata IDS
                 </a>
               </div>
             </div>
@@ -114,18 +178,18 @@
 
           <div class="relative" data-dropdown>
             <button onclick="toggleDropdown(this)" class="nav-link cursor-pointer">
-              <i class="fas fa-stream w-4"></i>Logs & Seguridad<i class="fas fa-chevron-down text-[10px] ml-1 opacity-50"></i>
+              <i class="fas fa-brain w-4 text-violet-400"></i>Inteligencia<i class="fas fa-chevron-down text-[10px] ml-1 opacity-50"></i>
             </button>
             <div class="dropdown-menu absolute left-0 mt-1 w-56 opacity-0 invisible scale-95 transition-all duration-150 z-50">
               <div class="glass-card p-2 mt-1">
-                <a href="{% url 'web:events-list' %}" class="nav-link text-sm">
-                  <i class="fas fa-stream w-4 text-brand-400"></i>Eventos / Logs
+                <a href="{% url 'web:estado-recoleccion' %}" class="nav-link text-sm">
+                  <i class="fas fa-gauge-high w-4 text-emerald-400"></i>Estado de Recolecci&oacute;n
                 </a>
-                <a href="{% url 'web:logs-discovery' %}" class="nav-link text-sm">
-                  <i class="fas fa-compass w-4 text-cyan-400"></i>Log Discovery
+                <a href="{% url 'web:inteligencia' %}" class="nav-link text-sm">
+                  <i class="fas fa-chart-pie w-4 text-violet-400"></i>Dashboard de Inteligencia
                 </a>
-                <a href="{% url 'web:suricata-dashboard' %}" class="nav-link text-sm">
-                  <i class="fas fa-shield-halved w-4 text-amber-400"></i>Suricata IDS
+                <a href="{% url 'web:inteligencia-geo' %}" class="nav-link text-sm">
+                  <i class="fas fa-map w-4 text-emerald-400"></i>Mapa Geo de Conexiones
                 </a>
               </div>
             </div>
@@ -145,6 +209,34 @@
                 </a>
                 <a href="{% url 'web:software-list' %}" class="nav-link text-sm">
                   <i class="fas fa-cube w-4 text-purple-400"></i>Software
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div class="relative" data-dropdown>
+            <button onclick="toggleDropdown(this)" class="nav-link cursor-pointer">
+              <i class="fas fa-gear w-4"></i>Configuraci&oacute;n<i class="fas fa-chevron-down text-[10px] ml-1 opacity-50"></i>
+            </button>
+            <div class="dropdown-menu absolute left-0 mt-1 w-56 opacity-0 invisible scale-95 transition-all duration-150 z-50">
+              <div class="glass-card p-2 mt-1">
+                <a href="{% url 'web:configuracion-usuarios' %}" class="nav-link text-sm">
+                  <i class="fas fa-users w-4 text-brand-400"></i>Gesti&oacute;n de Usuarios
+                </a>
+                <a href="{% url 'web:configuracion-grupos' %}" class="nav-link text-sm">
+                  <i class="fas fa-users-gear w-4 text-cyan-400"></i>Grupos de Notificaci&oacute;n
+                </a>
+                <a href="{% url 'web:configuracion-correo' %}" class="nav-link text-sm">
+                  <i class="fas fa-envelope w-4 text-amber-400"></i>Configuraci&oacute;n de Correo
+                </a>
+                <a href="{% url 'web:configuracion-ecosistema' %}" class="nav-link text-sm">
+                  <i class="fas fa-network-wired w-4 text-green-400"></i>Estado del Ecosistema
+                </a>
+                <a href="{% url 'web:configuracion-db-dashboard' %}" class="nav-link text-sm">
+                  <i class="fas fa-database w-4 text-violet-400"></i>Gesti&oacute;n de BD
+                </a>
+                <a href="{% url 'web:configuracion-api-keys' %}" class="nav-link text-sm">
+                  <i class="fas fa-key w-4 text-orange-400"></i>API Keys Inteligencia
                 </a>
               </div>
             </div>
@@ -185,27 +277,64 @@
       <a href="{% url 'web:dashboard' %}" class="nav-link"><i class="fas fa-chart-pie w-4"></i>Dashboard</a>
 
       <p class="px-4 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wider dark:text-surface-500 text-surface-400">SOC</p>
-      <a href="{% url 'web:soc-incidents-list' %}" class="nav-link pl-8 text-sm"><i class="fas fa-bug w-4 text-red-400"></i>Incidentes</a>
-      <a href="{% url 'web:soc-reportes-list' %}" class="nav-link pl-8 text-sm"><i class="fas fa-clipboard-list w-4 text-amber-400"></i>Reportes</a>
-      <a href="{% url 'web:policies-list' %}" class="nav-link pl-8 text-sm"><i class="fas fa-list-check w-4 text-emerald-400"></i>Políticas DLP</a>
-      <a href="{% url 'web:incidents-list' %}" class="nav-link pl-8 text-sm"><i class="fas fa-triangle-exclamation w-4 text-orange-400"></i>Amenazas DLP</a>
-      <a href="{% url 'web:soc-categorias-list' %}" class="nav-link pl-8 text-sm"><i class="fas fa-folder-tree w-4 text-cyan-400"></i>Categorías</a>
-      <a href="{% url 'web:soc-subcategorias-list' %}" class="nav-link pl-8 text-sm"><i class="fas fa-tags w-4 text-blue-400"></i>Subcategorías</a>
-      <a href="{% url 'web:soc-medidas-list' %}" class="nav-link pl-8 text-sm"><i class="fas fa-tools w-4 text-teal-400"></i>Medidas</a>
-      <a href="{% url 'web:soc-responsables-list' %}" class="nav-link pl-8 text-sm"><i class="fas fa-user-tie w-4 text-violet-400"></i>Responsables</a>
-      <a href="{% url 'web:soc-areas-list' %}" class="nav-link pl-8 text-sm"><i class="fas fa-sitemap w-4 text-pink-400"></i>Áreas</a>
-      <a href="{% url 'web:soc-involucrados-list' %}" class="nav-link pl-8 text-sm"><i class="fas fa-users w-4 text-yellow-400"></i>Involucrados</a>
-      <a href="{% url 'web:soc-servicios-list' %}" class="nav-link pl-8 text-sm"><i class="fas fa-server w-4 text-indigo-400"></i>CMDB / Servicios</a>
 
-      <p class="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider dark:text-surface-500 text-surface-400">Logs & Seguridad</p>
-      <a href="{% url 'web:events-list' %}" class="nav-link pl-8 text-sm"><i class="fas fa-stream w-4 text-brand-400"></i>Eventos / Logs</a>
+      <p class="px-6 pt-1 pb-0.5 text-[10px] font-bold uppercase tracking-wider dark:text-surface-500 text-surface-400">Bitacora de Incidentes</p>
+      <a href="{% url 'web:soc-incidentes-create' %}" class="nav-link pl-10 text-sm"><i class="fas fa-plus w-4 text-red-400"></i>Registrar Incidente</a>
+      <a href="{% url 'web:soc-incidents-list' %}" class="nav-link pl-10 text-sm"><i class="fas fa-list w-4 text-red-400"></i>Ver Incidentes</a>
+
+      <p class="px-6 pt-2 pb-0.5 text-[10px] font-bold uppercase tracking-wider dark:text-surface-500 text-surface-400">Gestion de Reportes</p>
+      <a href="{% url 'web:soc-reportes-create' %}" class="nav-link pl-10 text-sm"><i class="fas fa-plus w-4 text-amber-400"></i>Crear Reporte</a>
+      <a href="{% url 'web:soc-reportes-list' %}" class="nav-link pl-10 text-sm"><i class="fas fa-list w-4 text-amber-400"></i>Ver Reportes</a>
+
+      <p class="px-6 pt-2 pb-0.5 text-[10px] font-bold uppercase tracking-wider dark:text-surface-500 text-surface-400">Catalogo de Clasificacion</p>
+      <a href="{% url 'web:soc-categoria-create' %}" class="nav-link pl-10 text-sm"><i class="fas fa-plus w-4 text-cyan-400"></i>Nueva Categoria</a>
+      <a href="{% url 'web:soc-categorias-list' %}" class="nav-link pl-10 text-sm"><i class="fas fa-list w-4 text-cyan-400"></i>Gestionar Categorias</a>
+      <a href="{% url 'web:soc-subcategoria-create' %}" class="nav-link pl-10 text-sm"><i class="fas fa-plus w-4 text-blue-400"></i>Nueva Subcategoria</a>
+      <a href="{% url 'web:soc-subcategorias-list' %}" class="nav-link pl-10 text-sm"><i class="fas fa-list w-4 text-blue-400"></i>Gestionar Subcategorias</a>
+      <a href="{% url 'web:soc-medida-create' %}" class="nav-link pl-10 text-sm"><i class="fas fa-plus w-4 text-teal-400"></i>Nueva Medida</a>
+      <a href="{% url 'web:soc-medidas-list' %}" class="nav-link pl-10 text-sm"><i class="fas fa-list w-4 text-teal-400"></i>Gestionar Medidas</a>
+
+      <p class="px-6 pt-2 pb-0.5 text-[10px] font-bold uppercase tracking-wider dark:text-surface-500 text-surface-400">Equipo de Respuesta</p>
+      <a href="{% url 'web:soc-responsable-create' %}" class="nav-link pl-10 text-sm"><i class="fas fa-plus w-4 text-violet-400"></i>Nuevo Responsable</a>
+      <a href="{% url 'web:soc-responsables-list' %}" class="nav-link pl-10 text-sm"><i class="fas fa-list w-4 text-violet-400"></i>Equipo de Respuesta</a>
+      <a href="{% url 'web:soc-area-create' %}" class="nav-link pl-10 text-sm"><i class="fas fa-plus w-4 text-pink-400"></i>Nueva Area</a>
+      <a href="{% url 'web:soc-areas-list' %}" class="nav-link pl-10 text-sm"><i class="fas fa-list w-4 text-pink-400"></i>Gestionar Areas</a>
+      <a href="{% url 'web:soc-involucrado-create' %}" class="nav-link pl-10 text-sm"><i class="fas fa-plus w-4 text-yellow-400"></i>Nuevo Involucrado</a>
+      <a href="{% url 'web:soc-involucrados-list' %}" class="nav-link pl-10 text-sm"><i class="fas fa-list w-4 text-yellow-400"></i>Gestionar Involucrados</a>
+
+      <p class="px-6 pt-2 pb-0.5 text-[10px] font-bold uppercase tracking-wider dark:text-surface-500 text-surface-400">DLP</p>
+      <a href="{% url 'web:policies-list' %}" class="nav-link pl-10 text-sm"><i class="fas fa-list-check w-4 text-emerald-400"></i>Politicas y Reglas</a>
+      <a href="{% url 'web:incidents-list' %}" class="nav-link pl-10 text-sm"><i class="fas fa-triangle-exclamation w-4 text-orange-400"></i>Amenazas DLP</a>
+
+      <p class="px-6 pt-2 pb-0.5 text-[10px] font-bold uppercase tracking-wider dark:text-surface-500 text-surface-400">Infraestructura / CMDB</p>
+      <a href="{% url 'web:soc-servicios-create' %}" class="nav-link pl-10 text-sm"><i class="fas fa-plus w-4 text-indigo-400"></i>Nuevo Servicio</a>
+      <a href="{% url 'web:soc-servicios-list' %}" class="nav-link pl-10 text-sm"><i class="fas fa-list w-4 text-indigo-400"></i>Gestionar Servicios</a>
+      <a href="{% url 'web:soc-redes-list' %}" class="nav-link pl-10 text-sm"><i class="fas fa-network-wired w-4 text-indigo-400"></i>Gestionar Redes</a>
+      <a href="{% url 'web:soc-esquema-fisico' %}" class="nav-link pl-10 text-sm"><i class="fas fa-project-diagram w-4 text-indigo-400"></i>Esquema Fisico</a>
+      <a href="{% url 'web:soc-esquema-logico' %}" class="nav-link pl-10 text-sm"><i class="fas fa-sitemap w-4 text-indigo-400"></i>Esquema Logico</a>
+
+      <p class="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider dark:text-surface-500 text-surface-400">Logs & Anal&iacute;tica</p>
       <a href="{% url 'web:logs-discovery' %}" class="nav-link pl-8 text-sm"><i class="fas fa-compass w-4 text-cyan-400"></i>Log Discovery</a>
+      <a href="{% url 'web:logs-storage-dashboard' %}" class="nav-link pl-8 text-sm"><i class="fas fa-hard-drive w-4 text-emerald-400"></i>Almacenamiento</a>
       <a href="{% url 'web:suricata-dashboard' %}" class="nav-link pl-8 text-sm"><i class="fas fa-shield-halved w-4 text-amber-400"></i>Suricata IDS</a>
+
+      <p class="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider dark:text-surface-500 text-surface-400">Inteligencia</p>
+      <a href="{% url 'web:estado-recoleccion' %}" class="nav-link pl-8 text-sm"><i class="fas fa-database w-4 text-emerald-400"></i>Estado de Recolecci&oacute;n</a>
+      <a href="{% url 'web:inteligencia' %}" class="nav-link pl-8 text-sm"><i class="fas fa-chart-pie w-4 text-violet-400"></i>Dashboard de Inteligencia</a>
+      <a href="{% url 'web:inteligencia-geo' %}" class="nav-link pl-8 text-sm"><i class="fas fa-map w-4 text-emerald-400"></i>Mapa Geo de Conexiones</a>
 
       <p class="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider dark:text-surface-500 text-surface-400">Inventario</p>
       <a href="{% url 'web:inventory-dashboard' %}" class="nav-link pl-8 text-sm"><i class="fas fa-gauge-high w-4 text-cyan-400"></i>Dashboard Inventario</a>
       <a href="{% url 'web:agents-list' %}" class="nav-link pl-8 text-sm"><i class="fas fa-desktop w-4 text-brand-400"></i>Agentes</a>
       <a href="{% url 'web:software-list' %}" class="nav-link pl-8 text-sm"><i class="fas fa-cube w-4 text-purple-400"></i>Software</a>
+
+      <p class="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider dark:text-surface-500 text-surface-400">Configuraci&oacute;n</p>
+      <a href="{% url 'web:configuracion-usuarios' %}" class="nav-link pl-8 text-sm"><i class="fas fa-users w-4 text-brand-400"></i>Gesti&oacute;n de Usuarios</a>
+      <a href="{% url 'web:configuracion-grupos' %}" class="nav-link pl-8 text-sm"><i class="fas fa-users-gear w-4 text-cyan-400"></i>Grupos de Notificaci&oacute;n</a>
+      <a href="{% url 'web:configuracion-correo' %}" class="nav-link pl-8 text-sm"><i class="fas fa-envelope w-4 text-amber-400"></i>Configuraci&oacute;n de Correo</a>
+      <a href="{% url 'web:configuracion-ecosistema' %}" class="nav-link pl-8 text-sm"><i class="fas fa-network-wired w-4 text-green-400"></i>Estado del Ecosistema</a>
+      <a href="{% url 'web:configuracion-db-dashboard' %}" class="nav-link pl-8 text-sm"><i class="fas fa-database w-4 text-violet-400"></i>Gesti&oacute;n de BD</a>
+      <a href="{% url 'web:configuracion-api-keys' %}" class="nav-link pl-8 text-sm"><i class="fas fa-key w-4 text-orange-400"></i>API Keys Inteligencia</a>
 
       <div class="border-t dark:border-surface-800/50 border-surface-200/50 mt-2 pt-2">
         <a href="{% url 'web:logout' %}" class="nav-link dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-500/10 text-red-600 hover:text-red-500 hover:bg-red-50"><i class="fas fa-sign-out-alt w-4"></i>Cerrar Sesión</a>

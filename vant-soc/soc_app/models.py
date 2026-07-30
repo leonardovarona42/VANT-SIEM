@@ -238,12 +238,18 @@ class Area(models.Model):
 
 
 class Medida(models.Model):
+    TIPO_CHOICES = [
+        ("preventiva", "Preventiva"),
+        ("reactiva", "Reactiva"),
+        ("recuperacion", "Recuperación"),
+    ]
     nombre = models.CharField(max_length=200)
     descripcion = models.TextField(blank=True, default="")
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default="preventiva", db_index=True)
 
     class Meta:
         db_table = "soc_medidas"
-        ordering = ["nombre"]
+        ordering = ["tipo", "nombre"]
 
     def __str__(self):
         return self.nombre
@@ -331,8 +337,8 @@ class Incidente(models.Model):
 class MedidaIncidente(models.Model):
     incidente = models.ForeignKey(Incidente, on_delete=models.CASCADE, related_name="medidas")
     medida = models.ForeignKey(Medida, on_delete=models.CASCADE)
-    responsable = models.ForeignKey(Responsable, on_delete=models.CASCADE)
-    fecha_cumplimiento = models.DateField()
+    responsable = models.ForeignKey(Responsable, on_delete=models.SET_NULL, null=True, blank=True)
+    fecha_cumplimiento = models.DateField(null=True, blank=True)
     estado_cumplimiento = models.BooleanField(default=False)
     observaciones = models.TextField(blank=True, default="")
 
@@ -381,6 +387,22 @@ class InvolucradoIncidente(models.Model):
         return f"{self.incidente.codigo_incidente} - {self.involucrado}"
 
 
+class MedidaInvolucrado(models.Model):
+    involucrado = models.ForeignKey(Involucrado, on_delete=models.CASCADE, related_name="medidas")
+    medida = models.ForeignKey(Medida, on_delete=models.CASCADE)
+    responsable = models.ForeignKey(Responsable, on_delete=models.SET_NULL, null=True, blank=True)
+    fecha_cumplimiento = models.DateField(null=True, blank=True)
+    estado_cumplimiento = models.BooleanField(default=False)
+    observaciones = models.TextField(blank=True, default="")
+
+    class Meta:
+        db_table = "soc_medidas_involucrado"
+        ordering = ["-fecha_cumplimiento"]
+
+    def __str__(self):
+        return f"{self.involucrado} - {self.medida.nombre}"
+
+
 # ============================================================================
 #  INFRAESTRUCTURA / CMDB
 # ============================================================================
@@ -400,6 +422,8 @@ SERVICIO_TIPO_CHOICES = [
     ("cluster", "Cluster"),
     ("plataforma", "Plataforma"),
     ("servicio_externo", "Servicio Externo"),
+    ("zona", "Zona"),
+    ("datacenter", "Datacenter"),
 ]
 
 RED_TIPO_CHOICES = [
@@ -472,6 +496,11 @@ class Servicio(models.Model):
     coordenadas_logicas_y = models.IntegerField(blank=True, null=True)
     nivel_red = models.IntegerField(choices=NIVEL_RED_CHOICES, blank=True, null=True)
 
+    zona_ancho = models.IntegerField(default=500, help_text="Ancho visual en px para tipo zona/datacenter")
+    zona_alto = models.IntegerField(default=400, help_text="Alto visual en px para tipo zona/datacenter")
+    zona_color_fondo = models.CharField(max_length=30, default="rgba(59,130,246,0.10)", help_text="Color de fondo RGBA para zona")
+    zona_color_borde = models.CharField(max_length=30, default="#3b82f6", help_text="Color de borde para zona")
+
     responsable = models.ForeignKey(Responsable, on_delete=models.SET_NULL, null=True, blank=True, related_name="servicios")
     activo = models.BooleanField(default=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
@@ -490,6 +519,9 @@ class Servicio(models.Model):
 
     def es_logico(self):
         return self.tipo in ("vlan", "segmento", "subred", "red", "cluster", "plataforma", "servicio_externo")
+
+    def es_zona(self):
+        return self.tipo in ("zona", "datacenter")
 
 
 class ServicioIP(models.Model):
@@ -593,3 +625,66 @@ class ConfiguracionMonitoreo(models.Model):
 
     def __str__(self):
         return f"Monitoreo: {'activo' if self.activo else 'inactivo'} (cada {self.intervalo_segundos}s)"
+
+
+# ============================================================================
+#  GESTION DE BASE DE DATOS
+# ============================================================================
+
+class RetentionPolicy(models.Model):
+    ENTITY_CHOICES = [
+        ("logs_events", "Eventos de Log"),
+        ("dlp_threats", "Amenazas DLP"),
+        ("suricata_alerts", "Alertas Suricata"),
+        ("audit_logs", "Logs de Auditoria"),
+        ("incidentes", "Incidentes"),
+        ("backups", "Respaldos"),
+    ]
+    ACTION_CHOICES = [
+        ("delete", "Eliminar"),
+        ("archive", "Archivar"),
+    ]
+    entity_type = models.CharField(max_length=30, choices=ENTITY_CHOICES, unique=True)
+    retention_days = models.PositiveIntegerField(default=90)
+    action = models.CharField(max_length=10, choices=ACTION_CHOICES, default="delete")
+    is_active = models.BooleanField(default=True)
+    description = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "soc_retention_policies"
+        ordering = ["entity_type"]
+
+    def __str__(self):
+        return f"{self.get_entity_type_display()} - {self.retention_days}d"
+
+
+class BackupRecord(models.Model):
+    TYPE_CHOICES = [
+        ("full", "Completo"),
+        ("partial", "Parcial"),
+    ]
+    STATUS_CHOICES = [
+        ("pending", "Pendiente"),
+        ("running", "En ejecucion"),
+        ("completed", "Completado"),
+        ("failed", "Fallido"),
+    ]
+    backup_type = models.CharField(max_length=10, choices=TYPE_CHOICES, default="full")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="pending")
+    file_path = models.TextField(blank=True, default="")
+    file_size = models.BigIntegerField(default=0)
+    database_name = models.CharField(max_length=100, default="vantsiem")
+    started_at = models.DateTimeField(blank=True, null=True)
+    completed_at = models.DateTimeField(blank=True, null=True)
+    error_message = models.TextField(blank=True, default="")
+    notes = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "soc_backup_records"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.get_backup_type_display()} @ {self.created_at} - {self.get_status_display()}"

@@ -1,0 +1,141 @@
+{% extends "web_app/base.html" %}
+{% load static %}
+{% block title %}VANT-SIEM — Inteligencia{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold dark:text-white text-surface-900">Estado de Recolecci&oacute;n</h1>
+      <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">
+        Resumen de datos recolectados de AbuseIPDB, MAC Vendors y VirusTotal
+      </p>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <p class="text-sm dark:text-surface-400 text-surface-500">IPs Reportadas (24h)</p>
+        <i class="fas fa-flag text-red-400"></i>
+      </div>
+      <p class="text-3xl font-bold mt-2 dark:text-white text-surface-900">{{ stats.ip_reports_24h|default:"0" }}</p>
+    </div>
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <p class="text-sm dark:text-surface-400 text-surface-500">MAC Lookups (24h)</p>
+        <i class="fas fa-network-wired text-cyan-400"></i>
+      </div>
+      <p class="text-3xl font-bold mt-2 dark:text-white text-surface-900">{{ stats.mac_lookups_24h|default:"0" }}</p>
+    </div>
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <p class="text-sm dark:text-surface-400 text-surface-500">VT Reports (24h)</p>
+        <i class="fas fa-virus text-amber-400"></i>
+      </div>
+      <p class="text-3xl font-bold mt-2 dark:text-white text-surface-900">{{ stats.vt_reports_24h|default:"0" }}</p>
+    </div>
+    <div class="stat-card">
+      <div class="flex items-center justify-between">
+        <p class="text-sm dark:text-surface-400 text-surface-500">Malicious (VT)</p>
+        <i class="fas fa-skull text-red-500"></i>
+      </div>
+      <p class="text-3xl font-bold mt-2 text-red-400">{{ stats.vt_malicious|default:"0" }}</p>
+    </div>
+  </div>
+
+  <!-- API Keys Status -->
+  <div class="glass-card p-6">
+    <h2 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">API Keys</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="dark:border-surface-700 border-surface-200 border-b">
+            <th class="text-left py-3 px-4 dark:text-surface-300 text-surface-600 font-semibold">Provider</th>
+            <th class="text-left py-3 px-4 dark:text-surface-300 text-surface-600 font-semibold">Estado</th>
+            <th class="text-right py-3 px-4 dark:text-surface-300 text-surface-600 font-semibold">Quota</th>
+            <th class="text-right py-3 px-4 dark:text-surface-300 text-surface-600 font-semibold">Usado</th>
+            <th class="text-right py-3 px-4 dark:text-surface-300 text-surface-600 font-semibold">Ultimo uso</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for key in api_keys %}
+          <tr class="dark:border-surface-800 border-surface-100 border-b hover:dark:bg-surface-800/50 hover:bg-surface-50">
+            <td class="py-3 px-4 dark:text-white text-surface-900 font-medium">
+              <i class="fas {% if key.provider == 'abuseipdb' %}fa-flag{% elif key.provider == 'macvendors' %}fa-network-wired{% elif key.provider == 'virustotal' %}fa-virus{% else %}fa-key{% endif %} w-4 mr-2"></i>
+              {{ key.provider }}
+            </td>
+            <td class="py-3 px-4">
+              {% if key.enabled %}
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <i class="fas fa-circle text-[6px]"></i> Activo
+              </span>
+              {% else %}
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20">
+                <i class="fas fa-circle text-[6px]"></i> Inactivo
+              </span>
+              {% endif %}
+            </td>
+            <td class="py-3 px-4 text-right dark:text-surface-300 text-surface-600">{{ key.quota_limit|default:"0" }}</td>
+            <td class="py-3 px-4 text-right dark:text-surface-300 text-surface-600">{{ key.quota_used|default:"0" }}</td>
+            <td class="py-3 px-4 text-right dark:text-surface-300 text-surface-600">{{ key.last_used_at|default:"-" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="py-8 text-center dark:text-surface-500 text-surface-400">
+              <i class="fas fa-key text-2xl mb-2 block opacity-50"></i>
+              No hay API keys configuradas
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent IP Reports -->
+  <div class="glass-card p-6">
+    <h2 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Reportes de IP Recientes</h2>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="dark:border-surface-700 border-surface-200 border-b">
+            <th class="text-left py-3 px-4 dark:text-surface-300 text-surface-600 font-semibold">IP</th>
+            <th class="text-right py-3 px-4 dark:text-surface-300 text-surface-600 font-semibold">Score</th>
+            <th class="text-right py-3 px-4 dark:text-surface-300 text-surface-600 font-semibold">Reportes</th>
+            <th class="text-left py-3 px-4 dark:text-surface-300 text-surface-600 font-semibold">Pais</th>
+            <th class="text-right py-3 px-4 dark:text-surface-300 text-surface-600 font-semibold">Consultado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for report in ip_reports %}
+          <tr class="dark:border-surface-800 border-surface-100 border-b hover:dark:bg-surface-800/50 hover:bg-surface-50">
+            <td class="py-3 px-4 dark:text-white text-surface-900 font-mono">{{ report.ip_address }}</td>
+            <td class="py-3 px-4 text-right">
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
+                {% if report.abuse_confidence_score >= 75 %}bg-red-500/10 text-red-400 border-red-500/20
+                {% elif report.abuse_confidence_score >= 50 %}bg-orange-500/10 text-orange-400 border-orange-500/20
+                {% elif report.abuse_confidence_score >= 25 %}bg-amber-500/10 text-amber-400 border-amber-500/20
+                {% else %}bg-emerald-500/10 text-emerald-400 border-emerald-500/20{% endif %} border">
+                {{ report.abuse_confidence_score }}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-right dark:text-surface-300 text-surface-600">{{ report.total_reports }}</td>
+            <td class="py-3 px-4 dark:text-surface-300 text-surface-600">{{ report.country_code|default:"-" }}</td>
+            <td class="py-3 px-4 text-right dark:text-surface-300 text-surface-600 text-xs">{{ report.queried_at|default:"-" }}</td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="py-8 text-center dark:text-surface-500 text-surface-400">
+              <i class="fas fa-search text-2xl mb-2 block opacity-50"></i>
+              No hay reportes de IP aun. Realiza una consulta para empezar.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,5 +1,7 @@
+import json
 import logging
 
+import requests as http_requests
 from django.http import JsonResponse
 from django.urls import path
 from django.utils import timezone
@@ -33,6 +35,31 @@ from vant_common.auth import (
 
 logger = logging.getLogger("vant_auth.views")
 
+MAX_FAILED_ATTEMPTS = 5
+BUS_SERVICE_URL = "http://127.0.0.1:8600/api"
+SERVICE_SECRET = ""
+
+import os
+SERVICE_SECRET = os.getenv("SERVICE_SECRET", "changeme-service-secret")
+
+
+def _publish_event(event_type, severity, payload):
+    try:
+        http_requests.post(
+            f"{BUS_SERVICE_URL}/events/receive/",
+            json={
+                "event_type": event_type,
+                "source_service": "auth",
+                "entity_type": "usuario",
+                "payload": payload,
+                "severity": severity,
+            },
+            headers={"X-Service-Secret": SERVICE_SECRET},
+            timeout=5,
+        )
+    except Exception as e:
+        logger.warning("Failed to publish event to bus: %s", e)
+
 
 def audit_log(event, user_id="", agent_id="", ip_address=None, details=None):
     try:
@@ -61,6 +88,10 @@ def require_service_secret(view_func):
 
 def require_admin(view_func):
     def wrapper(self, request, *args, **kwargs):
+        from vant_common.auth import verify_service_secret
+        if verify_service_secret(request):
+            request.jwt_claims = {"role": "admin", "sub": "service", "type": "access"}
+            return view_func(self, request, *args, **kwargs)
         token = extract_token(request)
         if not token:
             return JsonResponse({"error": "unauthorized", "detail": "Missing token"}, status=401)
@@ -76,6 +107,19 @@ def require_admin(view_func):
     return wrapper
 
 
+def require_auth(view_func):
+    def wrapper(self, request, *args, **kwargs):
+        token = extract_token(request)
+        if not token:
+            return JsonResponse({"error": "unauthorized"}, status=401)
+        claims = decode_jwt(token)
+        if not claims or claims.get("type") != "access":
+            return JsonResponse({"error": "unauthorized"}, status=401)
+        request.jwt_claims = claims
+        return view_func(self, request, *args, **kwargs)
+    return wrapper
+
+
 @method_decorator(csrf_exempt, name="dispatch")
 class LoginView(View):
     def post(self, request):
@@ -86,20 +130,53 @@ class LoginView(View):
 
         username = serializer.validated_data["username"]
         password = serializer.validated_data["password"]
+        ip = get_client_ip(request)
 
         try:
             user = AuthUser.objects.get(username=username)
         except AuthUser.DoesNotExist:
-            audit_log("login_failed", user_id=username, ip_address=get_client_ip(request), details={"reason": "user_not_found"})
+            _publish_event("login_fallido", "medium", {
+                "username": username,
+                "reason": "user_not_found",
+                "ip": ip,
+            })
+            audit_log("login_failed", user_id=username, ip_address=ip, details={"reason": "user_not_found"})
             return json_error("Invalid credentials", 401)
 
         if not user.is_active:
-            audit_log("login_failed", user_id=str(user.id), ip_address=get_client_ip(request), details={"reason": "inactive"})
-            return json_error("Account is disabled", 403)
+            audit_log("login_failed", user_id=str(user.id), ip_address=ip, details={"reason": "inactive"})
+            return json_error("Account is disabled. Contact an administrator.", 403)
 
         if not user.check_password(password):
-            audit_log("login_failed", user_id=str(user.id), ip_address=get_client_ip(request), details={"reason": "bad_password"})
-            return json_error("Invalid credentials", 401)
+            user.failed_login_attempts += 1
+            user.save(update_fields=["failed_login_attempts"])
+
+            audit_log("login_failed", user_id=str(user.id), ip_address=ip,
+                      details={"reason": "bad_password", "attempts": user.failed_login_attempts})
+
+            if user.failed_login_attempts >= MAX_FAILED_ATTEMPTS:
+                user.is_active = False
+                user.save(update_fields=["is_active"])
+
+                _publish_event("login_bloqueado", "critical", {
+                    "user_id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "reason": "too_many_failed_attempts",
+                    "attempts": user.failed_login_attempts,
+                    "ip": ip,
+                })
+
+                audit_log("login_blocked", user_id=str(user.id), ip_address=ip,
+                          details={"attempts": user.failed_login_attempts})
+                return json_error("Account disabled due to too many failed attempts. Contact an administrator.", 403)
+
+            remaining = MAX_FAILED_ATTEMPTS - user.failed_login_attempts
+            return json_error(f"Invalid credentials. {remaining} attempts remaining.", 401)
+
+        if user.failed_login_attempts > 0:
+            user.failed_login_attempts = 0
+            user.save(update_fields=["failed_login_attempts"])
 
         user.last_login = timezone.now()
         user.save(update_fields=["last_login"])
@@ -107,7 +184,13 @@ class LoginView(View):
         access_token = create_jwt(user.id, user.username, user.role)
         refresh_token = create_refresh_token(user.id, user.username)
 
-        audit_log("login_success", user_id=str(user.id), ip_address=get_client_ip(request))
+        _publish_event("login_exitoso", "info", {
+            "user_id": user.id,
+            "username": user.username,
+            "ip": ip,
+        })
+
+        audit_log("login_success", user_id=str(user.id), ip_address=ip)
         return JsonResponse({
             "access": access_token,
             "refresh": refresh_token,
@@ -208,6 +291,31 @@ class AgentRegisterView(View):
 
 
 @method_decorator(csrf_exempt, name="dispatch")
+class AgentTokenCreateView(View):
+    @require_service_secret
+    def post(self, request):
+        data = JSONParser().parse(request)
+        agent_id = data.get("agent_id")
+        hostname = data.get("hostname", "")
+        token = data.get("token")
+        if not agent_id or not token:
+            return json_error("agent_id and token required")
+        token_hash = hash_token(token)
+        obj, created = AuthAgentToken.objects.update_or_create(
+            agent_id=agent_id,
+            defaults={"hostname": hostname, "token": token_hash, "is_active": True, "revoked_at": None},
+        )
+        cache_agent_token(token, agent_id)
+        ip = get_client_ip(request)
+        audit_log("agent_token_created", agent_id=agent_id, ip_address=ip)
+        return JsonResponse({
+            "agent_id": obj.agent_id,
+            "hostname": obj.hostname,
+            "detail": "Token registered successfully",
+        }, status=201 if created else 200)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
 class AgentValidateView(View):
     @require_service_secret
     def post(self, request):
@@ -278,14 +386,121 @@ class UserCreateView(View):
             email=serializer.validated_data["email"],
             first_name=serializer.validated_data.get("first_name", ""),
             last_name=serializer.validated_data.get("last_name", ""),
+            phone=serializer.validated_data.get("phone", ""),
             role=serializer.validated_data.get("role", "viewer"),
         )
         user.set_password(serializer.validated_data["password"])
         user.save()
 
+        _publish_event("usuario_creado", "info", {
+            "user_id": user.id,
+            "username": user.username,
+            "email": user.email,
+        })
+
         ip = get_client_ip(request)
         audit_log("user_created", user_id=str(user.id), ip_address=ip, details={"username": user.username})
         return JsonResponse({"user": UserSerializer(user).data}, status=201)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class UserUpdateView(View):
+    @require_admin
+    def get(self, request, user_id):
+        try:
+            user = AuthUser.objects.get(id=user_id)
+        except AuthUser.DoesNotExist:
+            return json_error("User not found", 404)
+        return JsonResponse({"user": UserSerializer(user).data})
+
+    @require_admin
+    def put(self, request, user_id):
+        try:
+            user = AuthUser.objects.get(id=user_id)
+        except AuthUser.DoesNotExist:
+            return json_error("User not found", 404)
+
+        data = JSONParser().parse(request)
+
+        if "email" in data:
+            user.email = data["email"]
+        if "phone" in data:
+            user.phone = data["phone"]
+        if "first_name" in data:
+            user.first_name = data["first_name"]
+        if "last_name" in data:
+            user.last_name = data["last_name"]
+        if "role" in data:
+            user.role = data["role"]
+        if "is_active" in data:
+            was_active = user.is_active
+            user.is_active = data["is_active"]
+            if was_active and not user.is_active:
+                _publish_event("usuario_desabilitado", "medium", {
+                    "user_id": user.id,
+                    "username": user.username,
+                    "reason": "admin_disabled",
+                })
+
+        if "password" in data and data["password"]:
+            user.set_password(data["password"])
+            user.failed_login_attempts = 0
+
+        user.save()
+
+        ip = get_client_ip(request)
+        audit_log("user_updated", user_id=str(user.id), ip_address=ip, details={"fields": list(data.keys())})
+        return JsonResponse({"user": UserSerializer(user).data})
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class UserResetPasswordView(View):
+    @require_admin
+    def post(self, request, user_id):
+        try:
+            user = AuthUser.objects.get(id=user_id)
+        except AuthUser.DoesNotExist:
+            return json_error("User not found", 404)
+
+        data = JSONParser().parse(request)
+        new_password = data.get("password")
+        if not new_password:
+            return json_error("password required")
+
+        user.set_password(new_password)
+        user.failed_login_attempts = 0
+        user.save(update_fields=["password_hash", "failed_login_attempts"])
+
+        ip = get_client_ip(request)
+        audit_log("password_reset", user_id=str(user.id), ip_address=ip)
+        return JsonResponse({"detail": f"Password reset for {user.username}"})
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class UserChangePasswordView(View):
+    @require_auth
+    def post(self, request):
+        claims = request.jwt_claims
+        try:
+            user = AuthUser.objects.get(id=claims["sub"])
+        except AuthUser.DoesNotExist:
+            return json_error("User not found", 404)
+
+        data = JSONParser().parse(request)
+        old_password = data.get("old_password")
+        new_password = data.get("new_password")
+
+        if not old_password or not new_password:
+            return json_error("old_password and new_password required")
+
+        if not user.check_password(old_password):
+            return json_error("Current password is incorrect", 401)
+
+        user.set_password(new_password)
+        user.save(update_fields=["password_hash"])
+
+        audit_log("password_changed", user_id=str(user.id), ip_address=get_client_ip(request))
+        return JsonResponse({"detail": "Password changed successfully"})
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -324,6 +539,3 @@ class UserMeView(View):
 class HealthView(View):
     def get(self, request):
         return JsonResponse({"status": "healthy", "service": "vant-auth"})
-
-
-

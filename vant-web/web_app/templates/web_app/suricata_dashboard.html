@@ -1,149 +1,753 @@
 {% extends "web_app/base.html" %}
-{% block title %}Suricata IDS | VANT-SIEM Web{% endblock %}
-
+{% load static %}
+{% block title %}Suricata IDS | VANT-SIEM{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-8">
+<style>
+.stat-value { font-size: 1.75rem; font-weight: 700; line-height: 1.2; }
+.stat-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.6; }
+.event-row { cursor: pointer; }
+.event-row.expanded { background: rgba(59,130,246,0.05); }
+.event-detail-row { display: none; }
+.event-detail-row.visible { display: table-row; }
+.detail-cell { padding: 0; }
+.detail-cell pre { margin: 0; max-height: 160px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; font-size: 11px; }
+.bucket-btn { padding: 2px 8px; border-radius: 6px; font-size: 11px; cursor: pointer; transition: all 0.15s; }
+.bucket-btn:hover { background: rgba(59,130,246,0.1); }
+.bucket-btn.active { background: rgba(59,130,246,0.2); color: #60a5fa; font-weight: 600; }
+.card-hover { transition: all 0.2s; }
+.card-hover:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+</style>
+
+<div class="mb-4 flex items-center justify-between">
   <div>
-    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-shield-halved text-amber-400 mr-2"></i>Suricata IDS Dashboard</h1>
-    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Monitoreo de intrusiones en tiempo real (últimas {{ hours }}h)</p>
+    <h2 class="text-2xl font-bold dark:text-white text-surface-900">
+      <i class="fas fa-shield-halved mr-2 text-amber-400"></i>Suricata IDS
+    </h2>
+    <p class="text-xs dark:text-surface-400 text-surface-500 mt-0.5">Monitoreo de alertas y eventos de red en tiempo real</p>
   </div>
-  <form method="get" class="flex gap-2">
-    {% for h in "6,24,72,168" %}
-    <button type="submit" name="hours" value="{{ h }}" class="btn-secondary text-xs px-3 py-1.5 {% if hours == h|add:0 %}ring-2 ring-brand-500{% endif %}">{{ h }}h</button>
-    {% endfor %}
-  </form>
-</div>
-
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-  <div class="stat-card">
-    <div class="w-12 h-12 rounded-xl dark:bg-amber-500/20 bg-amber-100 flex items-center justify-center mb-4">
-      <i class="fas fa-bolt text-amber-500 text-xl"></i>
-    </div>
-    <h3 class="text-3xl font-bold dark:text-white text-surface-900">{{ total_events|default:"0" }}</h3>
-    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Total Eventos</p>
-  </div>
-  <div class="stat-card">
-    <div class="w-12 h-12 rounded-xl dark:bg-red-500/20 bg-red-100 flex items-center justify-center mb-4">
-      <i class="fas fa-fingerprint text-red-500 text-xl"></i>
-    </div>
-    <h3 class="text-3xl font-bold dark:text-white text-surface-900">{{ total_signatures|default:"0" }}</h3>
-    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Firmas Únicas</p>
-  </div>
-  <div class="stat-card">
-    <div class="w-12 h-12 rounded-xl dark:bg-brand-500/20 bg-brand-100 flex items-center justify-center mb-4">
-      <i class="fas fa-globe text-brand-500 text-xl"></i>
-    </div>
-    <h3 class="text-3xl font-bold dark:text-white text-surface-900">{{ top_src_ips|length|default:"0" }}</h3>
-    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Top IPs Origen</p>
-  </div>
-  <div class="stat-card">
-    <div class="w-12 h-12 rounded-xl dark:bg-emerald-500/20 bg-emerald-100 flex items-center justify-center mb-4">
-      <i class="fas fa-plug text-emerald-500 text-xl"></i>
-    </div>
-    <h3 class="text-3xl font-bold dark:text-white text-surface-900">{{ top_ports|length|default:"0" }}</h3>
-    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">Top Puertos</p>
+  <div class="flex items-center gap-2">
+    <span class="text-xs dark:text-surface-400 text-surface-500" id="eventCount">0 eventos</span>
+    <select id="timePreset" class="px-3 py-1.5 text-xs dark:bg-surface-800 dark:border-surface-700 dark:text-white bg-surface-50 border border-surface-300 text-surface-900 rounded-lg outline-none">
+      <option value="1h">Ultima 1 hora</option>
+      <option value="6h" selected>Ultimas 6 horas</option>
+      <option value="24h">Ultimas 24 horas</option>
+      <option value="7d">Ultimos 7 dias</option>
+    </select>
+    <select id="refreshInterval" class="text-xs dark:bg-surface-800 dark:border-surface-700 dark:text-surface-300 bg-surface-50 border border-surface-300 text-surface-600 rounded px-2 py-1.5">
+      <option value="0">Off</option>
+      <option value="10000">10s</option>
+      <option value="30000">30s</option>
+      <option value="60000">1m</option>
+    </select>
+    <button onclick="refresh()" class="px-3 py-1.5 text-xs font-medium bg-brand-500 hover:bg-brand-600 text-white rounded-lg transition-colors">
+      <i class="fas fa-sync-alt mr-1" id="refreshIcon"></i>Refresh
+    </button>
   </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-  <div class="glass-card p-6">
-    <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4"><i class="fas fa-file-signature text-amber-400 mr-2"></i>Top Firmas</h3>
-    <div class="space-y-2">
-      {% for sig in top_signatures %}
-      <div class="flex items-center justify-between p-2 rounded-lg dark:bg-surface-800/50 bg-surface-100/50">
-        <span class="text-sm dark:text-surface-300 text-surface-600 truncate flex-1">{{ sig.parsed_fields__signature|default:"-" }}</span>
-        <span class="text-xs dark:text-surface-500 text-surface-400 ml-2">{{ sig.count }}</span>
+<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
+  <div class="glass-card p-4 card-hover">
+    <div class="flex items-center gap-2 mb-1"><i class="fas fa-bell text-red-400 text-sm"></i><span class="stat-label dark:text-surface-400 text-surface-500">Alertas</span></div>
+    <div class="stat-value dark:text-white text-surface-900" id="statTotal">{{ total_events|default:"0" }}</div>
+  </div>
+  <div class="glass-card p-4 card-hover">
+    <div class="flex items-center gap-2 mb-1"><i class="fas fa-fingerprint text-purple-400 text-sm"></i><span class="stat-label dark:text-surface-400 text-surface-500">Firmas</span></div>
+    <div class="stat-value dark:text-white text-surface-900" id="statSignatures">{{ total_signatures|default:"0" }}</div>
+  </div>
+  <div class="glass-card p-4 card-hover">
+    <div class="flex items-center gap-2 mb-1"><i class="fas fa-arrow-up text-cyan-400 text-sm"></i><span class="stat-label dark:text-surface-400 text-surface-500">IPs Origen</span></div>
+    <div class="stat-value dark:text-white text-surface-900" id="statSrcIps">{{ top_src_ips|length|default:"0" }}</div>
+  </div>
+  <div class="glass-card p-4 card-hover">
+    <div class="flex items-center gap-2 mb-1"><i class="fas fa-arrow-down text-orange-400 text-sm"></i><span class="stat-label dark:text-surface-400 text-surface-500">IPs Destino</span></div>
+    <div class="stat-value dark:text-white text-surface-900" id="statDstIps">{{ top_dst_ips|length|default:"0" }}</div>
+  </div>
+  <div class="glass-card p-4 card-hover">
+    <div class="flex items-center gap-2 mb-1"><i class="fas fa-tag text-emerald-400 text-sm"></i><span class="stat-label dark:text-surface-400 text-surface-500">Classtypes</span></div>
+    <div class="stat-value dark:text-white text-surface-900" id="statClasstypes">{{ classtype_dist|length|default:"0" }}</div>
+  </div>
+  <div class="glass-card p-4 card-hover">
+    <div class="flex items-center gap-2 mb-1"><i class="fas fa-plug text-amber-400 text-sm"></i><span class="stat-label dark:text-surface-400 text-surface-500">Protocolos</span></div>
+    <div class="stat-value dark:text-white text-surface-900" id="statProtos">{{ proto_dist|length|default:"0" }}</div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+  <div class="lg:col-span-2 glass-card p-4">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-sm font-semibold dark:text-white text-surface-900">Distribucion Temporal</h3>
+      <div class="flex items-center gap-1">
+        <span class="bucket-btn" data-minutes="1">1m</span>
+        <span class="bucket-btn active" data-minutes="5">5m</span>
+        <span class="bucket-btn" data-minutes="15">15m</span>
+        <span class="bucket-btn" data-minutes="60">1h</span>
       </div>
-      {% empty %}
-      <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
-      {% endfor %}
+    </div>
+    <div class="relative" style="height: 100px;">
+      <canvas id="histogramChart"></canvas>
     </div>
   </div>
+  <div class="glass-card p-4">
+    <div class="flex items-center mb-3">
+      <h3 class="text-sm font-semibold dark:text-white text-surface-900">Severidad</h3>
+    </div>
+    <div style="min-height:140px" class="flex items-center justify-center">
+      <canvas id="severityChart"></canvas>
+    </div>
+    <div class="mt-2 space-y-1" id="severityLegend"></div>
+  </div>
+</div>
 
-  <div class="glass-card p-6">
-    <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4"><i class="fas fa-network-wired text-brand-400 mr-2"></i>Top IPs Origen</h3>
-    <div class="space-y-2">
-      {% for ip in top_src_ips %}
-      <div class="flex items-center justify-between p-2 rounded-lg dark:bg-surface-800/50 bg-surface-100/50">
-        <span class="text-sm dark:text-surface-300 text-surface-600 font-mono">{{ ip.parsed_fields__src_ip|default:"-" }}</span>
-        <span class="text-xs dark:text-surface-500 text-surface-400 ml-2">{{ ip.count }}</span>
-      </div>
-      {% empty %}
-      <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
-      {% endfor %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+  <div class="glass-card p-4">
+    <h3 class="text-xs font-semibold dark:text-white text-surface-900 mb-2 uppercase tracking-wider">Tipo de Evento</h3>
+    <div style="min-height:140px">
+      <canvas id="eventTypeChart"></canvas>
     </div>
   </div>
-
-  <div class="glass-card p-6">
-    <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4"><i class="fas fa-map-marker-alt text-red-400 mr-2"></i>Top IPs Destino</h3>
-    <div class="space-y-2">
-      {% for ip in top_dst_ips %}
-      <div class="flex items-center justify-between p-2 rounded-lg dark:bg-surface-800/50 bg-surface-100/50">
-        <span class="text-sm dark:text-surface-300 text-surface-600 font-mono">{{ ip.parsed_fields__dst_ip|default:"-" }}</span>
-        <span class="text-xs dark:text-surface-500 text-surface-400 ml-2">{{ ip.count }}</span>
-      </div>
-      {% empty %}
-      <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
-      {% endfor %}
+  <div class="glass-card p-4">
+    <h3 class="text-xs font-semibold dark:text-white text-surface-900 mb-2 uppercase tracking-wider">Protocolo</h3>
+    <div style="min-height:140px">
+      <canvas id="protoChart"></canvas>
     </div>
   </div>
-
-  <div class="glass-card p-6">
-    <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4"><i class="fas fa-plug text-emerald-400 mr-2"></i>Top Puertos Destino</h3>
-    <div class="space-y-2">
-      {% for port in top_ports %}
-      <div class="flex items-center justify-between p-2 rounded-lg dark:bg-surface-800/50 bg-surface-100/50">
-        <span class="text-sm dark:text-surface-300 text-surface-600 font-mono">{{ port.parsed_fields__dst_port|default:"-" }}</span>
-        <span class="text-xs dark:text-surface-500 text-surface-400 ml-2">{{ port.count }}</span>
-      </div>
-      {% empty %}
-      <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
-      {% endfor %}
+  <div class="glass-card p-4">
+    <h3 class="text-xs font-semibold dark:text-white text-surface-900 mb-2 uppercase tracking-wider">Accion</h3>
+    <div style="min-height:140px">
+      <canvas id="actionChart"></canvas>
+    </div>
+  </div>
+  <div class="glass-card p-4">
+    <h3 class="text-xs font-semibold dark:text-white text-surface-900 mb-2 uppercase tracking-wider">Puertos Destino</h3>
+    <div style="min-height:140px">
+      <canvas id="portsChart"></canvas>
     </div>
   </div>
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-  <div class="glass-card p-6">
-    <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Por Severidad</h3>
-    <div class="space-y-2">
-      {% for sev in severity_dist %}
-      <div class="flex items-center justify-between p-2 rounded-lg dark:bg-surface-800/50 bg-surface-100/50">
-        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if sev.severity == 'critical' %}bg-red-500/20 text-red-300{% elif sev.severity == 'high' %}bg-orange-500/20 text-orange-300{% elif sev.severity == 'medium' %}bg-yellow-500/20 text-yellow-300{% else %}bg-blue-500/20 text-blue-300{% endif %}">{{ sev.severity|default:"info" }}</span>
-        <span class="text-sm dark:text-surface-300 text-surface-600">{{ sev.count }}</span>
-      </div>
-      {% empty %}
-      <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
-      {% endfor %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+  <div class="glass-card p-4">
+    <h3 class="text-sm font-semibold dark:text-white text-surface-900 mb-3">Top Firmas</h3>
+    <div class="relative" style="height: 220px;">
+      <canvas id="signaturesChart"></canvas>
     </div>
   </div>
-
-  <div class="glass-card p-6">
-    <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Por Protocolo</h3>
-    <div class="space-y-2">
-      {% for proto in proto_dist %}
-      <div class="flex items-center justify-between p-2 rounded-lg dark:bg-surface-800/50 bg-surface-100/50">
-        <span class="text-sm dark:text-surface-300 text-surface-600">{{ proto.parsed_fields__protocol|default:"-" }}</span>
-        <span class="text-sm dark:text-surface-300 text-surface-600">{{ proto.count }}</span>
-      </div>
-      {% empty %}
-      <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
-      {% endfor %}
-    </div>
-  </div>
-
-  <div class="glass-card p-6">
-    <h3 class="text-lg font-semibold dark:text-white text-surface-900 mb-4">Por Acción</h3>
-    <div class="space-y-2">
-      {% for act in action_dist %}
-      <div class="flex items-center justify-between p-2 rounded-lg dark:bg-surface-800/50 bg-surface-100/50">
-        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if act.parsed_fields__action == 'allowed' %}bg-emerald-500/20 text-emerald-300{% else %}bg-red-500/20 text-red-300{% endif %}">{{ act.parsed_fields__action|default:"-" }}</span>
-        <span class="text-sm dark:text-surface-300 text-surface-600">{{ act.count }}</span>
-      </div>
-      {% empty %}
-      <p class="text-sm dark:text-surface-500 text-surface-400 text-center py-4">Sin datos</p>
-      {% endfor %}
+  <div class="glass-card p-4">
+    <h3 class="text-sm font-semibold dark:text-white text-surface-900 mb-3">Clasificacion (classtype)</h3>
+    <div class="relative" style="height: 220px;">
+      <canvas id="classtypeChart"></canvas>
     </div>
   </div>
 </div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+  <div class="glass-card p-4">
+    <h3 class="text-sm font-semibold dark:text-white text-surface-900 mb-3">Top IPs Origen</h3>
+    <div class="relative" style="height: 200px;">
+      <canvas id="srcIpChart"></canvas>
+    </div>
+  </div>
+  <div class="glass-card p-4">
+    <h3 class="text-sm font-semibold dark:text-white text-surface-900 mb-3">Top IPs Destino</h3>
+    <div class="relative" style="height: 200px;">
+      <canvas id="dstIpChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<div class="glass-card overflow-hidden mb-4">
+  <div class="px-4 py-3 flex items-center justify-between border-b dark:border-surface-800 border-surface-200">
+    <h3 class="text-sm font-semibold dark:text-white text-surface-900">Alertas Recientes</h3>
+    <div class="flex items-center gap-2">
+      <input id="searchInput" type="text" placeholder="Buscar en firma, IP..." class="px-3 py-1.5 text-xs dark:bg-surface-800 dark:border-surface-700 dark:text-white bg-surface-50 border border-surface-300 text-surface-900 focus:ring-2 focus:ring-brand-500 outline-none w-48 rounded-lg">
+      <select id="pageSizeSelect" class="text-xs dark:bg-surface-800 dark:border-surface-700 dark:text-surface-300 bg-surface-50 border border-surface-300 rounded px-2 py-1.5">
+        <option value="10">10</option>
+        <option value="25">25</option>
+        <option value="50" selected>50</option>
+        <option value="100">100</option>
+      </select>
+    </div>
+  </div>
+  <div id="activeFiltersBar" class="hidden px-4 py-2 border-b dark:border-surface-800 border-surface-200 flex flex-wrap items-center gap-1.5">
+    <span class="text-[10px] uppercase tracking-wider dark:text-surface-400 text-surface-500 font-medium mr-1">Filtros:</span>
+    <div id="activeFiltersList" class="flex flex-wrap gap-1.5"></div>
+    <button onclick="clearFilters()" class="ml-auto text-[10px] dark:text-surface-400 text-surface-500 hover:text-red-400 transition-colors"><i class="fas fa-times-circle mr-0.5"></i>Limpiar</button>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full divide-y dark:divide-surface-800 divide-surface-200">
+      <thead class="dark:bg-surface-800 bg-surface-100">
+        <tr>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase w-8"></th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Hora</th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Severidad</th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Firma / Signature</th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Origen</th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Destino</th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Proto</th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Accion</th>
+        </tr>
+      </thead>
+      <tbody id="eventsBody" class="dark:divide-surface-800 divide-surface-200 text-xs">
+        <tr><td colspan="8" class="px-3 py-12 text-center dark:text-surface-500 text-surface-400"><i class="fas fa-spinner fa-spin text-lg mb-2 block"></i>Cargando eventos...</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div id="pagination" class="hidden px-3 py-2 flex items-center justify-between border-t dark:border-surface-800 border-surface-200"></div>
+</div>
+
+<div class="glass-card overflow-hidden mb-4">
+  <div class="px-4 py-3 flex items-center justify-between border-b dark:border-surface-800 border-surface-200">
+    <h3 class="text-sm font-semibold dark:text-white text-surface-900">Pares de Conexion</h3>
+    <div class="flex items-center gap-2">
+      <span class="text-xs dark:text-surface-400 text-surface-500" id="pairCount">0 pares</span>
+      <select id="pairPageSize" class="text-xs dark:bg-surface-800 dark:border-surface-700 dark:text-surface-300 bg-surface-50 border border-surface-300 rounded px-2 py-1.5">
+        <option value="10">10</option>
+        <option value="25" selected>25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+    </div>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full divide-y dark:divide-surface-800 divide-surface-200">
+      <thead class="dark:bg-surface-800 bg-surface-100">
+        <tr>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Fecha / Hora</th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">IP Origen</th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Puerto Origen</th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">IP Destino</th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Puerto Destino</th>
+          <th class="px-3 py-2 text-left text-[10px] font-semibold dark:text-surface-300 text-surface-600 uppercase">Protocolo</th>
+        </tr>
+      </thead>
+      <tbody id="pairsBody" class="dark:divide-surface-800 divide-surface-200 text-xs">
+        <tr><td colspan="6" class="px-3 py-12 text-center dark:text-surface-500 text-surface-400"><i class="fas fa-spinner fa-spin text-lg mb-2 block"></i>Cargando pares...</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div id="pairPagination" class="hidden px-3 py-2 flex items-center justify-between border-t dark:border-surface-800 border-surface-200"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+var API_EVENTS = '{{ logs_api_url|default:"/logs/api/events/" }}';
+var API_HISTOGRAM = '{{ logs_api_url|default:"/logs/api/events/histogram/" }}';
+var API_STATS = '{{ logs_api_url|default:"/logs/api/statistics/suricata/" }}';
+
+var currentPage = 1;
+var pageSize = 50;
+var totalEvents = 0;
+var bucketMinutes = 5;
+var includeFilters = {};
+var excludeFilters = {};
+var histogramChart = null;
+var severityChart = null;
+var eventTypeChart = null;
+var protoChart = null;
+var actionChart = null;
+var portsChart = null;
+var signaturesChart = null;
+var classtypeChart = null;
+var srcIpChart = null;
+var dstIpChart = null;
+var refreshTimer = null;
+var pairPage = 1;
+var pairPageSize = 25;
+var totalPairs = 0;
+var allPairs = [];
+
+var SEVERITY_COLORS = {
+  critical: '#ef4444', high: '#f97316', medium: '#f59e0b',
+  low: '#3b82f6', info: '#22c55e', debug: '#6b7280',
+};
+
+var CHART_COLORS = [
+  '#3b82f6','#ef4444','#22c55e','#f59e0b','#8b5cf6',
+  '#ec4899','#14b8a6','#f97316','#6366f1','#84cc16',
+];
+
+function getTimeParams() {
+  var val = document.getElementById('timePreset').value;
+  var m = val.match(/(\d+)([hd])/);
+  if (!m) return { hours: 6 };
+  return { hours: m[2] === 'h' ? parseInt(m[1]) : parseInt(m[1]) * 24 };
+}
+
+function getApiParams(page) {
+  var tp = getTimeParams();
+  var p = new URLSearchParams();
+  p.set('source_type', 'suricata');
+  p.set('hours', Math.ceil(tp.hours));
+  if (page) p.set('page', page);
+  p.set('page_size', pageSize);
+  var q = document.getElementById('searchInput').value.trim();
+  if (q) p.set('q', q);
+  for (var f in includeFilters) {
+    includeFilters[f].forEach(function(v) { p.append('include_'+f, v); });
+  }
+  for (var f in excludeFilters) {
+    excludeFilters[f].forEach(function(v) { p.append('exclude_'+f, v); });
+  }
+  return p;
+}
+
+function colField(col) {
+  return {severidad:'severity',firma:'signature',origen:'src_ip',destino:'dest_ip',proto:'protocol',accion:'action'}[col]||col;
+}
+
+function renderActiveFilters() {
+  var bar = document.getElementById('activeFiltersBar');
+  var list = document.getElementById('activeFiltersList');
+  var html = '';
+  var LABELS = {severity:'Severidad',signature:'Firma',src_ip:'Origen',dest_ip:'Destino',protocol:'Proto',action:'Accion'};
+  for (var f in includeFilters) {
+    includeFilters[f].forEach(function(v) {
+      html += '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"><i class="fas fa-plus text-[8px]"></i>' + (LABELS[f]||f) + ': ' + escapeHtml(v) + '<button onclick="removeFilter(\''+f+'\',\''+v.replace(/'/g,"\\'")+'\',\'include\')" class="ml-1 hover:text-white"><i class="fas fa-times text-[8px]"></i></button></span>';
+    });
+  }
+  for (var f in excludeFilters) {
+    excludeFilters[f].forEach(function(v) {
+      html += '<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-500/15 text-red-400 border border-red-500/30"><i class="fas fa-minus text-[8px]"></i>' + (LABELS[f]||f) + ': ' + escapeHtml(v) + '<button onclick="removeFilter(\''+f+'\',\''+v.replace(/'/g,"\\'")+'\',\'exclude\')" class="ml-1 hover:text-white"><i class="fas fa-times text-[8px]"></i></button></span>';
+    });
+  }
+  if (html) { list.innerHTML = html; bar.classList.remove('hidden'); }
+  else { bar.classList.add('hidden'); }
+}
+
+function addFilter(field, value, mode) {
+  if (!value || value === '-') return;
+  var target = mode === 'exclude' ? excludeFilters : includeFilters;
+  if (!target[field]) target[field] = [];
+  if (target[field].indexOf(value) === -1) target[field].push(value);
+  renderActiveFilters();
+  currentPage = 1;
+  refresh();
+}
+
+function removeFilter(field, value, mode) {
+  var target = mode === 'exclude' ? excludeFilters : includeFilters;
+  if (!target[field]) return;
+  var idx = target[field].indexOf(value);
+  if (idx >= 0) target[field].splice(idx, 1);
+  if (target[field].length === 0) delete target[field];
+  renderActiveFilters();
+  currentPage = 1;
+  refresh();
+}
+
+function clearFilters() {
+  includeFilters = {};
+  excludeFilters = {};
+  renderActiveFilters();
+  currentPage = 1;
+  refresh();
+}
+
+function filterBtn(field, val) {
+  var safe = (val||'').replace(/'/g,"\\'");
+  return '<div class="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-1">' +
+    '<button onclick="event.stopPropagation();addFilter(\''+field+'\',\''+safe+'\',\'include\')" class="w-3.5 h-3.5 rounded flex items-center justify-center text-[7px] bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/40" title="Incluir este valor"><i class="fas fa-plus"></i></button>' +
+    '<button onclick="event.stopPropagation();addFilter(\''+field+'\',\''+safe+'\',\'exclude\')" class="w-3.5 h-3.5 rounded flex items-center justify-center text-[7px] bg-red-500/20 text-red-400 hover:bg-red-500/40" title="Excluir este valor"><i class="fas fa-minus"></i></button></div>';
+}
+
+function getHistogramParams() {
+  var tp = getTimeParams();
+  var p = new URLSearchParams();
+  p.set('source_type', 'suricata');
+  p.set('hours', Math.ceil(tp.hours));
+  p.set('bucket_minutes', bucketMinutes);
+  var q = document.getElementById('searchInput').value.trim();
+  if (q) p.set('q', q);
+  for (var f in includeFilters) {
+    includeFilters[f].forEach(function(v) { p.append('include_'+f, v); });
+  }
+  for (var f in excludeFilters) {
+    excludeFilters[f].forEach(function(v) { p.append('exclude_'+f, v); });
+  }
+  return p;
+}
+
+async function fetchEvents(page) {
+  var params = getApiParams(page);
+  var url = API_EVENTS + '?' + params.toString();
+  try {
+    var resp = await fetch(url);
+    var data = await resp.json();
+    totalEvents = data.count || 0;
+    document.getElementById('eventCount').textContent = totalEvents.toLocaleString() + ' eventos';
+    renderTable(data.results || []);
+    renderPagination(data.count, data.next, data.previous);
+  } catch (e) {
+    document.getElementById('eventsBody').innerHTML = '<tr><td colspan="8" class="px-3 py-12 text-center dark:text-surface-500 text-surface-400"><i class="fas fa-exclamation-triangle text-lg mb-2 block"></i>Error al cargar eventos</td></tr>';
+  }
+}
+
+function escapeHtml(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function getPf(e, field) {
+  if (e.parsed_fields) {
+    if (e.parsed_fields[field] !== undefined) return e.parsed_fields[field];
+    if (field === 'dst_ip') return e.parsed_fields['dest_ip'] !== undefined ? e.parsed_fields['dest_ip'] : null;
+  }
+  return null;
+}
+
+function formatTime(iso) {
+  if (!iso) return '-';
+  var d = new Date(iso);
+  return d.toLocaleDateString('es',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+}
+
+function severityBadge(s) {
+  var cls = {critical:'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',high:'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',medium:'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',low:'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',info:'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',debug:'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'}[s]||cls.info;
+  return '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ' + cls + '">' + s + '</span>';
+}
+
+function renderTable(events) {
+  var tbody = document.getElementById('eventsBody');
+  if (!events.length) { tbody.innerHTML = '<tr><td colspan="8" class="px-3 py-12 text-center dark:text-surface-500 text-surface-400"><i class="fas fa-inbox text-2xl mb-2 block"></i>No hay eventos de Suricata en este periodo</td></tr>'; return; }
+  tbody.innerHTML = events.map(function(e) {
+    var sig = getPf(e,'signature') || e.message || '-';
+    var srcIp = getPf(e,'src_ip') || '-', srcPort = getPf(e,'src_port');
+    var dstIp = getPf(e,'dst_ip') || '-', dstPort = getPf(e,'dst_port');
+    var proto = getPf(e,'protocol') || '-', action = getPf(e,'action') || '-';
+    var classtype = getPf(e,'classtype')||'', alertId = getPf(e,'alert_id')||'', priority = getPf(e,'priority')||'';
+    var eventType = getPf(e,'event_type') || e.event_category || '-';
+    var srcStr = srcPort ? srcIp+':'+srcPort : srcIp, dstStr = dstPort ? dstIp+':'+dstPort : dstIp;
+    return '<tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors event-row" data-id="'+e.id+'" onclick="toggleDetail('+e.id+')">' +
+      '<td class="px-3 py-2"><i class="fas fa-chevron-right text-[10px] dark:text-surface-500 text-surface-400 transition-transform" id="arrow-'+e.id+'"></i></td>' +
+      '<td class="px-3 py-2 whitespace-nowrap dark:text-surface-300 text-surface-600">'+formatTime(e.event_time)+'</td>' +
+      '<td class="px-3 py-2"><span class="inline-flex items-center gap-1">'+severityBadge(e.severity)+filterBtn('severity',e.severity)+'</span></td>' +
+      '<td class="px-3 py-2 dark:text-surface-300 text-surface-600 max-w-xs truncate group" title="'+escapeHtml(sig)+'"><span class="inline-flex items-center gap-1"><span class="truncate max-w-[200px]">'+escapeHtml(String(sig).substring(0,80))+'</span>'+filterBtn('signature',sig)+'</span></td>' +
+      '<td class="px-3 py-2 font-mono dark:text-surface-300 text-surface-600 group"><span class="inline-flex items-center gap-1">'+escapeHtml(srcStr)+filterBtn('src_ip',srcIp)+'</span></td>' +
+      '<td class="px-3 py-2 font-mono dark:text-surface-300 text-surface-600 group"><span class="inline-flex items-center gap-1">'+escapeHtml(dstStr)+filterBtn('dest_ip',dstIp)+'</span></td>' +
+      '<td class="px-3 py-2 dark:text-surface-300 text-surface-600 group"><span class="inline-flex items-center gap-1">'+proto+filterBtn('protocol',proto)+'</span></td>' +
+      '<td class="px-3 py-2 dark:text-surface-300 text-surface-600 group"><span class="inline-flex items-center gap-1">'+action+filterBtn('action',action)+'</span></td>' +
+    '</tr>' +
+    '<tr class="event-detail-row" id="detail-'+e.id+'"><td colspan="8" class="detail-cell">' +
+    '<div class="p-3 dark:bg-surface-800/50 bg-surface-50 border-t dark:border-surface-700 border-surface-200">' +
+    '<div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-2">' +
+    '<div><span class="text-[10px] dark:text-surface-500 text-surface-400">ID</span><div class="text-xs font-mono dark:text-surface-200 text-surface-800">'+e.id+'</div></div>' +
+    '<div><span class="text-[10px] dark:text-surface-500 text-surface-400">Event Type</span><div class="text-xs capitalize dark:text-surface-200 text-surface-800">'+eventType+'</div></div>' +
+    '<div><span class="text-[10px] dark:text-surface-500 text-surface-400">Alert ID</span><div class="text-xs font-mono dark:text-surface-200 text-surface-800">'+(alertId||'-')+'</div></div>' +
+    '<div><span class="text-[10px] dark:text-surface-500 text-surface-400">Priority</span><div class="text-xs dark:text-surface-200 text-surface-800">'+(priority||'-')+'</div></div>' +
+    '<div><span class="text-[10px] dark:text-surface-500 text-surface-400">Classtype</span><div class="text-xs dark:text-surface-200 text-surface-800">'+(classtype||'-')+'</div></div>' +
+    '</div>' +
+    '<div class="mb-2"><span class="text-[10px] dark:text-surface-500 text-surface-400">Firma completa</span><pre class="mt-0.5 text-xs font-mono dark:text-surface-200 text-surface-800 whitespace-pre-wrap break-all max-h-20 overflow-y-auto p-2 dark:bg-surface-900 bg-white rounded">'+escapeHtml(sig)+'</pre></div>' +
+    '<div class="grid grid-cols-2 gap-3 mb-2">' +
+    '<div><span class="text-[10px] dark:text-surface-500 text-surface-400">Tags</span><div class="flex flex-wrap gap-1 mt-0.5">'+((e.tags||[]).map(function(t){return '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] dark:bg-surface-700 bg-surface-200 dark:text-surface-300 text-surface-600">'+escapeHtml(t)+'</span>';}).join('')||'<span class="text-xs dark:text-surface-500 text-surface-400">-</span>')+'</div></div>' +
+    '<div><span class="text-[10px] dark:text-surface-500 text-surface-400">Host / IP</span><div class="text-xs dark:text-surface-200 text-surface-800">'+(e.host_name||e.host_ip||'-')+'</div></div>' +
+    '</div></div></td></tr>';
+  }).join('');
+}
+
+function toggleDetail(id) {
+  var row = document.getElementById('detail-'+id);
+  var arrow = document.getElementById('arrow-'+id);
+  var visible = row.classList.toggle('visible');
+  if (arrow) arrow.style.transform = visible ? 'rotate(90deg)' : '';
+}
+
+function renderPagination(count, nextUrl, prevUrl) {
+  var div = document.getElementById('pagination');
+  var totalPages = Math.ceil(count / pageSize);
+  if (totalPages <= 1) { div.classList.add('hidden'); return; }
+  div.classList.remove('hidden');
+  var html = '<span class="text-xs dark:text-surface-400 text-surface-500">Pagina '+currentPage+' de '+totalPages+' ('+count+' total)</span><nav class="flex items-center gap-1">';
+  if (prevUrl) html += '<button onclick="goPage('+(currentPage-1)+')" class="px-2 py-1 text-xs dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded hover:bg-surface-100 dark:hover:bg-surface-800"><i class="fas fa-chevron-left"></i></button>';
+  for (var p = Math.max(1, currentPage-2); p <= Math.min(totalPages, currentPage+2); p++) {
+    html += p === currentPage ? '<span class="px-2 py-1 text-xs font-medium bg-brand-500 text-white rounded">'+p+'</span>' : '<button onclick="goPage('+p+')" class="px-2 py-1 text-xs dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded hover:bg-surface-100 dark:hover:bg-surface-800">'+p+'</button>';
+  }
+  if (nextUrl) html += '<button onclick="goPage('+(currentPage+1)+')" class="px-2 py-1 text-xs dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded hover:bg-surface-100 dark:hover:bg-surface-800"><i class="fas fa-chevron-right"></i></button>';
+  html += '</nav>';
+  div.innerHTML = html;
+}
+
+function goPage(p) { currentPage = p; fetchEvents(p); }
+
+async function fetchHistogram() {
+  var params = getHistogramParams();
+  try {
+    var resp = await fetch(API_HISTOGRAM+'?'+params.toString());
+    var data = await resp.json();
+    renderHistogram(data.timeline || []);
+  } catch(e) {}
+}
+
+function renderHistogram(timeline) {
+  var isDark = document.documentElement.classList.contains('dark');
+  var textColor = isDark ? '#94a3b8' : '#64748b';
+  var gridColor = isDark ? 'rgba(51,65,85,0.3)' : 'rgba(226,232,240,0.8)';
+  var labels = timeline.map(function(t){return t.time;});
+  var values = timeline.map(function(t){return t.count;});
+  var ctx = document.getElementById('histogramChart').getContext('2d');
+  if (histogramChart) histogramChart.destroy();
+  histogramChart = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: labels, datasets: [{ data: values, backgroundColor: 'rgba(245,158,11,0.5)', borderColor: 'rgba(245,158,11,1)', borderWidth: 1, borderRadius: 2, barPercentage: 0.9, categoryPercentage: 1 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { title: function(items){return items[0].label;}, label: function(item){return 'Eventos: '+item.raw;} } } },
+      scales: {
+        x: { display: true, ticks: { color: textColor, maxTicksLimit: 15, font: { size: 9 } }, grid: { display: false } },
+        y: { display: true, beginAtZero: true, ticks: { color: textColor, font: { size: 9 }, maxTicksLimit: 5 }, grid: { color: gridColor } },
+      },
+    },
+  });
+}
+
+function renderCharts(stats) {
+  if (!stats) return;
+  var sevData = stats.severity_dist || [];
+  if (sevData && sevData.length) {
+    var labels = sevData.map(function(s){return s.severity;});
+    var values = sevData.map(function(s){return s.count;});
+    var colors = labels.map(function(l){return SEVERITY_COLORS[l]||'#6b7280';});
+    var canvas = document.getElementById('severityChart');
+    if (canvas) {
+      var ctx = canvas.getContext('2d');
+      if (severityChart) severityChart.destroy();
+      severityChart = new Chart(ctx, {
+        type: 'doughnut', data: { labels: labels, datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: 'transparent' }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(item){return item.label+': '+item.raw;} } } } },
+      });
+      var total = values.reduce(function(a,b){return a+b;},0);
+      document.getElementById('severityLegend').innerHTML = labels.map(function(l,i){
+        return '<div class="flex items-center justify-between text-xs"><span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background:'+colors[i]+'"></span>'+l+'</span><span class="dark:text-surface-400 text-surface-500">'+values[i]+' ('+Math.round(values[i]/total*100)+'%)</span></div>';
+      }).join('');
+    }
+  }
+
+  function renderDoughnut(canvasId, data, labelKey, ref) {
+    if (!data || !data.length) {
+      if (window[ref]) { window[ref].destroy(); window[ref] = null; }
+      var canvas = document.getElementById(canvasId);
+      if (canvas) {
+        var ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        var parent = canvas.parentNode;
+        parent.style.position = 'relative';
+        if (!parent.querySelector('.chart-empty')) {
+          var msg = document.createElement('div');
+          msg.className = 'chart-empty absolute inset-0 flex items-center justify-center text-[10px] dark:text-surface-500 text-surface-400';
+          msg.innerHTML = '<span class="flex items-center gap-1"><i class="fas fa-inbox text-xs"></i>Sin datos</span>';
+          parent.appendChild(msg);
+        }
+      }
+      return;
+    }
+    // Remove empty message if present
+    var parent = document.getElementById(canvasId);
+    if (parent) { var em = parent.parentNode.querySelector('.chart-empty'); if (em) em.remove(); }
+    var labels = data.map(function(d){return String(d[labelKey]||'-');});
+    var values = data.map(function(d){return d.count;});
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    if (window[ref]) window[ref].destroy();
+    window[ref] = new Chart(ctx, {
+      type: 'doughnut', data: { labels: labels, datasets: [{ data: values, backgroundColor: CHART_COLORS.slice(0,labels.length), borderWidth: 0 }] },
+      options: { responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 8, padding: 8, font: { size: 9 } } }, tooltip: { callbacks: { label: function(item){return item.label+': '+item.raw;} } } } },
+    });
+  }
+  function renderBar(canvasId, data, labelKey, color, ref) {
+    if (!data || !data.length) {
+      if (window[ref]) { window[ref].destroy(); window[ref] = null; }
+      var canvas = document.getElementById(canvasId);
+      if (canvas) {
+        var ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        var parent = canvas.parentNode;
+        parent.style.position = 'relative';
+        if (!parent.querySelector('.chart-empty')) {
+          var msg = document.createElement('div');
+          msg.className = 'chart-empty absolute inset-0 flex items-center justify-center text-[10px] dark:text-surface-500 text-surface-400';
+          msg.innerHTML = '<span class="flex items-center gap-1"><i class="fas fa-inbox text-xs"></i>Sin datos</span>';
+          parent.appendChild(msg);
+        }
+      }
+      return;
+    }
+    // Remove empty message if present
+    var parent = document.getElementById(canvasId);
+    if (parent) { var em = parent.parentNode.querySelector('.chart-empty'); if (em) em.remove(); }
+    var labels = data.map(function(d){return String(d[labelKey]||'-').substring(0,40);});
+    var values = data.map(function(d){return d.count;});
+    var canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    if (window[ref]) window[ref].destroy();
+    window[ref] = new Chart(ctx, {
+      type: 'bar', data: { labels: labels, datasets: [{ data: values, backgroundColor: color[0], borderColor: color[1], borderWidth: 1, borderRadius: 3 }] },
+      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(item){return item.raw+' eventos';} } } }, scales: { x: { beginAtZero: true, ticks: { font: { size: 9 } } }, y: { ticks: { font: { size: 8 } } } } },
+    });
+  }
+
+  renderDoughnut('eventTypeChart', stats.event_type_dist || [], 'et', 'eventTypeChart');
+  renderDoughnut('protoChart', stats.proto_dist || [], 'proto', 'protoChart');
+  renderDoughnut('actionChart', stats.action_dist || [], 'act', 'actionChart');
+  renderDoughnut('portsChart', stats.top_ports || [], 'port', 'portsChart');
+  renderBar('signaturesChart', stats.top_signatures || [], 'sig', ['rgba(139,92,246,0.6)','rgba(139,92,246,1)'], 'signaturesChart');
+  renderBar('classtypeChart', stats.classtype_dist || [], 'ct', ['rgba(59,130,246,0.6)','rgba(59,130,246,1)'], 'classtypeChart');
+  renderBar('srcIpChart', stats.top_src_ips || [], 'ip', ['rgba(6,182,212,0.6)','rgba(6,182,212,1)'], 'srcIpChart');
+  renderBar('dstIpChart', stats.top_dst_ips || [], 'ip', ['rgba(251,146,60,0.6)','rgba(251,146,60,1)'], 'dstIpChart');
+}
+
+async function fetchStats() {
+  var params = getApiParams();
+  params.delete('page');
+  params.delete('page_size');
+  try {
+    var resp = await fetch(API_STATS + '?' + params.toString());
+    var data = await resp.json();
+    renderCharts(data);
+    // Also update stat cards from API response
+    var el = document.getElementById('statTotal');
+    if (el) el.textContent = (data.total_events || 0).toLocaleString();
+    el = document.getElementById('statSignatures');
+    if (el) el.textContent = (data.total_signatures || 0).toLocaleString();
+    el = document.getElementById('statSrcIps');
+    if (el) el.textContent = (data.top_src_ips || []).length;
+    el = document.getElementById('statDstIps');
+    if (el) el.textContent = (data.top_dst_ips || []).length;
+    el = document.getElementById('statClasstypes');
+    if (el) el.textContent = (data.classtype_dist || []).length;
+    el = document.getElementById('statProtos');
+    if (el) el.textContent = (data.proto_dist || []).length;
+  } catch(e) {
+    console.error('fetchStats error:', e);
+  }
+}
+
+function refresh() {
+  document.getElementById('refreshIcon').classList.add('fa-spin');
+  fetchEvents(currentPage);
+  fetchHistogram();
+  fetchConnPairs();
+  fetchStats();
+  setTimeout(function(){document.getElementById('refreshIcon').classList.remove('fa-spin');},500);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Sync timePreset select with URL hours param
+  var urlParams = new URLSearchParams(window.location.search);
+  var hoursParam = urlParams.get('hours');
+  if (hoursParam) {
+    var sel = document.getElementById('timePreset');
+    hoursParam = parseInt(hoursParam);
+    if (hoursParam <= 1) sel.value = '1h';
+    else if (hoursParam <= 6) sel.value = '6h';
+    else if (hoursParam <= 24) sel.value = '24h';
+    else sel.value = '7d';
+  }
+  fetchStats();
+
+  document.getElementById('searchInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { currentPage = 1; refresh(); }
+  });
+
+  document.getElementById('timePreset').addEventListener('change', function() {
+    var tp = getTimeParams();
+    var h = tp.hours;
+    bucketMinutes = h <= 1 ? 1 : h <= 6 ? 5 : h <= 24 ? 15 : 60;
+    document.querySelectorAll('.bucket-btn').forEach(function(b){b.classList.toggle('active', parseInt(b.dataset.minutes)===bucketMinutes);});
+    currentPage = 1;
+    refresh();
+  });
+
+  document.querySelectorAll('.bucket-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.bucket-btn').forEach(function(b){b.classList.remove('active');});
+      this.classList.add('active');
+      bucketMinutes = parseInt(this.dataset.minutes);
+      currentPage = 1;
+      refresh();
+    });
+  });
+
+  document.getElementById('refreshInterval').addEventListener('change', function() {
+    if (refreshTimer) clearInterval(refreshTimer);
+    var val = parseInt(this.value);
+    if (val > 0) refreshTimer = setInterval(refresh, val);
+  });
+
+  document.getElementById('pageSizeSelect').addEventListener('change', function() {
+    pageSize = parseInt(this.value);
+    currentPage = 1;
+    refresh();
+  });
+
+  document.getElementById('pairPageSize').addEventListener('change', function() {
+    pairPageSize = parseInt(this.value);
+    pairPage = 1;
+    renderPairsPage();
+  });
+
+  fetchEvents(1);
+  fetchHistogram();
+  fetchConnPairs();
+});
+
+async function fetchConnPairs() {
+  var tp = getTimeParams();
+  var params = new URLSearchParams(); params.set('source_type','suricata'); params.set('hours',Math.ceil(tp.hours)); params.set('page_size',200);
+  for (var f in includeFilters) { includeFilters[f].forEach(function(v) { params.append('include_'+f, v); }); }
+  for (var f in excludeFilters) { excludeFilters[f].forEach(function(v) { params.append('exclude_'+f, v); }); }
+  try {
+    var resp = await fetch(API_EVENTS+'?'+params.toString());
+    var data = await resp.json();
+    var results = data.results || [];
+    var pairMap = {};
+    for (var i=0; i<results.length; i++) {
+      var e = results[i];
+      var srcIp = getPf(e,'src_ip') || '-', srcPort = getPf(e,'src_port');
+      var dstIp = getPf(e,'dst_ip') || '-', dstPort = getPf(e,'dst_port');
+      var proto = getPf(e,'protocol') || '-';
+      var ts = e.event_time || '';
+      var key = srcIp+'|||'+String(srcPort)+'|||'+dstIp+'|||'+String(dstPort)+'|||'+proto;
+      if (!pairMap[key]) pairMap[key] = { ts: ts, srcIp: srcIp, srcPort: srcPort, dstIp: dstIp, dstPort: dstPort, proto: proto, latest: ts };
+      else if (ts > pairMap[key].latest) { pairMap[key].ts = ts; pairMap[key].latest = ts; }
+    }
+    allPairs = Object.values(pairMap).sort(function(a,b){return a.latest > b.latest ? -1 : a.latest < b.latest ? 1 : 0;});
+    totalPairs = allPairs.length;
+    pairPage = 1;
+    renderPairsPage();
+  } catch(e) {
+    document.getElementById('pairsBody').innerHTML = '<tr><td colspan="6" class="px-3 py-12 text-center dark:text-surface-500 text-surface-400"><i class="fas fa-exclamation-triangle text-lg mb-2 block"></i>Error: ' + escapeHtml(String(e.message||e)) + '</td></tr>';
+  }
+}
+
+function renderPairsPage() {
+  var tbody = document.getElementById('pairsBody');
+  var start = (pairPage-1) * pairPageSize;
+  var page = allPairs.slice(start, start+pairPageSize);
+  var totalPages = Math.ceil(totalPairs / pairPageSize);
+  document.getElementById('pairCount').textContent = totalPairs+' pares';
+  if (!page.length) { tbody.innerHTML = '<tr><td colspan="6" class="px-3 py-12 text-center dark:text-surface-500 text-surface-400"><i class="fas fa-inbox text-2xl mb-2 block"></i>No hay pares de conexion</td></tr>'; document.getElementById('pairPagination').classList.add('hidden'); return; }
+  tbody.innerHTML = page.map(function(p){
+    return '<tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors">' +
+      '<td class="px-3 py-2 whitespace-nowrap dark:text-surface-300 text-surface-600">' + formatTime(p.ts) + '</td>' +
+      '<td class="px-3 py-2 font-mono dark:text-surface-300 text-surface-600">'+escapeHtml(p.srcIp)+'</td>' +
+      '<td class="px-3 py-2 font-mono dark:text-surface-300 text-surface-600">'+(p.srcPort != null ? p.srcPort : '-')+'</td>' +
+      '<td class="px-3 py-2 font-mono dark:text-surface-300 text-surface-600">'+escapeHtml(p.dstIp)+'</td>' +
+      '<td class="px-3 py-2 font-mono dark:text-surface-300 text-surface-600">'+(p.dstPort != null ? p.dstPort : '-')+'</td>' +
+      '<td class="px-3 py-2 dark:text-surface-300 text-surface-600">'+escapeHtml(p.proto)+'</td></tr>';
+  }).join('');
+  var div = document.getElementById('pairPagination');
+  if (totalPages <= 1) { div.classList.add('hidden'); return; }
+  div.classList.remove('hidden');
+  var html = '<span class="text-xs dark:text-surface-400 text-surface-500">Pagina '+pairPage+' de '+totalPages+'</span><nav class="flex items-center gap-1">';
+  if (pairPage > 1) html += '<button onclick="pairGoPage('+(pairPage-1)+')" class="px-2 py-1 text-xs dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded hover:bg-surface-100 dark:hover:bg-surface-800"><i class="fas fa-chevron-left"></i></button>';
+  for (var p = Math.max(1, pairPage-2); p <= Math.min(totalPages, pairPage+2); p++) {
+    html += p === pairPage ? '<span class="px-2 py-1 text-xs font-medium bg-brand-500 text-white rounded">'+p+'</span>' : '<button onclick="pairGoPage('+p+')" class="px-2 py-1 text-xs dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded hover:bg-surface-100 dark:hover:bg-surface-800">'+p+'</button>';
+  }
+  if (pairPage < totalPages) html += '<button onclick="pairGoPage('+(pairPage+1)+')" class="px-2 py-1 text-xs dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded hover:bg-surface-100 dark:hover:bg-surface-800"><i class="fas fa-chevron-right"></i></button>';
+  html += '</nav>';
+  div.innerHTML = html;
+}
+
+function pairGoPage(p) { pairPage = p; renderPairsPage(); }
+</script>
 {% endblock %}

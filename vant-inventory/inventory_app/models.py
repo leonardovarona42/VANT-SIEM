@@ -272,3 +272,26 @@ class ProcessSnapshot(models.Model):
         indexes = [
             models.Index(fields=['agent', '-captured_at']),
         ]
+
+
+class AgentService(models.Model):
+    agent = models.ForeignKey(Agent, on_delete=models.CASCADE, related_name='agent_services')
+    service_name = models.CharField(max_length=128, db_index=True)
+    display_name = models.CharField(max_length=256, blank=True, default='')
+    active_state = models.CharField(max_length=32, default='unknown')
+    sub_state = models.CharField(max_length=32, blank=True, default='')
+    is_monitored = models.BooleanField(default=False)
+    previous_active_state = models.CharField(max_length=32, blank=True, default='')
+    last_checked = models.DateTimeField(auto_now=True)
+    last_state_change = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        db_table = 'inventory_agent_services'
+        unique_together = ['agent', 'service_name']
+        indexes = [
+            models.Index(fields=['agent', 'is_monitored']),
+            models.Index(fields=['service_name']),
+        ]
+
+    def __str__(self):
+        return f'{self.service_name} [{self.active_state}] on {self.agent.hostname}'

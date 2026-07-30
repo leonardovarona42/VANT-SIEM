@@ -1,0 +1,130 @@
+{% extends "web_app/base.html" %}
+{% block title %}Procesos y Puertos - {{ agent.hostname|default:agent.agent_id }} | VANT-SIEM Web{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <a href="{% url 'web:agent-detail' agent.agent_id %}" class="text-sm dark:text-surface-400 text-surface-500 hover:text-brand-400 transition-colors"><i class="fas fa-arrow-left mr-1"></i>Volver al agente</a>
+</div>
+
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-cogs text-cyan-400 mr-2"></i>Procesos y Puertos</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ agent.hostname|default:agent.agent_id }} &middot; {{ agent.ip_address|default:"-" }}</p>
+  </div>
+  <form method="post" action="{% url 'web:agent-collect-processes' agent.agent_id %}">
+    {% csrf_token %}
+    <button type="submit" class="btn-primary text-sm"><i class="fas fa-sync-alt mr-2"></i>Solicitar Recolección</button>
+  </form>
+</div>
+
+{% if messages %}
+{% for msg in messages %}
+<div class="mb-4 px-4 py-3 rounded-xl text-sm {% if msg.tags == 'success' %}bg-emerald-500/20 text-emerald-300{% elif msg.tags == 'error' %}bg-red-500/20 text-red-300{% else %}bg-surface-500/20 text-surface-300{% endif %}">
+  {{ msg }}
+</div>
+{% endfor %}
+{% endif %}
+
+{% if has_data %}
+<div class="text-xs dark:text-surface-500 text-surface-400 mb-4">
+  <i class="fas fa-clock mr-1"></i>Última recolección: {{ captured_at|default:"-" }}
+</div>
+
+<!-- PUERTOS / CONEXIONES -->
+<div class="glass-card overflow-hidden mb-6">
+  <div class="px-6 py-4 border-b dark:border-surface-800 border-surface-200">
+    <h3 class="text-lg font-semibold dark:text-white text-surface-900"><i class="fas fa-network-wired text-orange-400 mr-2"></i>Puertos Abiertos</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Protocolo</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Dirección Local</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Dirección Remota</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Estado</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">PID</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Proceso</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for conn in connections %}
+        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors">
+          <td class="px-4 py-2 dark:text-surface-200 text-surface-700">
+            <span class="px-2 py-0.5 rounded text-xs font-mono {% if conn.protocol == 'TCP' %}bg-blue-500/20 text-blue-300{% else %}bg-purple-500/20 text-purple-300{% endif %}">{{ conn.protocol|default:"-" }}</span>
+          </td>
+          <td class="px-4 py-2 dark:text-surface-300 text-surface-600 font-mono text-xs">{{ conn.local_addr|default:"-" }}</td>
+          <td class="px-4 py-2 dark:text-surface-300 text-surface-600 font-mono text-xs">{{ conn.remote_addr|default:"-" }}</td>
+          <td class="px-4 py-2">
+            <span class="text-xs px-2 py-0.5 rounded-full {% if conn.status == 'LISTEN' %}bg-emerald-500/20 text-emerald-300{% elif conn.status == 'ESTABLISHED' %}bg-blue-500/20 text-blue-300{% elif conn.status == 'TIME_WAIT' %}bg-yellow-500/20 text-yellow-300{% else %}bg-surface-500/20 text-surface-300{% endif %}">
+              {{ conn.status|default:"-" }}
+            </span>
+          </td>
+          <td class="px-4 py-2 dark:text-surface-400 text-surface-500 font-mono text-xs">{{ conn.pid|default:"-" }}</td>
+          <td class="px-4 py-2 dark:text-surface-200 text-surface-700 text-xs">{{ conn.process_name|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="px-4 py-8 text-center dark:text-surface-500 text-surface-400">
+            <i class="fas fa-network-wired text-2xl mb-2 block opacity-50"></i>
+            No hay datos de conexiones. Use "Solicitar Recolección" para obtenerlos.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- PROCESOS -->
+<div class="glass-card overflow-hidden">
+  <div class="px-6 py-4 border-b dark:border-surface-800 border-surface-200">
+    <h3 class="text-lg font-semibold dark:text-white text-surface-900"><i class="fas fa-list text-cyan-400 mr-2"></i>Procesos en Ejecución</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">PID</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Nombre</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Usuario</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">CPU %</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Mem %</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Comando</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for proc in processes %}
+        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors">
+          <td class="px-4 py-2 dark:text-surface-400 text-surface-500 font-mono text-xs">{{ proc.pid|default:"-" }}</td>
+          <td class="px-4 py-2 dark:text-surface-200 text-surface-700">{{ proc.name|default:"-" }}</td>
+          <td class="px-4 py-2 dark:text-surface-300 text-surface-600 text-xs">{{ proc.user|default:"-" }}</td>
+          <td class="px-4 py-2 dark:text-surface-300 text-surface-600 text-xs">{{ proc.cpu_percent|default:"-" }}</td>
+          <td class="px-4 py-2 dark:text-surface-300 text-surface-600 text-xs">{{ proc.mem_percent|default:"-" }}</td>
+          <td class="px-4 py-2 dark:text-surface-400 text-surface-500 font-mono text-xs truncate max-w-xs">{{ proc.cmdline|default:"-" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="px-4 py-8 text-center dark:text-surface-500 text-surface-400">
+            <i class="fas fa-list text-2xl mb-2 block opacity-50"></i>
+            No hay datos de procesos. Use "Solicitar Recolección" para obtenerlos.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% else %}
+<div class="glass-card p-12 text-center">
+  <i class="fas fa-cogs text-4xl dark:text-surface-600 text-surface-300 mb-4 block"></i>
+  <h3 class="text-lg font-semibold dark:text-surface-300 text-surface-600 mb-2">Sin datos de procesos</h3>
+  <p class="text-sm dark:text-surface-500 text-surface-400 mb-6">El agente aún no ha enviado información de procesos y puertos.</p>
+  <form method="post" action="{% url 'web:agent-collect-processes' agent.agent_id %}">
+    {% csrf_token %}
+    <button type="submit" class="btn-primary text-sm"><i class="fas fa-sync-alt mr-2"></i>Solicitar Recolección Ahora</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

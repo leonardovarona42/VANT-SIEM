@@ -1,26 +1,43 @@
 {% extends "web_app/base.html" %}
-{% block title %}Incidente | VANT-SIEM Web{% endblock %}
+{% block title %}{{ incident.codigo_incidente }} | Incidente VANT-SIEM{% endblock %}
 
 {% block content %}
 <div class="flex items-center justify-between mb-8">
   <div>
-    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-bug text-brand-400 mr-2"></i>Incidente {{ incident.codigo_incidente }}</h1>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-bug text-brand-400 mr-2"></i>{{ incident.codigo_incidente }}</h1>
     <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ incident.nombre_incidente }}</p>
   </div>
-  <a href="{% url 'web:soc-incidents-list' %}" class="btn-secondary text-sm"><i class="fas fa-arrow-left mr-2"></i>Volver</a>
+  <div class="flex items-center gap-2">
+    <a href="{% url 'web:soc-incidente-edit' incident.codigo_incidente %}" class="btn-secondary text-sm"><i class="fas fa-edit mr-2"></i>Editar</a>
+    <a href="{% url 'web:soc-incidents-list' %}" class="btn-secondary text-sm"><i class="fas fa-arrow-left mr-2"></i>Volver</a>
+  </div>
 </div>
 
+{% if messages %}
+<div class="space-y-2 mb-6">
+  {% for msg in messages %}
+  <div class="px-4 py-3 rounded-xl text-sm font-medium
+    {% if msg.tags == 'success' %}bg-emerald-500/20 text-emerald-300 border border-emerald-500/30
+    {% elif msg.tags == 'error' %}bg-red-500/20 text-red-300 border border-red-500/30
+    {% else %}bg-blue-500/20 text-blue-300 border border-blue-500/30{% endif %}">
+    {{ msg }}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+  <!-- Información General -->
   <div class="glass-card p-6 lg:col-span-2">
     <h2 class="text-lg font-semibold dark:text-white text-surface-900 mb-4"><i class="fas fa-info-circle text-brand-400 mr-2"></i>Información General</h2>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
         <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Código</p>
-        <p class="text-sm dark:text-surface-200 text-surface-700 font-mono">{{ incident.codigo_incidente }}</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700 font-mono font-bold">{{ incident.codigo_incidente }}</p>
       </div>
       <div>
         <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Estado</p>
-        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
           {% if incident.estado_solucion == 'nuevo' %}bg-blue-500/20 text-blue-300
           {% elif incident.estado_solucion == 'abierto' %}bg-amber-500/20 text-amber-300
           {% elif incident.estado_solucion == 'investigacion' %}bg-purple-500/20 text-purple-300
@@ -31,7 +48,7 @@
         </span>
       </div>
       <div>
-        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Fecha/Hora</p>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Fecha/Hora Creación</p>
         <p class="text-sm dark:text-surface-200 text-surface-700">{{ incident.fecha_hora|default:"-" }}</p>
       </div>
       <div>
@@ -44,15 +61,24 @@
       </div>
       <div>
         <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Notificado OSRI</p>
-        <p class="text-sm dark:text-surface-200 text-surface-700">{% if incident.notificado_osri %}Sí{% else %}No{% endif %}</p>
+        <p class="text-sm dark:text-surface-200 text-surface-700">{% if incident.notificado_osri == 'si' %}<span class="text-emerald-400"><i class="fas fa-check-circle mr-1"></i>Sí</span>{% else %}<span class="text-surface-500">No</span>{% endif %}</p>
+      </div>
+      <div>
+        <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Evidencia</p>
+        {% if incident.evidencia %}
+        <a href="{{ incident.evidencia }}" target="_blank" class="text-sm dark:text-accent-400 text-brand-600 hover:underline"><i class="fas fa-file-alt mr-1"></i>Ver evidencia</a>
+        {% else %}
+        <p class="text-sm dark:text-surface-500 text-surface-400">Sin evidencia adjunta</p>
+        {% endif %}
       </div>
     </div>
-    <div class="mt-4">
+    <div class="mt-4 pt-4 dark:border-surface-700 border-surface-200 border-t">
       <p class="text-xs dark:text-surface-500 text-surface-400 mb-1">Descripción</p>
-      <p class="text-sm dark:text-surface-300 text-surface-600">{{ incident.descripcion|default:"Sin descripción" }}</p>
+      <p class="text-sm dark:text-surface-300 text-surface-600 leading-relaxed">{{ incident.descripcion|default:"Sin descripción" }}</p>
     </div>
   </div>
 
+  <!-- Transiciones -->
   <div class="glass-card p-6">
     <h2 class="text-lg font-semibold dark:text-white text-surface-900 mb-4"><i class="fas fa-exchange-alt text-brand-400 mr-2"></i>Transiciones</h2>
     <div class="space-y-3">
@@ -103,32 +129,45 @@
   </div>
 </div>
 
-{% if incident.areas_data %}
-<div class="glass-card p-6 mb-6">
-  <h2 class="text-lg font-semibold dark:text-white text-surface-900 mb-4"><i class="fas fa-building text-brand-400 mr-2"></i>Áreas Involucradas</h2>
-  <div class="flex flex-wrap gap-2">
-    {% for area in incident.areas_data %}
-    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-brand-500/20 text-brand-300">{{ area }}</span>
-    {% endfor %}
-  </div>
-</div>
-{% endif %}
-
+<!-- Categorías y Subcategorías -->
 {% if incident.subcategorias_data %}
 <div class="glass-card p-6 mb-6">
   <h2 class="text-lg font-semibold dark:text-white text-surface-900 mb-4"><i class="fas fa-tags text-brand-400 mr-2"></i>Subcategorías</h2>
   <div class="flex flex-wrap gap-2">
     {% for sub in incident.subcategorias_data %}
-    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300">{{ sub }}</span>
+    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-500/20 text-purple-300">
+      {{ sub.nombre }}{% if sub.categoria_nombre %} <span class="ml-1 text-purple-400/60">({{ sub.categoria_nombre }})</span>{% endif %}
+    </span>
     {% endfor %}
   </div>
 </div>
 {% endif %}
 
+<!-- Áreas Involucradas -->
+{% if incident.areas_data %}
+<div class="glass-card p-6 mb-6">
+  <h2 class="text-lg font-semibold dark:text-white text-surface-900 mb-4"><i class="fas fa-building text-brand-400 mr-2"></i>Áreas Involucradas</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+    {% for area in incident.areas_data %}
+    <div class="p-3 rounded-xl dark:bg-surface-800/50 bg-surface-100 border dark:border-surface-700 border-surface-200">
+      <p class="text-sm font-medium dark:text-surface-200 text-surface-700">{{ area.nombre }}</p>
+      {% if area.acronimo %}<p class="text-xs dark:text-surface-400 text-surface-500 mt-0.5">{{ area.acronimo }}</p>{% endif %}
+      <div class="mt-2 text-xs dark:text-surface-500 text-surface-400 space-y-0.5">
+        {% if area.cuadro_centro_nombre %}<p>CC: {{ area.cuadro_centro_nombre }}</p>{% endif %}
+        {% if area.rsi_nombre %}<p>RSI: {{ area.rsi_nombre }}</p>{% endif %}
+        {% if area.admin_nombre %}<p>Admin: {{ area.admin_nombre }}</p>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- Reportes Asociados -->
 {% if incident.reportes %}
 <div class="glass-card overflow-hidden mb-6">
   <div class="px-6 py-4 dark:border-surface-800 border-surface-200 border-b">
-    <h2 class="text-lg font-semibold dark:text-white text-surface-900"><i class="fas fa-clipboard-list text-brand-400 mr-2"></i>Reportes Asociados</h2>
+    <h2 class="text-lg font-semibold dark:text-white text-surface-900"><i class="fas fa-clipboard-list text-brand-400 mr-2"></i>Reportes Asociados <span class="ml-2 text-sm font-normal dark:text-surface-400 text-surface-500">({{ incident.reportes|length }})</span></h2>
   </div>
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
@@ -136,7 +175,9 @@
         <tr class="dark:border-surface-800 border-surface-200 border-b">
           <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">ID</th>
           <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Informante</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Email</th>
           <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Área</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Estado</th>
           <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Descripción</th>
           <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Fecha</th>
         </tr>
@@ -144,11 +185,22 @@
       <tbody>
         {% for r in incident.reportes %}
         <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors">
-          <td class="px-4 py-3 dark:text-accent-400 text-brand-600 font-mono text-xs">{{ r.id }}</td>
-          <td class="px-4 py-3 dark:text-surface-200 text-surface-700">{{ r.informante|default:"-" }}</td>
-          <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-xs">{{ r.area|default:"-" }}</td>
-          <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-xs">{{ r.descripcion|truncatewords:15|default:"-" }}</td>
-          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs whitespace-nowrap">{{ r.fecha|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-accent-400 text-brand-600 font-mono text-xs">#{{ r.id }}</td>
+          <td class="px-4 py-3 dark:text-surface-200 text-surface-700 text-sm">{{ r.nombre_informante|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs">{{ r.email_informante|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-xs">{{ r.area_nombre|default:"-" }}</td>
+          <td class="px-4 py-3">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+              {% if r.estado_solucion == 'nuevo' %}bg-blue-500/20 text-blue-300
+              {% elif r.estado_solucion == 'atendido' %}bg-amber-500/20 text-amber-300
+              {% elif r.estado_solucion == 'rechazado' %}bg-red-500/20 text-red-300
+              {% elif r.estado_solucion == 'solucionado' %}bg-emerald-500/20 text-emerald-300
+              {% else %}bg-surface-500/20 text-surface-400{% endif %}">
+              {{ r.estado_solucion|default:"-" }}
+            </span>
+          </td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs max-w-xs truncate">{{ r.descripcion|truncatewords:12|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs whitespace-nowrap">{{ r.fecha_hora|default:"-" }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -157,10 +209,81 @@
 </div>
 {% endif %}
 
+<!-- Servicios Afectados -->
+{% if incident.servicios_data %}
+<div class="glass-card overflow-hidden mb-6">
+  <div class="px-6 py-4 dark:border-surface-800 border-surface-200 border-b">
+    <h2 class="text-lg font-semibold dark:text-white text-surface-900"><i class="fas fa-server text-brand-400 mr-2"></i>Servicios Afectados <span class="ml-2 text-sm font-normal dark:text-surface-400 text-surface-500">({{ incident.servicios_data|length }})</span></h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">ID</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Nombre</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Tipo</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Responsable</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in incident.servicios_data %}
+        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors">
+          <td class="px-4 py-3 dark:text-accent-400 text-brand-600 font-mono text-xs">{{ s.id }}</td>
+          <td class="px-4 py-3 dark:text-surface-200 text-surface-700 text-sm">{{ s.nombre|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-xs">{{ s.tipo_display|default:s.tipo|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs">{{ s.responsable_nombre|default:"-" }}</td>
+          <td class="px-4 py-3">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if s.activo %}bg-emerald-500/20 text-emerald-300{% else %}bg-red-500/20 text-red-300{% endif %}">
+              {% if s.activo %}Activo{% else %}Inactivo{% endif %}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Personas Involucradas + Medidas Impuestas -->
+{% if incident.involucrados_data %}
+<div class="glass-card overflow-hidden mb-6">
+  <div class="px-6 py-4 dark:border-surface-800 border-surface-200 border-b">
+    <h2 class="text-lg font-semibold dark:text-white text-surface-900"><i class="fas fa-users text-brand-400 mr-2"></i>Personas Involucradas <span class="ml-2 text-sm font-normal dark:text-surface-400 text-surface-500">({{ incident.involucrados_data|length }})</span></h2>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="dark:border-surface-800 border-surface-200 border-b">
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Nombre</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Rol</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Medida Impuesta</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Período</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Descripción</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in incident.involucrados_data %}
+        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors">
+          <td class="px-4 py-3 dark:text-surface-200 text-surface-700 text-sm">{{ p.involucrado_nombre|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-xs">{{ p.descripcion|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs">{{ p.medida_nombre|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs whitespace-nowrap">{{ p.fecha_inicio|default:"-" }} → {{ p.fecha_fin|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs max-w-xs truncate">{{ p.descripcion|default:"-" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- Medidas de Seguridad Aplicadas al Incidente -->
 {% if incident.medidas %}
 <div class="glass-card overflow-hidden mb-6">
   <div class="px-6 py-4 dark:border-surface-800 border-surface-200 border-b">
-    <h2 class="text-lg font-semibold dark:text-white text-surface-900"><i class="fas fa-tools text-brand-400 mr-2"></i>Medidas de Seguridad</h2>
+    <h2 class="text-lg font-semibold dark:text-white text-surface-900"><i class="fas fa-tools text-brand-400 mr-2"></i>Medidas Aplicadas al Incidente <span class="ml-2 text-sm font-normal dark:text-surface-400 text-surface-500">({{ incident.medidas|length }})</span></h2>
   </div>
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
@@ -168,14 +291,15 @@
         <tr class="dark:border-surface-800 border-surface-200 border-b">
           <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Medida</th>
           <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Responsable</th>
-          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Estado</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Estado Cumplimiento</th>
+          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Fecha Cumplimiento</th>
           <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Observaciones</th>
         </tr>
       </thead>
       <tbody>
         {% for m in incident.medidas %}
         <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors">
-          <td class="px-4 py-3 dark:text-surface-200 text-surface-700">{{ m.medida_nombre }}</td>
+          <td class="px-4 py-3 dark:text-surface-200 text-surface-700 text-sm">{{ m.medida_nombre }}</td>
           <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-xs">{{ m.responsable_nombre|default:"-" }}</td>
           <td class="px-4 py-3">
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
@@ -186,7 +310,8 @@
               {{ m.estado_cumplimiento|default:"-" }}
             </span>
           </td>
-          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs">{{ m.observaciones|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs whitespace-nowrap">{{ m.fecha_cumplimiento|default:"-" }}</td>
+          <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-xs max-w-xs truncate">{{ m.observaciones|default:"-" }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -195,31 +320,23 @@
 </div>
 {% endif %}
 
-{% if incident.involucrados_data %}
-<div class="glass-card overflow-hidden mb-6">
-  <div class="px-6 py-4 dark:border-surface-800 border-surface-200 border-b">
-    <h2 class="text-lg font-semibold dark:text-white text-surface-900"><i class="fas fa-users text-brand-400 mr-2"></i>Personas Involucradas</h2>
+<!-- Resumen rápido -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+  <div class="glass-card p-4 text-center">
+    <p class="text-2xl font-bold dark:text-brand-400 text-brand-600">{{ incident.reportes|length }}</p>
+    <p class="text-xs dark:text-surface-400 text-surface-500 mt-1">Reportes</p>
   </div>
-  <div class="overflow-x-auto">
-    <table class="w-full text-sm">
-      <thead>
-        <tr class="dark:border-surface-800 border-surface-200 border-b">
-          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Nombre</th>
-          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Rol</th>
-          <th class="px-4 py-3 text-left dark:text-surface-400 text-surface-500 font-medium">Área</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for p in incident.involucrados_data %}
-        <tr class="dark:border-surface-800/50 border-surface-200/50 border-b hover:dark:bg-white/5 hover:bg-surface-50 transition-colors">
-          <td class="px-4 py-3 dark:text-surface-200 text-surface-700">{{ p.nombre|default:"-" }}</td>
-          <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-xs">{{ p.rol|default:"-" }}</td>
-          <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-xs">{{ p.area|default:"-" }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="glass-card p-4 text-center">
+    <p class="text-2xl font-bold dark:text-brand-400 text-brand-600">{{ incident.servicios_data|length }}</p>
+    <p class="text-xs dark:text-surface-400 text-surface-500 mt-1">Servicios</p>
+  </div>
+  <div class="glass-card p-4 text-center">
+    <p class="text-2xl font-bold dark:text-brand-400 text-brand-600">{{ incident.involucrados_data|length }}</p>
+    <p class="text-xs dark:text-surface-400 text-surface-500 mt-1">Involucrados</p>
+  </div>
+  <div class="glass-card p-4 text-center">
+    <p class="text-2xl font-bold dark:text-brand-400 text-brand-600">{{ incident.medidas|length }}</p>
+    <p class="text-xs dark:text-surface-400 text-surface-500 mt-1">Medidas</p>
   </div>
 </div>
-{% endif %}
 {% endblock %}

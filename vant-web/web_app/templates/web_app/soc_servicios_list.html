@@ -2,77 +2,240 @@
 {% block title %}Infraestructura / CMDB | VANT-SIEM Web{% endblock %}
 
 {% block content %}
-<div class="flex items-center justify-between mb-8">
+<div class="flex items-center justify-between mb-6">
   <div>
     <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-server text-brand-400 mr-2"></i>Infraestructura / CMDB</h1>
     <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ total|default:"0" }} servicios registrados</p>
   </div>
+  <a href="{% url 'web:soc-servicios-create' %}" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 rounded-xl transition-all shadow-lg shadow-brand-500/20">
+    <i class="fas fa-plus mr-2"></i>Nuevo Servicio
+  </a>
 </div>
 
-<div class="glass-card p-4 mb-6">
+<!-- Widgets de estado -->
+<div class="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+  <div class="glass-card p-4 text-center">
+    <div class="flex items-center justify-center mb-2">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center">
+        <i class="fas fa-server text-white text-sm"></i>
+      </div>
+    </div>
+    <div class="text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1">Total</div>
+    <div id="w-total" class="text-3xl font-bold dark:text-white text-surface-900">{{ metrics.total|default:total|default:"0" }}</div>
+  </div>
+  <div class="glass-card p-4 text-center">
+    <div class="flex items-center justify-center mb-2">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center">
+        <i class="fas fa-arrow-up text-white text-sm"></i>
+      </div>
+    </div>
+    <div class="text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1">Up</div>
+    <div id="w-up" class="text-3xl font-bold text-emerald-400">{{ metrics.activos|default:"0" }}</div>
+  </div>
+  <div class="glass-card p-4 text-center">
+    <div class="flex items-center justify-center mb-2">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
+        <i class="fas fa-arrow-down text-white text-sm"></i>
+      </div>
+    </div>
+    <div class="text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1">Down</div>
+    <div id="w-down" class="text-3xl font-bold text-red-400">{{ metrics.inactivos|default:"0" }}</div>
+  </div>
+  <div class="glass-card p-4 text-center">
+    <div class="flex items-center justify-center mb-2">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
+        <i class="fas fa-eye-slash text-white text-sm"></i>
+      </div>
+    </div>
+    <div class="text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1">Sin Monitoreo</div>
+    <div id="w-sin-mono" class="text-3xl font-bold text-amber-400">{{ metrics.sin_monitoreo|default:"0" }}</div>
+  </div>
+  <div class="glass-card p-4 text-center">
+    <div class="flex items-center justify-center mb-2">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center">
+        <i class="fas fa-satellite-dish text-white text-sm"></i>
+      </div>
+    </div>
+    <div class="text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1">Monitoreando</div>
+    <div id="w-mono" class="text-3xl font-bold text-cyan-400">{{ metrics.monitoreando|default:"0" }}</div>
+  </div>
+  <div class="glass-card p-4 text-center">
+    <div class="flex items-center justify-center mb-2">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center">
+        <i class="fas fa-signal text-white text-sm"></i>
+      </div>
+    </div>
+    <div class="text-xs font-medium dark:text-surface-400 text-surface-500 uppercase tracking-wider mb-1">Disponibilidad</div>
+    <div id="w-disp-val" class="text-3xl font-bold text-violet-400">{{ metrics.disponibilidad|default:"0" }}<span class="text-base font-normal">%</span></div>
+    <div class="mt-2 w-full bg-surface-700 dark:bg-surface-700 bg-surface-200 rounded-full h-1.5">
+      <div id="w-disp-bar" class="h-1.5 rounded-full bg-gradient-to-r from-violet-500 to-violet-400 transition-all duration-500" style="width: {{ metrics.disponibilidad|default:"0" }}%"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Filtros de tipo -->
+<div class="glass-card p-3 mb-4 overflow-x-auto">
+  <div class="flex items-center gap-2 text-xs">
+    <span class="font-medium dark:text-surface-400 text-surface-500 mr-1">Tipo:</span>
+    <a href="?page_size={{ page_size }}" class="px-3 py-1.5 rounded-lg border dark:border-surface-700 border-surface-300 dark:text-surface-300 text-surface-600 hover:dark:bg-surface-700 hover:bg-surface-100 transition-colors {% if not request.GET.tipo %}dark:bg-surface-700 bg-surface-100 font-semibold{% endif %}">Todos</a>
+    {% for tipo_key, tipo_label in tipos %}
+    <a href="?tipo={{ tipo_key }}&page_size={{ page_size }}" class="px-3 py-1.5 rounded-lg border dark:border-surface-700 border-surface-300 dark:text-surface-300 text-surface-600 hover:dark:bg-surface-700 hover:bg-surface-100 transition-colors {% if request.GET.tipo == tipo_key %}dark:bg-surface-700 bg-surface-100 font-semibold{% endif %}">{{ tipo_label }}</a>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Search -->
+<div class="glass-card p-4 mb-4">
   <form method="get" class="flex flex-wrap gap-3 items-end">
+    <input type="hidden" name="page_size" value="{{ page_size }}">
     <div class="flex-1 min-w-[200px]">
-      <label class="block text-xs dark:text-surface-400 text-surface-500 mb-1">Buscar servicio</label>
       <input type="text" name="q" value="{{ search }}" class="w-full px-4 py-2.5 rounded-xl dark:bg-surface-800 dark:border-surface-700 dark:text-surface-200 bg-white border-surface-200 text-surface-800 focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition-all text-sm" placeholder="Nombre, host, red, responsable...">
     </div>
     <button type="submit" class="btn-primary text-sm"><i class="fas fa-search mr-1"></i>Buscar</button>
     {% if search %}
-    <a href="{% url 'web:soc-servicios-list' %}" class="btn-secondary text-sm"><i class="fas fa-times mr-1"></i>Limpiar</a>
+    <a href="{% url 'web:soc-servicios-list' %}?page_size={{ page_size }}" class="btn-secondary text-sm"><i class="fas fa-times mr-1"></i>Limpiar</a>
     {% endif %}
   </form>
 </div>
 
-<div class="glass-card overflow-hidden">
-  <div class="overflow-x-auto">
-    <table class="w-full text-sm">
-      <thead>
-        <tr class="dark:border-surface-800 border-surface-200 border-b">
-          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Nombre</th>
-          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Tipo</th>
-          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Host</th>
-          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Red</th>
-          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">IPs</th>
-          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Responsable</th>
-          <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-400 text-surface-500 uppercase tracking-wider">Estado</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for s in servicios %}
-        <tr class="border-t dark:border-surface-800/50 border-surface-200/50 hover:dark:bg-white/[0.02] hover:bg-surface-50 transition-colors">
-          <td class="px-4 py-3 text-sm font-medium">
-            <a href="{% url 'web:soc-servicio-detail' s.id %}" class="text-brand-400 hover:text-brand-300 transition-colors">{{ s.nombre|default:"-" }}</a>
-          </td>
-          <td class="px-4 py-3 text-sm">
+<!-- Tabla -->
+<div id="servicios-table-wrap" class="overflow-x-auto glass-card">
+  <table class="w-full divide-y dark:divide-surface-800 divide-surface-200" id="servicios-table">
+    <thead class="dark:bg-surface-800 bg-surface-100">
+      <tr>
+        <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider">Nombre</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider">Tipo</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider">Host</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider">Red</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider">IPs</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider">Responsable</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider">Estado DB</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider">ICMP</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold dark:text-surface-300 text-surface-600 uppercase tracking-wider">Acciones</th>
+      </tr>
+    </thead>
+    <tbody class="dark:divide-surface-800 divide-surface-200">
+      {% for s in servicios %}
+      <tr class="hover:dark:bg-surface-800/50 hover:bg-surface-100/50 transition-colors">
+        <td class="px-4 py-3" data-filter="{{ s.nombre }}">
+          <a href="{% url 'web:soc-servicio-detail' s.id %}" class="text-sm dark:text-accent-400 text-brand-600 hover:underline font-medium">{{ s.nombre|default:"-" }}</a>
+        </td>
+        <td class="px-4 py-3" data-filter="{{ s.tipo_display|default:s.tipo }}">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+            {% if s.tipo == 'rsi' or s.tipo == 'firewall' %}bg-red-500/20 text-red-300
+            {% elif s.tipo == 'switch' or s.tipo == 'access_point' %}bg-emerald-500/20 text-emerald-300
+            {% elif s.tipo == 'servidor' or s.tipo == 'host' %}bg-purple-500/20 text-purple-300
+            {% elif s.tipo == 'nube' %}bg-cyan-500/20 text-cyan-300
+            {% elif s.tipo == 'zona' or s.tipo == 'datacenter' %}bg-amber-500/20 text-amber-300
+            {% else %}bg-surface-500/20 text-surface-400{% endif %}">
+            {{ s.tipo_display|default:s.tipo }}
+          </span>
+        </td>
+        <td class="px-4 py-3 dark:text-surface-300 text-surface-600 font-mono text-xs" data-filter="{{ s.host|default:'-' }}">{{ s.host|default:"-" }}</td>
+        <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-sm" data-filter="{{ s.network|default:'-' }}">{{ s.network|default:"-" }}</td>
+        <td class="px-4 py-3 dark:text-surface-400 text-surface-500 text-center text-sm" data-filter="{{ s.ip_count|default:'0' }}">{{ s.ip_count|default:"0" }}</td>
+        <td class="px-4 py-3 dark:text-surface-300 text-surface-600 text-sm" data-filter="{{ s.responsable_nombre|default:'-' }}">{{ s.responsable_nombre|default:"-" }}</td>
+        <td class="px-4 py-3" data-filter="{{ s.activo|yesno:'Activo,Inactivo' }}">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if s.activo %}bg-emerald-500/20 text-emerald-300{% else %}bg-red-500/20 text-red-300{% endif %}">
+            {% if s.activo %}Activo{% else %}Inactivo{% endif %}
+          </span>
+        </td>
+        <td class="px-4 py-3" data-filter="{{ s.estado_monitoreo|default:'-' }}">
+          {% if s.monitorear %}
             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
-              {% if s.tipo == 'rsi' %}bg-blue-500/20 text-blue-300
-              {% elif s.tipo == 'firewall' %}bg-red-500/20 text-red-300
-              {% elif s.tipo == 'switch' %}bg-emerald-500/20 text-emerald-300
-              {% elif s.tipo == 'servidor' %}bg-purple-500/20 text-purple-300
-              {% elif s.tipo == 'nube' %}bg-cyan-500/20 text-cyan-300
-              {% else %}bg-surface-500/20 text-surface-400{% endif %}">
-              {{ s.tipo_display|default:s.tipo }}
+              {% if s.estado_monitoreo == 'up' %}bg-emerald-500/20 text-emerald-300
+              {% elif s.estado_monitoreo == 'down' %}bg-red-500/20 text-red-300
+              {% else %}bg-amber-500/20 text-amber-300{% endif %}">
+              <i class="fas fa-circle mr-1" style="font-size:6px"></i>{{ s.estado_monitoreo|default:"desconocido" }}
             </span>
-          </td>
-          <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600 font-mono text-xs">{{ s.host|default:"-" }}</td>
-          <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600">{{ s.network|default:"-" }}</td>
-          <td class="px-4 py-3 text-sm dark:text-surface-400 text-surface-500 text-center">{{ s.ip_count|default:"0" }}</td>
-          <td class="px-4 py-3 text-sm dark:text-surface-300 text-surface-600">{{ s.responsable_nombre|default:"-" }}</td>
-          <td class="px-4 py-3 text-sm">
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if s.activo %}bg-emerald-500/20 text-emerald-300{% else %}bg-red-500/20 text-red-300{% endif %}">
-              {% if s.activo %}Activo{% else %}Inactivo{% endif %}
-            </span>
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="7" class="px-4 py-16 text-center dark:text-surface-500 text-surface-400">
-            <i class="fas fa-server text-4xl mb-3 block opacity-50"></i>
-            <p class="text-sm">No hay servicios registrados</p>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+          {% else %}
+            <span class="text-xs dark:text-surface-500 text-surface-400">—</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 text-sm space-x-1">
+          <a href="{% url 'web:soc-servicio-detail' s.id %}" class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg transition-colors">Ver</a>
+          <a href="{% url 'web:soc-servicio-edit' s.id %}" class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-amber-600 hover:bg-amber-700 dark:bg-amber-500 dark:hover:bg-amber-600 rounded-lg transition-colors"><i class="fas fa-edit mr-1"></i>Editar</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="9" class="px-4 py-16 text-center dark:text-surface-500 text-surface-400">
+          <i class="fas fa-server text-4xl mb-3 block opacity-50"></i>
+          <p class="text-sm">No hay servicios registrados</p>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Paginación -->
+{% if total_pages > 1 %}
+<div class="flex items-center justify-between mt-4">
+  <div class="text-xs dark:text-surface-400 text-surface-500">
+    Mostrando <span class="font-semibold dark:text-surface-200 text-surface-700">{{ servicios|length }}</span> de <span class="font-semibold dark:text-surface-200 text-surface-700">{{ total }}</span> servicios
+    &middot; Página <span class="font-semibold dark:text-surface-200 text-surface-700">{{ page }}</span> de <span class="font-semibold dark:text-surface-200 text-surface-700">{{ total_pages }}</span>
+  </div>
+  <div class="flex items-center gap-1">
+    {% if has_prev %}
+    <a href="?page={{ page|add:'-1' }}&q={{ search }}&page_size={{ page_size }}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}" class="inline-flex items-center px-3 py-1.5 text-xs font-medium dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded-lg hover:dark:bg-surface-700 hover:bg-surface-100 transition-colors">
+      <i class="fas fa-chevron-left mr-1"></i>Anterior
+    </a>
+    {% endif %}
+
+    {% for p in page_range %}
+      {% if p == "..." %}
+      <span class="px-2 py-1 text-xs dark:text-surface-500 text-surface-400">...</span>
+      {% elif p == page %}
+      <span class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-brand-600 rounded-lg">{{ p }}</span>
+      {% else %}
+      <a href="?page={{ p }}&q={{ search }}&page_size={{ page_size }}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}" class="inline-flex items-center px-3 py-1.5 text-xs font-medium dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded-lg hover:dark:bg-surface-700 hover:bg-surface-100 transition-colors">{{ p }}</a>
+      {% endif %}
+    {% endfor %}
+
+    {% if has_next %}
+    <a href="?page={{ page|add:'1' }}&q={{ search }}&page_size={{ page_size }}{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}" class="inline-flex items-center px-3 py-1.5 text-xs font-medium dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded-lg hover:dark:bg-surface-700 hover:bg-surface-100 transition-colors">
+      Siguiente<i class="fas fa-chevron-right ml-1"></i>
+    </a>
+    {% endif %}
   </div>
 </div>
+{% endif %}
+
+<!-- Page size selector -->
+<div class="flex items-center justify-end mt-3 gap-2">
+  <span class="text-xs dark:text-surface-400 text-surface-500">Filas por página:</span>
+  <a href="?page=1&q={{ search }}&page_size=25{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}" class="inline-flex items-center px-2 py-1 text-xs font-medium dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded hover:dark:bg-surface-700 hover:bg-surface-100 transition-colors {% if page_size == 25 %}dark:bg-surface-700 bg-surface-100 font-bold{% endif %}">25</a>
+  <a href="?page=1&q={{ search }}&page_size=50{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}" class="inline-flex items-center px-2 py-1 text-xs font-medium dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded hover:dark:bg-surface-700 hover:bg-surface-100 transition-colors {% if page_size == 50 %}dark:bg-surface-700 bg-surface-100 font-bold{% endif %}">50</a>
+  <a href="?page=1&q={{ search }}&page_size=100{% if request.GET.tipo %}&tipo={{ request.GET.tipo }}{% endif %}" class="inline-flex items-center px-2 py-1 text-xs font-medium dark:text-surface-300 text-surface-600 border dark:border-surface-700 border-surface-300 rounded hover:dark:bg-surface-700 hover:bg-surface-100 transition-colors {% if page_size == 100 %}dark:bg-surface-700 bg-surface-100 font-bold{% endif %}">100</a>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  VANTTable.init("servicios-table-wrap", { timeField: null });
+
+  var metricsUrl = "{% url 'web:soc-servicios-metrics-ajax' %}";
+  function refreshWidgets() {
+    fetch(metricsUrl + "?_t=" + Date.now(), {credentials: "same-origin", cache: "no-store"})
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.error) return;
+        setText("w-total", d.total);
+        setText("w-up", d.activos);
+        setText("w-down", d.inactivos);
+        setText("w-sin-mono", d.sin_monitoreo);
+        setText("w-mono", d.monitoreando);
+        var disp = d.disponibilidad || 0;
+        document.getElementById("w-disp-val").innerHTML = disp + '<span class="text-base font-normal">%</span>';
+        document.getElementById("w-disp-bar").style.width = disp + "%";
+      })
+      .catch(function() {});
+  }
+  function setText(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = val != null ? val : 0;
+  }
+  setInterval(refreshWidgets, 15000);
+});
+</script>
 {% endblock %}

@@ -1,0 +1,52 @@
+{% extends "web_app/base.html" %}
+{% block title %}Configuracion de Correo | VANT-SIEM Web{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold dark:text-white text-surface-900"><i class="fas fa-envelope text-amber-400 mr-2"></i>Configuraci&oacute;n de Correo</h1>
+    <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">{{ configs|length }} configuraciones SMTP</p>
+  </div>
+  <a href="{% url 'web:configuracion-correo-create' %}" class="btn-primary text-sm"><i class="fas fa-plus mr-2"></i>Nueva Configuracion</a>
+</div>
+
+<div class="space-y-4">
+  {% for c in configs %}
+  <div class="glass-card p-5">
+    <div class="flex items-start justify-between">
+      <div class="flex-1">
+        <div class="flex items-center gap-3 mb-2">
+          <h3 class="font-semibold dark:text-white text-surface-900">{{ c.smtp_host }}:{{ c.smtp_port }}</h3>
+          {% if c.is_active %}
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-300">Activo</span>
+          {% else %}
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-500/20 text-red-300">Inactivo</span>
+          {% endif %}
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs dark:text-surface-400 text-surface-500">
+          <div><i class="fas fa-server mr-1"></i>{{ c.smtp_host }}:{{ c.smtp_port }}</div>
+          <div><i class="fas fa-user mr-1"></i>{{ c.smtp_user|default:"-" }}</div>
+          <div><i class="fas fa-at mr-1"></i>{{ c.from_address|default:"-" }}</div>
+          <div><i class="fas fa-lock mr-1"></i>{% if c.use_tls %}TLS{% else %}Sin TLS{% endif %}</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 ml-4">
+        <form method="post" action="{% url 'web:configuracion-correo-test' c.id %}" class="inline">
+          {% csrf_token %}
+          <button class="text-xs text-cyan-400 hover:text-cyan-300 px-2 py-1 rounded-lg dark:hover:bg-cyan-500/10" title="Enviar email de prueba"><i class="fas fa-paper-plane mr-1"></i>Probar</button>
+        </form>
+        <a href="{% url 'web:configuracion-correo-edit' c.id %}" class="text-brand-400 hover:text-brand-300 text-xs px-2 py-1"><i class="fas fa-edit"></i> Editar</a>
+        <form method="post" action="{% url 'web:configuracion-correo-delete' c.id %}" onsubmit="return confirm('Eliminar esta configuracion?')" class="inline">
+          {% csrf_token %}
+          <button class="text-red-400 hover:text-red-300 text-xs px-2 py-1"><i class="fas fa-trash"></i></button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="glass-card p-8 text-center">
+    <i class="fas fa-envelope-open text-3xl dark:text-surface-600 text-surface-300 mb-3 block"></i>
+    <p class="dark:text-surface-400 text-surface-500">No hay configuraciones SMTP configuradas</p>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
