@@ -169,6 +169,13 @@ urlpatterns = [
     # Intelligence Analytics Dashboard
     path("inteligencia/", views.intelligence_analytics, name="inteligencia"),
     path("inteligencia/geo/", views.intelligence_geo, name="inteligencia-geo"),
+    path("inteligencia/geo/live/", views.intelligence_geo_live, name="inteligencia-geo-live"),
+    path("inteligencia/geo/report/", views.intelligence_geo_report, name="inteligencia-geo-report"),
+    path("inteligencia/geo/report/api/", views.intelligence_geo_report_api, name="inteligencia-geo-report-api"),
+
+    # SOAR (mismo dropdown de Inteligencia)
+    path("inteligencia/soar/", views.intelligence_soar, name="inteligencia-soar"),
+    path("inteligencia/soar/api/<path:path>", views.intelligence_soar_api, name="inteligencia-soar-api"),
 
     # Configuracion: Intelligence API Keys
     path("configuracion/api-keys/", views.configuracion_api_keys, name="configuracion-api-keys"),

@@ -101,6 +101,7 @@ SERVICE_URLS = {
     "SOC_SERVICE_URL": os.getenv("SOC_SERVICE_URL", "http://127.0.0.1:8500"),
     "BUS_SERVICE_URL": os.getenv("BUS_SERVICE_URL", "http://127.0.0.1:8600"),
     "INTELLIGENCE_SERVICE_URL": os.getenv("INTELLIGENCE_SERVICE_URL", "http://127.0.0.1:8700"),
+    "SOAR_SERVICE_URL": os.getenv("SOAR_SERVICE_URL", "http://127.0.0.1:8800"),
 }
 
 for key, val in SERVICE_URLS.items():

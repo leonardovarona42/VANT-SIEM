@@ -1,0 +1,16 @@
+CREATE DATABASE vant_soar OWNER vantsiem ENCODING 'UTF8';
+-- Crear la DB antes de ejecutar:
+--   sudo -u postgres psql -c "CREATE DATABASE vant_soar OWNER vantsiem ENCODING 'UTF8';"
+-- Luego migrar y sembrar:
+--   cd /opt/vant-siem/services/vant-soar
+--   /opt/vant-siem/venv/bin/python manage.py migrate
+--   /opt/vant-siem/venv/bin/python manage.py seed_ports
+--   /opt/vant-siem/venv/bin/python manage.py train_model   # solo cuando haya >=30 muestras etiquetadas
+-- Probar API:
+--   curl http://127.0.0.1:8800/api/health/
+-- Worker:
+--   /opt/vant-siem/venv/bin/python manage.py run_worker --poll 5 --batch 500
+--   # o vía systemd: vantsiem-soar-worker.service
+-- Simular pipeline sin tráfico:
+--   curl -X POST http://127.0.0.1:8800/api/analyze/ -H 'Content-Type: application/json' -d '{"simulate": true, "duration": 10}'
+--   curl http://127.0.0.1:8800/api/predictions/

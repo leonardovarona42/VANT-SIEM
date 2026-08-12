@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.csrf import csrf_protect, csrf_exempt
 from django.conf import settings
 
 from . import http_client
@@ -3078,6 +3078,65 @@ def intelligence_analytics(request):
         "hours": hours,
         "analytics_data": json.dumps(analytics_data),
     })
+
+
+def intelligence_soar(request):
+    if not _require_auth(request):
+        return _redirect_login(request)
+    stats = {}
+    predictions = []
+    try:
+        import urllib.request
+        with urllib.request.urlopen(
+            f"{settings.SOAR_SERVICE_URL}/api/stats/", timeout=5
+        ) as resp:
+            stats = json.loads(resp.read().decode())
+    except Exception:
+        pass
+    try:
+        import urllib.request
+        with urllib.request.urlopen(
+            f"{settings.SOAR_SERVICE_URL}/api/predictions/?limit=50", timeout=5
+        ) as resp:
+            predictions = json.loads(resp.read().decode())
+    except Exception:
+        pass
+    return render(request, "web_app/intelligence_soar.html", {
+        "stats": stats,
+        "predictions": json.dumps(predictions),
+    })
+
+
+@csrf_exempt
+def intelligence_soar_api(request, path):
+    """Proxy genérico a la API del servicio SOAR (mismo contrato de microservicio)."""
+    if not _require_auth(request):
+        return JsonResponse({"error": "unauthorized"}, status=401)
+    import urllib.request
+    url = f"{settings.SOAR_SERVICE_URL}/api/{path}"
+    qs = request.META.get("QUERY_STRING", "")
+    if qs:
+        url += "?" + qs
+    method = request.method
+    body = request.body if method in ("POST", "PATCH", "PUT", "DELETE") else None
+    try:
+        req = urllib.request.Request(
+            url, data=body, method=method,
+            headers={"Content-Type": "application/json"} if body else {},
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            raw = resp.read().decode()
+            try:
+                return JsonResponse(json.loads(raw), safe=False)
+            except ValueError:
+                return JsonResponse({"raw": raw}, safe=False)
+    except urllib.error.HTTPError as e:
+        try:
+            return JsonResponse(json.loads(e.read().decode()), status=e.code, safe=False)
+        except Exception:
+            return JsonResponse({"error": f"upstream {e.code}"}, status=e.code)
+    except Exception as exc:
+        return JsonResponse({"error": str(exc)}, status=502)
 
 
 def intelligence_geo(request):

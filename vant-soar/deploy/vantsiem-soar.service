@@ -1,0 +1,19 @@
+[Unit]
+Description=VANT-SIEM SOAR Service (:8800)
+After=network.target postgresql.service redis-server.service vantsiem-bus.service
+Requires=postgresql.service redis-server.service vantsiem-bus.service
+
+[Service]
+Type=simple
+User=leonardo
+WorkingDirectory=/opt/vant-siem/services/vant-soar
+Environment=PATH=/opt/vant-siem/venv/bin:/usr/bin:/bin
+EnvironmentFile=/opt/vant-siem/.env
+ExecStart=/opt/vant-siem/venv/bin/gunicorn --config /opt/vant-siem/services/vant-soar/gunicorn.conf.py config.wsgi:application
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/vant/soar.log
+StandardError=append:/var/log/vant/soar.log
+
+[Install]
+WantedBy=multi-user.target

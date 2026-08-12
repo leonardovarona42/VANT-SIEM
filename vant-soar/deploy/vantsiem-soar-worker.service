@@ -1,0 +1,19 @@
+[Unit]
+Description=VANT-SIEM SOAR Worker (predictions)
+After=network.target postgresql.service redis-server.service vantsiem-soar.service
+Requires=postgresql.service redis-server.service
+
+[Service]
+Type=simple
+User=leonardo
+WorkingDirectory=/opt/vant-siem/services/vant-soar
+Environment=PATH=/opt/vant-siem/venv/bin:/usr/bin:/bin
+EnvironmentFile=/opt/vant-siem/.env
+ExecStart=/opt/vant-siem/venv/bin/python /opt/vant-siem/services/vant-soar/manage.py run_worker --poll 5 --batch 500
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/vant/soar-worker.log
+StandardError=append:/var/log/vant/soar-worker.log
+
+[Install]
+WantedBy=multi-user.target

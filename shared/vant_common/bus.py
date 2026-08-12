@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import time
+import traceback
 from typing import Callable, Dict, List, Optional
 
 import redis
@@ -76,8 +77,11 @@ class EventBus:
                                 self._redis.xack(stream, group, msg_id)
                             except Exception as e:
                                 logger.error("callback error: %s", e)
+                except (redis.exceptions.TimeoutError, redis.exceptions.ConnectionError):
+                    continue  # timeout de block o conexión reestablecida: normal
                 except Exception as e:
-                    logger.error("subscribe error: %s", e)
+                    logger.error("subscribe error: %s | %s | %s", e, type(e).__module__, type(e).__name__)
+                    traceback.print_exc()
                     time.sleep(1)
         else:
             self._pubsub.subscribe(**{
