@@ -98,7 +98,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.6/standalone/umd/vis-network.min.js"></script>
+<script src="/static/web_app/js/vis-network.min.js"></script>
 <script>
 var nodesData = {{ nodes_json|safe }};
 var edgesData = {{ edges_json|safe }};
