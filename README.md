@@ -6,7 +6,6 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Version-4.5-blue?style=for-the-badge" alt="Version">
-  <img src="https://img.shields.io/badge/Web-v1.0-green?style=for-the-badge" alt="Web">
   <img src="https://img.shields.io/badge/Django-5.1.15-green?style=for-the-badge&logo=django" alt="Django">
   <img src="https://img.shields.io/badge/Python-3.13-blue?style=for-the-badge&logo=python" alt="Python">
   <img src="https://img.shields.io/badge/PostgreSQL-blue?style=for-the-badge&logo=postgresql" alt="PostgreSQL">
@@ -213,7 +212,7 @@ Logs de servicios, comandos de systemd, health checks y verificacion end-to-end:
 
 ## Licencia
 
-MIT License - © 2026 VANT-SIEM v4.5 - Web v1.0 - Developed by **LLVT**
+MIT License - © 2026 VANT-SIEM v4.5 - Developed by **LLVT**
 
 ---
 
