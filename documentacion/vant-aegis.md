@@ -2,7 +2,7 @@
 
 Modulo **DLP standalone** (Data Loss Prevention) del ecosistema VANT.
 
-- Puerto: **8550** (dedicado via `GUNICORN_BIND`; el default 8500 choca con `vant-soc`)
+- Puerto: **8550** (bind hardcodeado en `gunicorn.conf.py`; el default 8500 choca con `vant-soc`)
 - Base de datos: `vant_soc` (comparte modelos DLP)
 - Prefijo URL: `/api/`
 
@@ -47,7 +47,9 @@ vant-aegis/
 
 **Resolucion aplicada** (2026-08-12): la unidad `vantsiem-aegis` estaba en **crash-loop** porque `gunicorn.conf.py` usaba por defecto `127.0.0.1:8500`, el mismo puerto que `vant-soc` (que gana el bind), y ademas agotaba el pool de PostgreSQL (`FATAL: remaining connection slots are reserved for roles with the SUPERUSER attribute`).
 
-**Fix**: en `/opt/vant-siem/.env` se definio `GUNICORN_BIND=127.0.0.1:8550` (y `AEGIS_SERVICE_URL` alineado a 8550). La unidad quedo `active`, escuchando en 8550 y con `/api/health/` respondiendo `{"status":"healthy","service":"aegis-dlp","database":"connected",...}`. El pool de PostgreSQL tenia margen (42/100 conexiones).
+**Fix**: se hardcodeo el bind en `vant-aegis/gunicorn.conf.py` (`bind = "127.0.0.1:8550"`) y en `/opt/vant-siem/.env` se dejo `AEGIS_SERVICE_URL=http://127.0.0.1:8550`. La unidad quedo `active`, escuchando en 8550 y con `/api/health/` respondiendo `{"status":"healthy","service":"aegis-dlp","database":"connected",...}`. El pool de PostgreSQL tenia margen (42/100 conexiones).
+
+> **Leccion aprendida**: **no** definir `GUNICORN_BIND` en el `.env` compartido de `/opt/vant-siem`, porque lo leen **todos** los servicios (las units cargan `EnvironmentFile=/opt/vant-siem/.env`) y rompe su bind original. El puerto debe ir en el `gunicorn.conf.py` de cada servicio, o en una variable con nombre de servicio especifico.
 
 > Regla para el futuro: **nunca** dejar que un servicio comparta puerto con otro; si se agrega un modulo nuevo, asignarle `GUNICORN_BIND` propio en `.env`.
 

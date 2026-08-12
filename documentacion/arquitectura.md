@@ -214,7 +214,7 @@ PGPASSWORD=... psql -h 127.0.0.1 -U vantsiem vant_soar  # consola BD
 
 ## 9. Issues conocidos
 
-1. **`vant-aegis` (resuelto 2026-08-12)**: estaba en crash-loop por conflicto de puerto 8500 con `vant-soc` y agotamiento del pool de PostgreSQL. Se resolvio con `GUNICORN_BIND=127.0.0.1:8550` en `.env`; hoy escucha en 8550 y responde healthy. Detalle en [vant-aegis.md](vant-aegis.md).
+1. **`vant-aegis` (resuelto 2026-08-12)**: estaba en crash-loop por conflicto de puerto 8500 con `vant-soc` y agotamiento del pool de PostgreSQL. Se resolvio hardcodeando `bind = "127.0.0.1:8550"` en `vant-aegis/gunicorn.conf.py` (no en `.env`, porque `GUNICORN_BIND` global rompe el bind de todos los servicios); hoy escucha en 8550 y responde healthy. Detalle en [vant-aegis.md](vant-aegis.md).
 2. **Timeouts de `xreadgroup`**: silenciosos por diseno en `vant_common.bus.EventBus` (streams sin mensajes no son errores).
 3. **Copia de `vant_common`**: recordar sincronizar cambios a `site-packages` y reiniciar.
 

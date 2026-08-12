@@ -45,7 +45,7 @@ La plataforma cubre el ciclo completo de seguridad:
 | `vant-soar` | 8800 | `vant_soar` | Prediccion ML de incidentes, playbooks, reportes automaticos |
 | `vant-aegis` | 8550 | `vant_soc` | Modulo DLP standalone (puerto dedicado) |
 
-> `vant-aegis` usa puerto dedicado **8550** (`GUNICORN_BIND`) tras el conflicto de puerto resuelto. Ver [Issues conocidos](#issues-conocidos).
+> `vant-aegis` usa puerto dedicado **8550** (bind en su `gunicorn.conf.py`) tras el conflicto de puerto resuelto. Ver [Issues conocidos](#issues-conocidos).
 
 Servicios adicionales (systemd, sin API propia):
 
@@ -194,7 +194,7 @@ Logs de servicios, comandos de systemd, health checks y verificacion end-to-end:
 
 ## Issues conocidos
 
-- **`vant-aegis` (resuelto)**: estaba en crash-loop por compartir el puerto 8500 con `vant-soc` y agotar el pool de PostgreSQL. Resuelto con `GUNICORN_BIND=127.0.0.1:8550`; hoy escucha en 8550 y responde healthy. Detalle en [documentacion/vant-aegis.md](documentacion/vant-aegis.md).
+- **`vant-aegis` (resuelto)**: estaba en crash-loop por compartir el puerto 8500 con `vant-soc` y agotar el pool de PostgreSQL. Resuelto hardcodeando el bind 8550 en su `gunicorn.conf.py`; hoy escucha en 8550 y responde healthy. Detalle en [documentacion/vant-aegis.md](documentacion/vant-aegis.md).
 - La unidad `vantsiem-soc-soar` depende del stream Redis `threats`; los timeouts de `xreadgroup` son silenciosos (no son errores).
 
 ---
@@ -213,7 +213,7 @@ Logs de servicios, comandos de systemd, health checks y verificacion end-to-end:
 
 ## Licencia
 
-MIT License - © 2026 VANT-SIEM Web v1.0 - Developed by **LLVT**
+MIT License - © 2026 VANT-SIEM v4.5 - Web v1.0 - Developed by **LLVT**
 
 ---
 
