@@ -1,0 +1,186 @@
+{% extends "web_app/base.html" %}
+{% load static %}
+{% block title %}VANT-SIEM — Reporte de Actividad{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+  <div class="flex items-center justify-between flex-wrap gap-4">
+    <div>
+      <h1 class="text-3xl font-bold dark:text-white text-surface-900">
+        <i class="fas fa-chart-bar mr-2 text-blue-400"></i>Reporte de Actividad
+      </h1>
+      <p class="text-sm dark:text-surface-400 text-surface-500 mt-1">
+        An&aacute;lisis de tr&aacute;fico por per&iacute;odos
+      </p>
+    </div>
+  </div>
+
+  <div id="reportComponents" class="space-y-8"></div>
+</div>
+
+<template id="periodComponentTemplate">
+  <div class="glass-card p-5 period-card">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-xl font-bold dark:text-white period-title"></h2>
+      <span class="text-sm text-surface-400 period-events"></span>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div>
+        <p class="text-xs font-semibold dark:text-surface-400 mb-2"><i class="fas fa-sign-in-alt mr-1 text-red-400"></i>Pa&iacute;ses Origen</p>
+        <div class="chart-wrap" style="height:200px;position:relative"><canvas class="src-country-chart"></canvas></div>
+        <div class="mt-2 max-h-48 overflow-y-auto text-xs src-country-table"></div>
+      </div>
+      <div>
+        <p class="text-xs font-semibold dark:text-surface-400 mb-2"><i class="fas fa-sign-out-alt mr-1 text-blue-400"></i>Pa&iacute;ses Destino</p>
+        <div class="chart-wrap" style="height:200px;position:relative"><canvas class="dst-country-chart"></canvas></div>
+        <div class="mt-2 max-h-48 overflow-y-auto text-xs dst-country-table"></div>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+      <div>
+        <p class="text-xs font-semibold dark:text-surface-400 mb-2"><i class="fas fa-network-wired mr-1"></i>Protocolos</p>
+        <div class="chart-wrap" style="height:180px;position:relative"><canvas class="protocol-chart"></canvas></div>
+      </div>
+      <div>
+        <p class="text-xs font-semibold dark:text-surface-400 mb-2"><i class="fas fa-plug mr-1"></i>Puertos</p>
+        <div class="chart-wrap" style="height:180px;position:relative"><canvas class="port-chart"></canvas></div>
+      </div>
+      <div>
+        <p class="text-xs font-semibold dark:text-surface-400 mb-2"><i class="fas fa-chart-line mr-1"></i>Tendencia</p>
+        <div class="chart-wrap" style="height:180px;position:relative"><canvas class="timeline-chart"></canvas></div>
+      </div>
+    </div>
+  </div>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'web_app/js/chart.min.js' %}"></script>
+<script>
+(function() {
+  if (typeof Chart === 'undefined') {
+    document.getElementById('reportComponents').innerHTML = '<div class="text-center py-12 text-red-400"><i class="fas fa-exclamation-triangle text-2xl mb-3 block"></i>Error: Chart.js no se carg&oacute;</div>';
+    return;
+  }
+
+  var periods = [
+    { key: 'week', label: 'Última Semana' },
+    { key: 'month', label: 'Último Mes' },
+    { key: 'quarter', label: 'Últimos 3 Meses' },
+    { key: 'semester', label: 'Últimos 6 Meses' },
+    { key: 'year', label: 'Último Año' },
+    { key: '2years', label: 'Últimos 2 Años' },
+  ];
+
+  var palette = ['#ef4444','#f97316','#eab308','#22c55e','#06b6d4','#3b82f6','#8b5cf6','#ec4899','#14b8a6','#f43f5e','#a855f7','#0ea5e9','#84cc16','#d946ef','#10b981'];
+  function colors(n) { return n <= palette.length ? palette.slice(0, n) : palette.concat(Array(n - palette.length).fill('#64748b')); }
+
+  var allCharts = {};
+
+  function renderTable(el, countries) {
+    if (!el) return;
+    var internal = countries.filter(function(c){return c.code === '??';});
+    var external = countries.filter(function(c){return c.code !== '??';});
+    var h = '<table class="w-full"><thead><tr class="text-xs dark:text-surface-400 border-b border-surface-600"><th class="text-left py-1">País</th><th class="text-right py-1">Eventos</th><th class="text-right py-1">%</th></tr></thead><tbody>';
+    external.forEach(function(c){ h += '<tr class="border-b border-surface-700/50"><td class="py-1">' + (c.code === '??' ? c.name : (c.code + ' (' + (c.name||'') + ')')) + '</td><td class="text-right py-1">' + c.count.toLocaleString() + '</td><td class="text-right py-1">' + c.percentage + '%</td></tr>'; });
+    h += '</tbody></table>';
+    if (internal.length) h += '<p class="text-xs dark:text-surface-500 mt-1">* ' + internal[0].count.toLocaleString() + ' Red Interna</p>';
+    el.innerHTML = h;
+  }
+
+  function addCard(period, data) {
+    var prefix = period.key;
+    var t = document.getElementById('periodComponentTemplate');
+    var frag = t.content.cloneNode(true);
+    var card = frag.querySelector('.period-card');
+
+    card.querySelector('.period-title').textContent = period.label;
+    card.querySelector('.period-events').textContent = (data.total_events || 0).toLocaleString() + ' eventos';
+
+    var container = document.getElementById('reportComponents');
+    container.appendChild(frag);
+
+    var el = container.lastElementChild;
+    renderTable(el.querySelector('.src-country-table'), data.src_countries || []);
+    renderTable(el.querySelector('.dst-country-table'), data.dst_countries || []);
+
+    function make(canvas, config) {
+      if (!canvas) return null;
+      try {
+        var ctx = canvas.getContext('2d');
+        if (!ctx) return null;
+        return new Chart(ctx, config);
+      } catch(e) { return null; }
+    }
+
+    var charts = [];
+    var srcItems = (data.src_countries || []).filter(function(c){return c.code !== '??';}).slice(0, 10);
+    var dstItems = (data.dst_countries || []).filter(function(c){return c.code !== '??';}).slice(0, 10);
+    var protoItems = (data.protocols || []).slice(0, 10);
+    var portItems = (data.ports || []).slice(0, 10).reverse();
+    var timeline = data.timeline || [];
+
+    if (srcItems.length) charts.push(make(el.querySelector('.src-country-chart'), {
+      type: 'doughnut',
+      data: { labels: srcItems.map(function(d){return d.code;}), datasets: [{ data: srcItems.map(function(d){return d.count;}), backgroundColor: colors(srcItems.length), borderWidth: 0 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10, padding: 6 } } } }
+    }));
+
+    if (dstItems.length) charts.push(make(el.querySelector('.dst-country-chart'), {
+      type: 'doughnut',
+      data: { labels: dstItems.map(function(d){return d.code;}), datasets: [{ data: dstItems.map(function(d){return d.count;}), backgroundColor: colors(dstItems.length), borderWidth: 0 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10, padding: 6 } } } }
+    }));
+
+    if (protoItems.length) charts.push(make(el.querySelector('.protocol-chart'), {
+      type: 'doughnut',
+      data: { labels: protoItems.map(function(d){return d.protocol;}), datasets: [{ data: protoItems.map(function(d){return d.count;}), backgroundColor: colors(protoItems.length), borderWidth: 0 }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 10, padding: 6 } } } }
+    }));
+
+    if (portItems.length) charts.push(make(el.querySelector('.port-chart'), {
+      type: 'bar',
+      data: { labels: portItems.map(function(d){return 'P' + d.port;}), datasets: [{ data: portItems.map(function(d){return d.count;}), backgroundColor: colors(portItems.length), borderWidth: 0, borderRadius: 3 }] },
+      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: '#334155' } }, y: { ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { display: false } } } }
+    }));
+
+    if (timeline.length) charts.push(make(el.querySelector('.timeline-chart'), {
+      type: 'line',
+      data: { labels: timeline.map(function(t){return t.date ? t.date.slice(5,10) : '';}), datasets: [{ label: 'Eventos', data: timeline.map(function(t){return t.events;}), borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.1)', fill: true, tension: 0.3, pointRadius: 2, pointBackgroundColor: '#3b82f6' }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: '#334155' } }, y: { ticks: { color: '#94a3b8', font: { size: 9 } }, grid: { color: '#334155' }, beginAtZero: true } } }
+    }));
+
+    allCharts[prefix] = charts;
+  }
+
+  function loadAll() {
+    var container = document.getElementById('reportComponents');
+    container.innerHTML = '<div class="text-center py-12 text-surface-400"><div class="animate-spin w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full mx-auto mb-3"></div>Cargando reportes...</div>';
+
+    var fetches = periods.map(function(p) {
+      return fetch('/siem/dashboard/inteligencia/geo/report/?period=' + p.key)
+        .then(function(r) { return r.json(); })
+        .then(function(data) { return { period: p, data: data }; })
+        .catch(function(err) { return { period: p, data: null, error: err }; });
+    });
+
+    Promise.all(fetches).then(function(results) {
+      container.innerHTML = '';
+      results.forEach(function(r) {
+        if (r.data && r.data.total_events !== undefined) {
+          addCard(r.period, r.data);
+        } else {
+          var t = document.getElementById('periodComponentTemplate');
+          var frag = t.content.cloneNode(true);
+          frag.querySelector('.period-title').textContent = r.period.label;
+          frag.querySelector('.period-events').textContent = 'Sin datos';
+          container.appendChild(frag);
+        }
+      });
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', loadAll);
+})();
+</script>
+{% endblock %}
