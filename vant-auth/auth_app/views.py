@@ -147,6 +147,11 @@ class LoginView(View):
             audit_log("login_failed", user_id=str(user.id), ip_address=ip, details={"reason": "inactive"})
             return json_error("Account is disabled. Contact an administrator.", 403)
 
+        if user.lockout_until and user.lockout_until > timezone.now():
+            remaining = (user.lockout_until - timezone.now()).total_seconds() // 60
+            audit_log("login_failed", user_id=str(user.id), ip_address=ip, details={"reason": "locked_out"})
+            return json_error(f"Account temporarily locked. Try again in {int(remaining) + 1} minutes.", 403)
+
         if not user.check_password(password):
             user.failed_login_attempts += 1
             user.save(update_fields=["failed_login_attempts"])
@@ -155,8 +160,8 @@ class LoginView(View):
                       details={"reason": "bad_password", "attempts": user.failed_login_attempts})
 
             if user.failed_login_attempts >= MAX_FAILED_ATTEMPTS:
-                user.is_active = False
-                user.save(update_fields=["is_active"])
+                user.lockout_until = timezone.now() + timedelta(minutes=15)
+                user.save(update_fields=["lockout_until"])
 
                 _publish_event("login_bloqueado", "critical", {
                     "user_id": user.id,
@@ -169,14 +174,15 @@ class LoginView(View):
 
                 audit_log("login_blocked", user_id=str(user.id), ip_address=ip,
                           details={"attempts": user.failed_login_attempts})
-                return json_error("Account disabled due to too many failed attempts. Contact an administrator.", 403)
+                return json_error("Account temporarily locked due to too many failed attempts. Try again in 15 minutes.", 403)
 
             remaining = MAX_FAILED_ATTEMPTS - user.failed_login_attempts
             return json_error(f"Invalid credentials. {remaining} attempts remaining.", 401)
 
         if user.failed_login_attempts > 0:
             user.failed_login_attempts = 0
-            user.save(update_fields=["failed_login_attempts"])
+            user.lockout_until = None
+            user.save(update_fields=["failed_login_attempts", "lockout_until"])
 
         user.last_login = timezone.now()
         user.save(update_fields=["last_login"])

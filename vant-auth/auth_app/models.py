@@ -14,6 +14,7 @@ class AuthUser(models.Model):
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="viewer")
     is_active = models.BooleanField(default=True)
     failed_login_attempts = models.IntegerField(default=0)
+    lockout_until = models.DateTimeField(null=True, blank=True)
     last_login = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
