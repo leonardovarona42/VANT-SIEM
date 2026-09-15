@@ -68,3 +68,23 @@ class AuthTests(APITestCase):
         response = self.client.post(self.login_url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertIn("locked", response.data["error"])
+
+    def test_agent_register_unauthorized(self):
+        """Verify that agent registration requires service secret (SEC-05)."""
+        url = reverse('agent_register')
+        data = {"agent_id": "test_agent", "hostname": "test_host"}
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.data["error"], "forbidden")
+
+    def test_agent_register_authorized(self):
+        """Verify agent registration with correct service secret."""
+        url = reverse('agent_register')
+        data = {"agent_id": "test_agent", "hostname": "test_host"}
+        # Mock the service secret header
+        self.client.defaults()
+        self.client.defaults['headers'] = {"X-Service-Secret": "changeme-service-secret"}
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("token", response.data)
+

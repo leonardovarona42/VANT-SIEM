@@ -1,0 +1,76 @@
+name: VANT-SERVICES CI
+
+on:
+  push:
+    branches: [ main, features ]
+  pull_request:
+    branches: [ main, features ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: vantsiem
+          POSTGRES_PASSWORD: vantsiem
+          POSTGRES_DB: vant_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd redis-cli ping
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install shared library
+        run: pip install -e shared/
+
+      - name: Run Auth Tests
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_USER: vantsiem
+          POSTGRES_PASSWORD: vantsiem
+          POSTGRES_DB: vant_test
+        run: |
+          cd vant-auth
+          pip install -r requirements.txt
+          python manage.py test auth_app
+
+      - name: Run SOC Tests
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_USER: vantsiem
+          POSTGRES_PASSWORD: vantsiem
+          POSTGRES_DB: vant_test
+        run: |
+          cd vant-soc
+          pip install -r requirements.txt
+          python manage.py test soc_app
+
+  build-docker:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and Test Images
+        run: docker-compose build
