@@ -1,0 +1,11 @@
+[Unit]
+Description=VANT-SIEM Disk Monitoring Service
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/vant-siem/scripts/monitor_disk.sh
+User=root
+
+[Install]
+WantedBy=multi-user.target

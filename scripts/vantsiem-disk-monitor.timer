@@ -1,0 +1,10 @@
+[Unit]
+Description=Run VANT-SIEM Disk Monitoring every 15 minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=15min
+Unit=vantsiem-disk-monitor.service
+
+[Install]
+WantedBy=timers.target
