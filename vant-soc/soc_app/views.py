@@ -8,7 +8,7 @@ from django.http import FileResponse, Http404
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, parser_classes, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 
@@ -247,6 +247,7 @@ def health_check(request):
 # ============================================================================
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def soc_statistics(request):
     hours = int(request.query_params.get("hours", 24))
     cutoff = timezone.now() - timedelta(hours=hours)
@@ -335,6 +336,7 @@ def ingest_dlp_threats_multipart(request):
 # ============================================================================
 
 class DlpPolicyViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = DlpPolicy.objects.all()
     serializer_class = DlpPolicySerializer
     lookup_field = "code"
@@ -358,6 +360,7 @@ class DlpPolicyViewSet(viewsets.ModelViewSet):
 # ============================================================================
 
 class DlpThreatViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     http_method_names = ["get", "patch", "head", "options"]
     serializer_class = DlpThreatListSerializer
 
@@ -426,6 +429,7 @@ class DlpThreatViewSet(viewsets.ModelViewSet):
 # ============================================================================
 
 class DlpScanSummaryViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = DlpScanSummary.objects.all()
     serializer_class = DlpScanSummarySerializer
 
@@ -452,11 +456,13 @@ def evidence_download(request, pk):
 # ============================================================================
 
 class CategoriaViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = Categoria.objects.all()
     serializer_class = CategoriaSerializer
 
 
 class SubcategoriaViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = Subcategoria.objects.select_related("categoria").all()
     serializer_class = SubcategoriaSerializer
 
@@ -472,11 +478,13 @@ class SubcategoriaViewSet(viewsets.ModelViewSet):
 # ============================================================================
 
 class ResponsableViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = Responsable.objects.all()
     serializer_class = ResponsableSerializer
 
 
 class AreaViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = Area.objects.select_related("cuadro_centro", "rsi", "admin").all()
     serializer_class = AreaSerializer
 
@@ -486,6 +494,7 @@ class AreaViewSet(viewsets.ModelViewSet):
 # ============================================================================
 
 class MedidaViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = Medida.objects.all()
     serializer_class = MedidaSerializer
     filterset_fields = ["tipo"]
@@ -502,6 +511,7 @@ class MedidaViewSet(viewsets.ModelViewSet):
 
 
 class MedidaIncidenteViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = MedidaIncidente.objects.select_related("medida", "responsable", "incidente").all()
     serializer_class = MedidaIncidenteSerializer
 
@@ -513,6 +523,7 @@ class MedidaIncidenteViewSet(viewsets.ModelViewSet):
 
 
 class MedidaInvolucradoViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = MedidaInvolucrado.objects.select_related("medida", "responsable", "involucrado").all()
     serializer_class = MedidaInvolucradoSerializer
 
@@ -528,11 +539,13 @@ class MedidaInvolucradoViewSet(viewsets.ModelViewSet):
 # ============================================================================
 
 class InvolucradoViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = Involucrado.objects.all()
     serializer_class = InvolucradoSerializer
 
 
 class InvolucradoIncidenteViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = InvolucradoIncidente.objects.select_related("involucrado", "incidente", "medida_impuesta").all()
     serializer_class = InvolucradoIncidenteSerializer
 
@@ -548,6 +561,7 @@ class InvolucradoIncidenteViewSet(viewsets.ModelViewSet):
 # ============================================================================
 
 class ReporteViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = Reporte.objects.select_related("area").all()
     serializer_class = ReporteSerializer
 
@@ -601,6 +615,7 @@ class ReporteViewSet(viewsets.ModelViewSet):
 # ============================================================================
 
 class IncidenteViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     def get_object(self):
         pk = self.kwargs.get("pk")
         try:
@@ -747,6 +762,7 @@ class IncidenteViewSet(viewsets.ModelViewSet):
 # ============================================================================
 
 class ServicioViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = Servicio.objects.select_related("responsable", "servicio_padre").all()
     serializer_class = ServicioSerializer
 
@@ -765,6 +781,7 @@ class ServicioViewSet(viewsets.ModelViewSet):
 
 
 class ServicioIPViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = ServicioIP.objects.select_related("servicio").all()
     serializer_class = ServicioIPSerializer
 
@@ -776,6 +793,7 @@ class ServicioIPViewSet(viewsets.ModelViewSet):
 
 
 class PuertoDispositivoViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = PuertoDispositivo.objects.select_related("dispositivo").all()
     serializer_class = PuertoDispositivoSerializer
 
@@ -787,11 +805,13 @@ class PuertoDispositivoViewSet(viewsets.ModelViewSet):
 
 
 class ConexionTopologicaViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = ConexionTopologica.objects.select_related("origen", "destino").all()
     serializer_class = ConexionTopologicaSerializer
 
 
 class MonitoreoServicioViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = MonitoreoServicio.objects.select_related("servicio").all()
     serializer_class = MonitoreoServicioSerializer
 
@@ -941,11 +961,13 @@ def servicios_metrics(request):
 from django.db import connection
 
 class RetentionPolicyViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = RetentionPolicy.objects.all()
     serializer_class = RetentionPolicySerializer
 
 
 class BackupRecordViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
     queryset = BackupRecord.objects.all()
     serializer_class = BackupRecordSerializer
 
@@ -1022,7 +1044,7 @@ class BackupRecordViewSet(viewsets.ModelViewSet):
 
 
 @api_view(["GET"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def db_health(request):
     data = {}
     def run_query(cursor, sql, single=False):
@@ -1055,7 +1077,7 @@ def db_health(request):
 
 
 @api_view(["POST"])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def db_optimize(request):
     action = request.data.get("action", "vacuum")
     table = request.data.get("table", "")
