@@ -263,6 +263,7 @@ class TokenValidateView(View):
 
 @method_decorator(csrf_exempt, name="dispatch")
 class AgentRegisterView(View):
+    @require_service_secret
     def post(self, request):
         data = JSONParser().parse(request)
         serializer = AgentRegisterSerializer(data=data)
