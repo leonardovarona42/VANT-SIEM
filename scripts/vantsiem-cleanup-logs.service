@@ -1,0 +1,12 @@
+[Unit]
+Description=VANT-SIEM Log Retention Cleanup
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/vant-siem/scripts/cleanup_logs.py
+User=root
+EnvironmentFile=/opt/vant-siem/.env
+
+[Install]
+WantedBy=multi-user.target

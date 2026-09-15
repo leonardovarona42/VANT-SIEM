@@ -1,0 +1,10 @@
+[Unit]
+Description=Run VANT-SIEM Log Cleanup daily
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+Unit=vantsiem-cleanup-logs.service
+
+[Install]
+WantedBy=timers.target
