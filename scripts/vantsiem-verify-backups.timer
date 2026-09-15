@@ -1,0 +1,10 @@
+[Unit]
+Description=Run VANT-SIEM Backup Verification weekly
+
+[Timer]
+OnCalendar=mon 03:00
+Persistent=true
+Unit=vantsiem-verify-backups.service
+
+[Install]
+WantedBy=timers.target
