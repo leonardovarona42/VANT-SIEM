@@ -85,6 +85,7 @@ def login_view(request):
             request.session["username"] = user_info.get("username", username)
             request.session["is_superuser"] = user_info.get("is_superuser", user_info.get("role") == "admin")
             request.session["user_id"] = user_info.get("id")
+            request.session.cycle_key()
             request.session.save()
             return redirect("web:dashboard")
         elif result:
