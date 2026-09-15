@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=vantsiem
+      - POSTGRES_PASSWORD=vantsiem
+      - POSTGRES_DB=vant_siem
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vantsiem"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  vant-auth:
+    build: ./vant-auth
+    ports: ["8100:8000"]
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=vant_auth
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  vant-web:
+    build: ./vant-web
+    ports: ["8200:8000"]
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=vant_web
+    depends_on:
+      db: { condition: service_healthy }
+
+  vant-inventory:
+    build: ./vant-inventory
+    ports: ["8300:8000"]
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=vant_inventory
+    depends_on:
+      db: { condition: service_healthy }
+
+  vant-logs:
+    build: ./vant-logs
+    ports: ["8400:8000"]
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=vant_logs
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  vant-soc:
+    build: ./vant-soc
+    ports: ["8500:8000"]
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=vant_soc
+    depends_on:
+      db: { condition: service_healthy }
+
+  vant-bus:
+    build: ./vant-bus
+    ports: ["8600:8000"]
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=vant_bus
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  vant-intelligence:
+    build: ./vant-intelligence
+    ports: ["8700:8000"]
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=vant_intelligence
+    depends_on:
+      db: { condition: service_healthy }
+
+  vant-soar:
+    build: ./vant-soar
+    ports: ["8800:8000"]
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=vant_soar
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  vant-aegis:
+    build: ./vant-aegis
+    ports: ["8550:8000"]
+    environment:
+      - POSTGRES_HOST=db
+      - POSTGRES_DB=vant_soc
+    depends_on:
+      db: { condition: service_healthy }
+
+volumes:
+  postgres_data:
+  redis_data:
